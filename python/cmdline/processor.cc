@@ -7,7 +7,6 @@
 #include "arki/stream.h"
 #include "arki/dataset.h"
 #include "arki/dataset/query.h"
-#include "arki/dataset/index/base.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
 #include "arki/summary.h"
@@ -133,7 +132,7 @@ struct SummaryProcessor : public DatasetProcessor
         if (!summary_restrict.empty())
         {
             Summary s;
-            s.add(summary, arki::dataset::index::parseMetadataBitmask(summary_restrict));
+            s.add(summary, types::parse_code_names(summary_restrict));
             do_output(s);
         } else
             do_output(summary);

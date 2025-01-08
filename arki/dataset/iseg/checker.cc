@@ -1,5 +1,5 @@
 #include "arki/dataset/iseg/checker.h"
-#include "arki/dataset/iseg/index.h"
+#include "arki/segment/index/iseg.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"

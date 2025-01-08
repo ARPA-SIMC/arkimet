@@ -1,5 +1,5 @@
-#include "arki/dataset/index/attr.h"
-#include "arki/dataset/index/base.h"
+#include "attr.h"
+#include "base.h"
 #include "arki/matcher/utils.h"
 #include "arki/core/binary.h"
 #include "arki/types.h"

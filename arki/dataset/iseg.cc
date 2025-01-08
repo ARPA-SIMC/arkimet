@@ -3,8 +3,8 @@
 #include "iseg/writer.h"
 #include "iseg/checker.h"
 #include "arki/defs.h"
+#include "arki/types.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/index/base.h"
 #include "arki/utils/string.h"
 
 using namespace std;
@@ -17,8 +17,8 @@ namespace iseg {
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : segmented::Dataset(session, cfg),
       format(cfg.value("format")),
-      index(index::parseMetadataBitmask(cfg.value("index"))),
-      unique(index::parseMetadataBitmask(cfg.value("unique"))),
+      index(types::parse_code_names(cfg.value("index"))),
+      unique(types::parse_code_names(cfg.value("unique"))),
       summary_cache_pathname(path / ".summaries"),
       trace_sql(cfg.value_bool("trace_sql"))
 {

@@ -24,7 +24,7 @@
  */
 #include <arki/matcher/fwd.h>
 #include <arki/utils/sqlite.h>
-#include <arki/dataset/index/attr.h>
+#include <arki/segment/index/iseg/attr.h>
 
 #include <vector>
 #include <set>

@@ -13,12 +13,6 @@ class Matcher;
 namespace dataset {
 namespace index {
 
-/**
- * Convert a [comma and optional spaces]-separated string with metadata
- * component names into a MetadataComponents bitfield
- */
-std::set<types::Code> parseMetadataBitmask(const std::string& components);
-
 // Exception we can throw if an element was not found
 struct NotFound {};
 

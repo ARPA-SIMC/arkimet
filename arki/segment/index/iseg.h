@@ -7,9 +7,9 @@
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
+#include <arki/segment/index/iseg/attr.h>
+#include <arki/segment/index/iseg/aggregate.h>
 #include <arki/dataset/iseg.h>
-#include <arki/dataset/index/attr.h>
-#include <arki/dataset/index/aggregate.h>
 #include <string>
 #include <set>
 

@@ -1,6 +1,5 @@
-#include "arki/dataset/tests.h"
-#include "arki/dataset/iseg.h"
-#include "arki/dataset/iseg/index.h"
+#include "arki/types/tests.h"
+#include "arki/segment/index/iseg.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -14,7 +13,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_iseg_index");
+} test("arki_segment_index_iseg");
 
 void Tests::register_tests() {
 

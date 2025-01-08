@@ -4,7 +4,7 @@
 #include "arki/matcher.h"
 #include "arki/matcher/parser.h"
 #include "arki/types.h"
-#include "arki/dataset/index/base.h"
+#include "base.h"
 #include "attr.h"
 
 namespace {
@@ -17,7 +17,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_dataset_index_attr");
+} test("arki_segment_index_iseg_attr");
 
 void Tests::register_tests() {
 

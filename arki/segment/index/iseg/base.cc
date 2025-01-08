@@ -1,6 +1,5 @@
-#include "arki/dataset/index/base.h"
+#include "base.h"
 #include "arki/utils/string.h"
-#include "arki/utils/regexp.h"
 #include "arki/types.h"
 #include <sstream>
 
@@ -13,18 +12,6 @@ using namespace arki::dataset::index;
 namespace arki {
 namespace dataset {
 namespace index {
-
-std::set<types::Code> parseMetadataBitmask(const std::string& components)
-{
-    set<types::Code> res;
-    Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
-    for (Splitter::const_iterator i = splitter.begin(str::lower(components));
-            i != splitter.end(); ++i)
-    {
-        res.insert(types::parseCodeName(*i));
-    }
-    return res;
-}
 
 std::string fmtin(const std::vector<int>& vals)
 {
