@@ -81,7 +81,7 @@ public:
         if (!segment->exists_on_disk())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "segment found in index but not on disk");
-            return segmented::SegmentState(segment::State(segment::SEGMENT_MISSING));
+            return segmented::SegmentState(segment::SEGMENT_MISSING);
         }
 
         if (!checker.m_idx->has_segment(segment->segment().relpath))
@@ -89,12 +89,12 @@ public:
             if (segment->is_empty())
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
-                return segmented::SegmentState(segment::State(segment::SEGMENT_DELETED));
+                return segmented::SegmentState(segment::SEGMENT_DELETED);
             } else {
                 //bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
                 reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
                 //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-                return segmented::SegmentState(segment::State(segment::SEGMENT_UNALIGNED));
+                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
             }
         }
 
@@ -105,7 +105,7 @@ public:
         time_t ts_sum = sys::timestamp(sys::with_suffix(segment->segment().abspath, ".summary"), 0);
         time_t ts_idx = checker.m_mft->segment_mtime(segment->segment().relpath);
 
-        segment::State state = segment::State(segment::SEGMENT_OK);
+        segment::State state = segment::SEGMENT_OK;
 
         // Check timestamp consistency
         if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
@@ -119,7 +119,7 @@ public:
             if (ts_md < ts_data)
                 nag::verbose("%s: %s metadata has a timestamp (%ld) newer that its summary (%ld)",
                         checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_md, (long int)ts_sum);
-            state = segment::State(segment::SEGMENT_UNALIGNED);
+            state = segment::SEGMENT_UNALIGNED;
         }
 
         // Read metadata of segment contents
@@ -143,7 +143,7 @@ public:
             // The index knows about the file, so instead of saying segment::SEGMENT_DELETED
             // because we have data without metadata, we say segment::SEGMENT_UNALIGNED
             // because the metadata needs to be regenerated
-            state += segment::State(segment::SEGMENT_UNALIGNED);
+            state += segment::SEGMENT_UNALIGNED;
 
         RepackSort cmp;
         contents.sort(cmp); // Sort by reftime and by offset
@@ -153,12 +153,12 @@ public:
         if (contents.empty())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            state = segment::State(segment::SEGMENT_UNALIGNED);
+            state = segment::SEGMENT_UNALIGNED;
         } else {
             if (!contents.expand_date_range(segment_interval))
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
-                state = segment::State(segment::SEGMENT_CORRUPTED);
+                state = segment::SEGMENT_CORRUPTED;
             } else {
                 // Ensure that the reftime span fits inside the segment step
                 core::Interval interval;
@@ -167,13 +167,13 @@ public:
                     if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
                     {
                         reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
-                        state = segment::State(segment::SEGMENT_CORRUPTED);
+                        state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     segment_interval = interval;
                 } else {
                     reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
-                    state = segment::State(segment::SEGMENT_CORRUPTED);
+                    state = segment::SEGMENT_CORRUPTED;
                 }
             }
         }

@@ -375,7 +375,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
     nag::CollectHandler tc;
     tc.install();
     auto state = scan_state(quick);
-    wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == filecount);
+    wassert(actual(state.count(segment::SEGMENT_OK)) == filecount);
     wassert(actual(state.size()) == filecount);
 
     auto reader = makeSegmentedReader();
@@ -392,7 +392,7 @@ void DatasetTest::all_clean(size_t segment_count)
     auto state = scan_state();
     try {
         wassert(actual(state.size()) == segment_count);
-        wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == segment_count);
+        wassert(actual(state.count(segment::SEGMENT_OK)) == segment_count);
     } catch (...) {
         fprintf(stderr, "Dump of unexpected state:\n");
         state.dump(stderr);

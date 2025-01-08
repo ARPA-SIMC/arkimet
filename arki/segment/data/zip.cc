@@ -157,7 +157,7 @@ struct CheckBackend : public AppendCheckBackend
         State state = AppendCheckBackend::check();
         if (!state.is_ok())
         {
-            if (state.value == SEGMENT_DIRTY)
+            if (state.has(SEGMENT_DIRTY))
                 dirty = true;
             else
                 return state;

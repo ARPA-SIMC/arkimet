@@ -103,7 +103,7 @@ this->add_method("repack", [](Fixture& f) {
     auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "POST REPACK %s\n", msg.c_str());
     };
-    wassert(actual(checker->check(rep, f.seg_mds)) == segment::State(segment::SEGMENT_OK));
+    wassert(actual(checker->check(rep, f.seg_mds)) == segment::SEGMENT_OK);
 });
 
 this->add_method("check", [](Fixture& f) {
@@ -116,28 +116,28 @@ this->add_method("check", [](Fixture& f) {
     };
 
     // A simple segment freshly imported is ok
-    wassert(actual(checker->check(rep, f.seg_mds)) == segment::State(segment::SEGMENT_OK));
-    wassert(actual(checker->check(rep, f.seg_mds, true)) == segment::State(segment::SEGMENT_OK));
+    wassert(actual(checker->check(rep, f.seg_mds)) == segment::SEGMENT_OK);
+    wassert(actual(checker->check(rep, f.seg_mds, true)) == segment::SEGMENT_OK);
 
     // Simulate one element being deleted
     {
         metadata::Collection mdc1;
         mdc1.push_back(f.seg_mds[1]);
         mdc1.push_back(f.seg_mds[2]);
-        wassert(actual(checker->check(rep, mdc1)) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(checker->check(rep, mdc1)) == segment::SEGMENT_DIRTY);
     }
     {
         metadata::Collection mdc1;
         mdc1.push_back(f.seg_mds[0]);
         mdc1.push_back(f.seg_mds[2]);
-        wassert(actual(checker->check(rep, mdc1)) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(checker->check(rep, mdc1)) == segment::SEGMENT_DIRTY);
     }
 
     {
         metadata::Collection mdc1;
         mdc1.push_back(f.seg_mds[0]);
         mdc1.push_back(f.seg_mds[1]);
-        wassert(actual(checker->check(rep, mdc1)) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(checker->check(rep, mdc1)) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate elements out of order
@@ -146,13 +146,13 @@ this->add_method("check", [](Fixture& f) {
         mdc1.push_back(f.seg_mds[0]);
         mdc1.push_back(f.seg_mds[2]);
         mdc1.push_back(f.seg_mds[1]);
-        wassert(actual(checker->check(rep, mdc1)) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(checker->check(rep, mdc1)) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate all elements deleted
     {
         metadata::Collection mdc1;
-        wassert(actual(checker->check(rep, mdc1)) == segment::State(segment::SEGMENT_DIRTY));
+        wassert(actual(checker->check(rep, mdc1)) == segment::SEGMENT_DIRTY);
     }
 
     // Simulate corrupted file
@@ -164,8 +164,8 @@ this->add_method("check", [](Fixture& f) {
         std::unique_ptr<types::source::Blob> src(f.seg_mds[0].sourceBlob().clone());
         src->offset += 1;
         mdc1[0].set_source(std::unique_ptr<types::Source>(src.release()));
-        wassert(actual(checker->check(rep, mdc1, true)) == segment::State(segment::SEGMENT_CORRUPTED));
-        wassert(actual(checker->check(rep, mdc1, false)) == segment::State(segment::SEGMENT_CORRUPTED));
+        wassert(actual(checker->check(rep, mdc1, true)) == segment::SEGMENT_CORRUPTED);
+        wassert(actual(checker->check(rep, mdc1, false)) == segment::SEGMENT_CORRUPTED);
     }
 
     {
@@ -176,8 +176,8 @@ this->add_method("check", [](Fixture& f) {
         std::unique_ptr<types::source::Blob> src(f.seg_mds[2].sourceBlob().clone());
         src->offset += 1;
         mdc1[2].set_source(std::unique_ptr<types::Source>(src.release()));
-        wassert(actual(checker->check(rep, mdc1, true)) == segment::State(segment::SEGMENT_CORRUPTED));
-        wassert(actual(checker->check(rep, mdc1, false)) == segment::State(segment::SEGMENT_CORRUPTED));
+        wassert(actual(checker->check(rep, mdc1, true)) == segment::SEGMENT_CORRUPTED);
+        wassert(actual(checker->check(rep, mdc1, false)) == segment::SEGMENT_CORRUPTED);
     }
 });
 

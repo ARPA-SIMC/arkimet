@@ -78,9 +78,9 @@ add_method("scan_missing_summary", [](Fixture& f) {
     // Maintenance should show one file to rescan
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
-        wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == 2u);
-        wassert(actual(state.count(segment::State(segment::SEGMENT_UNALIGNED))) == 1u);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_UNALIGNED);
+        wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
+        wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 1u);
         wassert(actual(state.size()) == 3u);
     }
 
@@ -167,9 +167,9 @@ add_method("scan_compressed", [](Fixture& f) {
     // Maintenance should show one file to rescan
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
-        wassert(actual(state.count(segment::State(segment::SEGMENT_OK))) == 2u);
-        wassert(actual(state.count(segment::State(segment::SEGMENT_UNALIGNED))) == 1u);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_UNALIGNED);
+        wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
+        wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 1u);
         wassert(actual(state.size()) == 3u);
     }
 

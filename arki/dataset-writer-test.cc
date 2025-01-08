@@ -204,7 +204,7 @@ add_method("issue237", [](Fixture& f) {
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2020/10-31.vm2").state) == segment::State(segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2020/10-31.vm2").state) == segment::SEGMENT_OK);
 });
 
 }
@@ -239,7 +239,7 @@ this->add_method("import_error", [](Fixture& f) {
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::State(segment::SEGMENT_DELETED));
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 });
 
@@ -402,7 +402,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::State(segment::SEGMENT_DELETED));
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 };
 
@@ -452,9 +452,9 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 3u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::State((fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK)));
-    wassert(actual(state.get("testds:2018/02-01." + format).state) == segment::State((fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK)));
-    wassert(actual(state.get("testds:2018/03-01." + format).state) == segment::State((fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK)));
+    wassert(actual(state.get("testds:2018/01-01." + format).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/02-01." + format).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/03-01." + format).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
 
     metadata::Collection res = f.query(dataset::DataQuery());
     wassert(actual(res.size()) == 2u);

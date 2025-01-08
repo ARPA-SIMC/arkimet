@@ -40,14 +40,14 @@ void SegmentState::check_age(const std::filesystem::path& relpath, const Dataset
     if (delete_threshold.ye != 0 && delete_threshold >= interval.end)
     {
         reporter.segment_info(dataset.name(), relpath, "segment old enough to be deleted");
-        state = state + segment::State(segment::SEGMENT_DELETE_AGE);
+        state += segment::SEGMENT_DELETE_AGE;
         return;
     }
 
     if (archive_threshold.ye != 0 && archive_threshold >= interval.end)
     {
         reporter.segment_info(dataset.name(), relpath, "segment old enough to be archived");
-        state = state + segment::State(segment::SEGMENT_ARCHIVE_AGE);
+        state += segment::SEGMENT_ARCHIVE_AGE;
         return;
     }
 }

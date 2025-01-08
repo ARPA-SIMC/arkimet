@@ -7,15 +7,6 @@
 
 namespace arki::segment {
 
-static const unsigned SEGMENT_OK          = 0;
-static const unsigned SEGMENT_DIRTY       = 1 << 0; /// Segment contains data deleted or out of order
-static const unsigned SEGMENT_UNALIGNED   = 1 << 1; /// Segment contents are inconsistent with the index
-static const unsigned SEGMENT_MISSING     = 1 << 2; /// Segment is known to the index, but does not exist on disk
-static const unsigned SEGMENT_DELETED     = 1 << 3; /// Segment contents have been entirely deleted
-static const unsigned SEGMENT_CORRUPTED   = 1 << 4; /// File is broken in a way that needs manual intervention
-static const unsigned SEGMENT_ARCHIVE_AGE = 1 << 5; /// File is old enough to be archived
-static const unsigned SEGMENT_DELETE_AGE  = 1 << 6; /// File is old enough to be deleted
-
 /**
  * State of a segment
  */
@@ -23,14 +14,14 @@ struct State
 {
     unsigned value;
 
-    State() : value(SEGMENT_OK) {}
+    State() : value(0) {}
     explicit State(unsigned value) : value(value) {}
 
-    bool is_ok() const { return value == SEGMENT_OK; }
+    bool is_ok() const { return value == 0; }
 
-    bool has(unsigned state) const
+    bool has(const State& state) const
     {
-        return value & state;
+        return value & state.value;
     }
 
     State& operator+=(const State& fs)
@@ -65,6 +56,16 @@ struct State
     /// Return a text description of this file state
     std::string to_string() const;
 };
+
+static const State SEGMENT_OK(0);
+static const State SEGMENT_DIRTY(1 << 0); /// Segment contains data deleted or out of order
+static const State SEGMENT_UNALIGNED(1 << 1); /// Segment contents are inconsistent with the index
+static const State SEGMENT_MISSING(1 << 2); /// Segment is known to the index, but does not exist on disk
+static const State SEGMENT_DELETED(1 << 3); /// Segment contents have been entirely deleted
+static const State SEGMENT_CORRUPTED(1 << 4); /// File is broken in a way that needs manual intervention
+static const State SEGMENT_ARCHIVE_AGE(1 << 5); /// File is old enough to be archived
+static const State SEGMENT_DELETE_AGE(1 << 6); /// File is old enough to be deleted
+
 
 /// Print to ostream
 std::ostream& operator<<(std::ostream&, const State&);

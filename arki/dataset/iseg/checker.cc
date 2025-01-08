@@ -89,19 +89,19 @@ public:
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment->exists_on_disk())
-            return segmented::SegmentState(segment::State(segment::SEGMENT_MISSING));
+            return segmented::SegmentState(segment::SEGMENT_MISSING);
 
         if (!sys::stat(checker.dataset().path / sys::with_suffix(segment->segment().relpath, ".index")))
         {
             if (segment->is_empty())
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
-                return segmented::SegmentState(segment::State(segment::SEGMENT_DELETED));
+                return segmented::SegmentState(segment::SEGMENT_DELETED);
             } else {
                 //bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
                 reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
                 //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-                return segmented::SegmentState(segment::State(segment::SEGMENT_UNALIGNED));
+                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
             }
         }
 
@@ -129,12 +129,12 @@ public:
         if (mds.empty())
         {
             reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            state = segment::State(segment::SEGMENT_DELETED);
+            state = segment::SEGMENT_DELETED;
         } else {
             if (!mds.expand_date_range(segment_interval))
             {
                 reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
-                state = segment::State(segment::SEGMENT_CORRUPTED);
+                state = segment::SEGMENT_CORRUPTED;
             } else {
                 // Ensure that the reftime span fits inside the segment step
                 core::Interval interval;
@@ -143,13 +143,13 @@ public:
                     if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
                     {
                         reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
-                        state = segment::State(segment::SEGMENT_CORRUPTED);
+                        state = segment::SEGMENT_CORRUPTED;
                     }
                     // Expand segment timespan to the full possible segment timespan
                     segment_interval = interval;
                 } else {
                     reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
-                    state = segment::State(segment::SEGMENT_CORRUPTED);
+                    state = segment::SEGMENT_CORRUPTED;
                 }
             }
         }
