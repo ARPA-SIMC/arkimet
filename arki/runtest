@@ -50,7 +50,7 @@ export PYTHONPATH=$TOP_SRCDIR/python/:$ORIGDIR:$ORIGDIR/python:$ORIGDIR/.libs:$O
 export PYTHONDEVMODE=1
 export METEO_VM2_SOURCE="$TOP_SRCDIR/conf/vm2/source.lua"
 export TOP_SRCDIR
-ulimit -v 2097152 || true
+ulimit -v 4194304 || true
 ulimit -n 1024 || true
 
 
