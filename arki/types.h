@@ -8,6 +8,7 @@
 #include <arki/structured/fwd.h>
 #include <arki/stream/fwd.h>
 #include <memory>
+#include <set>
 #include <vector>
 #include <string>
 #include <stdexcept>

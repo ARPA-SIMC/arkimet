@@ -47,7 +47,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment");
+} test("arki_segment_data");
 
 void Tests::register_tests() {
 
