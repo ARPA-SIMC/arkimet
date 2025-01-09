@@ -10,30 +10,30 @@
 namespace arki::segment::data {
 namespace gz {
 
-class Segment : public arki::segment::Segment
+class Data : public arki::segment::Data
 {
 public:
-    using arki::segment::Segment::Segment;
+    using arki::segment::Data::Data;
     time_t timestamp() const override;
     static bool can_store(const std::string& format);
 };
 
-template<typename Segment>
-class Reader : public data::BaseReader<Segment>
+template<typename Data>
+class Reader : public data::BaseReader<Data>
 {
 public:
     core::File fd;
     utils::compress::SeekIndexReader reader;
 
-    Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     void reposition(off_t ofs);
     std::vector<uint8_t> read(const types::source::Blob& src) override;
 };
 
-template<typename Segment>
-class Checker : public data::BaseChecker<Segment>
+template<typename Data>
+class Checker : public data::BaseChecker<Data>
 {
 protected:
     std::filesystem::path gzabspath;
@@ -42,7 +42,7 @@ protected:
     void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
 
 public:
-    Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    explicit Checker(std::shared_ptr<const Data> data);
 
     bool exists_on_disk() override;
     size_t size() override;
@@ -64,30 +64,32 @@ public:
 
 namespace gzconcat {
 
-class Segment : public gz::Segment
+class Data : public gz::Data
 {
 public:
-    using gz::Segment::Segment;
+    using gz::Data::Data;
     const char* type() const override;
     bool single_file() const override;
-    std::shared_ptr<data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
-    std::shared_ptr<data::Checker> checker() const override;
+
+    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
+    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+
     static bool can_store(const std::string& format);
-    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg);
+    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 0;
 };
 
-class Reader : public gz::Reader<Segment>
+class Reader : public gz::Reader<Data>
 {
 public:
-    using gz::Reader<Segment>::Reader;
+    using gz::Reader<Data>::Reader;
 };
 
-class Checker : public gz::Checker<Segment>
+class Checker : public gz::Checker<Data>
 {
 public:
-    using gz::Checker<Segment>::Checker;
+    using gz::Checker<Data>::Checker;
 };
 
 
@@ -96,29 +98,32 @@ public:
 
 namespace gzlines {
 
-struct Segment : public gz::Segment
+struct Data : public gz::Data
 {
-    using gz::Segment::Segment;
+    using gz::Data::Data;
     const char* type() const override;
     bool single_file() const override;
-    std::shared_ptr<data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
-    std::shared_ptr<data::Checker> checker() const override;
+
+    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
+    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+
     static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg);
+    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 1;
 };
 
 
-struct Reader : public gz::Reader<Segment>
+struct Reader : public gz::Reader<Data>
 {
-    using gz::Reader<Segment>::Reader;
+    using gz::Reader<Data>::Reader;
 };
 
 
-struct Checker : public gz::Checker<Segment>
+struct Checker : public gz::Checker<Data>
 {
-    using gz::Checker<Segment>::Checker;
+    using gz::Checker<Data>::Checker;
 };
 
 

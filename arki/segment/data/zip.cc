@@ -41,8 +41,8 @@ public:
     size_t idx = 0;
     char fname[100];
 
-    Creator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
-        : AppendCreator(root, relpath, mds),
+    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+        : AppendCreator(segment, mds),
           out(std::make_shared<File>(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)),
           zipout(metadata::ArchiveOutput::create_file("zip", out))
     {
@@ -221,36 +221,39 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
-const char* Segment::type() const { return "zip"; }
-bool Segment::single_file() const { return true; }
-time_t Segment::timestamp() const { return sys::timestamp(sys::with_suffix(abspath, ".zip")); }
-std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+const char* Data::type() const { return "zip"; }
+bool Data::single_file() const { return true; }
+time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath, ".zip")); }
+
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
 {
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
+    return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Checker> Segment::checker() const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    return make_shared<Checker>(format, root, relpath, abspath);
+    throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
+    // return std::make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
-bool Segment::can_store(const std::string& format)
+std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+{
+    return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
+}
+bool Data::can_store(const std::string& format)
 {
     return true;
 }
-std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
-}
-std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
-{
-    Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".zip"));
+    Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".zip"));
     creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
+    auto data = std::make_shared<const Data>(segment.shared_from_this());
+    return make_shared<Checker>(data);
 }
 
 
 
-Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-    : data::BaseReader<Segment>(format, root, relpath, abspath, lock), zip(format, core::File(sys::with_suffix(abspath, ".zip"), O_RDONLY | O_CLOEXEC))
+Reader::Reader(shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+    : data::BaseReader<Data>(data, lock), zip(segment().format, core::File(sys::with_suffix(segment().abspath, ".zip"), O_RDONLY | O_CLOEXEC))
 {
 }
 
@@ -263,7 +266,7 @@ bool Reader::scan_data(metadata_dest_func dest)
     std::sort(spans.begin(), spans.end());
 
     // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(m_segment.format);
+    auto scanner = scan::Scanner::get_scanner(segment().format);
     for (const auto& span : spans)
     {
         std::vector<uint8_t> data = zip.get(span);
@@ -289,8 +292,8 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
  * Checker
  */
 
-Checker::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-    : BaseChecker<Segment>(format, root, relpath, abspath), zipabspath(sys::with_suffix(abspath, ".zip"))
+Checker::Checker(std::shared_ptr<const Data> data)
+    : BaseChecker<Data>(data), zipabspath(sys::with_suffix(segment().abspath, ".zip"))
 {
 }
 
@@ -323,7 +326,7 @@ void Checker::move_data(const std::filesystem::path& new_root, const std::filesy
 
 bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    auto reader = this->segment().reader(lock);
+    auto reader = this->data().reader(lock);
     return reader->scan_data(dest);
 }
 
@@ -363,7 +366,7 @@ core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Co
 
     core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
-    Creator creator(rootdir, segment().relpath, mds, tmpabspath);
+    Creator creator(segment(), mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(segment().abspath);
 
     creator.create();

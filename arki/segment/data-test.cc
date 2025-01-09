@@ -56,37 +56,40 @@ add_method("auto_instantiate_existing", [] {
 
     auto get_writer = [&](const char* format, const char* name) {
         segment::data::WriterConfig writer_config;
-        return segment::Segment::detect_writer(writer_config, format, ".", name, std::filesystem::weakly_canonical(name));
+        auto segment = std::make_shared<Segment>(format, ".", name);
+        return segment->detect_data_writer(writer_config);
     };
     auto get_checker = [&](const char* format, const char* name) {
-        return segment::Segment::detect_checker(format, ".", name, std::filesystem::weakly_canonical(name));
+        auto segment = std::make_shared<Segment>(format, ".", name);
+        return segment->detect_data_checker();
     };
 
-    wassert(actual(get_writer("grib", "testfile.grib")->segment().type()) == "concat");
-    wassert(actual(get_writer("bufr", "testfile.bufr")->segment().type()) == "concat");
-    wassert(actual(get_writer("vm2", "testfile.vm2")->segment().type()) == "lines");
+    wassert(actual(get_writer("grib", "testfile.grib")->data().type()) == "concat");
+    wassert(actual(get_writer("bufr", "testfile.bufr")->data().type()) == "concat");
+    wassert(actual(get_writer("vm2", "testfile.vm2")->data().type()) == "lines");
     wassert_throws(std::runtime_error, get_writer("odimh5", "testfile.h5"));
-    wassert(actual(get_writer("grib", "testdir.grib")->segment().type()) == "dir");
-    wassert(actual(get_writer("bufr", "testdir.bufr")->segment().type()) == "dir");
-    wassert(actual(get_writer("vm2", "testdir.vm2")->segment().type()) == "dir");
-    wassert(actual(get_writer("odimh5", "testdir.h5")->segment().type()) == "dir");
+    wassert(actual(get_writer("grib", "testdir.grib")->data().type()) == "dir");
+    wassert(actual(get_writer("bufr", "testdir.bufr")->data().type()) == "dir");
+    wassert(actual(get_writer("vm2", "testdir.vm2")->data().type()) == "dir");
+    wassert(actual(get_writer("odimh5", "testdir.h5")->data().type()) == "dir");
     wassert_throws(std::runtime_error, get_writer("grib", "testtar.grib"));
     wassert_throws(std::runtime_error, get_writer("bufr", "testtar.bufr"));
     wassert_throws(std::runtime_error, get_writer("vm2", "testtar.vm2"));
     wassert_throws(std::runtime_error, get_writer("odimh5", "testtar.h5"));
 
-    wassert(actual(get_checker("grib", "testfile.grib")->segment().type()) == "concat");
-    wassert(actual(get_checker("bufr", "testfile.bufr")->segment().type()) == "concat");
-    wassert(actual(get_checker("vm2", "testfile.vm2")->segment().type()) == "lines");
-    wassert(actual(get_checker("odimh5", "testfile.h5")->segment().type()) == "dir");
-    wassert(actual(get_checker("grib", "testdir.grib")->segment().type()) == "dir");
-    wassert(actual(get_checker("bufr", "testdir.bufr")->segment().type()) == "dir");
-    wassert(actual(get_checker("vm2", "testdir.vm2")->segment().type()) == "dir");
-    wassert(actual(get_checker("odimh5", "testdir.h5")->segment().type()) == "dir");
-    wassert(actual(get_checker("grib", "testtar.grib")->segment().type()) == "tar");
-    wassert(actual(get_checker("bufr", "testtar.bufr")->segment().type()) == "tar");
-    wassert(actual(get_checker("vm2", "testtar.vm2")->segment().type()) == "tar");
-    wassert(actual(get_checker("odimh5", "testtar.h5")->segment().type()) == "tar");
+    wassert(actual(get_checker("grib", "testfile.grib")->data().type()) == "concat");
+    wassert(actual(get_checker("bufr", "testfile.bufr")->data().type()) == "concat");
+    wassert(actual(get_checker("vm2", "testfile.vm2")->data().type()) == "lines");
+    // wassert(actual(get_checker("odimh5", "testfile.h5")->data().type()) == "dir");
+    wassert_throws(std::runtime_error, get_checker("odimh5", "testfile.h5"));
+    wassert(actual(get_checker("grib", "testdir.grib")->data().type()) == "dir");
+    wassert(actual(get_checker("bufr", "testdir.bufr")->data().type()) == "dir");
+    wassert(actual(get_checker("vm2", "testdir.vm2")->data().type()) == "dir");
+    wassert(actual(get_checker("odimh5", "testdir.h5")->data().type()) == "dir");
+    wassert(actual(get_checker("grib", "testtar.grib")->data().type()) == "tar");
+    wassert(actual(get_checker("bufr", "testtar.bufr")->data().type()) == "tar");
+    wassert(actual(get_checker("vm2", "testtar.vm2")->data().type()) == "tar");
+    wassert(actual(get_checker("odimh5", "testtar.h5")->data().type()) == "tar");
 });
 
 }

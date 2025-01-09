@@ -13,51 +13,49 @@
 namespace arki {
 namespace tests {
 
-template<class Segment, class Data>
-void SegmentFixture<Segment, Data>::test_setup()
+template<class Data, class FixtureData>
+void SegmentFixture<Data, FixtureData>::test_setup()
 {
     using namespace arki::utils;
-    seg_mds = td.mds.clone();
-    root = std::filesystem::current_path();
     sys::rmtree_ifexists("testseg");
     std::filesystem::create_directory("testseg");
-    relpath = "testseg/test." + td.format;
-    abspath = std::filesystem::current_path() / relpath;
+    seg_mds = td.mds.clone();
+    segment = std::make_shared<Segment>(td.format, std::filesystem::current_path(), "testseg/test." + td.format);
 }
 
-template<class Segment, class Data>
-std::shared_ptr<segment::data::Checker> SegmentFixture<Segment, Data>::create()
+template<class Data, class FixtureData>
+std::shared_ptr<segment::data::Checker> SegmentFixture<Data, FixtureData>::create()
 {
     return create(seg_mds);
 }
 
-template<class Segment, class Data>
-std::shared_ptr<segment::data::Checker> SegmentFixture<Segment, Data>::create(metadata::Collection mds)
+template<class Data, class FixtureData>
+std::shared_ptr<segment::data::Checker> SegmentFixture<Data, FixtureData>::create(metadata::Collection mds)
 {
-    return Segment::create(td.format, root, relpath, abspath, mds, repack_config);
+    return Data::create(*segment, mds, repack_config);
 }
 
-template<class Segment, class Data>
-std::shared_ptr<segment::data::Checker> SegmentFixture<Segment, Data>::create(const segment::data::RepackConfig& cfg)
+template<class Data, class FixtureData>
+std::shared_ptr<segment::data::Checker> SegmentFixture<Data, FixtureData>::create(const segment::data::RepackConfig& cfg)
 {
-    return Segment::create(td.format, root, relpath, abspath, seg_mds, cfg);
+    return Data::create(*segment, seg_mds, cfg);
 }
 
-template<class Segment, class Data>
-void SegmentTests<Segment, Data>::register_tests()
+template<class Data, class FixtureData>
+void SegmentTests<Data, FixtureData>::register_tests()
 {
 using namespace arki::utils;
 
 this->add_method("create", [](Fixture& f) {
-    wassert_true(Segment::can_store(f.td.format));
+    wassert_true(Data::can_store(f.td.format));
     std::shared_ptr<segment::data::Checker> checker = f.create();
     wassert_true(checker->exists_on_disk());
 });
 
 this->add_method("scan", [](Fixture& f) {
     auto checker = f.create();
-    auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
-    if (strcmp(reader->segment().type(), "tar") == 0)
+    auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
+    if (strcmp(reader->data().type(), "tar") == 0)
         throw TestSkipped("scanning .tar segments is not yet supported");
     metadata::Collection mds;
     reader->scan(mds.inserter_func());
@@ -69,9 +67,9 @@ this->add_method("scan", [](Fixture& f) {
 });
 
 this->add_method("read", [](Fixture& f) {
-    wassert_true(Segment::can_store(f.td.format));
+    wassert_true(Data::can_store(f.td.format));
     auto checker = f.create();
-    auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
     size_t pad_size = f.td.format == "vm2" ? 1 : 0;
     for (auto& md: f.seg_mds)
     {
@@ -95,10 +93,10 @@ this->add_method("read", [](Fixture& f) {
 
 this->add_method("repack", [](Fixture& f) {
     auto checker = f.create();
-    auto reader = checker->segment().reader(std::make_shared<core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<core::lock::Null>());
     for (auto& md: f.seg_mds)
         md->sourceBlob().lock(reader);
-    auto p = wcallchecked(checker->repack(f.root, f.seg_mds));
+    auto p = wcallchecked(checker->repack(f.segment->root, f.seg_mds));
     wassert(p.commit());
     auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "POST REPACK %s\n", msg.c_str());
@@ -209,7 +207,7 @@ this->add_method("issue244", [](Fixture& f) {
     metadata::Collection mds;
     mds.push_back(md);
     auto checker = f.create(mds);
-    auto reader = checker->segment().reader(std::make_shared<arki::core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
 
     // Writing normally uses sendfile
     {

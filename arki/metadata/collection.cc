@@ -385,20 +385,15 @@ TestCollection::TestCollection(const std::filesystem::path& pathname, bool with_
 
 void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool with_data)
 {
-    string format = scan::Scanner::format_from_filename(pathname);
-    std::filesystem::path basedir;
-    std::filesystem::path relpath;
-    utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = segment::Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto segment = Segment::from_isolated_file(pathname);
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
 void TestCollection::scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data)
 {
-    std::filesystem::path basedir;
-    std::filesystem::path relpath;
-    utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = segment::Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto segment = Segment::from_isolated_file(pathname, format);
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 

@@ -3,10 +3,7 @@
 
 #include <arki/defs.h>
 
-namespace arki {
-namespace segment {
-class Segment;
-namespace data {
+namespace arki::segment::data {
 class Reader;
 class Writer;
 struct WriterConfig;
@@ -14,8 +11,6 @@ class Checker;
 class CheckerSegment;
 struct RepackConfig;
 class Manager;
-}
-}
 }
 
 #endif

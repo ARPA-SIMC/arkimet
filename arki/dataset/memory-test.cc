@@ -17,6 +17,7 @@ using namespace arki::utils;
 class Tests : public TestCase
 {
     using TestCase::TestCase;
+
     void register_tests() override;
 } test("arki_dataset_memory");
 
@@ -24,8 +25,9 @@ void Tests::register_tests() {
 
 // Test querying
 add_method("query", [] {
+    auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), "inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
-    auto reader = segment::Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 
@@ -47,8 +49,9 @@ add_method("query", [] {
 
 // Test querying the summary
 add_method("query_summary", [] {
+    auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), "inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
-    auto reader = segment::Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 
@@ -59,8 +62,9 @@ add_method("query_summary", [] {
 
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
+    auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), "inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
-    auto reader = segment::Segment::detect_reader("grib", std::filesystem::current_path(), "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
 

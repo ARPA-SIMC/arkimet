@@ -34,12 +34,12 @@ struct Creator : public AppendCreator
     size_t written = 0;
     std::filesystem::path dest_abspath_idx;
 
-    Creator(const std::string& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out, 0)
+    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+        : AppendCreator(segment, mds), out(dest_abspath), gzout(out, 0)
     {
     }
-    Creator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath, const std::filesystem::path& dest_abspath_idx, unsigned groupsize)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), gzout(out, groupsize), dest_abspath_idx(dest_abspath_idx)
+    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath, const std::filesystem::path& dest_abspath_idx, unsigned groupsize)
+        : AppendCreator(segment, mds), out(dest_abspath), gzout(out, groupsize), dest_abspath_idx(dest_abspath_idx)
     {
     }
 
@@ -71,7 +71,7 @@ struct Creator : public AppendCreator
     }
 };
 
-template<typename Segment>
+template<typename Data>
 struct CheckBackend : public AppendCheckBackend
 {
     const std::filesystem::path& gzabspath;
@@ -84,7 +84,7 @@ struct CheckBackend : public AppendCheckBackend
 
     size_t actual_end(off_t offset, size_t size) const override
     {
-        return offset + size + Segment::padding;
+        return offset + size + Data::padding;
     }
 
     void validate(Metadata& md, const types::source::Blob& source) override
@@ -109,19 +109,19 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
-time_t Segment::timestamp() const
+time_t Data::timestamp() const
 {
-    return max(sys::timestamp(sys::with_suffix(abspath, ".gz")), sys::timestamp(sys::with_suffix(abspath, ".gz.idx"), 0));
+    return max(sys::timestamp(sys::with_suffix(segment().abspath, ".gz")), sys::timestamp(sys::with_suffix(segment().abspath, ".gz.idx"), 0));
 }
 
-bool Segment::can_store(const std::string& format)
+bool Data::can_store(const std::string& format)
 {
     return format == "grib" || format == "bufr" || format == "vm2";
 }
 
-template<typename Segment>
-Reader<Segment>::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-    : BaseReader<Segment>(format, root, relpath, abspath, lock), fd(sys::with_suffix(abspath, ".gz"), O_RDONLY), reader(fd)
+template<typename Data>
+Reader<Data>::Reader(const std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+    : BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath, ".gz"), O_RDONLY), reader(fd)
 {
     // Read index
     std::filesystem::path idxfname = sys::with_suffix(fd.path(), ".idx");
@@ -129,16 +129,16 @@ Reader<Segment>::Reader(const std::string& format, const std::filesystem::path& 
         reader.idx.read(idxfname);
 }
 
-template<typename Segment>
-bool Reader<Segment>::scan_data(metadata_dest_func dest)
+template<typename Data>
+bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     auto scanner = scan::Scanner::get_scanner(this->segment().format);
     compress::TempUnzip uncompressed(this->segment().abspath);
     return scanner->scan_segment(this->shared_from_this(), dest);
 }
 
-template<typename Segment>
-std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
+template<typename Data>
+std::vector<uint8_t> Reader<Data>::read(const types::source::Blob& src)
 {
     vector<uint8_t> buf = reader.read(src.offset, src.size);
     iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
@@ -150,55 +150,55 @@ std::vector<uint8_t> Reader<Segment>::read(const types::source::Blob& src)
  * Checker
  */
 
-template<typename Segment>
-Checker<Segment>::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-    : BaseChecker<Segment>(format, root, relpath, abspath), gzabspath(sys::with_suffix(abspath, ".gz")), gzidxabspath(sys::with_suffix(abspath, ".gz.idx"))
+template<typename Data>
+Checker<Data>::Checker(const std::shared_ptr<const Data> data)
+    : BaseChecker<Data>(data), gzabspath(sys::with_suffix(this->segment().abspath, ".gz")), gzidxabspath(sys::with_suffix(this->segment().abspath, ".gz.idx"))
 {
 }
 
-template<typename Segment>
-bool Checker<Segment>::exists_on_disk()
+template<typename Data>
+bool Checker<Data>::exists_on_disk()
 {
     return std::filesystem::exists(gzabspath);
 }
 
-template<typename Segment>
-bool Checker<Segment>::is_empty()
+template<typename Data>
+bool Checker<Data>::is_empty()
 {
     if (sys::size(gzabspath) > 1024) return false;
     return utils::compress::gunzip(gzabspath).empty();
 }
 
-template<typename Segment>
-size_t Checker<Segment>::size()
+template<typename Data>
+size_t Checker<Data>::size()
 {
     return sys::size(gzabspath) + sys::size(gzidxabspath, 0);
 }
 
-template<typename Segment>
-void Checker<Segment>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+template<typename Data>
+void Checker<Data>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
     std::filesystem::rename(gzabspath, sys::with_suffix(new_abspath, ".gz"));
     sys::rename_ifexists(gzidxabspath, sys::with_suffix(new_abspath, ".gz.idx"));
 }
 
-template<typename Segment>
-bool Checker<Segment>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+template<typename Data>
+bool Checker<Data>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    auto reader = this->segment().reader(lock);
+    auto reader = this->data().reader(lock);
     return reader->scan_data(dest);
 }
 
-template<typename Segment>
-State Checker<Segment>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+template<typename Data>
+State Checker<Data>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend<Segment> checker(gzabspath, this->segment().relpath, reporter, mds);
+    CheckBackend<Data> checker(gzabspath, this->segment().relpath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-template<typename Segment>
-size_t Checker<Segment>::remove()
+template<typename Data>
+size_t Checker<Data>::remove()
 {
     size_t size = this->size();
     sys::unlink(gzabspath);
@@ -206,8 +206,8 @@ size_t Checker<Segment>::remove()
     return size;
 }
 
-template<typename Segment>
-core::Pending Checker<Segment>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+template<typename Data>
+core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(gzabspath, ".repack");
     files::FinalizeTempfilesTransaction* finalize;
@@ -221,9 +221,9 @@ core::Pending Checker<Segment>::repack(const std::filesystem::path& rootdir, met
             std::filesystem::remove(sys::with_suffix(gzabspath, ".idx"));
         };
 
-        Creator creator(rootdir, this->segment().relpath, mds, tmpabspath);
+        Creator creator(this->segment(), mds, tmpabspath);
         creator.validator = &scan::Validator::by_filename(this->segment().abspath);
-        if (Segment::padding == 1) creator.padding.push_back('\n');
+        if (Data::padding == 1) creator.padding.push_back('\n');
         creator.create();
     } else {
         auto tmpidxabspath = sys::with_suffix(gzidxabspath, ".repack");
@@ -234,9 +234,9 @@ core::Pending Checker<Segment>::repack(const std::filesystem::path& rootdir, met
                 std::filesystem::remove(gzidxabspath);
         };
 
-        Creator creator(rootdir, this->segment().relpath, mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
+        Creator creator(this->segment(), mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
         creator.validator = &scan::Validator::by_filename(this->segment().abspath);
-        if (Segment::padding == 1) creator.padding.push_back('\n');
+        if (Data::padding == 1) creator.padding.push_back('\n');
         creator.create();
     }
 
@@ -247,8 +247,8 @@ core::Pending Checker<Segment>::repack(const std::filesystem::path& rootdir, met
     return p;
 }
 
-template<typename Segment>
-void Checker<Segment>::test_truncate(size_t offset)
+template<typename Data>
+void Checker<Data>::test_truncate(size_t offset)
 {
     if (offset > 0)
         throw std::runtime_error("gz test_truncate not implemented for offset > 0");
@@ -264,20 +264,20 @@ void Checker<Segment>::test_truncate(size_t offset)
     out.close();
 }
 
-template<typename Segment>
-void Checker<Segment>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+template<typename Data>
+void Checker<Data>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole not implemented");
 }
 
-template<typename Segment>
-void Checker<Segment>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+template<typename Data>
+void Checker<Data>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
 
-template<typename Segment>
-void Checker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+template<typename Data>
+void Checker<Data>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     utils::files::PreserveFileTimes pt(this->segment().abspath);
@@ -290,83 +290,84 @@ void Checker<Segment>::test_corrupt(const metadata::Collection& mds, unsigned da
 
 namespace gzconcat {
 
-const char* Segment::type() const { return "gzconcat"; }
-bool Segment::single_file() const { return true; }
-std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+const char* Data::type() const { return "gzconcat"; }
+bool Data::single_file() const { return true; }
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
 {
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
+    return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Checker> Segment::checker() const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    return make_shared<Checker>(format, root, relpath, abspath);
+    throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
 }
-bool Segment::can_store(const std::string& format)
+std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+{
+    return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
+}
+bool Data::can_store(const std::string& format)
 {
     return format == "grib" || format == "bufr";
 }
-std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-{
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
-}
-std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
     {
-        gz::Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".gz"));
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"));
         creator.create();
-        return make_shared<Checker>(format, rootdir, relpath, abspath);
     } else {
-        gz::Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".gz"), sys::with_suffix(abspath, ".gz.idx"), cfg.gz_group_size);
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"), sys::with_suffix(segment.abspath, ".gz.idx"), cfg.gz_group_size);
         creator.create();
-        return make_shared<Checker>(format, rootdir, relpath, abspath);
     }
+
+    auto data = std::make_shared<const Data>(segment.shared_from_this());
+    return make_shared<Checker>(data);
 }
 
 }
 
 namespace gzlines {
 
-const char* Segment::type() const { return "gzlines"; }
-bool Segment::single_file() const { return true; }
-std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+const char* Data::type() const { return "gzlines"; }
+bool Data::single_file() const { return true; }
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
 {
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
+    return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Checker> Segment::checker() const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    return make_shared<Checker>(format, root, relpath, abspath);
+    throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
 }
-bool Segment::can_store(const std::string& format)
+std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+{
+    return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
+}
+bool Data::can_store(const std::string& format)
 {
     return format == "vm2";
 }
-std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-{
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
-}
-std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
     {
-        gz::Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".gz"));
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"));
         creator.padding.push_back('\n');
         creator.create();
-        return make_shared<Checker>(format, rootdir, relpath, abspath);
     } else {
-        gz::Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".gz"), sys::with_suffix(abspath, ".gz.idx"), cfg.gz_group_size);
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"), sys::with_suffix(segment.abspath, ".gz.idx"), cfg.gz_group_size);
         creator.padding.push_back('\n');
         creator.create();
-        return make_shared<Checker>(format, rootdir, relpath, abspath);
     }
+    auto data = std::make_shared<const Data>(segment.shared_from_this());
+    return make_shared<Checker>(data);
 }
 
 }
 
 namespace gz {
-template class Reader<gzlines::Segment>;
-template class Checker<gzlines::Segment>;
-template class Reader<gzconcat::Segment>;
-template class Checker<gzconcat::Segment>;
+template class Reader<gzlines::Data>;
+template class Checker<gzlines::Data>;
+template class Reader<gzconcat::Data>;
+template class Checker<gzconcat::Data>;
 }
 
 }

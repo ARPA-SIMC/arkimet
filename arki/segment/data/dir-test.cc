@@ -23,20 +23,20 @@ class TestInternals : public TestCase
     void register_tests() override;
 } test("arki_segment_dir_internals");
 
-template<class Segment, class Data>
-class Tests : public SegmentTests<Segment, Data>
+template<class Data, class FixtureData>
+class Tests : public SegmentTests<Data, FixtureData>
 {
-    using SegmentTests<Segment, Data>::SegmentTests;
-    typedef typename SegmentTests<Segment, Data>::Fixture Fixture;
+    using SegmentTests<Data, FixtureData>::SegmentTests;
+    typedef typename SegmentTests<Data, FixtureData>::Fixture Fixture;
     void register_tests() override;
 };
 
-Tests<segment::data::dir::Segment, GRIBData> test1("arki_segment_dir_grib");
-Tests<segment::data::dir::Segment, BUFRData> test2("arki_segment_dir_bufr");
-Tests<segment::data::dir::Segment, ODIMData> test3("arki_segment_dir_odim");
-Tests<segment::data::dir::Segment, VM2Data>  test4("arki_segment_dir_vm2");
-Tests<segment::data::dir::Segment, NCData>  test5("arki_segment_dir_nc");
-Tests<segment::data::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
+Tests<segment::data::dir::Data, GRIBData> test1("arki_segment_data_dir_grib");
+Tests<segment::data::dir::Data, BUFRData> test2("arki_segment_data_dir_bufr");
+Tests<segment::data::dir::Data, ODIMData> test3("arki_segment_data_dir_odim");
+Tests<segment::data::dir::Data, VM2Data>  test4("arki_segment_data_dir_vm2");
+Tests<segment::data::dir::Data, NCData>  test5("arki_segment_data_dir_nc");
+Tests<segment::data::dir::Data, JPEGData>  test6("arki_segment_data_dir_jpeg");
 
 /**
  * Create a writer
@@ -46,8 +46,9 @@ Tests<segment::data::dir::Segment, JPEGData>  test6("arki_segment_dir_jpeg");
 std::shared_ptr<segment::data::dir::Writer> make_w()
 {
     segment::data::WriterConfig writer_config;
-    string abspath = std::filesystem::weakly_canonical(relpath);
-    return std::shared_ptr<segment::data::dir::Writer>(new segment::data::dir::Writer(writer_config, "grib", std::filesystem::current_path(), relpath, abspath));
+    auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), relpath);
+    auto data = std::make_shared<segment::data::dir::Data>(segment);
+    return std::make_shared<segment::data::dir::Writer>(writer_config, data);
 }
 
 
@@ -61,7 +62,8 @@ add_method("scanner", [] {
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto reader = segment::Segment::detect_reader("odimh5", std::filesystem::current_path(), path, std::filesystem::canonical(path), make_shared<core::lock::Null>());
+    auto segment = std::make_shared<Segment>("odimh5", std::filesystem::current_path(), path);
+    auto reader = segment->detect_data_reader(make_shared<core::lock::Null>());
 
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());
@@ -71,12 +73,38 @@ add_method("scanner", [] {
     wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", std::filesystem::current_path(), "inbound/fixture.odimh5", 0, 49057));
 });
 
+
+// Check behaviour of an empty directory (#279)
+add_method("empty_dir", [] {
+    if (std::filesystem::is_directory(relpath))
+        sys::rmtree_ifexists(relpath);
+    else
+        std::filesystem::remove(relpath);
+    std::filesystem::create_directories(relpath);
+
+    // It can be read as an empty segment
+    {
+        metadata::TestCollection mdc1;
+        wassert(mdc1.scan_from_file(relpath, false));
+        wassert(actual(mdc1.size()) == 0u);
+    }
+
+    // Verify what are the results of check
+    {
+        auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), relpath);
+        auto checker = segment->detect_data_checker();
+        wassert(actual(checker->size()) == 0u);
+        wassert_false(checker->exists_on_disk());
+        wassert_false(checker->is_empty());
+    }
+});
+
 }
 
 
-template<class Segment, class Data>
-void Tests<Segment, Data>::register_tests() {
-SegmentTests<Segment, Data>::register_tests();
+template<class Data, class FixtureData>
+void Tests<Data, FixtureData>::register_tests() {
+SegmentTests<Data, FixtureData>::register_tests();
 
 this->add_method("create_last_sequence", [](Fixture& f) {
     std::shared_ptr<segment::data::Checker> checker = f.create();
@@ -196,31 +224,6 @@ this->add_method("append", [](Fixture& f) {
     wassert(actual(mdc1.size()) == 2u);
     wassert(actual(mdc1[0]).is_similar(mdc[0]));
     wassert(actual(mdc1[1]).is_similar(mdc[2]));
-});
-
-// Check behaviour of an empty directory (#279)
-this->add_method("empty_dir", [](Fixture& f) {
-    if (std::filesystem::is_directory(relpath))
-        sys::rmtree_ifexists(relpath);
-    else
-        std::filesystem::remove(relpath);
-
-    std::filesystem::create_directories(relpath);
-
-    // It can be read as an empty segment
-    {
-        metadata::TestCollection mdc1;
-        wassert(mdc1.scan_from_file(relpath, false));
-        wassert(actual(mdc1.size()) == 0u);
-    }
-
-    // Verify what are the results of check
-    {
-        auto checker = Segment::detect_checker(f.td.format, ".", relpath, std::filesystem::canonical(relpath));
-        wassert(actual(checker->size()) == 0u);
-        wassert_false(checker->exists_on_disk());
-        wassert_false(checker->is_empty());
-    }
 });
 
 }

@@ -12,21 +12,21 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-template<class Segment, class Data>
-class Tests : public SegmentTests<Segment, Data>
+template<class Data, class FixtureData>
+class Tests : public SegmentTests<Data, FixtureData>
 {
-    using SegmentTests<Segment, Data>::SegmentTests;
-    typedef typename SegmentTests<Segment, Data>::Fixture Fixture;
+    using SegmentTests<Data, FixtureData>::SegmentTests;
+    typedef typename SegmentTests<Data, FixtureData>::Fixture Fixture;
 
     void register_tests() override;
 };
 
-Tests<segment::data::tar::Segment, GRIBData> test1("arki_segment_tar_grib");
-Tests<segment::data::tar::Segment, BUFRData> test2("arki_segment_tar_bufr");
-Tests<segment::data::tar::Segment, ODIMData> test3("arki_segment_tar_odim");
-Tests<segment::data::tar::Segment, VM2Data>  test4("arki_segment_tar_vm2");
-Tests<segment::data::tar::Segment, NCData>  test5("arki_segment_tar_nc");
-Tests<segment::data::tar::Segment, JPEGData>  test6("arki_segment_tar_jpeg");
+Tests<segment::data::tar::Data, GRIBData> test1("arki_segment_data_tar_grib");
+Tests<segment::data::tar::Data, BUFRData> test2("arki_segment_data_tar_bufr");
+Tests<segment::data::tar::Data, ODIMData> test3("arki_segment_data_tar_odim");
+Tests<segment::data::tar::Data, VM2Data>  test4("arki_segment_data_tar_vm2");
+Tests<segment::data::tar::Data, NCData>  test5("arki_segment_data_tar_nc");
+Tests<segment::data::tar::Data, JPEGData>  test6("arki_segment_data_tar_jpeg");
 
 struct Subprocess
 {
@@ -95,9 +95,9 @@ struct Subprocess
     }
 };
 
-template<class Segment, class Data>
-void Tests<Segment, Data>::register_tests() {
-SegmentTests<Segment, Data>::register_tests();
+template<class Data, class FixtureData>
+void Tests<Data, FixtureData>::register_tests() {
+SegmentTests<Data, FixtureData>::register_tests();
 
 this->add_method("filenames", [](Fixture& f) {
     std::shared_ptr<segment::data::Checker> checker = f.create();

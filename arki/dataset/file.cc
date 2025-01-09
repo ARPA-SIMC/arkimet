@@ -24,8 +24,7 @@ namespace file {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : dataset::Dataset(session, cfg),
-      pathname(cfg.value("path")),
-      format(cfg.value("format"))
+      segment(Segment::from_isolated_file(cfg.value("path"), cfg.value("format")))
 {
 }
 
@@ -101,7 +100,7 @@ std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& f
 
 
 FdFile::FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : Dataset(session, cfg), fd(pathname, O_RDONLY)
+    : Dataset(session, cfg), fd(segment->abspath, O_RDONLY)
 {
 }
 
@@ -134,6 +133,7 @@ ArkimetFile::~ArkimetFile() {}
 
 bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
 {
+    // TODO: rewrite using Segment's reader query capabilities
     auto sorter = wrap_with_query(q, dest);
     if (!q.with_data)
     {
@@ -144,9 +144,8 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto reader = segment::Segment::detect_reader(
-                                blob.format, blob.basedir, blob.filename, blob.absolutePathname(),
-                                std::make_shared<core::lock::Null>());
+                        auto segment = std::make_shared<Segment>(blob.format, blob.basedir, blob.filename);
+                        auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }
                     return dest(md);
@@ -187,10 +186,8 @@ bool YamlFile::scan(const query::Data& q, metadata_dest_func dest)
 
 bool RawFile::scan(const query::Data& q, metadata_dest_func dest)
 {
-    std::filesystem::path basedir, relpath;
-    files::resolve_path(pathname, basedir, relpath);
     auto sorter = wrap_with_query(q, dest);
-    auto reader = segment::Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();

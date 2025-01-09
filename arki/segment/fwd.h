@@ -5,6 +5,18 @@
 #include <arki/segment/defs.h>
 #include <arki/segment/data/fwd.h>
 
+namespace arki {
+class Segment;
+
+namespace segment {
+
+class Session;
+class Data;
+
+}
+
+}
+
 #endif
 
 

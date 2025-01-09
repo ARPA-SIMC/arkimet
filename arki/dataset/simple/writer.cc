@@ -47,7 +47,7 @@ public:
             return;
 
         // Read the metadata
-        auto reader = segment->segment().reader(lock);
+        auto reader = segment->data().reader(lock);
         reader->scan(mds.inserter_func());
 
         // Read the summary
@@ -80,7 +80,7 @@ public:
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            time_t ts = segment->segment().timestamp();
+            time_t ts = segment->data().timestamp();
             mft->acquire(segment->segment().relpath, ts, sum);
             mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
             sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));
@@ -115,7 +115,7 @@ public:
         }
 
         segment->commit();
-        time_t ts = segment->segment().timestamp();
+        time_t ts = segment->data().timestamp();
         mft->acquire(segment->segment().relpath, ts, sum);
         mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
         sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));

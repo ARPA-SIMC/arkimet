@@ -219,7 +219,7 @@ void CheckerSegment::unarchive()
 {
     auto arcrelpath = "last" / segment->segment().relpath;
     archives()->release_segment(arcrelpath, segment->segment().root, segment->segment().relpath, segment->segment().abspath);
-    auto reader = segment->segment().reader(lock);
+    auto reader = segment->segment().detect_data_reader(lock);
     metadata::Collection mdc;
     reader->scan(mdc.inserter_func());
     index(move(mdc));
@@ -299,7 +299,8 @@ void Checker::remove_all(CheckerConfig& opts)
 void Checker::tar(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        if (segment.segment->segment().single_file()) return;
+        auto data = segment.segment->segment().detect_data();
+        if (data->single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(), "should be tarred");
         else
@@ -315,7 +316,8 @@ void Checker::tar(CheckerConfig& opts)
 void Checker::zip(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        if (segment.segment->segment().single_file()) return;
+        auto data = segment.segment->segment().detect_data();
+        if (data->single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(), "should be zipped");
         else
@@ -331,7 +333,8 @@ void Checker::zip(CheckerConfig& opts)
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        if (!segment.segment->segment().single_file()) return;
+        auto data = segment.segment->segment().detect_data();
+        if (!data->single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
         else
@@ -431,9 +434,9 @@ void Checker::scan_dir(const std::filesystem::path& root, std::function<void(con
 
         string name = entry->d_name;
         auto abspath = root / relpath / name;
-        if (segment::Segment::is_segment(abspath))
+        if (Segment::is_segment(abspath))
         {
-            auto basename = segment::Segment::basename(name);
+            auto basename = Segment::basename(name);
             dest(relpath / basename);
             return false;
         }

@@ -97,7 +97,8 @@ add_method("countbytes", [] {
 });
 
 add_method("cat", [] {
-    auto reader = segment::Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto segment = std::make_shared<Segment>("grib", ".", "inbound/test.grib1");
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
 
     // Get the normal data
     vector<uint8_t> plain;

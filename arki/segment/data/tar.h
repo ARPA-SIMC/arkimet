@@ -10,28 +10,30 @@
 
 namespace arki::segment::data::tar {
 
-class Segment : public arki::segment::Segment
+class Data : public arki::segment::Data
 {
 public:
-    using arki::segment::Segment::Segment;
+    using arki::segment::Data::Data;
 
     const char* type() const override;
     bool single_file() const override;
     time_t timestamp() const override;
-    std::shared_ptr<data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
-    std::shared_ptr<data::Checker> checker() const override;
+
+    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
+    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+
     static bool can_store(const std::string& format);
-    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
 };
 
 
-class Reader : public data::BaseReader<Segment>
+class Reader : public data::BaseReader<Data>
 {
 public:
     core::File fd;
 
-    Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
@@ -39,7 +41,7 @@ public:
 };
 
 
-class Checker : public data::BaseChecker<Segment>
+class Checker : public data::BaseChecker<Data>
 {
 protected:
     std::filesystem::path tarabspath;
@@ -61,7 +63,7 @@ protected:
     void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
 
 public:
-    Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    explicit Checker(std::shared_ptr<const Data> data);
 
     bool exists_on_disk() override;
     bool is_empty() override;

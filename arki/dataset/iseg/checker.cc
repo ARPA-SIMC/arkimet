@@ -652,7 +652,7 @@ void Checker::remove(const metadata::Collection& mds)
         Time time = md->get<types::reftime::Position>()->get_Position();
         auto relpath = sys::with_suffix(dataset().step()(time), "."s + dataset().iseg.format);
 
-        if (!segment::Segment::is_segment(dataset().path / relpath))
+        if (!Segment::is_segment(dataset().path / relpath))
             continue;
 
         by_segment[relpath].push_back(source->offset);

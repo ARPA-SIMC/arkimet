@@ -13,8 +13,8 @@ using namespace std;
 namespace arki {
 namespace segment {
 
-AppendCreator::AppendCreator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds)
-    : root(root), relpath(relpath), mds(mds)
+AppendCreator::AppendCreator(const Segment& segment, metadata::Collection& mds)
+    : segment(segment), mds(mds)
 {
 }
 
@@ -39,7 +39,7 @@ Span AppendCreator::append_md(Metadata& md)
 
 std::unique_ptr<types::Source> AppendCreator::create_source(const Metadata& md, const Span& span)
 {
-    return types::Source::createBlobUnlocked(md.source().format, root, relpath, span.offset, span.size);
+    return types::Source::createBlobUnlocked(md.source().format, segment.root, segment.relpath, span.offset, span.size);
 }
 
 void AppendCreator::create()

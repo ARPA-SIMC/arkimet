@@ -11,6 +11,7 @@
 #include <arki/stream/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/segment/defs.h>
+#include <arki/segment.h>
 #include <arki/core/transaction.h>
 #include <filesystem>
 #include <string>
@@ -30,16 +31,17 @@ namespace arki::segment {
  * each data item in a different file, for formats like HDF5 that cannot be
  * trivially concatenated in the same file.
  */
-class Segment
+class Data : public std::enable_shared_from_this<Data>
 {
-public:
-    std::string format;
-    std::filesystem::path root;
-    std::filesystem::path relpath;
-    std::filesystem::path abspath;
+protected:
+    std::shared_ptr<const Segment> m_segment;
 
-    Segment(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
-    virtual ~Segment();
+public:
+    Data(std::shared_ptr<const Segment> segment);
+    virtual ~Data();
+
+    /// Access the underlying segment
+    const Segment& segment() const { return *m_segment; }
 
     /**
      * Return a name identifying the type of segment backend
@@ -65,26 +67,14 @@ public:
     virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const = 0;
 
     /**
-     * Instantiate a checker for this segment
+     * Instantiate a writer for this segment
      */
-    virtual std::shared_ptr<segment::data::Checker> checker() const = 0;
+    virtual std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const = 0;
 
     /**
-     * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
+     * Instantiate a checker for this segment
      */
-    static std::filesystem::path basename(const std::filesystem::path& pathname);
-
-    /// Check if the given file or directory is a segment
-    static bool is_segment(const std::filesystem::path& abspath);
-
-    /// Instantiate the right Reader implementation for a segment that already exists
-    static std::shared_ptr<segment::data::Reader> detect_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
-
-    /// Instantiate the right Writer implementation for a segment that already exists
-    static std::shared_ptr<segment::data::Writer> detect_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
-
-    /// Instantiate the right Checker implementation for a segment that already exists
-    static std::shared_ptr<segment::data::Checker> detect_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, bool mock_data=false);
+    virtual std::shared_ptr<segment::data::Checker> checker(bool mock_data) const = 0;
 };
 
 
@@ -99,6 +89,7 @@ public:
     virtual ~Reader();
 
     virtual const Segment& segment() const = 0;
+    virtual const Data& data() const = 0;
 
     /**
      * Scan the segment contents, and sends the resulting metadata to \a dest.
@@ -165,6 +156,7 @@ public:
     virtual ~Writer() {}
 
     virtual const Segment& segment() const = 0;
+    virtual const Data& data() const = 0;
 
     /**
      * Return the write offset for the next append operation
@@ -214,6 +206,7 @@ public:
     virtual ~Checker() {}
 
     virtual const Segment& segment() const = 0;
+    virtual const Data& data() const = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
@@ -239,6 +232,7 @@ public:
      *
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
+    // TODO: remove rootdir
     virtual core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
 
     /**

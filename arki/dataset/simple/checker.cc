@@ -72,7 +72,7 @@ public:
 
     void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
     {
-        auto reader = segment->segment().reader(lock);
+        auto reader = segment->data().reader(lock);
         reader->scan(mds.inserter_func());
     }
 
@@ -100,7 +100,7 @@ public:
 
         auto path_metadata = sys::with_suffix(segment->segment().abspath, ".metadata");
         // TODO: replace with a method of Segment
-        time_t ts_data = segment->segment().timestamp();
+        time_t ts_data = segment->data().timestamp();
         time_t ts_md = sys::timestamp(path_metadata, 0);
         time_t ts_sum = sys::timestamp(sys::with_suffix(segment->segment().abspath, ".summary"), 0);
         time_t ts_idx = checker.m_mft->segment_mtime(segment->segment().relpath);
@@ -236,7 +236,7 @@ public:
 
 
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
+        time_t mtime = segment->data().timestamp();
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
 
         return size_pre - size_post;
@@ -280,7 +280,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
+        time_t mtime = segment->data().timestamp();
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
     }
 
@@ -313,7 +313,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
+        time_t mtime = segment->data().timestamp();
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
     }
 
@@ -349,7 +349,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
+        time_t mtime = segment->data().timestamp();
         checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
 
         if (old_size > new_size)
@@ -360,7 +360,7 @@ public:
 
     void index(metadata::Collection&& mds) override
     {
-        time_t mtime = segment->segment().timestamp();
+        time_t mtime = segment->data().timestamp();
 
         // Iterate the metadata, computing the summary and making the data
         // paths relative
@@ -408,7 +408,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Add to manifest
-        checker.m_mft->acquire(segment->segment().relpath, segment->segment().timestamp(), sum);
+        checker.m_mft->acquire(segment->segment().relpath, segment->data().timestamp(), sum);
         checker.m_mft->flush();
     }
 

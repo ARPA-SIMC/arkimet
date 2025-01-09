@@ -13,12 +13,11 @@ namespace segment {
 
 struct AppendCreator
 {
-    std::filesystem::path root;
-    std::filesystem::path relpath;
+    const Segment& segment;
     metadata::Collection& mds;
     const scan::Validator* validator = nullptr;
 
-    AppendCreator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds);
+    AppendCreator(const Segment& segment, metadata::Collection& mds);
     virtual ~AppendCreator();
 
     /// Create a source for md as imported into this segment at the given Span

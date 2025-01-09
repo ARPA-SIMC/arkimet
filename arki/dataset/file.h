@@ -5,6 +5,7 @@
 
 #include <arki/defs.h>
 #include <arki/core/file.h>
+#include <arki/segment.h>
 #include <arki/dataset.h>
 #include <arki/dataset/impl.h>
 #include <string>
@@ -20,8 +21,7 @@ std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& p
 class Dataset : public dataset::Dataset
 {
 public:
-    std::filesystem::path pathname;
-    std::string format;
+    std::shared_ptr<Segment> segment;
 
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 

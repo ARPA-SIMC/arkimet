@@ -67,11 +67,11 @@ void Scanner::register_factory(const std::string& name, std::function<std::share
     scanner_cache.clear();
 }
 
-bool Scanner::test_scan_file(const std::filesystem::path& filename, metadata_dest_func dest)
+bool Scanner::test_scan_file(const std::filesystem::path& path, metadata_dest_func dest)
 {
-    std::filesystem::path basedir, relpath;
-    utils::files::resolve_path(filename, basedir, relpath);
-    return scan_segment(segment::Segment::detect_reader(format_from_filename(filename), basedir, relpath, filename, make_shared<core::lock::Null>()), dest);
+    auto segment = Segment::from_isolated_file(path);
+    auto reader = segment->detect_data_reader(make_shared<core::lock::Null>());
+    return scan_segment(reader, dest);
 }
 
 void Scanner::normalize_before_dispatch(Metadata& md)

@@ -31,8 +31,9 @@ struct ForceDirMockDataSession : public arki::dataset::Session
 public:
     std::shared_ptr<arki::segment::data::Writer> segment_writer(const segment::data::WriterConfig& writer_config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
     {
-        auto abspath = root / relpath;
-        return std::shared_ptr<arki::segment::data::Writer>(new arki::segment::data::dir::HoleWriter(writer_config, format, root, relpath, abspath));
+        auto segment = std::make_shared<Segment>(format, root, relpath);
+        auto data = std::make_shared<arki::segment::data::dir::Data>(segment);
+        return std::make_shared<arki::segment::data::dir::HoleWriter>(writer_config, data);
     }
 };
 

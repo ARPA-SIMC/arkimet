@@ -8,52 +8,58 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <type_traits>
 
 namespace arki::segment::data {
 
-template<typename Segment>
+template<typename Data>
 struct BaseReader : public data::Reader
 {
+    static_assert(std::is_base_of_v<arki::segment::Data, Data>, "Data not derived from arki::segment::Data");
 protected:
-    Segment m_segment;
+    std::shared_ptr<const Data> m_data;
 
 public:
-    BaseReader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-        : data::Reader(lock), m_segment(format, root, relpath, abspath)
+    BaseReader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+        : data::Reader(lock), m_data(data)
     {
     }
 
-    const Segment& segment() const override { return m_segment; }
+    const Segment& segment() const override { return data().segment(); }
+    const Data& data() const override { return *m_data; }
 };
 
-template<typename Segment>
+template<typename Data>
 struct BaseWriter : public data::Writer
 {
+    static_assert(std::is_base_of_v<arki::segment::Data, Data>, "Data not derived from arki::segment::Data");
 protected:
-    Segment m_segment;
+    std::shared_ptr<const Data> m_data;
 
 public:
-    BaseWriter(const data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-        : data::Writer(config), m_segment(format, root, relpath, abspath)
+    BaseWriter(const data::WriterConfig& config, std::shared_ptr<const Data> data)
+        : data::Writer(config), m_data(data)
     {
     }
 
-    const Segment& segment() const override { return m_segment; }
+    const Segment& segment() const override { return data().segment(); }
+    const Data& data() const override { return *m_data; }
 };
 
-template<typename Segment>
+template<typename Data>
 struct BaseChecker : public data::Checker
 {
+    static_assert(std::is_base_of_v<arki::segment::Data, Data>, "Data not derived from arki::segment::Data");
 protected:
-    Segment m_segment;
+    std::shared_ptr<const Data> m_data;
 
 public:
-    BaseChecker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-        : m_segment(format, root, relpath, abspath)
+    BaseChecker(std::shared_ptr<const Data> data) : m_data(data)
     {
     }
 
-    const Segment& segment() const override { return m_segment; }
+    const Segment& segment() const override { return data().segment(); }
+    const Data& data() const override { return *m_data; }
     // std::shared_ptr<data::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
 
     std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;

@@ -37,8 +37,8 @@ struct Creator : public AppendCreator
     size_t idx = 0;
     char fname[100];
 
-    Creator(const std::filesystem::path& root, const std::filesystem::path& relpath, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
-        : AppendCreator(root, relpath, mds), out(dest_abspath), tarout(out)
+    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+        : AppendCreator(segment, mds), out(dest_abspath), tarout(out)
     {
         if (!mds.empty())
             format = mds[0].source().format;
@@ -103,36 +103,38 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
-const char* Segment::type() const { return "tar"; }
-bool Segment::single_file() const { return true; }
-time_t Segment::timestamp() const { return sys::timestamp(sys::with_suffix(abspath, ".tar")); }
-std::shared_ptr<data::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+const char* Data::type() const { return "tar"; }
+bool Data::single_file() const { return true; }
+time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath, ".tar")); }
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
 {
-    return make_shared<Reader>(format, root, relpath, abspath, lock);
+    return std::make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Checker> Segment::checker() const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    return make_shared<Checker>(format, root, relpath, abspath);
+    throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
+    // return std::make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
-bool Segment::can_store(const std::string& format)
+std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+{
+    return std::make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
+}
+bool Data::can_store(const std::string& format)
 {
     return true;
 }
-std::shared_ptr<data::Checker> Segment::make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
-}
-std::shared_ptr<data::Checker> Segment::create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg)
-{
-    Creator creator(rootdir, relpath, mds, sys::with_suffix(abspath, ".tar"));
+    Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".tar"));
     creator.create();
-    return make_shared<Checker>(format, rootdir, relpath, abspath);
+    auto data = std::make_shared<const Data>(segment.shared_from_this());
+    return make_shared<Checker>(data);
 }
 
 
 
-Reader::Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock)
-    : data::BaseReader<Segment>(format, root, relpath, abspath, lock), fd(sys::with_suffix(abspath, ".tar"), O_RDONLY
+Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+    : data::BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath, ".tar"), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
@@ -142,12 +144,12 @@ Reader::Reader(const std::string& format, const std::filesystem::path& root, con
 
 bool Reader::scan_data(metadata_dest_func dest)
 {
-    throw std::runtime_error(string(m_segment.type()) + " scanning is not yet implemented");
+    throw std::runtime_error(std::string(data().type()) + " scanning is not yet implemented");
 }
 
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
-    vector<uint8_t> buf;
+    std::vector<uint8_t> buf;
     buf.resize(src.size);
 
     if (posix_fadvise(fd, src.offset, src.size, POSIX_FADV_DONTNEED) != 0)
@@ -173,8 +175,8 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 }
 
 
-Checker::Checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath)
-    : data::BaseChecker<Segment>(format, root, relpath, abspath), tarabspath(sys::with_suffix(abspath, ".tar"))
+Checker::Checker(std::shared_ptr<const Data> data)
+    : data::BaseChecker<Data>(data), tarabspath(sys::with_suffix(segment().abspath, ".tar"))
 {
 }
 
@@ -201,7 +203,7 @@ void Checker::move_data(const std::filesystem::path& new_root, const std::filesy
     auto new_tarabspath = sys::with_suffix(new_abspath, ".tar");
     if (rename(tarabspath.c_str(), new_tarabspath.c_str()) < 0)
     {
-        stringstream ss;
+        std::stringstream ss;
         ss << "cannot rename " << tarabspath << " to " << new_tarabspath;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
@@ -209,7 +211,7 @@ void Checker::move_data(const std::filesystem::path& new_root, const std::filesy
 
 bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
-    auto reader = this->segment().reader(lock);
+    auto reader = this->data().reader(lock);
     return reader->scan_data(dest);
 }
 
@@ -249,7 +251,7 @@ core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Co
 
     core::Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
 
-    Creator creator(rootdir, segment().relpath, mds, tmpabspath);
+    Creator creator(segment(), mds, tmpabspath);
     creator.validator = &scan::Validator::by_filename(segment().abspath);
     creator.create();
 

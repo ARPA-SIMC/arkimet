@@ -15,37 +15,30 @@ class Metadata;
 
 namespace segment::data::dir {
 
-class Segment : public arki::segment::Segment
+class Data : public arki::segment::Data
 {
 public:
-    using arki::segment::Segment::Segment;
+    using arki::segment::Data::Data;
 
     const char* type() const override;
     bool single_file() const override;
     time_t timestamp() const override;
+
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
-    std::shared_ptr<segment::data::Checker> checker() const override;
-    static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
-    static std::shared_ptr<Checker> create(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
+    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+
+    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(const std::string& format);
 };
 
 
-class HoleSegment : public Segment
-{
-public:
-    using Segment::Segment;
-
-    const char* type() const override;
-};
-
-
-class Reader : public data::BaseReader<Segment>
+class Reader : public data::BaseReader<Data>
 {
 public:
     utils::sys::Path dirfd;
 
-    Reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath, std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     utils::sys::File open_src(const types::source::Blob& src);
@@ -54,8 +47,8 @@ public:
 };
 
 
-template<typename Segment>
-class BaseWriter : public data::BaseWriter<Segment>
+template<typename Data>
+class BaseWriter : public data::BaseWriter<Data>
 {
 public:
     SequenceFile seqfile;
@@ -63,7 +56,7 @@ public:
     std::vector<data::Writer::PendingMetadata> pending;
     size_t current_pos;
 
-    BaseWriter(const WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
+    BaseWriter(const WriterConfig& config, std::shared_ptr<const Data> data);
     ~BaseWriter();
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
@@ -77,26 +70,26 @@ public:
 };
 
 
-class Writer : public BaseWriter<Segment>
+class Writer : public BaseWriter<Data>
 {
 public:
-    using BaseWriter<Segment>::BaseWriter;
+    using BaseWriter<Data>::BaseWriter;
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
-class HoleWriter: public BaseWriter<HoleSegment>
+class HoleWriter: public BaseWriter<Data>
 {
 public:
-    using BaseWriter<HoleSegment>::BaseWriter;
+    using BaseWriter<Data>::BaseWriter;
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
 
-template<typename Segment>
-class BaseChecker : public data::BaseChecker<Segment>
+template<typename Data>
+class BaseChecker : public data::BaseChecker<Data>
 {
 public:
-    using data::BaseChecker<Segment>::BaseChecker;
+    using data::BaseChecker<Data>::BaseChecker;
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
@@ -118,10 +111,10 @@ public:
 };
 
 
-class Checker : public BaseChecker<Segment>
+class Checker : public BaseChecker<Data>
 {
 public:
-    using BaseChecker<Segment>::BaseChecker;
+    using BaseChecker<Data>::BaseChecker;
 };
 
 
@@ -130,10 +123,10 @@ public:
  * original size but that take up no blocks in the file system. This is used
  * only for testing.
  */
-class HoleChecker : public BaseChecker<HoleSegment>
+class HoleChecker : public BaseChecker<Data>
 {
 public:
-    using BaseChecker<HoleSegment>::BaseChecker;
+    using BaseChecker<Data>::BaseChecker;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
 };
 

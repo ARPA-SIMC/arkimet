@@ -11,7 +11,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment_missing");
+} test("arki_segment_data_missing");
 
 void Tests::register_tests() {
 

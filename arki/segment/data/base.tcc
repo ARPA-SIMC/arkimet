@@ -8,12 +8,10 @@
 
 namespace arki::segment::data {
 
-template<typename Segment>
-std::shared_ptr<data::Checker> BaseChecker<Segment>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+template<typename Data>
+std::shared_ptr<data::Checker> BaseChecker<Data>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
     using namespace arki::utils;
-
-    std::filesystem::create_directories(new_abspath.parent_path());
 
     // Sanity checks: avoid conflicts
     if (std::filesystem::exists(new_abspath) ||
@@ -33,13 +31,19 @@ std::shared_ptr<data::Checker> BaseChecker<Segment>::move(const std::filesystem:
     std::filesystem::remove(target_metadata);
     std::filesystem::remove(target_summary);
 
+    std::filesystem::create_directories(new_abspath.parent_path());
+
     this->move_data(new_root, new_relpath, new_abspath);
 
     // Move metadata to destination
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath, ".metadata"), target_metadata);
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath, ".summary"), target_summary);
 
-    return Segment::make_checker(this->segment().format, new_root, new_relpath, new_abspath);
+    // TODO: get a segment as argument to the whole function?
+    auto segment = std::make_shared<Segment>(this->segment().format, new_root, new_relpath);
+    auto data = segment->detect_data();
+    // TODO: what is really needed as a return value?
+    return data->checker(false);
 }
 
 }

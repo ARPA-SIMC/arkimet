@@ -10,15 +10,13 @@
 namespace arki {
 namespace tests {
 
-template<class Segment, class Data>
+template<class Data, class FixtureData>
 struct SegmentFixture : public Fixture
 {
-    Data td;
+    FixtureData td;
     segment::data::RepackConfig repack_config;
     metadata::Collection seg_mds;
-    std::filesystem::path root;
-    std::filesystem::path relpath;
-    std::filesystem::path abspath;
+    std::shared_ptr<Segment> segment;
 
     std::shared_ptr<segment::data::Checker> create();
     std::shared_ptr<segment::data::Checker> create(metadata::Collection mds);
@@ -30,10 +28,10 @@ struct SegmentFixture : public Fixture
     void test_setup();
 };
 
-template<class Segment, class Data>
-struct SegmentTests : public FixtureTestCase<SegmentFixture<Segment, Data>>
+template<class Data, class FixtureData>
+struct SegmentTests : public FixtureTestCase<SegmentFixture<Data, FixtureData>>
 {
-    typedef SegmentFixture<Segment, Data> Fixture;
+    typedef SegmentFixture<Data, FixtureData> Fixture;
     using FixtureTestCase<Fixture>::FixtureTestCase;
 
     void register_tests() override;

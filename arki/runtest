@@ -102,7 +102,7 @@ then
 
     echo "Running $DEBUGGER $DEBUG_CMD $ARGS"
     RES=0
-    if ! libtool --mode=execute $DEBUGGER $DEBUG_CMD $ARGS
+    if ! $DEBUGGER $DEBUG_CMD $ARGS
     then
         RES=$?
         echo "Failed with result $RES"

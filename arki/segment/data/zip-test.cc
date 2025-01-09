@@ -8,30 +8,30 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-template<class Segment, class Data>
-class Tests : public SegmentTests<Segment, Data>
+template<class Data, class FixtureData>
+class Tests : public SegmentTests<Data, FixtureData>
 {
-    using SegmentTests<Segment, Data>::SegmentTests;
+    using SegmentTests<Data, FixtureData>::SegmentTests;
     void register_tests() override;
 
     void setup() override
     {
-        SegmentTests<Segment, Data>::setup();
+        SegmentTests<Data, FixtureData>::setup();
         skip_unless_libzip();
         skip_unless_libarchive();
     }
 };
 
-Tests<segment::data::zip::Segment, GRIBData> test1("arki_segment_zip_grib");
-Tests<segment::data::zip::Segment, BUFRData> test2("arki_segment_zip_bufr");
-Tests<segment::data::zip::Segment, ODIMData> test3("arki_segment_zip_odim");
-Tests<segment::data::zip::Segment, VM2Data>  test4("arki_segment_zip_vm2");
-Tests<segment::data::zip::Segment, NCData>  test5("arki_segment_zip_nc");
-Tests<segment::data::zip::Segment, JPEGData>  test6("arki_segment_zip_jpeg");
+Tests<segment::data::zip::Data, GRIBData> test1("arki_segment_data_zip_grib");
+Tests<segment::data::zip::Data, BUFRData> test2("arki_segment_data_zip_bufr");
+Tests<segment::data::zip::Data, ODIMData> test3("arki_segment_data_zip_odim");
+Tests<segment::data::zip::Data, VM2Data>  test4("arki_segment_data_zip_vm2");
+Tests<segment::data::zip::Data, NCData>  test5("arki_segment_data_zip_nc");
+Tests<segment::data::zip::Data, JPEGData>  test6("arki_segment_data_zip_jpeg");
 
-template<class Segment, class Data>
-void Tests<Segment, Data>::register_tests() {
-SegmentTests<Segment, Data>::register_tests();
+template<class Data, class FixtureData>
+void Tests<Data, FixtureData>::register_tests() {
+SegmentTests<Data, FixtureData>::register_tests();
 
 }
 }
