@@ -118,7 +118,7 @@ add_method("blob_pathnames_encode", [] {
 
 add_method("blob_stream", [] {
     auto session = std::make_shared<segment::Session>();
-    auto segment = std::make_shared<Segment>(session, DataFormat::GRIB, "inbound", "test.grib1");
+    auto segment = session->segment(DataFormat::GRIB, "inbound", "test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     unique_ptr<source::Blob> o = source::Blob::create(DataFormat::GRIB, "inbound", "test.grib1", 7218, 34960, reader);
     std::filesystem::remove("test.grib");

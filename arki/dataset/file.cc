@@ -219,7 +219,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto segment = std::make_shared<Segment>(session, blob.format, blob.basedir, blob.filename);
+                        auto segment = session->segment(blob.format, blob.basedir, blob.filename);
                         auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }

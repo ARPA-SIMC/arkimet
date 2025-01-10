@@ -32,7 +32,7 @@ public:
     std::shared_ptr<arki::segment::data::Writer> segment_writer(const segment::data::WriterConfig& writer_config, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
     {
         auto session = std::make_shared<segment::Session>();
-        auto segment = std::make_shared<Segment>(session, format, root, relpath);
+        auto segment = session->segment(format, root, relpath);
         auto data = std::make_shared<arki::segment::data::dir::Data>(segment);
         return std::make_shared<arki::segment::data::dir::HoleWriter>(writer_config, data);
     }

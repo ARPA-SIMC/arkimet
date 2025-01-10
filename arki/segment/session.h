@@ -24,6 +24,7 @@ public:
     Session& operator=(const Session&) = delete;
     Session& operator=(Session&&) = delete;
 
+    virtual std::shared_ptr<Segment> segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
     virtual std::shared_ptr<Segment> segment_from_path(const std::filesystem::path& path);
     virtual std::shared_ptr<Segment> segment_from_path_and_format(const std::filesystem::path& path, DataFormat format);
 
