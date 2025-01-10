@@ -29,8 +29,7 @@ void Tests::register_tests() {
 // Scan a well-known vm2 sample
 add_method("scan", []() {
     scan::Vm2 scanner;
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
+    metadata::TestCollection mds("inbound/test.vm2");
     wassert(actual(mds.size()) == 4u);
     Metadata& md = mds[0];
 
@@ -54,8 +53,7 @@ add_method("scan", []() {
 // Scan a well-known vm2 sample (with seconds)
 add_method("scan_seconds", []() {
     scan::Vm2 scanner;
-    metadata::Collection mds;
-    scanner.test_scan_file("inbound/test.vm2", mds.inserter_func());
+    metadata::TestCollection mds("inbound/test.vm2");
     wassert(actual(mds.size()) == 4u);
     Metadata& md = mds[1];
 

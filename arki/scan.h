@@ -33,14 +33,6 @@ public:
     virtual bool scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest) = 0;
 
     /**
-     * Open a pathname to scan.
-     *
-     * Use this only in unit tests, as it makes assumptions that might not be
-     * valid in normal code
-     */
-    bool test_scan_file(const std::filesystem::path& filename, metadata_dest_func dest);
-
-    /**
      * Scan data from a non-seekable pipe
      */
     virtual bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) = 0;

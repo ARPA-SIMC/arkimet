@@ -40,7 +40,7 @@ std::shared_ptr<data::Checker> BaseChecker<Data>::move(const std::filesystem::pa
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath, ".summary"), target_summary);
 
     // TODO: get a segment as argument to the whole function?
-    auto segment = std::make_shared<Segment>(this->segment().format, new_root, new_relpath);
+    auto segment = std::make_shared<Segment>(this->segment().session, this->segment().format, new_root, new_relpath);
     auto data = segment->detect_data();
     // TODO: what is really needed as a return value?
     return data->checker(false);

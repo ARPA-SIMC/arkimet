@@ -52,15 +52,16 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("auto_instantiate_existing", [] {
+    auto session = std::make_shared<segment::Session>();
     make_samples();
 
     auto get_writer = [&](const char* format, const char* name) {
         segment::data::WriterConfig writer_config;
-        auto segment = std::make_shared<Segment>(format_from_string(format), ".", name);
+        auto segment = std::make_shared<Segment>(session, format_from_string(format), ".", name);
         return segment->detect_data_writer(writer_config);
     };
     auto get_checker = [&](const char* format, const char* name) {
-        auto segment = std::make_shared<Segment>(format_from_string(format), ".", name);
+        auto segment = std::make_shared<Segment>(session, format_from_string(format), ".", name);
         return segment->detect_data_checker();
     };
 

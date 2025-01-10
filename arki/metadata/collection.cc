@@ -378,21 +378,27 @@ void Collection::drop_cached_data()
     for (auto& md: *this) md->drop_cached_data();
 }
 
+TestCollection::TestCollection()
+    : session(std::make_shared<segment::Session>())
+{
+}
+
 TestCollection::TestCollection(const std::filesystem::path& pathname, bool with_data)
+    : session(std::make_shared<segment::Session>())
 {
     scan_from_file(pathname, with_data);
 }
 
 void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool with_data)
 {
-    auto segment = Segment::from_isolated_file(pathname);
+    auto segment = session->segment_from_path(pathname);
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
 void TestCollection::scan_from_file(const std::filesystem::path& pathname, DataFormat format, bool with_data)
 {
-    auto segment = Segment::from_isolated_file(pathname, format);
+    auto segment = session->segment_from_path_and_format(pathname, format);
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }

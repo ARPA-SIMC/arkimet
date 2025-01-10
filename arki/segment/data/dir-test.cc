@@ -45,8 +45,9 @@ Tests<segment::data::dir::Data, JPEGData>  test6("arki_segment_data_dir_jpeg");
  */
 std::shared_ptr<segment::data::dir::Writer> make_w()
 {
+    auto session = std::make_shared<segment::Session>();
+    auto segment = std::make_shared<Segment>(session, DataFormat::GRIB, std::filesystem::current_path(), relpath);
     segment::data::WriterConfig writer_config;
-    auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), relpath);
     auto data = std::make_shared<segment::data::dir::Data>(segment);
     return std::make_shared<segment::data::dir::Writer>(writer_config, data);
 }
@@ -56,7 +57,8 @@ void TestInternals::register_tests() {
 
 // Scan a well-known sample
 add_method("scanner", [] {
-    auto segment = Segment::from_isolated_file("inbound/fixture.odimh5");
+    auto session = std::make_shared<segment::Session>();
+    auto segment = session->segment_from_path("inbound/fixture.odimh5");
     segment::data::dir::Scanner scanner(*segment);
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
@@ -90,7 +92,8 @@ add_method("empty_dir", [] {
 
     // Verify what are the results of check
     {
-        auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), relpath);
+        auto session = std::make_shared<segment::Session>();
+        auto segment = std::make_shared<Segment>(session, DataFormat::GRIB, std::filesystem::current_path(), relpath);
         auto checker = segment->detect_data_checker();
         wassert(actual(checker->size()) == 0u);
         wassert_false(checker->exists_on_disk());

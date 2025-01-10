@@ -104,14 +104,6 @@ add_method("format_from_filename", [] {
 
 for (auto td: test_data)
 {
-    add_method("scan_file_" + format_name(td.format), [=] {
-        auto scanner = scan::Scanner::get_scanner(td.format);
-        metadata::Collection mds;
-        scanner->test_scan_file(td.pathname, mds.inserter_func());
-        wassert(actual(mds.size()) == td.count);
-        wassert(actual(mds[0].source().style()) == types::Source::Style::BLOB);
-    });
-
     add_method("scan_pipe_" + format_name(td.format), [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;

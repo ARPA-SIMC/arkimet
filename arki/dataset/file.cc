@@ -1,4 +1,5 @@
 #include "arki/dataset/file.h"
+#include "arki/dataset/session.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
 #include "arki/metadata.h"
@@ -178,7 +179,7 @@ static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const query::Data
 
 SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : Dataset(session, cfg), 
-      segment(Segment::from_isolated_file(cfg.value("path"), format_from_string(cfg.value("format"))))
+      segment(session->segment_from_path_and_format(cfg.value("path"), format_from_string(cfg.value("format"))))
 {
 }
 
@@ -218,7 +219,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto segment = std::make_shared<Segment>(blob.format, blob.basedir, blob.filename);
+                        auto segment = std::make_shared<Segment>(session, blob.format, blob.basedir, blob.filename);
                         auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }

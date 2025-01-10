@@ -16,26 +16,13 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-    : format(format), root(root), relpath(relpath), abspath(std::filesystem::weakly_canonical(root / relpath))
+Segment::Segment(std::shared_ptr<segment::Session> session, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+    : session(session), format(format), root(root), relpath(relpath), abspath(std::filesystem::weakly_canonical(root / relpath))
 {
 }
 
 Segment::~Segment()
 {
-}
-
-std::shared_ptr<Segment> Segment::from_isolated_file(const std::filesystem::path& path)
-{
-    return from_isolated_file(path, scan::Scanner::format_from_filename(path));
-}
-
-std::shared_ptr<Segment> Segment::from_isolated_file(const std::filesystem::path& path, DataFormat format)
-{
-    std::filesystem::path basedir;
-    std::filesystem::path relpath;
-    utils::files::resolve_path(path, basedir, relpath);
-    return std::make_shared<Segment>(format, basedir, relpath);
 }
 
 std::shared_ptr<segment::Data> Segment::detect_data(

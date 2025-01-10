@@ -7,6 +7,7 @@
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/stream/fwd.h>
 #include <vector>
 #include <filesystem>
@@ -169,7 +170,9 @@ struct TestCollection : public Collection
 {
     using Collection::Collection;
 
-    TestCollection() = default;
+    std::shared_ptr<segment::Session> session;
+
+    TestCollection();
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any

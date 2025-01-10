@@ -67,13 +67,6 @@ void Scanner::register_factory(DataFormat name, std::function<std::shared_ptr<Sc
     scanner_cache.clear();
 }
 
-bool Scanner::test_scan_file(const std::filesystem::path& path, metadata_dest_func dest)
-{
-    auto segment = Segment::from_isolated_file(path);
-    auto reader = segment->detect_data_reader(make_shared<core::lock::Null>());
-    return scan_segment(reader, dest);
-}
-
 void Scanner::normalize_before_dispatch(Metadata& md)
 {
 }

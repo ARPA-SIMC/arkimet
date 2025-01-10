@@ -16,6 +16,7 @@ struct SegmentFixture : public Fixture
     FixtureData td;
     segment::data::RepackConfig repack_config;
     metadata::Collection seg_mds;
+    std::shared_ptr<segment::Session> session;
     std::shared_ptr<Segment> segment;
 
     std::shared_ptr<segment::data::Checker> create();

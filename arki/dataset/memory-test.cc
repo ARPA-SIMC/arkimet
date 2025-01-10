@@ -25,8 +25,8 @@ void Tests::register_tests() {
 
 // Test querying
 add_method("query", [] {
-    auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
+    auto segment = std::make_shared<Segment>(session, DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
@@ -49,8 +49,8 @@ add_method("query", [] {
 
 // Test querying the summary
 add_method("query_summary", [] {
-    auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
+    auto segment = std::make_shared<Segment>(session, DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
@@ -62,8 +62,8 @@ add_method("query_summary", [] {
 
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
-    auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
+    auto segment = std::make_shared<Segment>(session, DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
     reader->scan(ds->inserter_func());
