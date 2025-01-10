@@ -74,8 +74,8 @@ struct CheckBackend : public AppendCheckBackend
     core::File data;
     struct stat st;
 
-    CheckBackend(const std::filesystem::path& abspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), data(abspath)
+    CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, segment, mds), data(segment.abspath)
     {
     }
     size_t actual_end(off_t offset, size_t size) const override
@@ -99,6 +99,31 @@ struct CheckBackend : public AppendCheckBackend
     }
 };
 
+}
+
+std::shared_ptr<segment::Data> Data::detect_data(std::shared_ptr<const Segment> segment)
+{
+    switch (segment->format)
+    {
+        case DataFormat::GRIB:
+        case DataFormat::BUFR:
+            return std::make_shared<segment::data::concat::Data>(segment);
+        case DataFormat::VM2:
+            return std::make_shared<segment::data::lines::Data>(segment);
+        // These would normally fit in a directory, but we allow a
+        // degenerate one-data segment to be able to read a single file as
+        // a segment
+        case DataFormat::ODIMH5:
+        case DataFormat::NETCDF:
+        case DataFormat::JPEG:
+            return std::make_shared<segment::data::single::Data>(segment);
+        default:
+        {
+            std::stringstream buf;
+            buf << "cannot access data for " << segment->format << " file " << segment->relpath << ": format not supported";
+            throw std::runtime_error(buf.str());
+        }
+    }
 }
 
 
@@ -153,7 +178,7 @@ std::vector<uint8_t> Reader<Data>::read(const types::source::Blob& src)
 template<typename Data>
 stream::SendResult Reader<Data>::stream(const types::source::Blob& src, StreamOutput& out)
 {
-    if (src.format == "vm2")
+    if (src.format == DataFormat::VM2)
         return data::Reader::stream(src, out);
 
     iotrace::trace_file(fd, src.offset, src.size, "streamed data");
@@ -272,7 +297,7 @@ bool Checker<Data, File>::rescan_data(std::function<void(const std::string&)> re
 template<typename Data, typename File>
 State Checker<Data, File>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend<Data> checker(this->segment().abspath, this->segment().relpath, reporter, mds);
+    CheckBackend<Data> checker(this->segment(), reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
@@ -384,14 +409,46 @@ void Checker<Data, File>::test_corrupt(const metadata::Collection& mds, unsigned
 }
 
 
-bool Data::can_store(const std::string& format)
+bool Data::can_store(DataFormat format)
 {
-    return format == "grib" || format == "grib1" || format == "grib2"
-        || format == "bufr" || format == "vm2";
+    switch (format)
+    {
+        case DataFormat::GRIB:
+        case DataFormat::BUFR:
+        case DataFormat::VM2:
+            return true;
+        default:
+            return false;
+    }
 }
 
 }
 
+namespace single {
+
+const char* Data::type() const { return "single"; }
+bool Data::single_file() const { return true; }
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+{
+    try {
+        return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
+    } catch (std::system_error& e) {
+        if (e.code() == std::errc::no_such_file_or_directory)
+            return make_shared<arki::segment::data::missing::Reader>(shared_from_this(), lock);
+        else
+            throw;
+    }
+}
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+{
+    throw std::runtime_error("cannot store " + format_name(segment().format) + " using fd::single writer");
+}
+std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+{
+    throw std::runtime_error("cannot store " + format_name(segment().format) + " using fd::single writer");
+}
+
+}
 
 namespace concat {
 
@@ -440,8 +497,6 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) con
 }
 std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    if (not can_store(segment().format))
-        throw std::runtime_error("cannot store " + segment().format + " using fd::concat writer");
     if (mock_data)
         return make_shared<HoleWriter>(config, static_pointer_cast<const Data>(shared_from_this()));
     else
@@ -449,8 +504,6 @@ std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, boo
 }
 std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
-    if (not can_store(segment().format))
-        throw std::runtime_error("cannot store " + segment().format + " using fd::concat writer");
     if (mock_data)
         return make_shared<HoleChecker>(static_pointer_cast<const Data>(shared_from_this()));
     else
@@ -463,11 +516,6 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
     creator.create();
     auto data = std::make_shared<const Data>(segment.shared_from_this());
     return make_shared<Checker>(data);
-}
-
-bool Data::can_store(const std::string& format)
-{
-    return format == "grib" || format == "bufr";
 }
 
 
@@ -514,14 +562,10 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) con
 }
 std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    if (not can_store(segment().format))
-        throw std::runtime_error("cannot store " + segment().format + " using fd::lines writer");
     return make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
 std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
-    if (not can_store(segment().format))
-        throw std::runtime_error("cannot store " + segment().format + " using fd::lines writer");
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
@@ -531,14 +575,11 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
     auto data = std::make_shared<const Data>(segment.shared_from_this());
     return make_shared<Checker>(data);
 }
-bool Data::can_store(const std::string& format)
-{
-    return format == "vm2";
-}
 
 }
 
 namespace fd {
+template class fd::Reader<single::Data>;
 template class fd::Reader<concat::Data>;
 template class fd::Writer<concat::Data, concat::File>;
 template class fd::Checker<concat::Data, concat::File>;

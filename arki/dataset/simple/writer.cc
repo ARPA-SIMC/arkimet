@@ -143,11 +143,11 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, const std::string& format)
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, DataFormat format)
 {
     auto lock = dataset().append_lock_dataset();
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    auto relpath = sys::with_suffix(dataset().step()(time), "."s + md.source().format);
+    auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
     auto writer = dataset().session->segment_writer(writer_config, format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }

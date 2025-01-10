@@ -27,12 +27,12 @@ public:
         SEGMENT_ZIP,
     };
 
-    std::string format;
+    DataFormat format;
     std::filesystem::path root;
     std::filesystem::path relpath;
     std::filesystem::path abspath;
 
-    Segment(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath);
+    Segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
     virtual ~Segment();
 
     /// Instantiate the right Data for this segment
@@ -50,7 +50,7 @@ public:
     std::shared_ptr<segment::data::Checker> detect_data_checker(bool mock_data=false) const;
 
     static std::shared_ptr<Segment> from_isolated_file(const std::filesystem::path& path);
-    static std::shared_ptr<Segment> from_isolated_file(const std::filesystem::path& path, const std::string& format);
+    static std::shared_ptr<Segment> from_isolated_file(const std::filesystem::path& path, DataFormat format);
 
     /// Check if the given file or directory is a segment
     static bool is_segment(const std::filesystem::path& abspath);

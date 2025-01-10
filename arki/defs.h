@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <iosfwd>
 
 namespace arki {
 class Metadata;
@@ -39,6 +40,26 @@ enum TypeCode
     TYPE_VALUE           = 18,
     TYPE_MAXCODE
 };
+
+/// Supported data formats
+enum class DataFormat : int
+{
+    GRIB = 1,
+    BUFR = 2,
+    VM2 = 3,
+    ODIMH5 = 4,
+    NETCDF = 5,
+    JPEG = 6,
+};
+
+/// String version of a format name
+const std::string& format_name(DataFormat format);
+
+/// Format from its string version
+DataFormat format_from_string(const std::string& format);
+
+std::ostream& operator<<(std::ostream& o, DataFormat format);
+
 
 namespace dataset {
 

@@ -23,7 +23,7 @@ const Validator& Validator::by_filename(const std::filesystem::path& filename)
     return by_format(Scanner::format_from_filename(filename));
 }
 
-const Validator& Validator::by_format(const std::string& format)
+const Validator& Validator::by_format(DataFormat format)
 {
     return scan::Scanner::get_validator(format);
 }

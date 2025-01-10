@@ -272,7 +272,7 @@ std::string Writer::type() const { return "iseg"; }
 std::filesystem::path Writer::get_relpath(const Metadata& md)
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    return sys::with_suffix(dataset().step()(time), "."s + dataset().iseg.format);
+    return sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg.format));
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md)
@@ -292,7 +292,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
     if (md.source().format != dataset().iseg.format)
-        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + md.source().format + " but the dataset only accepts " + dataset().iseg.format);
+        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg.format));
 
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -326,7 +326,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     if (batch.empty()) return;
     if (batch[0]->md.source().format != dataset().iseg.format)
     {
-        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + batch[0]->md.source().format + " but the dataset only accepts " + dataset().iseg.format);
+        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(batch[0]->md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg.format));
         return;
     }
 

@@ -1,6 +1,7 @@
 #ifndef ARKI_METADATA_DATA_H
 #define ARKI_METADATA_DATA_H
 
+#include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/stream/fwd.h>
 #include <arki/structured/fwd.h>
@@ -115,7 +116,7 @@ protected:
 
 public:
     /// Create a Data from a buffer
-    std::shared_ptr<Data> to_data(const std::string& format, std::vector<uint8_t>&& data);
+    std::shared_ptr<Data> to_data(DataFormat format, std::vector<uint8_t>&& data);
 
     /// Create a Data that throws an error when trying to read it (used for tests)
     std::shared_ptr<Data> to_unreadable_data(size_t size);

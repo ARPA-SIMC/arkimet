@@ -32,7 +32,7 @@ public:
     BufrScanner();
     ~BufrScanner();
 
-    std::string name() const override { return "bufr"; }
+    DataFormat name() const override { return DataFormat::BUFR; }
 
     std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;

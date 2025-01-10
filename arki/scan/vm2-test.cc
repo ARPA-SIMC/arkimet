@@ -35,7 +35,7 @@ add_method("scan", []() {
     Metadata& md = mds[0];
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/test.vm2", 0, 34));
+    wassert(actual(md.source().cloneType()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/test.vm2", 0, 34));
 
     // Check contents
     wassert(actual(md).contains("area", "VM2(1)"));
@@ -60,7 +60,7 @@ add_method("scan_seconds", []() {
     Metadata& md = mds[1];
 
     // Check the source info
-    wassert(actual(md.source().cloneType()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/test.vm2", 35, 35));
+    wassert(actual(md.source().cloneType()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/test.vm2", 35, 35));
 
     // Check contents
     wassert(actual(md).contains("area", "VM2(1)"));
@@ -135,9 +135,9 @@ add_method("corrupted", []() {
     wassert(actual(mdc.size()) == 3u);
 
     // Check the source info
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/test-corrupted.vm2", 0, 34));
-    wassert(actual(mdc[1].source().cloneType()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/test-corrupted.vm2", 35, 35));
-    wassert(actual(mdc[2].source().cloneType()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/test-corrupted.vm2", 105, 32));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/test-corrupted.vm2", 0, 34));
+    wassert(actual(mdc[1].source().cloneType()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/test-corrupted.vm2", 35, 35));
+    wassert(actual(mdc[2].source().cloneType()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/test-corrupted.vm2", 105, 32));
 
     system("rm inbound/test-corrupted.vm2");
 });
@@ -145,7 +145,7 @@ add_method("corrupted", []() {
 add_method("issue237", [] {
     metadata::TestCollection mdc("inbound/issue237.vm2", true);
     wassert(actual(mdc.size()) == 1u);
-    wassert(actual(mdc[0].source().cloneType()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
+    wassert(actual(mdc[0].source().cloneType()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
 
     auto data = mdc[0].get_data().read();
     wassert(actual(data.size()) == 36u);

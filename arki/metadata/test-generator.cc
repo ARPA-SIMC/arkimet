@@ -11,8 +11,8 @@ namespace arki {
 namespace metadata {
 namespace test {
 
-Generator::Generator(const std::string& format)
-    : format(format)
+Generator::Generator(DataFormat format, int variant)
+    : format(format), variant(variant)
 {
 }
 
@@ -52,7 +52,7 @@ void Generator::add_if_missing(types::Code code, const std::string& val)
 
 void Generator::defaults_grib1()
 {
-    format = "grib1";
+    format = DataFormat::GRIB;
     add_if_missing(TYPE_ORIGIN, "GRIB1(200,0,1)");
     add_if_missing(TYPE_PRODUCT, "GRIB1(200,0,2)");
     add_if_missing(TYPE_LEVEL, "GRIB1(102)");
@@ -63,7 +63,7 @@ void Generator::defaults_grib1()
 
 void Generator::defaults_grib2()
 {
-    format = "grib2";
+    format = DataFormat::GRIB;
     add_if_missing(TYPE_ORIGIN, "GRIB2(250, 200, 0, 1, 2)");
     add_if_missing(TYPE_PRODUCT, "GRIB2(250, 0, 1, 2)");
     add_if_missing(TYPE_LEVEL, "GRIB2S(103, 0, 10)");
@@ -75,7 +75,7 @@ void Generator::defaults_grib2()
 
 void Generator::defaults_bufr()
 {
-    format = "bufr";
+    format = DataFormat::BUFR;
     add_if_missing(TYPE_ORIGIN, "BUFR(200, 0)");
     add_if_missing(TYPE_PRODUCT, "BUFR(0, 255, 1, t=synop)");
     add_if_missing(TYPE_REFTIME, "2010-06-01T00:00:00Z");
@@ -84,7 +84,7 @@ void Generator::defaults_bufr()
 
 void Generator::defaults_odimh5()
 {
-    format = "odimh5";
+    format = DataFormat::ODIMH5;
     add_if_missing(TYPE_ORIGIN, "ODIMH5(wmo, rad, plc)");
     add_if_missing(TYPE_PRODUCT, "ODIMH5(PVOL, SCAN)");
     add_if_missing(TYPE_LEVEL, "ODIMH5(0, 27)");
@@ -96,16 +96,21 @@ void Generator::defaults_odimh5()
 
 void Generator::generate(metadata_dest_func cons)
 {
-    if (format == "grib1")
-        defaults_grib1();
-    else if (format == "grib2")
-        defaults_grib2();
-    else if (format == "bufr")
-        defaults_bufr();
-    else if (format == "odimh5")
-        defaults_odimh5();
-    else
-        throw std::runtime_error("cannot generate random messages: unknown format: " + format);
+    switch (format)
+    {
+        case DataFormat::GRIB:
+            switch (variant)
+            {
+                case 1: defaults_grib1(); break;
+                case 2: defaults_grib2(); break;
+                default: throw std::runtime_error("unsupported grib variant");
+            }
+            break;
+        case DataFormat::BUFR: defaults_bufr(); break;
+        case DataFormat::ODIMH5: defaults_odimh5(); break;
+        default:
+            throw std::runtime_error("cannot generate random messages: unknown format: " + format_name(format));
+    }
 
     Metadata md;
     _generate(samples.begin(), md, cons);

@@ -54,10 +54,8 @@ struct query_file : public MethKwargs<query_file, arkipy_ArkiQuery>
         static const char* kwlist[] = { "file", "format", nullptr };
 
         PyObject* file = nullptr;
-        const char* format = nullptr;
-        Py_ssize_t format_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "Oz#", const_cast<char**>(kwlist),
-                    &file, &format, &format_len))
+        PyObject* format = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", const_cast<char**>(kwlist), &file, &format))
             return nullptr;
 
         try {
@@ -70,7 +68,7 @@ struct query_file : public MethKwargs<query_file, arkipy_ArkiQuery>
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
                 all_successful = foreach_file(
-                        self->pool->session(), in, std::string(format, format_len), dest);
+                        self->pool->session(), in, dataformat_from_python(format), dest);
                 self->processor->end();
             }
 

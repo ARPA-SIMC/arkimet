@@ -390,7 +390,7 @@ void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool 
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
-void TestCollection::scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& pathname, DataFormat format, bool with_data)
 {
     auto segment = Segment::from_isolated_file(pathname, format);
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());

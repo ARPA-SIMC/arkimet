@@ -27,25 +27,25 @@ class Tests : public TypeTestCase<types::Source>
 void Tests::register_tests() {
 
 add_generic_test("blob",
-    { "BLOB(aaa,testfile:100+50)", "BLOB(bufr,festfile:100+50)", "BLOB(bufr,testfile:99+50)", "BLOB(bufr,testfile:100+49)", },
+    { "BLOB(grib,testfile:100+50)", "BLOB(bufr,festfile:100+50)", "BLOB(bufr,testfile:99+50)", "BLOB(bufr,testfile:100+49)", },
     "BLOB(bufr,testfile:100+50)",
-    { "BLOB(grib,testfile:100+50)", "BLOB(bufr,zestfile:100+50)", "BLOB(bufr,testfile:101+50)", "BLOB(bufr,testfile:100+51)", "INLINE(bufr,9)", "URL(bufr,foo)", });
+    { "BLOB(vm2,testfile:100+50)", "BLOB(bufr,zestfile:100+50)", "BLOB(bufr,testfile:101+50)", "BLOB(bufr,testfile:100+51)", "INLINE(bufr,9)", "URL(bufr,foo)", });
 
 add_generic_test("inline",
-    { "INLINE(aaa, 11)", "INLINE(bufr, 9)", },
+    { "INLINE(grib, 11)", "INLINE(bufr, 9)", },
     "INLINE(bufr,10)",
-    { "INLINE(bufr, 11)", "INLINE(ccc, 9)", });
+    { "INLINE(bufr, 11)", "INLINE(vm2, 9)", });
 
 add_generic_test("url",
-    { "URL(aaa,zoo)", "URL(bufr,boo)", },
+    { "URL(grib,zoo)", "URL(bufr,boo)", },
     "URL(bufr,foo)",
-    { "URL(bufr,zoo)", "URL(ccc,foo)", });
+    { "URL(bufr,zoo)", "URL(vm2,foo)", });
 
 
 // Check Blob
 add_method("blob_details", [] {
-    unique_ptr<Source> o = Source::createBlobUnlocked("test", "", "testfile", 21, 42);
-    wassert(actual(o).is_source_blob("test", "", "testfile", 21u, 42u));
+    unique_ptr<Source> o = Source::createBlobUnlocked(DataFormat::JPEG, "", "testfile", 21, 42);
+    wassert(actual(o).is_source_blob(DataFormat::JPEG, "", "testfile", 21u, 42u));
 
 	#if 0
 	source.prependPath("/pippo");
@@ -55,11 +55,11 @@ add_method("blob_details", [] {
 	ensure_equals(size, 42u);
 	#endif
 
-    wassert(actual(o) == Source::createBlobUnlocked("test", "", "testfile", 21, 42));
-    wassert(actual(o) == Source::createBlobUnlocked("test", "/tmp", "testfile", 21, 42));
-    wassert(actual(o) != Source::createBlobUnlocked("test", "", "testfile", 22, 43));
-    wassert(actual(o) != Source::createURL("test", "testfile"));
-    wassert(actual(o) != Source::createInline("test", 43));
+    wassert(actual(o) == Source::createBlobUnlocked(DataFormat::JPEG, "", "testfile", 21, 42));
+    wassert(actual(o) == Source::createBlobUnlocked(DataFormat::JPEG, "/tmp", "testfile", 21, 42));
+    wassert(actual(o) != Source::createBlobUnlocked(DataFormat::JPEG, "", "testfile", 22, 43));
+    wassert(actual(o) != Source::createURL(DataFormat::JPEG, "testfile"));
+    wassert(actual(o) != Source::createInline(DataFormat::JPEG, 43));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -67,8 +67,8 @@ add_method("blob_details", [] {
 
 // Check Blob on big files
 add_method("blob_bigfiles", [] {
-    unique_ptr<Source> o = Source::createBlobUnlocked("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
-    wassert(actual(o).is_source_blob("test", "", "testfile", 0x8000FFFFffffFFFFLLU, 42u));
+    unique_ptr<Source> o = Source::createBlobUnlocked(DataFormat::ODIMH5, "", "testfile", 0x8000FFFFffffFFFFLLU, 42);
+    wassert(actual(o).is_source_blob(DataFormat::ODIMH5, "", "testfile", 0x8000FFFFffffFFFFLLU, 42u));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -76,32 +76,32 @@ add_method("blob_bigfiles", [] {
 
 // Check Blob and pathnames handling
 add_method("blob_pathnames", [] {
-    unique_ptr<source::Blob> o = source::Blob::create_unlocked("test", "", "testfile", 21, 42);
+    unique_ptr<source::Blob> o = source::Blob::create_unlocked(DataFormat::VM2, "", "testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "testfile");
 
-    o = source::Blob::create_unlocked("test", "/tmp", "testfile", 21, 42);
+    o = source::Blob::create_unlocked(DataFormat::VM2, "/tmp", "testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "/tmp/testfile");
 
-    o = source::Blob::create_unlocked("test", "/tmp", "/antani/testfile", 21, 42);
+    o = source::Blob::create_unlocked(DataFormat::VM2, "/tmp", "/antani/testfile", 21, 42);
     wassert(actual(o->absolutePathname()) == "/antani/testfile");
 });
 
 // Check Blob and pathnames handling in serialization
 add_method("blob_pathnames_encode", [] {
-    unique_ptr<Source> o = Source::createBlobUnlocked("test", "/tmp", "testfile", 21, 42);
+    unique_ptr<Source> o = Source::createBlobUnlocked(DataFormat::NETCDF, "/tmp", "testfile", 21, 42);
 
     // Encode to binary, decode, we lose the root
     vector<uint8_t> enc = o->encodeBinary();
     BinaryDecoder dec(enc);
     unique_ptr<Source> decoded = downcast<Source>(types::Type::decode(dec));
-    wassert(actual(decoded).is_source_blob("test", "", "testfile", 21, 42));
+    wassert(actual(decoded).is_source_blob(DataFormat::NETCDF, "", "testfile", 21, 42));
 
     // Encode to YAML, decode, basedir and filename have merged
     stringstream tmp;
     tmp << *o;
     string enc1 = tmp.str();
     decoded = types::Source::decodeString(enc1);
-    wassert(actual(decoded).is_source_blob("test", "", "/tmp/testfile", 21, 42));
+    wassert(actual(decoded).is_source_blob(DataFormat::NETCDF, "", "/tmp/testfile", 21, 42));
 
     // Encode to JSON, decode, we keep the root
     {
@@ -112,14 +112,14 @@ add_method("blob_pathnames_encode", [] {
         structured::JSON::parse(jbuf.str(), parsed);
 
         decoded = downcast<Source>(types::decode_structure(structured::keys_json, parsed.root()));
-        wassert(actual(decoded).is_source_blob("test", "/tmp", "testfile", 21, 42));
+        wassert(actual(decoded).is_source_blob(DataFormat::NETCDF, "/tmp", "testfile", 21, 42));
     }
 });
 
 add_method("blob_stream", [] {
-    auto segment = std::make_shared<Segment>("grib", "inbound", "test.grib1");
+    auto segment = std::make_shared<Segment>(DataFormat::GRIB, "inbound", "test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
-    unique_ptr<source::Blob> o = source::Blob::create("test", "inbound", "test.grib1", 7218, 34960, reader);
+    unique_ptr<source::Blob> o = source::Blob::create(DataFormat::GRIB, "inbound", "test.grib1", 7218, 34960, reader);
     std::filesystem::remove("test.grib");
     {
         auto stream = StreamOutput::create(std::make_shared<File>("test.grib", O_WRONLY | O_CREAT | O_TRUNC));
@@ -136,13 +136,13 @@ add_method("blob_stream", [] {
 
 // Check URL
 add_method("url_details", [] {
-    unique_ptr<Source> o = Source::createURL("test", "http://foobar");
-    wassert(actual(o).is_source_url("test", "http://foobar"));
+    unique_ptr<Source> o = Source::createURL(DataFormat::GRIB, "http://foobar");
+    wassert(actual(o).is_source_url(DataFormat::GRIB, "http://foobar"));
 
-    wassert(actual(o) == Source::createURL("test", "http://foobar"));
-    wassert(actual(o) != Source::createURL("test", "http://foobar/a"));
-    wassert(actual(o) != Source::createBlobUnlocked("test", "", "http://foobar", 1, 2));
-    wassert(actual(o) != Source::createInline("test", 1));
+    wassert(actual(o) == Source::createURL(DataFormat::GRIB, "http://foobar"));
+    wassert(actual(o) != Source::createURL(DataFormat::GRIB, "http://foobar/a"));
+    wassert(actual(o) != Source::createBlobUnlocked(DataFormat::GRIB, "", "http://foobar", 1, 2));
+    wassert(actual(o) != Source::createInline(DataFormat::GRIB, 1));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());
@@ -150,13 +150,13 @@ add_method("url_details", [] {
 
 // Check Inline
 add_method("inline_details", [] {
-    unique_ptr<Source> o = Source::createInline("test", 12345);
-    wassert(actual(o).is_source_inline("test", 12345u));
+    unique_ptr<Source> o = Source::createInline(DataFormat::GRIB, 12345);
+    wassert(actual(o).is_source_inline(DataFormat::GRIB, 12345u));
 
-    wassert(actual(o) == Source::createInline("test", 12345));
-    wassert(actual(o) != Source::createInline("test", 12344));
-    wassert(actual(o) != Source::createBlobUnlocked("test", "", "", 0, 12344));
-    wassert(actual(o) != Source::createURL("test", ""));
+    wassert(actual(o) == Source::createInline(DataFormat::GRIB, 12345));
+    wassert(actual(o) != Source::createInline(DataFormat::GRIB, 12344));
+    wassert(actual(o) != Source::createBlobUnlocked(DataFormat::GRIB, "", "", 0, 12344));
+    wassert(actual(o) != Source::createURL(DataFormat::GRIB, ""));
 
     // Test encoding/decoding
     wassert(actual(o).serializes());

@@ -46,7 +46,7 @@ Tests<segment::data::dir::Data, JPEGData>  test6("arki_segment_data_dir_jpeg");
 std::shared_ptr<segment::data::dir::Writer> make_w()
 {
     segment::data::WriterConfig writer_config;
-    auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), relpath);
+    auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), relpath);
     auto data = std::make_shared<segment::data::dir::Data>(segment);
     return std::make_shared<segment::data::dir::Writer>(writer_config, data);
 }
@@ -56,13 +56,12 @@ void TestInternals::register_tests() {
 
 // Scan a well-known sample
 add_method("scanner", [] {
-    std::filesystem::path path("inbound/fixture.odimh5");
-    segment::data::dir::Scanner scanner("odimh5", path);
+    auto segment = Segment::from_isolated_file("inbound/fixture.odimh5");
+    segment::data::dir::Scanner scanner(*segment);
     scanner.list_files();
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto segment = std::make_shared<Segment>("odimh5", std::filesystem::current_path(), path);
     auto reader = segment->detect_data_reader(make_shared<core::lock::Null>());
 
     metadata::Collection mds;
@@ -70,7 +69,7 @@ add_method("scanner", [] {
     wassert(actual(mds.size()) == 3u);
 
     // Check the source info
-    wassert(actual(mds[0].source().cloneType()).is_source_blob("odimh5", std::filesystem::current_path(), "inbound/fixture.odimh5", 0, 49057));
+    wassert(actual(mds[0].source().cloneType()).is_source_blob(DataFormat::ODIMH5, std::filesystem::current_path(), "inbound/fixture.odimh5", 0, 49057));
 });
 
 
@@ -91,7 +90,7 @@ add_method("empty_dir", [] {
 
     // Verify what are the results of check
     {
-        auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), relpath);
+        auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), relpath);
         auto checker = segment->detect_data_checker();
         wassert(actual(checker->size()) == 0u);
         wassert_false(checker->exists_on_disk());
@@ -165,7 +164,7 @@ this->add_method("append", [](Fixture& f) {
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::current_path(), w->segment().relpath, 0, data_size));
+            wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::current_path(), w->segment().relpath, 0, data_size));
         }
 
 
@@ -210,7 +209,7 @@ this->add_method("append", [](Fixture& f) {
             w->commit();
 
             // After commit, metadata is updated
-            wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::current_path(), w->segment().relpath, 2, data_size));
+            wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::current_path(), w->segment().relpath, 2, data_size));
         }
     }
 

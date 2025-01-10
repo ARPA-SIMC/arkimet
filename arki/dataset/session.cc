@@ -99,21 +99,23 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::
             throw std::runtime_error(ss.str());
         }
 
-#ifdef HAVE_LIBCURL
         std::string prefix = path.native().substr(0, pos);
+#ifdef HAVE_LIBCURL
         if (prefix == "http" or prefix == "https")
             return dataset::http::Reader::load_cfg_section(path);
         else
 #endif
-            return dataset::file::read_config(path);
+            return dataset::file::read_config(prefix, path.native().substr(pos+1));
     }
 
     if (S_ISDIR(st->st_mode))
         return dataset::local::Reader::read_config(path);
     else if (path.filename() == "config")
         return dataset::local::Reader::read_config(path.parent_path());
+    else if (auto res = dataset::file::read_config(path))
+        return res;
     else
-        return dataset::file::read_config(path);
+        throw std::runtime_error("unsupported input file " + path.native());
 }
 
 std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem::path& path)
@@ -137,13 +139,13 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem
             throw std::runtime_error(ss.str());
         }
 
-#ifdef HAVE_LIBCURL
         std::string prefix = path.native().substr(0, pos);
+#ifdef HAVE_LIBCURL
         if (prefix == "http" or prefix == "https")
             return dataset::http::Reader::load_cfg_sections(path);
         else
 #endif
-            return dataset::file::read_configs(path);
+            return dataset::file::read_configs(prefix, path.native().substr(pos+1));
     }
 
     if (S_ISDIR(st->st_mode))
@@ -154,9 +156,8 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem
     else
     {
         // A file, check for known extensions
-        std::string format = scan::Scanner::format_from_filename(path, "");
-        if (!format.empty())
-            return dataset::file::read_configs(path);
+        if (auto res = dataset::file::read_configs(path))
+            return res;
 
         // Read the contents as configuration
         sys::File in(path, O_RDONLY);

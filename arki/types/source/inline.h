@@ -29,7 +29,7 @@ stream.
 
     Inline* clone() const override;
 
-    static std::unique_ptr<Inline> create(const std::string& format, uint64_t size);
+    static std::unique_ptr<Inline> create(DataFormat format, uint64_t size);
     static std::unique_ptr<Inline> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 

@@ -20,7 +20,7 @@ void SegmentFixture<Data, FixtureData>::test_setup()
     sys::rmtree_ifexists("testseg");
     std::filesystem::create_directory("testseg");
     seg_mds = td.mds.clone();
-    segment = std::make_shared<Segment>(td.format, std::filesystem::current_path(), "testseg/test." + td.format);
+    segment = std::make_shared<Segment>(td.format, std::filesystem::current_path(), "testseg/test." + format_name(td.format));
 }
 
 template<class Data, class FixtureData>
@@ -70,7 +70,7 @@ this->add_method("read", [](Fixture& f) {
     wassert_true(Data::can_store(f.td.format));
     auto checker = f.create();
     auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
-    size_t pad_size = f.td.format == "vm2" ? 1 : 0;
+    size_t pad_size = f.td.format == DataFormat::VM2 ? 1 : 0;
     for (auto& md: f.seg_mds)
     {
         std::vector<uint8_t> buf = wcallchecked(reader->read(md->sourceBlob()));
@@ -84,7 +84,7 @@ this->add_method("read", [](Fixture& f) {
         }
 
         std::string str0(buf.begin(), buf.end());
-        if (f.td.format == "vm2") str0 += "\n";
+        if (f.td.format == DataFormat::VM2) str0 += "\n";
         std::string str1 = sys::read_file("stream.out");
         wassert(actual(str1) == str0);
         //wassert_true(std::equal(buf.begin(), buf.end(), buf1.begin(), buf1.end()));
@@ -213,7 +213,7 @@ this->add_method("issue244", [](Fixture& f) {
     {
         auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_CREAT | O_TRUNC));
         wassert(actual(reader->stream(md->sourceBlob(), *stream)) == stream::SendResult());
-        size_t pad_size = f.td.format == "vm2" ? 1 : 0;
+        size_t pad_size = f.td.format == DataFormat::VM2 ? 1 : 0;
         size_t size = sys::size("stream.out");
         wassert(actual(size) == md->sourceBlob().size + pad_size);
     }
@@ -223,7 +223,7 @@ this->add_method("issue244", [](Fixture& f) {
     {
         auto stream = StreamOutput::create(std::make_shared<sys::File>("stream.out", O_WRONLY | O_TRUNC | O_APPEND));
         wassert(actual(reader->stream(md->sourceBlob(), *stream)) == stream::SendResult());
-        size_t pad_size = f.td.format == "vm2" ? 1 : 0;
+        size_t pad_size = f.td.format == DataFormat::VM2 ? 1 : 0;
         size_t size = sys::size("stream.out");
         wassert(actual(size) == md->sourceBlob().size + pad_size);
     }

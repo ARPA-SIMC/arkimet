@@ -57,8 +57,8 @@ void AppendCreator::create()
 }
 
 
-AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::filesystem::path& relpath, const metadata::Collection& mds)
-    : relpath(relpath), reporter(reporter), mds(mds)
+AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const metadata::Collection& mds)
+    : segment(segment), reporter(reporter), mds(mds)
 {
 }
 
@@ -94,7 +94,7 @@ void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& sourc
 
 State AppendCheckBackend::check_source(const types::source::Blob& source)
 {
-    if (source.filename != relpath)
+    if (source.filename != segment.relpath)
         throw std::runtime_error("metadata to validate does not appear to be from this segment");
     return State(SEGMENT_OK);
 }

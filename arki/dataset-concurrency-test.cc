@@ -230,7 +230,7 @@ struct RepackForever : public TestSubprocess
     int main() noexcept override
     {
         try {
-            string segment = "2007/07-07." + fixture.td.format;
+            string segment = "2007/07-07." + format_name(fixture.td.format);
             notify_ready();
 
             while (true)
@@ -530,7 +530,7 @@ this->add_method("nolock_write", [](Fixture& f) {
 this->add_method("nolock_rescan", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
-    string test_segment = "2007/07-08." + f.td.format;
+    string test_segment = "2007/07-08." + format_name(f.td.format);
     f.makeSegmentedChecker()->test_invalidate_in_index(test_segment);
 
     core::lock::TestCount count;
@@ -550,7 +550,7 @@ this->add_method("nolock_rescan", [](Fixture& f) {
 this->add_method("nolock_repack", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
-    string test_segment = "2007/07-08." + f.td.format;
+    string test_segment = "2007/07-08." + format_name(f.td.format);
     f.makeSegmentedChecker()->test_make_hole(test_segment, 10, 1);
 
     core::lock::TestCount count;

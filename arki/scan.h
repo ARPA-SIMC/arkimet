@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <cstdint>
 
 namespace arki {
@@ -22,7 +23,7 @@ public:
     virtual ~Scanner();
 
     /// Return a name identifying this type of scanner
-    virtual std::string name() const = 0;
+    virtual DataFormat name() const = 0;
 
     /**
      * Open a file, scan it, send results to dest, and close it.
@@ -73,29 +74,21 @@ public:
     /**
      * Create a scanner for the given format
      */
-    static std::shared_ptr<Scanner> get_scanner(const std::string& format);
+    static std::shared_ptr<Scanner> get_scanner(DataFormat format);
 
-    static const Validator& get_validator(const std::string& format);
+    static const Validator& get_validator(DataFormat format);
 
     /**
-     * Normalise a file format string using the most widely used version
-     *
-     * This currently normalises:
-     *  - grib1 and grib2 to grib
-     *  - all of h5, hdf5, odim and odimh5 to odimh5
-     *
-     * If the format is unsupported, it throws an exception if defaut_format is
-     * nullptr. Else it returns default_format.
+     * Guess a file format from its extension.
      */
-    static std::string normalise_format(const std::string& format, const char* default_format=nullptr);
+    static DataFormat format_from_filename(const std::filesystem::path& fname);
 
     /**
      * Guess a file format from its extension.
      *
-     * If defaut_format is nullptr, it throws an exception if the file has no
-     * extension, or an unknown extension
+     * Return no value if the file format was not recognized.
      */
-    static std::string format_from_filename(const std::filesystem::path& fname, const char* default_format=nullptr);
+    static std::optional<DataFormat> detect_format(const std::filesystem::path& path);
 
     /**
      * Return the update sequence number for this data
@@ -126,12 +119,12 @@ public:
     /**
      * Reconstruct raw data based on a metadata and a value
      */
-    static std::vector<uint8_t> reconstruct(const std::string& format, const Metadata& md, const std::string& value);
+    static std::vector<uint8_t> reconstruct(DataFormat format, const Metadata& md, const std::string& value);
 
     /**
      * Register the scanner factory function for the given format
      */
-    static void register_factory(const std::string& name, std::function<std::shared_ptr<Scanner>()> factory);
+    static void register_factory(DataFormat format, std::function<std::shared_ptr<Scanner>()> factory);
 };
 
 /// Initialize scanner registry

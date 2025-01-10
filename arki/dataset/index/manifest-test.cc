@@ -130,7 +130,7 @@ add_method("add_remove", [] {
     m->openRW();
 
     Summary s;
-    auto segment = std::make_shared<Segment>("grib", std::filesystem::current_path(), "inbound/test.grib1");
+    auto segment = std::make_shared<Segment>(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { s.add(*md); return true; });
 

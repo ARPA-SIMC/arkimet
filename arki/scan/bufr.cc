@@ -33,7 +33,7 @@ namespace bufr {
 
 struct BufrValidator : public Validator
 {
-    std::string format() const override { return "BUFR"; }
+    DataFormat format() const override { return DataFormat::BUFR; }
 
     // Validate data found in a file
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
@@ -258,7 +258,7 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
 std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& data)
 {
     auto md = std::make_shared<Metadata>();
-    md->set_source_inline("grib", metadata::DataManager::get().to_data("bufr", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::BUFR, metadata::DataManager::get().to_data(DataFormat::BUFR, std::vector<uint8_t>(data)));
     BinaryMessage rmsg(Encoding::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
     do_scan(rmsg, md);
@@ -274,7 +274,7 @@ bool BufrScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, me
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
         md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
+        md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::BUFR, vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, md);
         if (!dest(md)) return false;
     }
@@ -302,7 +302,7 @@ bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func 
         auto md = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
         if (!rmsg) break;
-        md->set_source_inline("bufr", metadata::DataManager::get().to_data("bufr", vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
+        md->set_source_inline(DataFormat::BUFR, metadata::DataManager::get().to_data(DataFormat::BUFR, vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, md);
         if (!dest(move(md))) return false;
     }

@@ -6,6 +6,7 @@ libconfig = configure_file(output: 'libconfig.h', configuration: conf_data)
 
 libarkimet_sources = [
     libconfig,
+    'defs.cc',
     'core/time.cc',
     'core/fuzzytime.cc',
     'core/file.cc',

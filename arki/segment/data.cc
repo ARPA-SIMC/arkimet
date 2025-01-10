@@ -62,10 +62,13 @@ bool Reader::scan(metadata_dest_func dest)
 stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     vector<uint8_t> buf = read(src);
-    if (src.format == "vm2")
-        return out.send_line(buf.data(), buf.size());
-    else
-        return out.send_buffer(buf.data(), buf.size());
+    switch (src.format)
+    {
+        case DataFormat::VM2:
+            return out.send_line(buf.data(), buf.size());
+        default:
+            return out.send_buffer(buf.data(), buf.size());
+    }
 }
 
 
@@ -119,10 +122,14 @@ std::shared_ptr<segment::data::Checker> Checker::zip(metadata::Collection& mds)
 std::shared_ptr<segment::data::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
 {
     std::shared_ptr<segment::data::Checker> res;
-    if (segment().format == "vm2")
-        res = segment::data::gzlines::Data::create(segment(), mds, RepackConfig(groupsize));
-    else
-        res = segment::data::gzconcat::Data::create(segment(), mds, RepackConfig(groupsize));
+    switch (segment().format)
+    {
+        case DataFormat::VM2:
+            res = segment::data::gzlines::Data::create(segment(), mds, RepackConfig(groupsize));
+            break;
+        default:
+            res = segment::data::gzconcat::Data::create(segment(), mds, RepackConfig(groupsize));
+    }
     remove();
     return res;
 }

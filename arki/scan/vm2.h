@@ -21,7 +21,7 @@ public:
     Vm2();
     virtual ~Vm2();
 
-    std::string name() const override { return "vm2"; }
+    DataFormat name() const override { return DataFormat::VM2; }
     std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) override;
     bool scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest) override;

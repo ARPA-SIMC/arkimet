@@ -77,8 +77,8 @@ struct CheckBackend : public AppendCheckBackend
     const std::filesystem::path& gzabspath;
     std::vector<uint8_t> all_data;
 
-    CheckBackend(const std::filesystem::path& gzabspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), gzabspath(gzabspath)
+    CheckBackend(const std::filesystem::path& gzabspath, const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, segment, mds), gzabspath(gzabspath)
     {
     }
 
@@ -114,9 +114,17 @@ time_t Data::timestamp() const
     return max(sys::timestamp(sys::with_suffix(segment().abspath, ".gz")), sys::timestamp(sys::with_suffix(segment().abspath, ".gz.idx"), 0));
 }
 
-bool Data::can_store(const std::string& format)
+bool Data::can_store(DataFormat format)
 {
-    return format == "grib" || format == "bufr" || format == "vm2";
+    switch (format)
+    {
+        case DataFormat::GRIB:
+        case DataFormat::BUFR:
+        case DataFormat::VM2:
+            return true;
+        default:
+            return false;
+    }
 }
 
 template<typename Data>
@@ -192,7 +200,7 @@ bool Checker<Data>::rescan_data(std::function<void(const std::string&)> reporter
 template<typename Data>
 State Checker<Data>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend<Data> checker(gzabspath, this->segment().relpath, reporter, mds);
+    CheckBackend<Data> checker(gzabspath, this->segment(), reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
@@ -304,10 +312,6 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-bool Data::can_store(const std::string& format)
-{
-    return format == "grib" || format == "bufr";
-}
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
@@ -340,10 +344,6 @@ std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, boo
 std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
-}
-bool Data::can_store(const std::string& format)
-{
-    return format == "vm2";
 }
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {

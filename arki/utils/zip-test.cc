@@ -35,7 +35,7 @@ add_method("read", [] {
     }
 
     sys::File infd("test.zip", O_RDONLY);
-    ZipReader reader("grib", std::move(infd));
+    ZipReader reader(DataFormat::GRIB, std::move(infd));
 
     auto contents = reader.list_data();
     wassert(actual(contents.size()) == 3u);

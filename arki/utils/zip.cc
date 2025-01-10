@@ -83,7 +83,7 @@ zip_error::zip_error(zip_file_t* file, const std::string& msg)
 }
 #endif
 
-ZipBase::ZipBase(const std::string& format, const std::filesystem::path& zipname)
+ZipBase::ZipBase(DataFormat format, const std::filesystem::path& zipname)
     : format(format), zipname(zipname)
 {
 }
@@ -96,10 +96,10 @@ ZipBase::~ZipBase()
 #endif
 }
 
-std::filesystem::path ZipBase::data_fname(size_t pos, const std::string& format)
+std::filesystem::path ZipBase::data_fname(size_t pos, DataFormat format)
 {
     char buf[32];
-    snprintf(buf, 32, "%06zu.%s", pos, format.c_str());
+    snprintf(buf, 32, "%06zu.%s", pos, format_name(format).c_str());
     return buf;
 }
 
@@ -155,7 +155,7 @@ std::vector<uint8_t> ZipBase::get(const segment::Span& span)
 }
 
 
-ZipReader::ZipReader(const std::string& format, core::NamedFileDescriptor&& fd)
+ZipReader::ZipReader(DataFormat format, core::NamedFileDescriptor&& fd)
     : ZipBase(format, fd.path())
 {
 #ifndef HAVE_LIBZIP
@@ -172,7 +172,7 @@ ZipReader::ZipReader(const std::string& format, core::NamedFileDescriptor&& fd)
 }
 
 
-ZipWriter::ZipWriter(const std::string& format, const std::filesystem::path& pathname)
+ZipWriter::ZipWriter(DataFormat format, const std::filesystem::path& pathname)
     : ZipBase(format, pathname)
 {
 #ifndef HAVE_LIBZIP

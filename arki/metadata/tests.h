@@ -10,9 +10,9 @@ namespace tests {
 
 struct TestData
 {
-    std::string format;
+    DataFormat format;
     metadata::TestCollection mds;
-    TestData(const std::string& format);
+    TestData(DataFormat format);
 };
 
 struct GRIBData : TestData
@@ -45,7 +45,7 @@ struct JPEGData : TestData
     JPEGData();
 };
 
-std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
+std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 void fill(Metadata& md);
 

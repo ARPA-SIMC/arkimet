@@ -31,7 +31,6 @@ namespace {
 
 struct Creator : public AppendCreator
 {
-    std::string format;
     File out;
     TarOutput tarout;
     size_t idx = 0;
@@ -40,14 +39,12 @@ struct Creator : public AppendCreator
     Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(segment, mds), out(dest_abspath), tarout(out)
     {
-        if (!mds.empty())
-            format = mds[0].source().format;
     }
 
     size_t append(const metadata::Data& data) override
     {
         // Append it to the new file
-        snprintf(fname, 99, "%06zu.%s", idx, format.c_str());
+        snprintf(fname, 99, "%06zu.%s", idx, format_name(segment.format).c_str());
         ++idx;
         return tarout.append(fname, data.read());
     }
@@ -67,8 +64,8 @@ struct CheckBackend : public AppendCheckBackend
     core::File data;
     struct stat st;
 
-    CheckBackend(const std::filesystem::path& tarabspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), data(tarabspath)
+    CheckBackend(const std::filesystem::path& tarabspath, const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, segment, mds), data(tarabspath)
     {
     }
 
@@ -119,7 +116,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return std::make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-bool Data::can_store(const std::string& format)
+bool Data::can_store(DataFormat format)
 {
     return true;
 }
@@ -167,7 +164,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 
 stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
-    if (src.format == "vm2")
+    if (src.format == DataFormat::VM2)
         return data::Reader::stream(src, out);
 
     iotrace::trace_file(fd, src.offset, src.size, "streamed data");
@@ -217,7 +214,7 @@ bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std:
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(tarabspath, segment().relpath, reporter, mds);
+    CheckBackend checker(tarabspath, segment(), reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }

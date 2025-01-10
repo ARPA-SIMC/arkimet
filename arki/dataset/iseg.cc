@@ -17,7 +17,7 @@ namespace iseg {
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : segmented::Dataset(session, cfg),
       iseg{
-          cfg.value("format"),
+          format_from_string(cfg.value("format")),
           types::parse_code_names(cfg.value("index")),
           types::parse_code_names(cfg.value("unique")),
           cfg.value_bool("trace_sql"),
@@ -26,9 +26,6 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
       },
       summary_cache_pathname{path / ".summaries"}
 {
-    if (iseg.format.empty())
-        throw std::runtime_error("Dataset " + name() + " misses format= configuration");
-
     iseg.unique.erase(TYPE_REFTIME);
 }
 

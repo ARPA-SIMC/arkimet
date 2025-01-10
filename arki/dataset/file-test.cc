@@ -30,7 +30,7 @@ add_method("grib", [] {
 });
 
 add_method("grib_as_bufr", [] {
-    auto cfg = dataset::file::read_config("bUFr:inbound/test.grib1");
+    auto cfg = dataset::file::read_config("bUFr", "inbound/test.grib1");
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
     wassert(actual(cfg->value("type")) == "file");
     wassert(actual(cfg->value("format")) == "bufr");
@@ -38,7 +38,7 @@ add_method("grib_as_bufr", [] {
 
 add_method("grib_strangename", [] {
     system("cp inbound/test.grib1 strangename");
-    auto cfg = dataset::file::read_config("GRIB:strangename");
+    auto cfg = dataset::file::read_config("GRIB", "strangename");
     wassert(actual(cfg->value("name")) == "strangename");
     wassert(actual(cfg->value("type")) == "file");
     wassert(actual(cfg->value("format")) == "grib");

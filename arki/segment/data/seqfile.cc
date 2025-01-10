@@ -45,10 +45,10 @@ void SequenceFile::write_sequence(size_t val)
         throw_runtime_error("cannot write the whole sequence file");
 }
 
-std::filesystem::path SequenceFile::data_fname(size_t pos, const std::string& format)
+std::filesystem::path SequenceFile::data_fname(size_t pos, DataFormat format)
 {
     char buf[32];
-    snprintf(buf, 32, "%06zu.%s", pos, format.c_str());
+    snprintf(buf, 32, "%06zu.%s", pos, format_name(format).c_str());
     return buf;
 }
 

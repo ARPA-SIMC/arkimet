@@ -181,7 +181,7 @@ struct TestCollection : public Collection
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data);
+    void scan_from_file(const std::filesystem::path& pathname, DataFormat format, bool with_data);
 };
 
 }

@@ -40,14 +40,14 @@ struct FixtureReader : public DatasetTest
             step = daily
             unique = product, area, reftime
         )");
-        if (td.format == "vm2")
+        if (td.format == DataFormat::VM2)
             cfg->set("smallfiles", "true");
         import_all_packed(td.mds);
     }
 
     bool smallfiles() const
     {
-        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == DataFormat::VM2 && cfg->value("type") == "simple");
     }
 };
 
@@ -197,7 +197,7 @@ this->add_method("query_data", [](Fixture& f) {
     std::vector<uint8_t> data = f.td.mds[1].get_data().read();
     // Add a newline in case of VM2, because get_data() gives us the minimal
     // VM2 without newline
-    if (f.td.format == "vm2")
+    if (f.td.format == DataFormat::VM2)
         data.emplace_back('\n');
     wassert(actual(buf) == data);
 });
@@ -252,7 +252,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     // Read chunks from tempdata and scan them individually, to allow scanning
     // formats like ODIM that do not support concatenation
     unsigned padding = 0;
-    if (f.td.format == "vm2")
+    if (f.td.format == DataFormat::VM2)
         padding = 1;
     std::vector<uint8_t> buf1(f.td.mds[1].sourceBlob().size + padding);
     std::vector<uint8_t> buf2(f.td.mds[0].sourceBlob().size + padding);

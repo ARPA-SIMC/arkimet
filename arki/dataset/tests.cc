@@ -193,9 +193,9 @@ std::string DatasetTest::destfile(const Metadata& md) const
     auto time = rt->get_Position();
     char buf[32];
     if (cfg->value("shard").empty())
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     else
-        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     return buf;
 }
 
@@ -204,7 +204,7 @@ std::string DatasetTest::archive_destfile(const Metadata& md) const
     const auto* rt = md.get<types::reftime::Position>();
     auto time = rt->get_Position();
     char buf[64];
-    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     return buf;
 }
 

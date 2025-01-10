@@ -562,7 +562,7 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& md: mds) {
             const auto& blob = md->sourceBlob();
             // Keep only segments with grib or bufr files
-            if (blob.format != "grib" && blob.format != "bufr")
+            if (blob.format != DataFormat::GRIB && blob.format != DataFormat::BUFR)
             {
                 ++count_otherformat;
                 continue;
@@ -621,7 +621,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             for (const auto& md: i.second) {
                 const auto& blob = md->sourceBlob();
                 // Keep only segments with grib or bufr files
-                if (blob.format != "grib" && blob.format != "bufr")
+                if (blob.format != DataFormat::GRIB && blob.format != DataFormat::BUFR)
                     return;
                 datafile.pwrite("7", 1, blob.offset + blob.size - 1);
             }
@@ -650,7 +650,7 @@ void Checker::remove(const metadata::Collection& mds)
             throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir.native() + " but this dataset is at " + dataset().path.native());
 
         Time time = md->get<types::reftime::Position>()->get_Position();
-        auto relpath = sys::with_suffix(dataset().step()(time), "."s + dataset().iseg.format);
+        auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg.format));
 
         if (!Segment::is_segment(dataset().path / relpath))
             continue;

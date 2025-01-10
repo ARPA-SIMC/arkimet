@@ -27,7 +27,7 @@ struct JPEGValidator : public Validator
 {
     // For reference about signatures, see https://en.wikipedia.org/wiki/JPEG#Syntax_and_structure
 
-    std::string format() const override { return "jpeg"; }
+    DataFormat format() const override { return DataFormat::JPEG; }
 
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
@@ -89,7 +89,7 @@ void JPEGScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::data::R
 std::shared_ptr<Metadata> JPEGScanner::scan_data(const std::vector<uint8_t>& data)
 {
     std::shared_ptr<Metadata> md = scan_jpeg_data(data);
-    md->set_source_inline("jpeg", metadata::DataManager::get().to_data("jpeg", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::JPEG, metadata::DataManager::get().to_data(DataFormat::JPEG, std::vector<uint8_t>(data)));
     return md;
 }
 
@@ -160,7 +160,7 @@ std::shared_ptr<Metadata> MockJPEGScanner::scan_jpeg_data(const std::vector<uint
 
 void register_jpeg_scanner()
 {
-    Scanner::register_factory("jpeg", [] {
+    Scanner::register_factory(DataFormat::JPEG, [] {
         return std::make_shared<scan::MockJPEGScanner>();
     });
 }

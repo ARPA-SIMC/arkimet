@@ -39,10 +39,14 @@ static std::string moveFile(const std::filesystem::path& source, const std::file
     return targetFile;
 }
 
-static std::string moveFile(const arki::dataset::Reader& ds, const std::filesystem::path& targetdir)
+static std::string moveFile(const arki::dataset::Reader& reader, const std::filesystem::path& targetdir)
 {
-    if (const arki::dataset::file::Reader* d = dynamic_cast<const arki::dataset::file::Reader*>(&ds))
-        return moveFile(d->dataset().segment->abspath, targetdir);
+    const auto& dataset = reader.dataset();
+
+    if (const arki::dataset::file::SegmentDataset* ds = dynamic_cast<const arki::dataset::file::SegmentDataset*>(&dataset))
+        return moveFile(ds->segment->abspath, targetdir);
+    else if (const arki::dataset::file::FdFile* ds = dynamic_cast<const arki::dataset::file::FdFile*>(&dataset))
+        return moveFile(ds->path, targetdir);
     else
         return std::string();
 }
@@ -201,10 +205,9 @@ struct scan_file : public MethKwargs<scan_file, arkipy_ArkiScan>
         static const char* kwlist[] = { "file", "format", nullptr };
 
         PyObject* file = nullptr;
-        const char* format = nullptr;
-        Py_ssize_t format_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "Oz#", const_cast<char**>(kwlist),
-                    &file, &format, &format_len))
+        PyObject* format = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", const_cast<char**>(kwlist),
+                    &file, &format))
             return nullptr;
 
         try {
@@ -212,7 +215,7 @@ struct scan_file : public MethKwargs<scan_file, arkipy_ArkiScan>
             {
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
-                all_successful = foreach_file(self->pool->session(), in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_successful = foreach_file(self->pool->session(), in, dataformat_from_python(format), [&](arki::dataset::Reader& reader) {
                     self->processor->process(reader, reader.name());
                 });
                 self->processor->end();
@@ -300,12 +303,11 @@ struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
         static const char* kwlist[] = { "file", "format", "ignore_duplicates", "status", nullptr };
 
         PyObject* file = nullptr;
-        const char* format = nullptr;
-        Py_ssize_t format_len;
+        PyObject* format = nullptr;
         int ignore_duplicates = 0;
         int status = 0;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "Oz#|pp", const_cast<char**>(kwlist),
-                    &file, &format, &format_len, &ignore_duplicates, &status))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO|pp", const_cast<char**>(kwlist),
+                    &file, &format, &ignore_duplicates, &status))
             return nullptr;
 
         try {
@@ -315,7 +317,7 @@ struct dispatch_file : public MethKwargs<dispatch_file, arkipy_ArkiScan>
                 BinaryInputFile in(file);
                 ReleaseGIL rg;
 
-                all_processed = foreach_file(self->pool->session(), in, std::string(format, format_len), [&](arki::dataset::Reader& reader) {
+                all_processed = foreach_file(self->pool->session(), in, dataformat_from_python(format), [&](arki::dataset::Reader& reader) {
                     auto stats = self->dispatcher->process(reader, reader.name());
 
                     if (status)

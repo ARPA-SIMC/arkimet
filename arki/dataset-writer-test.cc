@@ -29,7 +29,7 @@ namespace {
 struct ForceDirMockDataSession : public arki::dataset::Session
 {
 public:
-    std::shared_ptr<arki::segment::data::Writer> segment_writer(const segment::data::WriterConfig& writer_config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
+    std::shared_ptr<arki::segment::data::Writer> segment_writer(const segment::data::WriterConfig& writer_config, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
     {
         auto segment = std::make_shared<Segment>(format, root, relpath);
         auto data = std::make_shared<arki::segment::data::dir::Data>(segment);
@@ -54,7 +54,7 @@ struct FixtureWriter : public DatasetTest
 
     bool smallfiles() const
     {
-        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == DataFormat::VM2 && cfg->value("type") == "simple");
     }
 };
 
@@ -113,7 +113,7 @@ add_method("import_largefile", [](Fixture& f) {
         {
             for (unsigned hour = 0; hour < 24; ++hour)
             {
-                auto md = make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                auto md = make_large_mock(DataFormat::GRIB, 10*1024*1024, 12, day, hour);
                 wassert(actual(*writer).import(*md));
             }
         }
@@ -149,7 +149,7 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
     wassert(actual_file(f.ds_root / "2009/12-04.bufr").exists());
-    wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
+    wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::BUFR, f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
@@ -183,20 +183,20 @@ add_method("issue237", [](Fixture& f) {
     f.cfg->set("step", "daily");
     f.cfg->set("smallfiles", "yes");
     metadata::TestCollection mdc("inbound/issue237.vm2", true);
-    wassert(actual_type(mdc[0].source()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
+    wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
 
     // Acquire value
     {
         auto ds = f.config().create_writer();
         wassert(actual(ds->acquire(mdc[0], dataset::REPLACE_NEVER)) == dataset::ACQ_OK);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 36));
+        wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
     }
 
     // Read it back
     {
         metadata::Collection mdc1(*f.config().create_reader(), Matcher());
         wassert(actual(mdc1.size()) == 1u);
-        wassert(actual_type(mdc1[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 36));
+        wassert(actual_type(mdc1[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
         auto data = mdc1[0].get_data().read();
         wassert(actual(std::string((const char*)data.data(), data.size())) == "202010312300,12865,158,9.409990,,,");
     }
@@ -229,7 +229,7 @@ this->add_method("import", [](Fixture& f) {
 });
 
 this->add_method("import_error", [](Fixture& f) {
-    std::string format = f.cfg->value("format");
+    auto format = format_from_string(f.cfg->value("format"));
     Metadata md;
     fill(md);
     md.test_set("reftime", "2018-01-01T00:00:00");
@@ -240,7 +240,7 @@ this->add_method("import_error", [](Fixture& f) {
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(actual(state.get("testds:2018/01-01." + format_name(format)).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 });
 
@@ -380,7 +380,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
-    std::string format = f.cfg->value("format");
+    auto format = format_from_string(f.cfg->value("format"));
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
@@ -403,7 +403,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(actual(state.get("testds:2018/01-01." + format_name(format)).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 };
 
@@ -429,7 +429,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
-    std::string format = f.cfg->value("format");
+    auto format = format_from_string(f.cfg->value("format"));
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
@@ -453,9 +453,9 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 3u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
-    wassert(actual(state.get("testds:2018/02-01." + format).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
-    wassert(actual(state.get("testds:2018/03-01." + format).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/01-01." + format_name(format)).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/02-01." + format_name(format)).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/03-01." + format_name(format)).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
 
     metadata::Collection res = f.query(query::Data());
     wassert(actual(res.size()) == 2u);

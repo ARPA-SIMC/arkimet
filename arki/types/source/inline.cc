@@ -24,7 +24,7 @@ void Inline::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 std::ostream& Inline::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-             << format << "," << size
+             << format_name(format) << "," << size
              << ")";
 }
 void Inline::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
@@ -36,7 +36,7 @@ void Inline::serialise_local(structured::Emitter& e, const structured::Keys& key
 std::unique_ptr<Inline> Inline::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return Inline::create(
-            reader.as_string(keys.source_format, "source format"),
+            format_from_string(reader.as_string(keys.source_format, "source format")),
             reader.as_int(keys.source_size, "source size"));
 }
 
@@ -64,7 +64,7 @@ Inline* Inline::clone() const
     return new Inline(*this);
 }
 
-std::unique_ptr<Inline> Inline::create(const std::string& format, uint64_t size)
+std::unique_ptr<Inline> Inline::create(DataFormat format, uint64_t size)
 {
     Inline* res = new Inline;
     res->format = format;

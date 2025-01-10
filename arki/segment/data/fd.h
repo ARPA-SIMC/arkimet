@@ -31,7 +31,9 @@ public:
     using arki::segment::Data::Data;
 
     time_t timestamp() const override;
-    static bool can_store(const std::string& format);
+    static bool can_store(DataFormat format);
+
+    static std::shared_ptr<segment::Data> detect_data(std::shared_ptr<const Segment> segment);
 };
 
 
@@ -99,6 +101,30 @@ public:
 
 }
 
+namespace single {
+
+class Data : public fd::Data
+{
+public:
+    using fd::Data::Data;
+
+    const char* type() const override;
+    bool single_file() const override;
+    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
+    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+
+    static const unsigned padding = 0;
+};
+
+class Reader : public fd::Reader<Data>
+{
+public:
+    using fd::Reader<Data>::Reader;
+};
+
+}
+
 namespace concat {
 
 class File : public fd::File
@@ -130,7 +156,6 @@ public:
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
     static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
-    static bool can_store(const std::string& format);
 
     static const unsigned padding = 0;
 };
@@ -191,7 +216,6 @@ public:
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
     static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
-    static bool can_store(const std::string& format);
 
     static const unsigned padding = 1;
 };

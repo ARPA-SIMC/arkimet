@@ -140,11 +140,11 @@ void DataManager::stop_tracking(TrackedData* tracker)
     trackers.remove(tracker);
 }
 
-std::shared_ptr<Data> DataManager::to_data(const std::string& format, std::vector<uint8_t>&& data)
+std::shared_ptr<Data> DataManager::to_data(DataFormat format, std::vector<uint8_t>&& data)
 {
     std::shared_ptr<Data> res;
 
-    if (format == "vm2")
+    if (format == DataFormat::VM2)
         res = std::make_shared<DataLineBuffer>(std::move(data));
     else
         res = std::make_shared<DataBuffer>(std::move(data));

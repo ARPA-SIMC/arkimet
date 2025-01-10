@@ -19,7 +19,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 add_method("grib1", [] {
-    test::Generator g("grib1");
+    test::Generator g(DataFormat::GRIB, 1);
     Collection c;
     g.generate(c.inserter_func());
     wassert(actual(c.size()) == 1u);
@@ -27,7 +27,7 @@ add_method("grib1", [] {
 });
 
 add_method("grib2", [] {
-    test::Generator g("grib2");
+    test::Generator g(DataFormat::GRIB, 2);
     Collection c;
     g.generate(c.inserter_func());
     wassert(actual(c.size()) == 1u);
@@ -35,7 +35,7 @@ add_method("grib2", [] {
 });
 
 add_method("bufr", [] {
-    test::Generator g("bufr");
+    test::Generator g(DataFormat::BUFR);
     Collection c;
     g.generate(c.inserter_func());
     wassert(actual(c.size()) == 1u);
@@ -43,7 +43,7 @@ add_method("bufr", [] {
 });
 
 add_method("odimh5", [] {
-    test::Generator g("odimh5");
+    test::Generator g(DataFormat::ODIMH5);
     Collection c;
     g.generate(c.inserter_func());
     wassert(actual(c.size()) == 1u);
@@ -51,7 +51,7 @@ add_method("odimh5", [] {
 });
 
 add_method("grib1_extratypes", [] {
-    test::Generator g("grib1");
+    test::Generator g(DataFormat::GRIB, 1);
     g.add(TYPE_ORIGIN, "GRIB1(98, 0, 10)");
     g.add(TYPE_ORIGIN, "GRIB1(200, 0, 10)");
     g.add(TYPE_ORIGIN, "GRIB1(80, 0, 10)");

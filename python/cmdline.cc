@@ -78,13 +78,13 @@ std::unique_ptr<cmdline::DatasetProcessor> build_processor(std::shared_ptr<arki:
     }
 }
 
-bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFile& file, const std::string& format, std::function<void(arki::dataset::Reader&)> dest)
+bool foreach_file(std::shared_ptr<arki::dataset::Session> session, BinaryInputFile& file, DataFormat format, std::function<void(arki::dataset::Reader&)> dest)
 {
     auto scanner = scan::Scanner::get_scanner(format);
 
     core::cfg::Section cfg;
-    cfg.set("format", format);
-    cfg.set("name", "stdin:" + scanner->name());
+    cfg.set("format", format_name(format));
+    cfg.set("name", "stdin:" + format_name(scanner->name()));
     auto dataset = std::make_shared<arki::dataset::fromfunction::Dataset>(session, cfg);
 
     auto reader = std::make_shared<arki::dataset::fromfunction::Reader>(dataset);

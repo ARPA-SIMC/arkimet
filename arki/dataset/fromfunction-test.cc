@@ -39,7 +39,7 @@ add_method("read", [](Fixture& f) {
     auto reader = f.config().create_reader();
     fromfunction::Reader* ff_reader = dynamic_cast<fromfunction::Reader*>(reader.get());
     ff_reader->generator = [&](metadata_dest_func dest){
-        auto scanner = scan::Scanner::get_scanner("grib");
+        auto scanner = scan::Scanner::get_scanner(DataFormat::GRIB);
         return scanner->test_scan_file("inbound/test.grib1", dest);
     };
     metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
@@ -50,7 +50,7 @@ add_method("query", [](Fixture& f) {
     auto reader = f.config().create_reader();
     fromfunction::Reader* ff_reader = dynamic_cast<fromfunction::Reader*>(reader.get());
     ff_reader->generator = [&](metadata_dest_func dest){
-        auto scanner = scan::Scanner::get_scanner("grib");
+        auto scanner = scan::Scanner::get_scanner(DataFormat::GRIB);
         return scanner->test_scan_file("inbound/test.grib1", dest);
     };
     metadata::Collection mdc(*reader, "origin:GRIB1,200");

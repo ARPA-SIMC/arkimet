@@ -44,7 +44,7 @@ void Writer::storeBlob(const segment::data::WriterConfig& writer_config, Metadat
 {
     // Write using segment::Writer
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    auto relpath = sys::with_suffix(dataset().step()(time), "."s + md.source().format);
+    auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
     auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
     w->append(md);
 }
@@ -108,7 +108,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
 
         core::Time time = e->md.get<types::reftime::Position>()->get_Position();
         auto tf = Step::create(cfg.value("step"));
-        auto dest = std::filesystem::path(cfg.value("path")) / sys::with_suffix((*tf)(time), "."s + e->md.source().format);
+        auto dest = std::filesystem::path(cfg.value("path")) / sys::with_suffix((*tf)(time), "."s + format_name(e->md.source().format));
         nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());
         e->result = ACQ_OK;
         e->dataset_name = config->name();

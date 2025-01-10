@@ -40,9 +40,10 @@ struct Generator
 {
     typedef std::map<types::Code, std::vector<types::Type*> > Samples;
     Samples samples;
-    std::string format;
+    DataFormat format;
+    int variant;
 
-    Generator(const std::string& format = "grib1");
+    Generator(DataFormat format=DataFormat::GRIB, int variant=0);
     ~Generator();
 
     /// @return true if some sample has been set for the given code

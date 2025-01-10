@@ -24,7 +24,7 @@ void Tests::register_tests() {
 add_method("basic", [] {
     Metadata md;
     md.test_set(Reftime::createPosition(Time(2009, 8, 7, 6, 5, 4)));
-    md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>()));
+    md.set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, vector<uint8_t>()));
 
     unique_ptr<Stats> st(new Stats);
     wassert(actual(st->count) == 0u);

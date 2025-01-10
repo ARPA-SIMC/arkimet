@@ -124,7 +124,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     std::map<std::string, WriterBatch> by_segment;
 
     if (batch.empty()) return by_segment;
-    std::string format = batch[0]->md.source().format;
+    auto format = batch[0]->md.source().format;
 
     for (auto& e: batch)
     {
@@ -132,7 +132,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
 
         if (e->md.source().format != format)
         {
-            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + e->md.source().format + " but the batch also has data in format " + format);
+            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + format_name(e->md.source().format) + " but the batch also has data in format " + format_name(format));
             e->result = ACQ_ERROR;
             continue;
         }
@@ -147,7 +147,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
         }
 
         core::Time time = e->md.get<types::reftime::Position>()->get_Position();
-        auto relpath = sys::with_suffix(dataset().step()(time), "."s + format);
+        auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(format));
         by_segment[relpath].push_back(e);
     }
 
@@ -207,7 +207,7 @@ void CheckerSegment::archive()
 
     // Move the segment to the archive and deindex it
     auto new_root = dataset().path / ".archive" / "last";
-    auto new_relpath = sys::with_suffix(dataset().step()(interval.begin), "."s + format);
+    auto new_relpath = sys::with_suffix(dataset().step()(interval.begin), "."s + format_name(format));
     auto new_abspath = new_root / new_relpath;
     release(new_root, new_relpath, new_abspath);
 

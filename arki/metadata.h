@@ -279,7 +279,7 @@ public:
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source> s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(const std::string& format, std::shared_ptr<metadata::Data> data);
+    void set_source_inline(DataFormat format, std::shared_ptr<metadata::Data> data);
     /// Unsets the source
     void unset_source();
     /// Read the data and inline them in the metadata

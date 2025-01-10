@@ -30,7 +30,7 @@ public:
 class ZipBase
 {
 public:
-    std::string format;
+    DataFormat format;
     std::filesystem::path zipname;
 
 protected:
@@ -44,7 +44,7 @@ protected:
 public:
     std::vector<segment::Span> list_data();
 
-    ZipBase(const std::string& format, const std::filesystem::path& zipname);
+    ZipBase(DataFormat format, const std::filesystem::path& zipname);
     ~ZipBase();
 
     /**
@@ -53,7 +53,7 @@ public:
      */
     std::vector<uint8_t> get(const segment::Span& span);
 
-    static std::filesystem::path data_fname(size_t pos, const std::string& format);
+    static std::filesystem::path data_fname(size_t pos, DataFormat format);
 
     friend class ZipFile;
 };
@@ -61,13 +61,13 @@ public:
 class ZipReader : public ZipBase
 {
 public:
-    ZipReader(const std::string& format, core::NamedFileDescriptor&& fd);
+    ZipReader(DataFormat format, core::NamedFileDescriptor&& fd);
 };
 
 class ZipWriter : public ZipBase
 {
 public:
-    ZipWriter(const std::string& format, const std::filesystem::path& pathname);
+    ZipWriter(DataFormat format, const std::filesystem::path& pathname);
 
     /**
      * Commit changes and close the .zip file

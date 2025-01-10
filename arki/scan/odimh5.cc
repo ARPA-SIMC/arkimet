@@ -28,7 +28,7 @@ static const unsigned char hdf5sign[8] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0
 
 struct OdimH5Validator : public Validator
 {
-    std::string format() const override { return "ODIMH5"; }
+    DataFormat format() const override { return DataFormat::ODIMH5; }
 
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
@@ -86,7 +86,7 @@ std::shared_ptr<Metadata> OdimScanner::scan_h5_data(const std::vector<uint8_t>& 
 std::shared_ptr<Metadata> OdimScanner::scan_data(const std::vector<uint8_t>& data)
 {
     std::shared_ptr<Metadata> md = scan_h5_data(data);
-    md->set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::ODIMH5, metadata::DataManager::get().to_data(DataFormat::ODIMH5, std::vector<uint8_t>(data)));
     return md;
 }
 
@@ -157,7 +157,7 @@ std::shared_ptr<Metadata> MockOdimScanner::scan_h5_data(const std::vector<uint8_
 
 void register_odimh5_scanner()
 {
-    Scanner::register_factory("odimh5", [] {
+    Scanner::register_factory(DataFormat::ODIMH5, [] {
         return std::make_shared<scan::MockOdimScanner>();
     });
 }

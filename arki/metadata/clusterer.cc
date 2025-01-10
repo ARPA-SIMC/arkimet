@@ -57,8 +57,9 @@ bool Clusterer::exceeds_timerange(const Metadata& md) const
     return true;
 }
 
-void Clusterer::start_batch(const std::string& new_format)
+void Clusterer::start_batch(DataFormat new_format)
 {
+    empty = false;
     format = new_format;
     count = 0;
     size = 0;
@@ -80,7 +81,7 @@ void Clusterer::add_to_batch(std::shared_ptr<Metadata> md)
 void Clusterer::flush_batch()
 {
     // Reset the information about the current cluster
-    format.clear();
+    empty = true;
     count = 0;
     size = 0;
     cur_interval[0] = -1;
@@ -94,7 +95,7 @@ void Clusterer::flush_batch()
 
 void Clusterer::flush()
 {
-    if (!format.empty())
+    if (!empty)
         flush_batch();
 }
 
@@ -102,7 +103,7 @@ bool Clusterer::eat(std::shared_ptr<Metadata> md)
 {
     const auto& data = md->get_data();
 
-    if (format.empty() || format != md->source().format ||
+    if (empty || format != md->source().format ||
         exceeds_count(*md) || exceeds_size(data.size()) || exceeds_interval(*md) || exceeds_timerange(*md))
     {
         flush();

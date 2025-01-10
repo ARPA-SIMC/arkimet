@@ -10,7 +10,7 @@ namespace arki::segment::index::iseg {
 /// Configuration for iseg indexing
 struct Config
 {
-    std::string format;
+    DataFormat format;
     std::set<types::Code> index;
     std::set<types::Code> unique;
     bool trace_sql;

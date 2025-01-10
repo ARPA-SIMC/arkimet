@@ -575,7 +575,7 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& md: mds) {
             const auto& blob = md->sourceBlob();
             // Keep only segments with grib or bufr files
-            if (blob.format != "grib" && blob.format != "bufr")
+            if (blob.format != DataFormat::GRIB && blob.format != DataFormat::BUFR)
             {
                 ++count_otherformat;
                 continue;
@@ -635,7 +635,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             for (const auto& md: i.second) {
                 const auto& blob = md->sourceBlob();
                 // Keep only segments with grib or bufr files
-                if (blob.format != "grib" && blob.format != "bufr")
+                if (blob.format != DataFormat::GRIB && blob.format != DataFormat::BUFR)
                     return;
                 datafile.pwrite("7", 1, blob.offset + blob.size - 1);
             }

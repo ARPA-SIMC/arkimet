@@ -94,6 +94,15 @@ struct SharedPtrWrapper
 };
 
 
+/// Convert a Python object to a DataFormat
+DataFormat dataformat_from_python(PyObject* o);
+template<> inline DataFormat from_python<DataFormat>(PyObject* o) { return dataformat_from_python(o); }
+
+/// Convert a DataFormat to a Python object
+PyObject* dataformat_to_python(DataFormat val);
+inline PyObject* to_python(DataFormat val) { return dataformat_to_python(val); }
+
+
 
 /**
  * Initialize the python bits to use used by the common functions.

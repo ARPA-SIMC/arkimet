@@ -119,7 +119,7 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
     const uint8_t* vbuf;
     size_t size;
     check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
-    md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>(vbuf, vbuf + size)));
+    md.set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, vector<uint8_t>(vbuf, vbuf + size)));
 }
 
 std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
@@ -128,7 +128,7 @@ std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& dat
     if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
 
     std::shared_ptr<Metadata> md = scan(gh);
-    md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, std::vector<uint8_t>(data)));
 
 
     gh.close();
@@ -215,7 +215,7 @@ namespace grib {
 
 struct GribValidator : public Validator
 {
-    std::string format() const override { return "GRIB"; }
+    DataFormat format() const override { return DataFormat::GRIB; }
 
     // Validate data found in a file
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override

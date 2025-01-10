@@ -488,7 +488,7 @@ add_method("query_lots", [](Fixture& f) {
                             char buf[40];
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
-                            md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(buf, buf+len)));
+                            md->set_source_inline(DataFormat::VM2, metadata::DataManager::get().to_data(DataFormat::VM2, vector<uint8_t>(buf, buf+len)));
                             md->add_note("Generated from memory");
                             md->test_set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
                             md->test_set<area::VM2>(station);

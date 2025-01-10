@@ -35,14 +35,14 @@ struct AppendCreator
 
 struct AppendCheckBackend
 {
-    std::filesystem::path relpath;
+    const Segment& segment;
     std::function<void(const std::string&)> reporter;
     const metadata::Collection& mds;
     bool accurate = false;
     size_t end_of_known_data = 0;
     const scan::Validator* validator = nullptr;
 
-    AppendCheckBackend(std::function<void(const std::string&)> reporter, const std::filesystem::path& relpath, const metadata::Collection& mds);
+    AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const metadata::Collection& mds);
     virtual ~AppendCheckBackend();
 
     virtual void validate(Metadata& md, const types::source::Blob& source) = 0;

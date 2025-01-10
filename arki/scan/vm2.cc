@@ -30,7 +30,7 @@ namespace vm2 {
 
 struct VM2Validator : public Validator
 {
-    std::string format() const override { return "VM2"; }
+    DataFormat format() const override { return DataFormat::VM2; }
 
     // Validate data found in a file
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
@@ -181,7 +181,7 @@ std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
     if (!input.next())
         throw std::runtime_error("input line did not look like a VM2 line");
     input.to_metadata(*md);
-    md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
+    md->set_source_inline(DataFormat::VM2, metadata::DataManager::get().to_data(DataFormat::VM2, std::vector<uint8_t>(input.line.begin(), input.line.end())));
     return md;
 }
 
@@ -192,7 +192,7 @@ std::shared_ptr<Metadata> Vm2::scan_singleton(const std::filesystem::path& abspa
     if (!input.next())
         throw std::runtime_error(abspath.native() + " contains no VM2 data");
     input.to_metadata(*md);
-    md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
+    md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::VM2, std::vector<uint8_t>(input.line.begin(), input.line.end())));
 
     if (input.next())
         throw std::runtime_error(abspath.native() + " contains more than one VM2 data");
@@ -211,7 +211,7 @@ bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
         unique_ptr<Metadata> md(new Metadata);
         if (!input.next()) break;
         input.to_metadata(*md);
-        md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(input.line.begin(), input.line.end())));
+        md->set_source_inline(DataFormat::VM2, metadata::DataManager::get().to_data(DataFormat::VM2, vector<uint8_t>(input.line.begin(), input.line.end())));
         if (!dest(move(md))) return false;
     }
     return true;
@@ -226,7 +226,7 @@ bool Vm2::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_d
         if (!input.next_with_offset()) break;
         input.to_metadata(*md);
         md->set_source(Source::createBlob(reader, input.offset, input.line.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data("vm2", std::vector<uint8_t>(input.line.begin(), input.line.end())));
+        md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::VM2, std::vector<uint8_t>(input.line.begin(), input.line.end())));
         if (!dest(move(md))) return false;
     }
     return true;
@@ -270,7 +270,7 @@ void Vm2::normalize_before_dispatch(Metadata& md)
         auto normalized = reconstruct(md, value->buffer);
         if (orig != normalized)
         {
-            md.set_cached_data(metadata::DataManager::get().to_data("vm2", std::move(normalized)));
+            md.set_cached_data(metadata::DataManager::get().to_data(DataFormat::VM2, std::move(normalized)));
             md.makeInline();
         }
     }

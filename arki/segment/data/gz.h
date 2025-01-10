@@ -15,7 +15,7 @@ class Data : public arki::segment::Data
 public:
     using arki::segment::Data::Data;
     time_t timestamp() const override;
-    static bool can_store(const std::string& format);
+    static bool can_store(DataFormat format);
 };
 
 template<typename Data>
@@ -75,7 +75,6 @@ public:
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 0;
 };
@@ -108,7 +107,6 @@ struct Data : public gz::Data
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static bool can_store(const std::string& format);
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
     static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 1;

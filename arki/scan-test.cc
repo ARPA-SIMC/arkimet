@@ -18,7 +18,7 @@ struct TestData
 {
     std::string pathname;
     unsigned count;
-    std::string format;
+    DataFormat format;
 
     TestData(const std::string& pathname, unsigned count=1)
         : pathname(pathname), count(count), format(scan::Scanner::format_from_filename(pathname)) {}
@@ -40,57 +40,57 @@ void Tests::register_tests() {
 
 // Test format_from_ext
 add_method("format_from_filename", [] {
-    wassert(actual(scan::Scanner::format_from_filename("test.grib")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib1")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib2")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.bufr")) == "bufr");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib.gz")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib1.gz")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib2.gz")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.bufr.gz")) == "bufr");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib.zip")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib1.zip")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib2.zip")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.bufr.zip")) == "bufr");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib.tar")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib1.tar")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.grib2.tar")) == "grib");
-    wassert(actual(scan::Scanner::format_from_filename("test.bufr.tar")) == "bufr");
+    wassert(actual(scan::Scanner::format_from_filename("test.grib")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib1")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib2")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.bufr")) == DataFormat::BUFR);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib.gz")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib1.gz")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib2.gz")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.bufr.gz")) == DataFormat::BUFR);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib.zip")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib1.zip")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib2.zip")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.bufr.zip")) == DataFormat::BUFR);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib.tar")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib1.tar")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.grib2.tar")) == DataFormat::GRIB);
+    wassert(actual(scan::Scanner::format_from_filename("test.bufr.tar")) == DataFormat::BUFR);
 
-    wassert(actual(scan::Scanner::format_from_filename("test.h5")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.hdf5")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odim")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odimh5")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.h5.gz")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.hdf5.gz")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odim.gz")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odimh5.gz")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.h5.zip")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.hdf5.zip")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odim.zip")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odimh5.zip")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.h5.tar")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.hdf5.tar")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odim.tar")) == "odimh5");
-    wassert(actual(scan::Scanner::format_from_filename("test.odimh5.tar")) == "odimh5");
+    wassert(actual(scan::Scanner::format_from_filename("test.h5")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.hdf5")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odim")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odimh5")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.h5.gz")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.hdf5.gz")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odim.gz")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odimh5.gz")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.h5.zip")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.hdf5.zip")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odim.zip")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odimh5.zip")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.h5.tar")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.hdf5.tar")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odim.tar")) == DataFormat::ODIMH5);
+    wassert(actual(scan::Scanner::format_from_filename("test.odimh5.tar")) == DataFormat::ODIMH5);
 
-    wassert(actual(scan::Scanner::format_from_filename("test.nc")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.netcdf")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.nc.gz")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.gz")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.nc.zip")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.zip")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.nc.tar")) == "nc");
-    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.tar")) == "nc");
+    wassert(actual(scan::Scanner::format_from_filename("test.nc")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.nc.gz")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.gz")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.nc.zip")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.zip")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.nc.tar")) == DataFormat::NETCDF);
+    wassert(actual(scan::Scanner::format_from_filename("test.netcdf.tar")) == DataFormat::NETCDF);
 
-    wassert(actual(scan::Scanner::format_from_filename("test.jpg")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpeg")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpg.gz")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.gz")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpg.zip")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.zip")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpg.tar")) == "jpeg");
-    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.tar")) == "jpeg");
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg.gz")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.gz")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg.zip")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.zip")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpg.tar")) == DataFormat::JPEG);
+    wassert(actual(scan::Scanner::format_from_filename("test.jpeg.tar")) == DataFormat::JPEG);
 
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test"));
     wassert_throws(std::runtime_error, scan::Scanner::format_from_filename("test.zip"));
@@ -104,7 +104,7 @@ add_method("format_from_filename", [] {
 
 for (auto td: test_data)
 {
-    add_method("scan_file_" + td.format, [=] {
+    add_method("scan_file_" + format_name(td.format), [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;
         scanner->test_scan_file(td.pathname, mds.inserter_func());
@@ -112,7 +112,7 @@ for (auto td: test_data)
         wassert(actual(mds[0].source().style()) == types::Source::Style::BLOB);
     });
 
-    add_method("scan_pipe_" + td.format, [=] {
+    add_method("scan_pipe_" + format_name(td.format), [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         metadata::Collection mds;
         sys::File in(td.pathname, O_RDONLY);
@@ -128,7 +128,7 @@ for (auto td: test_data)
 
 for (auto td: {TestData("inbound/ship.bufr"), TestData("inbound/oddunits.grib"), TestData("inbound/odimh5/XSEC_v21.h5"), TestData("inbound/single.vm2")})
 {
-    add_method("scan_singleton_" + td.format, [=] {
+    add_method("scan_singleton_" + format_name(td.format), [=] {
         auto scanner = scan::Scanner::get_scanner(td.format);
         auto md = scanner->scan_singleton(td.pathname);
         wassert_false(md->has_source());

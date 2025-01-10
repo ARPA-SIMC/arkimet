@@ -37,7 +37,6 @@ protected:
     std::shared_ptr<metadata::ArchiveOutput> zipout;
 
 public:
-    std::string format;
     size_t idx = 0;
     char fname[100];
 
@@ -47,8 +46,6 @@ public:
           zipout(metadata::ArchiveOutput::create_file("zip", out))
     {
         zipout->set_subdir(std::string());
-        if (!mds.empty())
-            format = mds[0].source().format;
     }
 
 #if 0
@@ -77,15 +74,14 @@ public:
 
 struct CheckBackend : public AppendCheckBackend
 {
-    const std::string& format;
     ZipReader reader;
     std::unique_ptr<struct stat> st;
     // File size by offset
     map<size_t, size_t> on_disk;
     size_t max_sequence = 0;
 
-    CheckBackend(const std::string& format, const std::filesystem::path& abspath, const std::filesystem::path& relpath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, relpath, mds), format(format), reader(format, core::File(abspath, O_RDONLY))
+    CheckBackend(const Segment& segment, const std::filesystem::path& zipabspath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+        : AppendCheckBackend(reporter, segment, mds), reader(segment.format, core::File(zipabspath, O_RDONLY))
     {
     }
 
@@ -238,7 +234,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-bool Data::can_store(const std::string& format)
+bool Data::can_store(DataFormat format)
 {
     return true;
 }
@@ -332,7 +328,7 @@ bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std:
 
 State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
 {
-    CheckBackend checker(segment().format, zipabspath, segment().relpath, reporter, mds);
+    CheckBackend checker(segment(), zipabspath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }

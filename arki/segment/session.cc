@@ -22,7 +22,7 @@ Session::~Session()
 {
 }
 
-std::shared_ptr<segment::data::Reader> Session::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::data::Reader> Session::segment_reader(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     auto segment = std::make_shared<Segment>(format, root, relpath);
     auto res = reader_pool.find(segment->abspath);
@@ -35,7 +35,7 @@ std::shared_ptr<segment::data::Reader> Session::segment_reader(const std::string
     return res->second.lock();
 }
 
-std::shared_ptr<segment::data::Writer> Session::segment_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Writer> Session::segment_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     // Ensure that the directory containing the segment exists
     auto segment = std::make_shared<Segment>(format, root, relpath);
@@ -45,7 +45,7 @@ std::shared_ptr<segment::data::Writer> Session::segment_writer(const segment::da
     return data->writer(config, false);
 }
 
-std::shared_ptr<segment::data::Checker> Session::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Checker> Session::segment_checker(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     auto segment = std::make_shared<Segment>(format, root, relpath);
     auto data = segment->detect_data();
@@ -53,7 +53,7 @@ std::shared_ptr<segment::data::Checker> Session::segment_checker(const std::stri
 }
 
 
-std::shared_ptr<segment::data::Reader> DirSegmentsMixin::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
+std::shared_ptr<segment::data::Reader> DirSegmentsMixin::segment_reader(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     auto segment = std::make_shared<Segment>(format, root, relpath);
     auto res = reader_pool.find(segment->abspath);
@@ -67,7 +67,7 @@ std::shared_ptr<segment::data::Reader> DirSegmentsMixin::segment_reader(const st
     return res->second.lock();
 }
 
-std::shared_ptr<segment::data::Writer> DirSegmentsMixin::segment_writer(const segment::data::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Writer> DirSegmentsMixin::segment_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     auto segment = std::make_shared<Segment>(format, root, relpath);
     // Ensure that the directory containing the segment exists
@@ -77,7 +77,7 @@ std::shared_ptr<segment::data::Writer> DirSegmentsMixin::segment_writer(const se
     return data->writer(config, false);
 }
 
-std::shared_ptr<segment::data::Checker> DirSegmentsMixin::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<segment::data::Checker> DirSegmentsMixin::segment_checker(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
 {
     auto segment = std::make_shared<Segment>(format, root, relpath);
 

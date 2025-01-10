@@ -26,7 +26,7 @@ struct Data : public arki::segment::Data
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static bool can_store(const std::string& format);
+    static bool can_store(DataFormat format);
     static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
 };
 

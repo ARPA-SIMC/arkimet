@@ -12,25 +12,38 @@ class Mergeconf(AppConfigMixin, App):
     Read dataset configuration from the given directories or config files,
     merge them and output the merged config file to standard output
     """
+
     log = logging.getLogger("arki-mergeconf")
 
     @classmethod
     def make_parser(cls) -> argparse.ArgumentParser:
         parser = super().make_parser()
-        parser.add_argument("-o", "--output", metavar="file",
-                            help="write the output to the given file instead of standard output")
-        parser.add_argument("--extra", action="store_true",
-                            help="extract extra information from the datasets (such as bounding box)"
-                                 " and include it in the configuration")
-        parser.add_argument("--ignore-system-datasets", action="store_true",
-                            help="ignore error and duplicates datasets")
-        parser.add_argument("--restrict", metavar="names", action="store",
-                            help="restrict operations to only those datasets that allow one of the given"
-                                 " (comma separated) names")
-        parser.add_argument("-C", "--config", metavar="file", action="append",
-                            help="merge configuration from the given file (can be given more than once)")
-        parser.add_argument("sources", nargs="*", action="store",
-                            help="datasets, configuration files or remote urls")
+        parser.add_argument(
+            "-o", "--output", metavar="file", help="write the output to the given file instead of standard output"
+        )
+        parser.add_argument(
+            "--extra",
+            action="store_true",
+            help="extract extra information from the datasets (such as bounding box)"
+            " and include it in the configuration",
+        )
+        parser.add_argument(
+            "--ignore-system-datasets", action="store_true", help="ignore error and duplicates datasets"
+        )
+        parser.add_argument(
+            "--restrict",
+            metavar="names",
+            action="store",
+            help="restrict operations to only those datasets that allow one of the given" " (comma separated) names",
+        )
+        parser.add_argument(
+            "-C",
+            "--config",
+            metavar="file",
+            action="append",
+            help="merge configuration from the given file (can be given more than once)",
+        )
+        parser.add_argument("sources", nargs="*", action="store", help="datasets, configuration files or remote urls")
         return parser
 
     def run(self):

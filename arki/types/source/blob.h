@@ -135,8 +135,8 @@ zip file segment implementation.
     stream::SendResult stream_data(StreamOutput& out) const;
 
     static std::unique_ptr<Blob> create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Blob> create(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
-    static std::unique_ptr<Blob> create_unlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Blob> create(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
+    static std::unique_ptr<Blob> create_unlocked(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
     static std::unique_ptr<Blob> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 

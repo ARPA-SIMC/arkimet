@@ -1,6 +1,7 @@
 #ifndef ARKI_SEGMENT_SEQFILE_H
 #define ARKI_SEGMENT_SEQFILE_H
 
+#include <arki/defs.h>
 #include <arki/core/file.h>
 #include <filesystem>
 #include <string>
@@ -36,7 +37,7 @@ struct SequenceFile : public core::File
     /// Write the value to the sequence file
     void write_sequence(size_t val);
 
-    static std::filesystem::path data_fname(size_t pos, const std::string& format);
+    static std::filesystem::path data_fname(size_t pos, DataFormat format);
 };
 
 }

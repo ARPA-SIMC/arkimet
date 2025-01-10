@@ -42,7 +42,7 @@ This is what allows to fetch the actual data given its metadata.
 public:
     using Type::Type;
 
-    std::string format;
+    DataFormat format;
 
     types::Code type_code() const override { return traits<Source>::type_code; }
     size_t serialisationSizeLength() const override { return traits<Source>::type_sersize_bytes; }
@@ -76,10 +76,10 @@ public:
     static void init();
 
     static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createBlob(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
-    static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
-    static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);
+    static std::unique_ptr<Source> createBlob(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
+    static std::unique_ptr<Source> createBlobUnlocked(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createInline(DataFormat format, uint64_t size);
+    static std::unique_ptr<Source> createURL(DataFormat format, const std::string& url);
 
     static void write_documentation(stream::Text& out, unsigned heading_level);
 };

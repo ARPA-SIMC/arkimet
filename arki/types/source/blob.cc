@@ -30,7 +30,7 @@ void Blob::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 std::ostream& Blob::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-             << format << "," << (basedir / filename).native() << ":" << offset << "+" << size
+             << format_name(format) << "," << (basedir / filename).native() << ":" << offset << "+" << size
              << ")";
 }
 
@@ -50,7 +50,7 @@ std::unique_ptr<Blob> Blob::decode_structure(const structured::Keys& keys, const
         basedir = reader.as_string(keys.source_basedir, "source base directory");
 
     return Blob::create_unlocked(
-            reader.as_string(keys.source_format, "source format"),
+            format_from_string(reader.as_string(keys.source_format, "source format")),
             basedir,
             reader.as_string(keys.source_file, "source file name"),
             reader.as_int(keys.source_offset, "source offset"),
@@ -92,14 +92,14 @@ std::unique_ptr<Blob> Blob::create(std::shared_ptr<segment::data::Reader> reader
     return res;
 }
 
-std::unique_ptr<Blob> Blob::create(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader)
+std::unique_ptr<Blob> Blob::create(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader)
 {
     auto res = create_unlocked(format, basedir, filename, offset, size);
     res->lock(reader);
     return res;
 }
 
-std::unique_ptr<Blob> Blob::create_unlocked(const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size)
+std::unique_ptr<Blob> Blob::create_unlocked(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size)
 {
     unique_ptr<Blob> res(new Blob);
     res->format = format;

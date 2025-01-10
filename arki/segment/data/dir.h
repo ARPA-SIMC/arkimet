@@ -29,7 +29,7 @@ public:
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
     static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
-    static bool can_store(const std::string& format);
+    static bool can_store(DataFormat format);
 };
 
 
@@ -147,11 +147,8 @@ public:
 class Scanner
 {
 public:
-    /// Format of the data to scan
-    std::string format;
-
-    /// Pathname to the directory to scan
-    std::filesystem::path abspath;
+    /// Segment pointing to the directory
+    const Segment& segment;
 
     /// File size by offset
     std::map<size_t, ScannerData> on_disk;
@@ -159,7 +156,7 @@ public:
     /// Maximum sequence found on disk
     size_t max_sequence = 0;
 
-    Scanner(const std::string& format, const std::filesystem::path& abspath);
+    explicit Scanner(const Segment& segment);
 
     /// Fill on_disk and max_sequence with the data found on disk
     void list_files();

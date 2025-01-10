@@ -16,13 +16,13 @@ namespace file {
 
 std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
 std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Section> read_config(const std::string& prefix, const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Sections> read_configs(const std::string& prefix, const std::filesystem::path& path);
 
 /// Dataset on a single file
 class Dataset : public dataset::Dataset
 {
 public:
-    std::shared_ptr<Segment> segment;
-
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
@@ -31,6 +31,17 @@ public:
 
     static std::shared_ptr<Dataset> from_config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
+
+class SegmentDataset : public Dataset
+{
+public:
+    std::shared_ptr<Segment> segment;
+
+    SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
+};
+
 
 class Reader : public DatasetAccess<file::Dataset, dataset::Reader>
 {
@@ -51,6 +62,8 @@ protected:
     core::File fd;
 
 public:
+    std::filesystem::path path;
+
     FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~FdFile();
 };
@@ -74,14 +87,6 @@ public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
     YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~YamlFile();
-
-    bool scan(const query::Data& q, metadata_dest_func consumer) override;
-};
-
-class RawFile : public Dataset
-{
-public:
-    using Dataset::Dataset;
 
     bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };

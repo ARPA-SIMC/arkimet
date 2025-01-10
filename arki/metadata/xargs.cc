@@ -34,7 +34,7 @@ Xargs::~Xargs()
 {
 }
 
-void Xargs::start_batch(const std::string& new_format)
+void Xargs::start_batch(DataFormat new_format)
 {
     metadata::Clusterer::start_batch(new_format);
 
@@ -103,7 +103,7 @@ int Xargs::run_child()
         child.env.push_back(envstr);
     }
     child.setenv("ARKI_XARGS_FILENAME", tempfile->path());
-    child.setenv("ARKI_XARGS_FORMAT", str::upper(format));
+    child.setenv("ARKI_XARGS_FORMAT", str::upper(format_name(format)));
     char buf[32];
     snprintf(buf, 32, "%zu", count);
     child.setenv("ARKI_XARGS_COUNT", buf);

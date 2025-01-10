@@ -34,8 +34,8 @@ bool process(const std::string source, const std::string& command, const core::c
     try {
         for (unsigned i = 0; i < repeat; ++i)
             if (!Metadata::read_file(source, [&](std::shared_ptr<Metadata> md) {
-                        md->set_source_inline("bufr",
-                                data_manager.to_data("bufr",
+                        md->set_source_inline(DataFormat::BUFR,
+                                data_manager.to_data(DataFormat::BUFR,
                                     std::vector<uint8_t>(md->sourceBlob().size)));
                         return metadata::Postprocess::send(md, out);
                     }))
@@ -97,7 +97,7 @@ add_method("countbytes", [] {
 });
 
 add_method("cat", [] {
-    auto segment = std::make_shared<Segment>("grib", ".", "inbound/test.grib1");
+    auto segment = std::make_shared<Segment>(DataFormat::GRIB, ".", "inbound/test.grib1");
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
 
     // Get the normal data
