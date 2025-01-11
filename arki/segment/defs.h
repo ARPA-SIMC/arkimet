@@ -72,11 +72,13 @@ std::ostream& operator<<(std::ostream&, const State&);
 
 struct Span
 {
-    size_t offset;
-    size_t size;
+    size_t offset = 0;
+    size_t size = 0;
     Span() = default;
     Span(size_t offset, size_t size) : offset(offset), size(size) {}
+    bool operator==(const Span& o) const { return std::tie(offset, size) == std::tie(o.offset, o.size); }
     bool operator<(const Span& o) const { return std::tie(offset, size) < std::tie(o.offset, o.size); }
+    bool operator>(const Span& o) const { return std::tie(offset, size) > std::tie(o.offset, o.size); }
 };
 
 }
