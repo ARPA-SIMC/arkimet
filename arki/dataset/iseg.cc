@@ -46,7 +46,7 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
 
 std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return segment_session->segment_reader(iseg.format, path, relpath, lock);
+    return segment_session->segment_reader(iseg.format, relpath, lock);
 }
 
 }

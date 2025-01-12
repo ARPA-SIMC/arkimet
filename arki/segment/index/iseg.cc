@@ -338,7 +338,7 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = dataset->segment_session->segment_reader(config.format, dataset->path, data_relpath, lock);
+        reader = dataset->segment_session->segment_reader(config.format, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results

@@ -13,8 +13,7 @@ class Session: public std::enable_shared_from_this<Session>
 {
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
-    // TODO: use std::filesystem::path on newer GCC
-    std::unordered_map<std::string, std::weak_ptr<segment::data::Reader>> reader_pool;
+    mutable std::unordered_map<std::filesystem::path, std::weak_ptr<segment::data::Reader>> reader_pool;
 
 public:
     DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
@@ -30,15 +29,15 @@ public:
     Session& operator=(Session&&) = delete;
 
     virtual std::shared_ptr<Segment> segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) const;
-    virtual std::shared_ptr<Segment> segment_from_path(const std::filesystem::path& path);
-    virtual std::shared_ptr<Segment> segment_from_path_and_format(const std::filesystem::path& path, DataFormat format);
-    virtual std::shared_ptr<Segment> segment_from_relpath(const std::filesystem::path& relpath);
-    virtual std::shared_ptr<Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format);
+    virtual std::shared_ptr<Segment> segment_from_path(const std::filesystem::path& path) const;
+    virtual std::shared_ptr<Segment> segment_from_path_and_format(const std::filesystem::path& path, DataFormat format) const;
+    virtual std::shared_ptr<Segment> segment_from_relpath(const std::filesystem::path& relpath) const;
+    virtual std::shared_ptr<Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const;
 
 
-    virtual std::shared_ptr<segment::data::Reader> segment_reader(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
-    virtual std::shared_ptr<segment::data::Writer> segment_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
-    virtual std::shared_ptr<segment::data::Checker> segment_checker(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
+    virtual std::shared_ptr<segment::data::Reader> segment_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) const;
+    virtual std::shared_ptr<segment::data::Writer> segment_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& relpath) const;
+    virtual std::shared_ptr<segment::data::Checker> segment_checker(DataFormat format, const std::filesystem::path& relpath) const;
 };
 
 /*
