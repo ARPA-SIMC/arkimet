@@ -97,7 +97,7 @@ public:
     std::string type() const override;
 
     void index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds);
-    void release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath);
+    void release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath);
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
     void remove_old(CheckerConfig& opts) override;

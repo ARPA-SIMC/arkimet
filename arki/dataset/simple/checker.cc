@@ -412,7 +412,7 @@ public:
         checker.m_mft->flush();
     }
 
-    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override
+    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override
     {
         checker.m_mft->remove(segment->segment().relpath());
         segment = segment->move(new_root, new_relpath);

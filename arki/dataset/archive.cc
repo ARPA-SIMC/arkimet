@@ -469,7 +469,7 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
     archives->invalidate_summary_cache();
 }
 
-void Checker::release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+void Checker::release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
 {
     auto path = std::filesystem::weakly_canonical(relpath);
     string name = poppath(path);
@@ -478,7 +478,7 @@ void Checker::release_segment(const std::filesystem::path& relpath, const std::f
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->release(new_root, new_relpath, new_abspath);
+            sc->segment(path)->release(new_root, new_relpath);
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }

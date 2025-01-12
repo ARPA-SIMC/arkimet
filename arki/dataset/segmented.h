@@ -203,7 +203,7 @@ public:
      *
      * Destpath must be on the same filesystem as the segment.
      */
-    virtual void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
+    virtual void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Move the file to archive

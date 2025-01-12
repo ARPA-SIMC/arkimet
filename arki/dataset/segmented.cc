@@ -209,8 +209,7 @@ void CheckerSegment::archive()
     // Move the segment to the archive and deindex it
     auto new_root = dataset().path / ".archive" / "last";
     auto new_relpath = sys::with_suffix(dataset().step()(interval.begin), "."s + format_name(format));
-    auto new_abspath = new_root / new_relpath;
-    release(new_root, new_relpath, new_abspath);
+    release(new_root, new_relpath);
 
     // Acquire in the achive
     archives()->index_segment("last" / new_relpath, std::move(mdc));
@@ -219,7 +218,7 @@ void CheckerSegment::archive()
 void CheckerSegment::unarchive()
 {
     auto arcrelpath = "last" / segment->segment().relpath();
-    archives()->release_segment(arcrelpath, segment->segment().root(), segment->segment().relpath(), segment->segment().abspath());
+    archives()->release_segment(arcrelpath, segment->segment().root(), segment->segment().relpath());
     auto reader = segment->segment().detect_data_reader(lock);
     metadata::Collection mdc;
     reader->scan(mdc.inserter_func());
