@@ -267,7 +267,7 @@ std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& dat
 
 bool BufrScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
-    auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath.c_str(), "r");
+    auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath().c_str(), "r");
     while (true)
     {
         auto md = std::make_shared<Metadata>();

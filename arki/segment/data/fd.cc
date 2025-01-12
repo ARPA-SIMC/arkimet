@@ -75,7 +75,7 @@ struct CheckBackend : public AppendCheckBackend
     struct stat st;
 
     CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, segment, mds), data(segment.abspath)
+        : AppendCheckBackend(reporter, segment, mds), data(segment.abspath())
     {
     }
     size_t actual_end(off_t offset, size_t size) const override
@@ -103,7 +103,7 @@ struct CheckBackend : public AppendCheckBackend
 
 std::shared_ptr<segment::Data> Data::detect_data(std::shared_ptr<const Segment> segment)
 {
-    switch (segment->format)
+    switch (segment->format())
     {
         case DataFormat::GRIB:
         case DataFormat::BUFR:
@@ -120,7 +120,7 @@ std::shared_ptr<segment::Data> Data::detect_data(std::shared_ptr<const Segment> 
         default:
         {
             std::stringstream buf;
-            buf << "cannot access data for " << segment->format << " file " << segment->relpath << ": format not supported";
+            buf << "cannot access data for " << segment->format() << " file " << segment->relpath() << ": format not supported";
             throw std::runtime_error(buf.str());
         }
     }
@@ -130,14 +130,14 @@ std::shared_ptr<segment::Data> Data::detect_data(std::shared_ptr<const Segment> 
 time_t Data::timestamp() const
 {
     struct stat st;
-    sys::stat(segment().abspath, st);
+    sys::stat(segment().abspath(), st);
     return st.st_mtime;
 }
 
 
 template<typename Data>
 Reader<Data>::Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
-    : BaseReader<Data>(data, lock), fd(data->segment().abspath, O_RDONLY
+    : BaseReader<Data>(data, lock), fd(data->segment().abspath(), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
@@ -149,7 +149,7 @@ template<typename Data>
 bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
-    auto scanner = scan::Scanner::get_scanner(segment.format);
+    auto scanner = scan::Scanner::get_scanner(segment.format());
     return scanner->scan_segment(static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
 }
 
@@ -188,7 +188,7 @@ stream::SendResult Reader<Data>::stream(const types::source::Blob& src, StreamOu
 
 template<typename Data, typename File>
 Writer<Data, File>::Writer(const WriterConfig& config, std::shared_ptr<const Data> data, int mode)
-    : BaseWriter<Data>(config, data), fd(data->segment().abspath, O_WRONLY | O_CREAT | mode, 0666)
+    : BaseWriter<Data>(config, data), fd(data->segment().abspath(), O_WRONLY | O_CREAT | mode, 0666)
 {
     struct stat st;
     this->fd.fstat(st);
@@ -211,7 +211,7 @@ const types::source::Blob& Writer<Data, File>::append(Metadata& md)
 {
     this->fired = false;
     const metadata::Data& data = md.get_data();
-    pending.emplace_back(this->config, md, source::Blob::create_unlocked(this->segment().format, this->segment().root, this->segment().relpath, current_pos, data.size()));
+    pending.emplace_back(this->config, md, source::Blob::create_unlocked(this->segment().format(), this->segment().root(), this->segment().relpath(), current_pos, data.size()));
     current_pos += fd.write_data(data);
     return *pending.back().new_source;
 }
@@ -264,7 +264,7 @@ Checker<Data, File>::Checker(std::shared_ptr<const Data> data)
 template<typename Data, typename File>
 bool Checker<Data, File>::exists_on_disk()
 {
-    std::unique_ptr<struct stat> st = sys::stat(this->segment().abspath);
+    std::unique_ptr<struct stat> st = sys::stat(this->segment().abspath());
     if (!st) return false;
     if (S_ISDIR(st->st_mode)) return false;
     return true;
@@ -274,7 +274,7 @@ template<typename Data, typename File>
 bool Checker<Data, File>::is_empty()
 {
     struct stat st;
-    sys::stat(this->segment().abspath, st);
+    sys::stat(this->segment().abspath(), st);
     if (S_ISDIR(st.st_mode)) return false;
     return st.st_size == 0;
 }
@@ -283,12 +283,12 @@ template<typename Data, typename File>
 size_t Checker<Data, File>::size()
 {
     struct stat st;
-    sys::stat(this->segment().abspath, st);
+    sys::stat(this->segment().abspath(), st);
     return st.st_size;
 }
 
 template<typename Data, typename File>
-bool Checker<Data, File>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Checker<Data, File>::rescan_data(std::function<void(const std::string&)>, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
 {
     auto reader = this->data().reader(lock);
     return reader->scan_data(dest);
@@ -305,26 +305,26 @@ State Checker<Data, File>::check(std::function<void(const std::string&)> reporte
 template<typename Data, typename File>
 void Checker<Data, File>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
 {
-    std::filesystem::rename(this->segment().abspath, new_abspath);
+    std::filesystem::rename(this->segment().abspath(), new_abspath);
 }
 
 template<typename Data, typename File>
 size_t Checker<Data, File>::remove()
 {
-    size_t size = sys::size(this->segment().abspath);
-    sys::unlink(this->segment().abspath.c_str());
+    size_t size = sys::size(this->segment().abspath());
+    sys::unlink(this->segment().abspath().c_str());
     return size;
 }
 
 template<typename Data, typename File>
 core::Pending Checker<Data, File>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    auto tmpabspath = sys::with_suffix(this->segment().abspath, ".repack");
+    auto tmpabspath = sys::with_suffix(this->segment().abspath(), ".repack");
 
-    core::Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath));
+    core::Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath()));
 
     Creator<File> creator(this->segment(), mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+    creator.validator = &scan::Validator::by_filename(this->segment().abspath());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -338,14 +338,14 @@ template<typename Data, typename File>
 void Checker<Data, File>::test_truncate(size_t offset)
 {
     const auto& segment = this->segment();
-    if (!std::filesystem::exists(segment.abspath))
-        sys::write_file(segment.abspath, "");
+    if (!std::filesystem::exists(segment.abspath()))
+        sys::write_file(segment.abspath(), "");
 
-    utils::files::PreserveFileTimes pft(segment.abspath);
-    if (::truncate(segment.abspath.c_str(), offset) < 0)
+    utils::files::PreserveFileTimes pft(segment.abspath());
+    if (::truncate(segment.abspath().c_str(), offset) < 0)
     {
         stringstream ss;
-        ss << "cannot truncate " << segment.abspath << " at " << offset;
+        ss << "cannot truncate " << segment.abspath() << " at " << offset;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
@@ -353,8 +353,8 @@ void Checker<Data, File>::test_truncate(size_t offset)
 template<typename Data, typename File>
 void Checker<Data, File>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
 {
-    utils::files::PreserveFileTimes pt(this->segment().abspath);
-    sys::File fd(this->segment().abspath, O_RDWR);
+    utils::files::PreserveFileTimes pt(this->segment().abspath());
+    sys::File fd(this->segment().abspath(), O_RDWR);
     off_t end = fd.lseek(0, SEEK_END);
     if (data_idx >= mds.size())
     {
@@ -379,8 +379,8 @@ void Checker<Data, File>::test_make_hole(metadata::Collection& mds, unsigned hol
 template<typename Data, typename File>
 void Checker<Data, File>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
-    utils::files::PreserveFileTimes pt(this->segment().abspath);
-    sys::File fd(this->segment().abspath, O_RDWR);
+    utils::files::PreserveFileTimes pt(this->segment().abspath());
+    sys::File fd(this->segment().abspath(), O_RDWR);
     off_t start_ofs = mds[data_idx].sourceBlob().offset;
     off_t end = fd.lseek(0, SEEK_END);
     std::vector<uint8_t> buf(end - start_ofs);
@@ -402,8 +402,8 @@ template<typename Data, typename File>
 void Checker<Data, File>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    utils::files::PreserveFileTimes pt(this->segment().abspath);
-    sys::File fd(this->segment().abspath, O_RDWR);
+    utils::files::PreserveFileTimes pt(this->segment().abspath());
+    sys::File fd(this->segment().abspath(), O_RDWR);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }
@@ -441,11 +441,11 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) con
 }
 std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
 {
-    throw std::runtime_error("cannot store " + format_name(segment().format) + " using fd::single writer");
+    throw std::runtime_error("cannot store " + format_name(segment().format()) + " using fd::single writer");
 }
 std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
-    throw std::runtime_error("cannot store " + format_name(segment().format) + " using fd::single writer");
+    throw std::runtime_error("cannot store " + format_name(segment().format()) + " using fd::single writer");
 }
 
 }
@@ -477,7 +477,7 @@ size_t HoleFile::write_data(const metadata::Data& data)
 
     return data.size();
 }
-void HoleFile::test_add_padding(size_t size)
+void HoleFile::test_add_padding(size_t)
 {
     throw std::runtime_error("HoleFile::test_add_padding not implemented");
 }
@@ -512,7 +512,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    fd::Creator<File> creator(segment, mds, segment.abspath);
+    fd::Creator<File> creator(segment, mds, segment.abspath());
     creator.create();
     auto data = std::make_shared<const Data>(segment.shared_from_this());
     return make_shared<Checker>(data);
@@ -521,9 +521,9 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 
 core::Pending HoleChecker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    filesystem::path tmpabspath = sys::with_suffix(segment().abspath, ".repack");
+    filesystem::path tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
-    core::Pending p(new files::RenameTransaction(tmpabspath, segment().abspath));
+    core::Pending p(new files::RenameTransaction(tmpabspath, segment().abspath()));
 
     fd::Creator<HoleFile> creator(segment(), mds, tmpabspath);
     // Skip validation, since all data reads as zeroes
@@ -570,7 +570,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 }
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    fd::Creator<File> creator(segment, mds, segment.abspath);
+    fd::Creator<File> creator(segment, mds, segment.abspath());
     creator.create();
     auto data = std::make_shared<const Data>(segment.shared_from_this());
     return make_shared<Checker>(data);

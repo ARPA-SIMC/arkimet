@@ -81,7 +81,7 @@ struct CheckBackend : public AppendCheckBackend
     size_t max_sequence = 0;
 
     CheckBackend(const Segment& segment, const std::filesystem::path& zipabspath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
-        : AppendCheckBackend(reporter, segment, mds), reader(segment.format, core::File(zipabspath, O_RDONLY))
+        : AppendCheckBackend(reporter, segment, mds), reader(segment.format(), core::File(zipabspath, O_RDONLY))
     {
     }
 
@@ -219,7 +219,7 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Data::type() const { return "zip"; }
 bool Data::single_file() const { return true; }
-time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath, ".zip")); }
+time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath(), ".zip")); }
 
 std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
 {
@@ -240,7 +240,7 @@ bool Data::can_store(DataFormat format)
 }
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".zip"));
+    Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".zip"));
     creator.create();
     auto data = std::make_shared<const Data>(segment.shared_from_this());
     return make_shared<Checker>(data);
@@ -249,7 +249,7 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 
 
 Reader::Reader(shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
-    : data::BaseReader<Data>(data, lock), zip(segment().format, core::File(sys::with_suffix(segment().abspath, ".zip"), O_RDONLY | O_CLOEXEC))
+    : data::BaseReader<Data>(data, lock), zip(segment().format(), core::File(sys::with_suffix(segment().abspath(), ".zip"), O_RDONLY | O_CLOEXEC))
 {
 }
 
@@ -262,7 +262,7 @@ bool Reader::scan_data(metadata_dest_func dest)
     std::sort(spans.begin(), spans.end());
 
     // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(segment().format);
+    auto scanner = scan::Scanner::get_scanner(segment().format());
     for (const auto& span : spans)
     {
         std::vector<uint8_t> data = zip.get(span);
@@ -289,7 +289,7 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
  */
 
 Checker::Checker(std::shared_ptr<const Data> data)
-    : BaseChecker<Data>(data), zipabspath(sys::with_suffix(segment().abspath, ".zip"))
+    : BaseChecker<Data>(data), zipabspath(sys::with_suffix(segment().abspath(), ".zip"))
 {
 }
 
@@ -300,7 +300,7 @@ bool Checker::exists_on_disk()
 
 bool Checker::is_empty()
 {
-    utils::ZipReader zip(segment().format, core::File(zipabspath, O_RDONLY | O_CLOEXEC));
+    utils::ZipReader zip(segment().format(), core::File(zipabspath, O_RDONLY | O_CLOEXEC));
     return zip.list_data().empty();
 }
 
@@ -337,7 +337,7 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
-        if (blob->filename != segment().relpath)
+        if (blob->filename != segment().relpath())
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
         sys::File fd(zipabspath, O_RDONLY);
@@ -358,12 +358,12 @@ size_t Checker::remove()
 
 core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    auto tmpabspath = sys::with_suffix(segment().abspath, ".repack");
+    auto tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
     Creator creator(segment(), mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath);
+    creator.validator = &scan::Validator::by_filename(segment().abspath());
 
     creator.create();
 
@@ -385,7 +385,7 @@ void Checker::test_truncate(size_t offset)
         sys::File out(zipabspath, O_WRONLY | O_CREAT | O_TRUNC);
         out.write_all_or_throw(empty_zip_data, sizeof(empty_zip_data));
     } else {
-        utils::ZipWriter zip(segment().format, zipabspath);
+        utils::ZipWriter zip(segment().format(), zipabspath);
         std::vector<segment::Span> spans = zip.list_data();
         for (const auto& span: spans)
         {
@@ -400,7 +400,7 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
 {
     utils::files::PreserveFileTimes pf(zipabspath);
 
-    utils::ZipWriter zip(segment().format, zipabspath);
+    utils::ZipWriter zip(segment().format(), zipabspath);
 
     if (data_idx >= mds.size())
     {
@@ -433,7 +433,7 @@ void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
     Span span(s.offset, s.size);
 
     utils::files::PreserveFileTimes pt(zipabspath);
-    utils::ZipWriter zip(segment().format, zipabspath);
+    utils::ZipWriter zip(segment().format(), zipabspath);
     std::vector<uint8_t> data = zip.get(span);
     data[0] = 0;
     zip.write(span, data);

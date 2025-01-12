@@ -44,7 +44,7 @@ struct Creator : public AppendCreator
     size_t append(const metadata::Data& data) override
     {
         // Append it to the new file
-        snprintf(fname, 99, "%06zu.%s", idx, format_name(segment.format).c_str());
+        snprintf(fname, 99, "%06zu.%s", idx, format_name(segment.format()).c_str());
         ++idx;
         return tarout.append(fname, data.read());
     }
@@ -102,7 +102,7 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Data::type() const { return "tar"; }
 bool Data::single_file() const { return true; }
-time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath, ".tar")); }
+time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath(), ".tar")); }
 std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
 {
     return std::make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
@@ -122,7 +122,7 @@ bool Data::can_store(DataFormat format)
 }
 std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".tar"));
+    Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".tar"));
     creator.create();
     auto data = std::make_shared<const Data>(segment.shared_from_this());
     return make_shared<Checker>(data);
@@ -131,7 +131,7 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 
 
 Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
-    : data::BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath, ".tar"), O_RDONLY
+    : data::BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath(), ".tar"), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
 #endif
@@ -173,7 +173,7 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 
 
 Checker::Checker(std::shared_ptr<const Data> data)
-    : data::BaseChecker<Data>(data), tarabspath(sys::with_suffix(segment().abspath, ".tar"))
+    : data::BaseChecker<Data>(data), tarabspath(sys::with_suffix(segment().abspath(), ".tar"))
 {
 }
 
@@ -223,7 +223,7 @@ void Checker::validate(Metadata& md, const scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
-        if (blob->filename != segment().relpath)
+        if (blob->filename != segment().relpath())
             throw std::runtime_error("metadata to validate does not appear to be from this segment");
 
         sys::File fd(tarabspath, O_RDONLY);
@@ -244,12 +244,12 @@ size_t Checker::remove()
 
 core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
 {
-    auto tmpabspath = sys::with_suffix(segment().abspath, ".repack");
+    auto tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
 
     Creator creator(segment(), mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath);
+    creator.validator = &scan::Validator::by_filename(segment().abspath());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -285,8 +285,8 @@ void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size
 void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    utils::files::PreserveFileTimes pt(segment().abspath);
-    sys::File fd(segment().abspath, O_RDWR);
+    utils::files::PreserveFileTimes pt(segment().abspath());
+    sys::File fd(segment().abspath(), O_RDWR);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }

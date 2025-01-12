@@ -44,7 +44,7 @@ static std::string moveFile(const arki::dataset::Reader& reader, const std::file
     const auto& dataset = reader.dataset();
 
     if (const arki::dataset::file::SegmentDataset* ds = dynamic_cast<const arki::dataset::file::SegmentDataset*>(&dataset))
-        return moveFile(ds->segment->abspath, targetdir);
+        return moveFile(ds->segment->abspath(), targetdir);
     else if (const arki::dataset::file::FdFile* ds = dynamic_cast<const arki::dataset::file::FdFile*>(&dataset))
         return moveFile(ds->path, targetdir);
     else

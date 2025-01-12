@@ -26,8 +26,8 @@ SegmentTests<Data, FixtureData>::register_tests();
 this->add_method("append", [](Fixture& f) {
     auto session = std::make_shared<segment::Session>(std::filesystem::current_path());
     auto segment = session->segment_from_relpath_and_format( "testfile." + format_name(f.td.format), f.td.format);
-    delete_if_exists(segment->abspath);
-    wassert(actual_file(segment->abspath).not_exists());
+    delete_if_exists(segment->abspath());
+    wassert(actual_file(segment->abspath()).not_exists());
     {
         segment::data::WriterConfig writer_config;
         auto w = segment->detect_data_writer(writer_config);
@@ -49,7 +49,7 @@ this->add_method("append", [](Fixture& f) {
     // Data writer goes out of scope, file is closed and flushed
     // Scan the file we created
     metadata::TestCollection mdc1;
-    wassert(mdc1.scan_from_file(segment->abspath, false));
+    wassert(mdc1.scan_from_file(segment->abspath(), false));
 
     // Check that it only contains the 1st and 3rd data
     wassert(actual(mdc1.size()) == 2u);
@@ -61,12 +61,12 @@ this->add_method("append", [](Fixture& f) {
 this->add_method("large", [](Fixture& f) {
     auto session = std::make_shared<segment::Session>(std::filesystem::current_path());
     auto segment = session->segment_from_relpath_and_format("testfile." + format_name(f.td.format), f.td.format);
-    delete_if_exists(segment->abspath);
+    delete_if_exists(segment->abspath());
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
         segment->detect_data_checker()->test_truncate(0x7FFFFFFF);
-        wassert(actual(sys::size(segment->abspath)) == 0x7FFFFFFFu);
+        wassert(actual(sys::size(segment->abspath())) == 0x7FFFFFFFu);
     }
 
     {
@@ -83,7 +83,7 @@ this->add_method("large", [](Fixture& f) {
         wassert(test_append_transaction_ok(dw.get(), f.td.mds[2], Data::padding));
     }
 
-    wassert(actual(sys::size(segment->abspath)) == 0x7FFFFFFFu + f.td.mds[0].data_size() + f.td.mds[2].data_size() + 2 * Data::padding);
+    wassert(actual(sys::size(segment->abspath())) == 0x7FFFFFFFu + f.td.mds[0].data_size() + f.td.mds[2].data_size() + 2 * Data::padding);
 
     // Won't attempt rescanning, as the grib reading library will have to
     // process gigabytes of zeros

@@ -111,7 +111,7 @@ struct CheckBackend : public AppendCheckBackend
 
 time_t Data::timestamp() const
 {
-    return max(sys::timestamp(sys::with_suffix(segment().abspath, ".gz")), sys::timestamp(sys::with_suffix(segment().abspath, ".gz.idx"), 0));
+    return max(sys::timestamp(sys::with_suffix(segment().abspath(), ".gz")), sys::timestamp(sys::with_suffix(segment().abspath(), ".gz.idx"), 0));
 }
 
 bool Data::can_store(DataFormat format)
@@ -129,7 +129,7 @@ bool Data::can_store(DataFormat format)
 
 template<typename Data>
 Reader<Data>::Reader(const std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
-    : BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath, ".gz"), O_RDONLY), reader(fd)
+    : BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath(), ".gz"), O_RDONLY), reader(fd)
 {
     // Read index
     std::filesystem::path idxfname = sys::with_suffix(fd.path(), ".idx");
@@ -140,8 +140,8 @@ Reader<Data>::Reader(const std::shared_ptr<const Data> data, std::shared_ptr<cor
 template<typename Data>
 bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = scan::Scanner::get_scanner(this->segment().format);
-    compress::TempUnzip uncompressed(this->segment().abspath);
+    auto scanner = scan::Scanner::get_scanner(this->segment().format());
+    compress::TempUnzip uncompressed(this->segment().abspath());
     return scanner->scan_segment(this->shared_from_this(), dest);
 }
 
@@ -149,7 +149,7 @@ template<typename Data>
 std::vector<uint8_t> Reader<Data>::read(const types::source::Blob& src)
 {
     vector<uint8_t> buf = reader.read(src.offset, src.size);
-    iotrace::trace_file(this->segment().abspath, src.offset, src.size, "read data");
+    iotrace::trace_file(this->segment().abspath(), src.offset, src.size, "read data");
     return buf;
 }
 
@@ -160,7 +160,7 @@ std::vector<uint8_t> Reader<Data>::read(const types::source::Blob& src)
 
 template<typename Data>
 Checker<Data>::Checker(const std::shared_ptr<const Data> data)
-    : BaseChecker<Data>(data), gzabspath(sys::with_suffix(this->segment().abspath, ".gz")), gzidxabspath(sys::with_suffix(this->segment().abspath, ".gz.idx"))
+    : BaseChecker<Data>(data), gzabspath(sys::with_suffix(this->segment().abspath(), ".gz")), gzidxabspath(sys::with_suffix(this->segment().abspath(), ".gz.idx"))
 {
 }
 
@@ -230,20 +230,20 @@ core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, metada
         };
 
         Creator creator(this->segment(), mds, tmpabspath);
-        creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+        creator.validator = &scan::Validator::by_filename(this->segment().abspath());
         if (Data::padding == 1) creator.padding.push_back('\n');
         creator.create();
     } else {
         auto tmpidxabspath = sys::with_suffix(gzidxabspath, ".repack");
         finalize->tmpfiles.push_back(tmpidxabspath);
         finalize->on_commit = [&](const std::vector<std::filesystem::path>& tmpfiles) {
-            std::filesystem::rename(tmpfiles[0], this->segment().abspath);
+            std::filesystem::rename(tmpfiles[0], this->segment().abspath());
             if (!sys::rename_ifexists(tmpfiles[1], gzidxabspath))
                 std::filesystem::remove(gzidxabspath);
         };
 
         Creator creator(this->segment(), mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
-        creator.validator = &scan::Validator::by_filename(this->segment().abspath);
+        creator.validator = &scan::Validator::by_filename(this->segment().abspath());
         if (Data::padding == 1) creator.padding.push_back('\n');
         creator.create();
     }
@@ -288,8 +288,8 @@ template<typename Data>
 void Checker<Data>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    utils::files::PreserveFileTimes pt(this->segment().abspath);
-    sys::File fd(this->segment().abspath, O_RDWR);
+    utils::files::PreserveFileTimes pt(this->segment().abspath());
+    sys::File fd(this->segment().abspath(), O_RDWR);
     fd.lseek(s.offset);
     fd.write_all_or_throw("\0", 1);
 }
@@ -316,10 +316,10 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 {
     if (cfg.gz_group_size == 0)
     {
-        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"));
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".gz"));
         creator.create();
     } else {
-        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"), sys::with_suffix(segment.abspath, ".gz.idx"), cfg.gz_group_size);
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".gz"), sys::with_suffix(segment.abspath(), ".gz.idx"), cfg.gz_group_size);
         creator.create();
     }
 
@@ -349,11 +349,11 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 {
     if (cfg.gz_group_size == 0)
     {
-        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"));
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".gz"));
         creator.padding.push_back('\n');
         creator.create();
     } else {
-        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath, ".gz"), sys::with_suffix(segment.abspath, ".gz.idx"), cfg.gz_group_size);
+        gz::Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".gz"), sys::with_suffix(segment.abspath(), ".gz.idx"), cfg.gz_group_size);
         creator.padding.push_back('\n');
         creator.create();
     }

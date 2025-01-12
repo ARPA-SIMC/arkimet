@@ -87,7 +87,7 @@ Blob* Blob::clone() const
 
 std::unique_ptr<Blob> Blob::create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size)
 {
-    auto res = create_unlocked(reader->segment().format, reader->segment().root, reader->segment().relpath, offset, size);
+    auto res = create_unlocked(reader->segment().format(), reader->segment().root(), reader->segment().relpath(), offset, size);
     res->lock(reader);
     return res;
 }

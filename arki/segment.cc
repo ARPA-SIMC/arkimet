@@ -16,8 +16,8 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(std::shared_ptr<segment::Session> session, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-    : session(session), format(format), root(root), relpath(relpath), abspath(std::filesystem::weakly_canonical(root / relpath))
+Segment::Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+    : m_session(session), m_format(format), m_root(root), m_relpath(relpath), m_abspath(std::filesystem::weakly_canonical(root / relpath))
 {
 }
 
@@ -27,7 +27,7 @@ Segment::~Segment()
 
 std::shared_ptr<segment::Data> Segment::detect_data() const
 {
-    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    std::unique_ptr<struct stat> st = sys::stat(abspath());
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
@@ -36,17 +36,17 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
             return segment::data::fd::Data::detect_data(shared_from_this());
     }
 
-    st = sys::stat(sys::with_suffix(abspath, ".gz"));
+    st = sys::stat(sys::with_suffix(abspath(), ".gz"));
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
         {
             std::stringstream buf;
-            buf << "cannot access data for " << format << " directory " << relpath << ": cannot handle a directory with a .gz extension";
+            buf << "cannot access data for " << format() << " directory " << relpath() << ": cannot handle a directory with a .gz extension";
             throw std::runtime_error(buf.str());
         }
 
-        switch (format)
+        switch (format())
         {
             case DataFormat::GRIB:
             case DataFormat::BUFR:
@@ -60,28 +60,28 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
             default:
             {
                 std::stringstream buf;
-                buf << "cannot access data for " << format << " file " << relpath
+                buf << "cannot access data for " << format() << " file " << relpath()
                     << ": format not supported";
                 throw std::runtime_error(buf.str());
             }
         }
     }
 
-    st = sys::stat(sys::with_suffix(abspath, ".tar"));
+    st = sys::stat(sys::with_suffix(abspath(), ".tar"));
     if (st.get())
         return std::make_shared<segment::data::tar::Data>(shared_from_this());
 
-    st = sys::stat(sys::with_suffix(abspath, ".zip"));
+    st = sys::stat(sys::with_suffix(abspath(), ".zip"));
     if (st.get())
         return std::make_shared<segment::data::zip::Data>(shared_from_this());
 
     // Segment not found on disk, create from defaults
 
-    switch (format)
+    switch (format())
     {
         case DataFormat::GRIB:
         case DataFormat::BUFR:
-            switch (session->default_file_segment)
+            switch (session().default_file_segment)
             {
                 case segment::DefaultFileSegment::SEGMENT_FILE:
                     return std::make_shared<segment::data::concat::Data>(shared_from_this());
@@ -97,7 +97,7 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
                     throw std::runtime_error("Unknown default file segment");
             }
         case DataFormat::VM2:
-            switch (session->default_file_segment)
+            switch (session().default_file_segment)
             {
                 case segment::DefaultFileSegment::SEGMENT_FILE:
                     return std::make_shared<segment::data::lines::Data>(shared_from_this());
@@ -115,7 +115,7 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
         case DataFormat::ODIMH5:
         case DataFormat::NETCDF:
         case DataFormat::JPEG:
-            switch (session->default_dir_segment)
+            switch (session().default_dir_segment)
             {
                 case segment::DefaultDirSegment::SEGMENT_DIR:
                     return std::make_shared<segment::data::dir::Data>(shared_from_this());
@@ -129,7 +129,7 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
         default:
         {
             std::stringstream buf;
-            buf << "cannot access data for " << format << " file " << relpath
+            buf << "cannot access data for " << format() << " file " << relpath()
                 << ": format not supported";
             throw std::runtime_error(buf.str());
         }
@@ -143,7 +143,7 @@ std::shared_ptr<segment::data::Reader> Segment::detect_data_reader(std::shared_p
 
 std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment::data::WriterConfig& config) const
 {
-    return detect_data()->writer(config, session->mock_data);
+    return detect_data()->writer(config, session().mock_data);
     /*
     std::shared_ptr<segment::data::Writer> res;
 
@@ -221,7 +221,7 @@ std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment
 
 std::shared_ptr<segment::data::Checker> Segment::detect_data_checker() const
 {
-    return detect_data()->checker(session->mock_data);
+    return detect_data()->checker(session().mock_data);
     /*
     std::shared_ptr<segment::data::Checker> res;
 
@@ -356,16 +356,16 @@ bool Segment::is_segment(const std::filesystem::path& abspath)
     {
         if (S_ISDIR(st->st_mode))
             return false;
-        auto format = scan::Scanner::format_from_filename(abspath.stem());
-        return segment::data::gz::Data::can_store(format);
+        return segment::data::gz::Data::can_store(
+            scan::Scanner::format_from_filename(abspath.stem()));
     }
 
     if (extension == ".tar")
     {
         if (S_ISDIR(st->st_mode))
             return false;
-        auto format = scan::Scanner::format_from_filename(abspath.stem());
-        return segment::data::tar::Data::can_store(format);
+        return segment::data::tar::Data::can_store(
+                scan::Scanner::format_from_filename(abspath.stem()));
     }
 
     auto format = scan::Scanner::detect_format(abspath);

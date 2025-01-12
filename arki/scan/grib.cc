@@ -106,10 +106,10 @@ void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::data
     offset -= size;
 
     md.set_source(Source::createBlob(reader, offset, size));
-    md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
+    md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format(), vector<uint8_t>(vbuf, vbuf + size)));
 
     stringstream note;
-    note << "Scanned from " << reader->segment().relpath.filename().native() << ":" << offset << "+" << size;
+    note << "Scanned from " << reader->segment().relpath().filename().native() << ":" << offset << "+" << size;
     md.add_note(note.str());
 }
 
@@ -138,7 +138,7 @@ std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& dat
 
 bool GribScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
-    files::RAIIFILE in(reader->segment().abspath, "rb");
+    files::RAIIFILE in(reader->segment().abspath(), "rb");
     while (true)
     {
         GribHandle gh(context, in);

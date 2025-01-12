@@ -39,7 +39,7 @@ Span AppendCreator::append_md(Metadata& md)
 
 std::unique_ptr<types::Source> AppendCreator::create_source(const Metadata& md, const Span& span)
 {
-    return types::Source::createBlobUnlocked(md.source().format, segment.root, segment.relpath, span.offset, span.size);
+    return types::Source::createBlobUnlocked(md.source().format, segment.root(), segment.relpath(), span.offset, span.size);
 }
 
 void AppendCreator::create()
@@ -94,7 +94,7 @@ void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& sourc
 
 State AppendCheckBackend::check_source(const types::source::Blob& source)
 {
-    if (source.filename != segment.relpath)
+    if (source.filename != segment.relpath())
         throw std::runtime_error("metadata to validate does not appear to be from this segment");
     return State(SEGMENT_OK);
 }

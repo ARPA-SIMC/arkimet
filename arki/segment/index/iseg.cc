@@ -729,7 +729,7 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
 }
 
 AIndex::AIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
-    : WIndex(config, dataset, segment->segment().relpath, lock)
+    : WIndex(config, dataset, segment->segment().relpath(), lock)
 {
 }
 

@@ -96,8 +96,8 @@ const Validator& validator() { return netcdf_validator; }
 void NetCDFScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::data::Reader> reader)
 {
     struct stat st;
-    sys::stat(reader->segment().abspath, st);
-    md.add_note_scanned_from(reader->segment().relpath);
+    sys::stat(reader->segment().abspath(), st);
+    md.add_note_scanned_from(reader->segment().relpath());
     md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 
@@ -123,13 +123,13 @@ std::shared_ptr<Metadata> NetCDFScanner::scan_singleton(const std::filesystem::p
 bool NetCDFScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     // If the file is empty, skip it
-    auto st = sys::stat(reader->segment().abspath);
+    auto st = sys::stat(reader->segment().abspath());
     if (!st) return true;
     if (S_ISDIR(st->st_mode))
         throw std::runtime_error("NetCDFH5::scan_segment cannot be called on directory segments");
     if (!st->st_size) return true;
 
-    auto md = scan_nc_file(reader->segment().abspath);
+    auto md = scan_nc_file(reader->segment().abspath());
     set_blob_source(*md, reader);
     return dest(md);
 }

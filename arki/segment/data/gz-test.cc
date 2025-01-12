@@ -31,50 +31,50 @@ SegmentTests<Data, FixtureData>::register_tests();
 
 this->add_method("noidx", [&](Fixture& f) {
     auto checker = f.create(segment::data::RepackConfig(0));
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).not_exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    auto p = wcallchecked(checker->repack(f.segment->root, f.seg_mds, segment::data::RepackConfig(0)));
+    auto p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds, segment::data::RepackConfig(0)));
     wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).not_exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    p = wcallchecked(checker->repack(f.segment->root, f.seg_mds, segment::data::RepackConfig(1)));
+    p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds, segment::data::RepackConfig(1)));
     wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).exists());
 });
 
 this->add_method("idx", [&](Fixture& f) {
     auto checker = f.create(segment::data::RepackConfig(1));
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).exists());
 
-    auto p = wcallchecked(checker->repack(f.segment->root, f.seg_mds, segment::data::RepackConfig(1)));
+    auto p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds, segment::data::RepackConfig(1)));
     wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).exists());
 
-    p = wcallchecked(checker->repack(f.segment->root, f.seg_mds, segment::data::RepackConfig(0)));
+    p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds, segment::data::RepackConfig(0)));
     wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).not_exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 });
 
 this->add_method("onegroup", [&](Fixture& f) {
     auto checker = f.create(segment::data::RepackConfig(1024));
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).not_exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    auto p = wcallchecked(checker->repack(f.segment->root, f.seg_mds, segment::data::RepackConfig(1024)));
+    auto p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds, segment::data::RepackConfig(1024)));
     wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).not_exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    p = wcallchecked(checker->repack(f.segment->root, f.seg_mds, segment::data::RepackConfig(0)));
+    p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds, segment::data::RepackConfig(0)));
     wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath)).exists());
-    wassert(actual_file(gzidx(f.segment->abspath)).not_exists());
+    wassert(actual_file(gz(f.segment->abspath())).exists());
+    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 });
 
 

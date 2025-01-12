@@ -97,7 +97,7 @@ this->add_method("repack", [](Fixture& f) {
     auto reader = checker->data().reader(std::make_shared<core::lock::Null>());
     for (auto& md: f.seg_mds)
         md->sourceBlob().lock(reader);
-    auto p = wcallchecked(checker->repack(f.segment->root, f.seg_mds));
+    auto p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds));
     wassert(p.commit());
     auto rep = [](const std::string& msg) noexcept {
         // fprintf(stderr, "POST REPACK %s\n", msg.c_str());

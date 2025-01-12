@@ -39,8 +39,8 @@ public:
 
     AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::data::Writer> segment)
         : dataset(dataset), lock(lock), segment(segment),
-          dir(segment->segment().abspath.parent_path()),
-          basename(segment->segment().abspath.filename())
+          dir(segment->segment().abspath().parent_path()),
+          basename(segment->segment().abspath().filename())
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
@@ -65,7 +65,7 @@ public:
             copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.path(), basename, source.offset, source.size));
         sum.add(*copy);
-        mds.acquire(move(copy));
+        mds.acquire(std::move(copy));
         flushed = false;
     }
 
@@ -81,9 +81,9 @@ public:
             add(md, new_source);
             segment->commit();
             time_t ts = segment->data().timestamp();
-            mft->acquire(segment->segment().relpath, ts, sum);
-            mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
-            sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));
+            mft->acquire(segment->segment().relpath(), ts, sum);
+            mds.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".metadata"));
+            sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
             mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -116,9 +116,9 @@ public:
 
         segment->commit();
         time_t ts = segment->data().timestamp();
-        mft->acquire(segment->segment().relpath, ts, sum);
-        mds.writeAtomically(sys::with_suffix(segment->segment().abspath, ".metadata"));
-        sum.writeAtomically(sys::with_suffix(segment->segment().abspath, ".summary"));
+        mft->acquire(segment->segment().relpath(), ts, sum);
+        mds.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".metadata"));
+        sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
         mft->flush();
     }
 };

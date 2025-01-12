@@ -23,7 +23,7 @@ Session::~Session()
 {
 }
 
-std::shared_ptr<Segment> Session::segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
+std::shared_ptr<Segment> Session::segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) const
 {
     return std::make_shared<Segment>(shared_from_this(), format, root, relpath);
 }
@@ -55,11 +55,11 @@ std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::fil
 std::shared_ptr<segment::data::Reader> Session::segment_reader(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     auto seg = segment(format, root, relpath);
-    auto res = reader_pool.find(seg->abspath);
+    auto res = reader_pool.find(seg->abspath());
     if (res == reader_pool.end() || res->second.expired())
     {
         auto reader = seg->detect_data_reader(lock);
-        reader_pool[seg->abspath] = reader;
+        reader_pool[seg->abspath()] = reader;
         return reader;
     }
     return res->second.lock();
@@ -69,7 +69,7 @@ std::shared_ptr<segment::data::Writer> Session::segment_writer(const segment::da
 {
     // Ensure that the directory containing the segment exists
     auto seg = segment(format, root, relpath);
-    std::filesystem::create_directories(seg->abspath.parent_path());
+    std::filesystem::create_directories(seg->abspath().parent_path());
 
     auto data = seg->detect_data();
     return data->writer(config, false);

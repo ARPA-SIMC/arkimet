@@ -43,12 +43,12 @@ Reader::~Reader()
 bool Reader::scan(metadata_dest_func dest)
 {
     // stat the metadata file, if it exists
-    auto md_abspath = sys::with_suffix(segment().abspath, ".metadata");
+    auto md_abspath = sys::with_suffix(segment().abspath(), ".metadata");
     unique_ptr<struct stat> st_md = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get() && st_md->st_mtime >= data().timestamp())
     {
-        std::filesystem::path root(segment().abspath.parent_path());
+        std::filesystem::path root(segment().abspath().parent_path());
         return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
             return dest(md);
@@ -92,7 +92,7 @@ void Writer::PendingMetadata::set_source()
 {
     std::unique_ptr<types::source::Blob> source(new_source);
     new_source = 0;
-    md.set_source(move(source));
+    md.set_source(std::move(source));
     if (config.drop_cached_data_on_commit)
         md.drop_cached_data();
 }
@@ -122,7 +122,7 @@ std::shared_ptr<segment::data::Checker> Checker::zip(metadata::Collection& mds)
 std::shared_ptr<segment::data::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
 {
     std::shared_ptr<segment::data::Checker> res;
-    switch (segment().format)
+    switch (segment().format())
     {
         case DataFormat::VM2:
             res = segment::data::gzlines::Data::create(segment(), mds, RepackConfig(groupsize));

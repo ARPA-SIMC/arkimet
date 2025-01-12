@@ -219,7 +219,7 @@ bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 
 bool Vm2::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
-    vm2::Input input(reader->segment().abspath);
+    vm2::Input input(reader->segment().abspath());
     while (true)
     {
         std::unique_ptr<Metadata> md(new Metadata);

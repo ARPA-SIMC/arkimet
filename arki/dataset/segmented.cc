@@ -195,12 +195,12 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    auto format = scan::Scanner::format_from_filename(segment->segment().relpath);
+    auto format = scan::Scanner::format_from_filename(segment->segment().relpath());
 
     // Get the time range for this relpath
     core::Interval interval;
-    if (!dataset().relpath_timespan(segment->segment().relpath, interval))
-        throw std::runtime_error("cannot archive segment "s + segment->segment().abspath.native() + " because its name does not match the dataset step");
+    if (!dataset().relpath_timespan(segment->segment().relpath(), interval))
+        throw std::runtime_error("cannot archive segment "s + segment->segment().abspath().native() + " because its name does not match the dataset step");
 
     // Get the contents of this segment
     metadata::Collection mdc;
@@ -213,17 +213,17 @@ void CheckerSegment::archive()
     release(new_root, new_relpath, new_abspath);
 
     // Acquire in the achive
-    archives()->index_segment("last" / new_relpath, move(mdc));
+    archives()->index_segment("last" / new_relpath, std::move(mdc));
 }
 
 void CheckerSegment::unarchive()
 {
-    auto arcrelpath = "last" / segment->segment().relpath;
-    archives()->release_segment(arcrelpath, segment->segment().root, segment->segment().relpath, segment->segment().abspath);
+    auto arcrelpath = "last" / segment->segment().relpath();
+    archives()->release_segment(arcrelpath, segment->segment().root(), segment->segment().relpath(), segment->segment().abspath());
     auto reader = segment->segment().detect_data_reader(lock);
     metadata::Collection mdc;
     reader->scan(mdc.inserter_func());
-    index(move(mdc));
+    index(std::move(mdc));
 }
 
 void CheckerSegment::remove_data(const std::vector<uint64_t>& offsets)
