@@ -137,18 +137,17 @@ void DatasetTest::set_session(std::shared_ptr<dataset::Session> session)
 std::shared_ptr<dataset::Session> DatasetTest::session()
 {
     if (!m_session.get())
-    {
-        switch (variant)
-        {
-            case TEST_NORMAL:
-                m_session = std::make_shared<dataset::Session>();
-                break;
-            case TEST_FORCE_DIR:
-                m_session = std::make_shared<DirSegmentsSession>();
-                break;
-        }
-    }
+        m_session = std::make_shared<dataset::Session>();
     return m_session;
+}
+
+std::shared_ptr<segment::Session> DatasetTest::segment_session()
+{
+    config();
+    auto dataset = std::dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
+    if (!dataset)
+        throw std::runtime_error("Test dataset is not a segmented dataset");
+    return dataset->segment_session;
 }
 
 Dataset& DatasetTest::config()
@@ -160,6 +159,20 @@ Dataset& DatasetTest::config()
         auto s = cfg->to_string();
         out.write_all_or_retry(s.data(), s.size());
         m_dataset = session()->dataset(*cfg);
+
+        switch (variant)
+        {
+            case TEST_NORMAL:
+                break;
+            case TEST_FORCE_DIR:
+            {
+                auto dataset = std::dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
+                if (!dataset)
+                    throw std::runtime_error("TEST_FORCE_DIR used on a non-segmented dataset");
+                dataset->segment_session->default_file_segment = segment::DefaultFileSegment::SEGMENT_DIR;
+                break;
+            }
+        }
     }
     return *m_dataset;
 }

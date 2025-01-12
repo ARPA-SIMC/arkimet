@@ -73,6 +73,7 @@ std::shared_ptr<segment::data::Checker> Session::segment_checker(DataFormat form
 }
 
 
+/*
 std::shared_ptr<segment::data::Reader> DirSegmentsMixin::segment_reader(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
     auto seg = segment(format, root, relpath);
@@ -103,5 +104,6 @@ std::shared_ptr<segment::data::Checker> DirSegmentsMixin::segment_checker(DataFo
     auto data = seg->detect_data(Segment::DefaultFileSegment::SEGMENT_DIR);
     return data->checker(false);
 }
+*/
 
 }

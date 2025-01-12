@@ -121,6 +121,7 @@ public:
     void set_session(std::shared_ptr<dataset::Session> session);
 
     std::shared_ptr<dataset::Session> session();
+    std::shared_ptr<segment::Session> segment_session();
     dataset::Dataset& config();
     std::shared_ptr<dataset::Dataset> dataset_config();
     std::shared_ptr<dataset::local::Dataset> local_config();

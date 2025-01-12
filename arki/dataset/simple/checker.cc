@@ -62,7 +62,7 @@ public:
     CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+        segment = checker.dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     }
 
     std::filesystem::path path_relative() const override { return segment->segment().relpath; }
@@ -650,7 +650,7 @@ void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned o
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
     m_idx->test_make_overlap(relpath, overlap_size, data_idx);
 }
 
@@ -658,7 +658,7 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
+    dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
     m_idx->test_make_hole(relpath, hole_size, data_idx);
 }
 
@@ -666,14 +666,14 @@ void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned d
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
+    dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     metadata::Collection mds;
     m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
+    dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate_by_data(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
@@ -687,7 +687,7 @@ void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_i
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
-    auto segment = dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+    auto segment = dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
     m_idx->test_rename(relpath, new_relpath);
     segment->move(dataset().path, new_relpath, dataset().path / new_relpath);
 }

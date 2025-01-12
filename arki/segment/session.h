@@ -17,6 +17,10 @@ protected:
     std::unordered_map<std::string, std::weak_ptr<segment::data::Reader>> reader_pool;
 
 public:
+    DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
+    DefaultDirSegment default_dir_segment = DefaultDirSegment::SEGMENT_DIR;
+    bool mock_data = false;
+
     explicit Session();
     Session(const Session&) = delete;
     Session(Session&&) = delete;
@@ -34,7 +38,7 @@ public:
     virtual std::shared_ptr<segment::data::Checker> segment_checker(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
 };
 
-
+/*
 // Use virtual to allow adding this as a mixing without introducing a new Session parent
 class DirSegmentsMixin : virtual public Session
 {
@@ -46,6 +50,7 @@ public:
     std::shared_ptr<segment::data::Checker> segment_checker(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) override;
 
 };
+*/
 
 }
 #endif

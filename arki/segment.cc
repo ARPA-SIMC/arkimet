@@ -25,9 +25,7 @@ Segment::~Segment()
 {
 }
 
-std::shared_ptr<segment::Data> Segment::detect_data(
-            Segment::DefaultFileSegment default_file_segment,
-            Segment::DefaultDirSegment default_dir_segment) const
+std::shared_ptr<segment::Data> Segment::detect_data() const
 {
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (st.get())
@@ -83,33 +81,33 @@ std::shared_ptr<segment::Data> Segment::detect_data(
     {
         case DataFormat::GRIB:
         case DataFormat::BUFR:
-            switch (default_file_segment)
+            switch (session->default_file_segment)
             {
-                case DefaultFileSegment::SEGMENT_FILE:
+                case segment::DefaultFileSegment::SEGMENT_FILE:
                     return std::make_shared<segment::data::concat::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_GZ:
+                case segment::DefaultFileSegment::SEGMENT_GZ:
                     return std::make_shared<segment::data::gzconcat::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_DIR:
+                case segment::DefaultFileSegment::SEGMENT_DIR:
                     return std::make_shared<segment::data::dir::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_TAR:
+                case segment::DefaultFileSegment::SEGMENT_TAR:
                     return std::make_shared<segment::data::tar::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_ZIP:
+                case segment::DefaultFileSegment::SEGMENT_ZIP:
                     return std::make_shared<segment::data::zip::Data>(shared_from_this());
                 default:
                     throw std::runtime_error("Unknown default file segment");
             }
         case DataFormat::VM2:
-            switch (default_file_segment)
+            switch (session->default_file_segment)
             {
-                case DefaultFileSegment::SEGMENT_FILE:
+                case segment::DefaultFileSegment::SEGMENT_FILE:
                     return std::make_shared<segment::data::lines::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_GZ:
+                case segment::DefaultFileSegment::SEGMENT_GZ:
                     return std::make_shared<segment::data::gzlines::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_DIR:
+                case segment::DefaultFileSegment::SEGMENT_DIR:
                     return std::make_shared<segment::data::dir::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_TAR:
+                case segment::DefaultFileSegment::SEGMENT_TAR:
                     return std::make_shared<segment::data::tar::Data>(shared_from_this());
-                case DefaultFileSegment::SEGMENT_ZIP:
+                case segment::DefaultFileSegment::SEGMENT_ZIP:
                     return std::make_shared<segment::data::zip::Data>(shared_from_this());
                 default:
                     throw std::runtime_error("Unknown default file segment");
@@ -117,13 +115,13 @@ std::shared_ptr<segment::Data> Segment::detect_data(
         case DataFormat::ODIMH5:
         case DataFormat::NETCDF:
         case DataFormat::JPEG:
-            switch (default_dir_segment)
+            switch (session->default_dir_segment)
             {
-                case DefaultDirSegment::SEGMENT_DIR:
+                case segment::DefaultDirSegment::SEGMENT_DIR:
                     return std::make_shared<segment::data::dir::Data>(shared_from_this());
-                case DefaultDirSegment::SEGMENT_TAR:
+                case segment::DefaultDirSegment::SEGMENT_TAR:
                     return std::make_shared<segment::data::tar::Data>(shared_from_this());
-                case DefaultDirSegment::SEGMENT_ZIP:
+                case segment::DefaultDirSegment::SEGMENT_ZIP:
                     return std::make_shared<segment::data::zip::Data>(shared_from_this());
                 default:
                     throw std::runtime_error("Unknown default dir segment");
@@ -143,9 +141,9 @@ std::shared_ptr<segment::data::Reader> Segment::detect_data_reader(std::shared_p
     return detect_data()->reader(lock);
 }
 
-std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment::data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment::data::WriterConfig& config) const
 {
-    return detect_data()->writer(config, mock_data);
+    return detect_data()->writer(config, session->mock_data);
     /*
     std::shared_ptr<segment::data::Writer> res;
 
@@ -221,9 +219,9 @@ std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment
     */
 }
 
-std::shared_ptr<segment::data::Checker> Segment::detect_data_checker(bool mock_data) const
+std::shared_ptr<segment::data::Checker> Segment::detect_data_checker() const
 {
-    return detect_data()->checker(mock_data);
+    return detect_data()->checker(session->mock_data);
     /*
     std::shared_ptr<segment::data::Checker> res;
 
@@ -395,5 +393,14 @@ std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
     return pathname;
 }
 
+
+namespace segment {
+
+Reader::Reader(std::shared_ptr<const Segment> segment)
+    : m_segment(segment)
+{
+}
+
+}
 
 }

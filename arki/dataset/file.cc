@@ -178,8 +178,9 @@ static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const query::Data
 
 
 SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : Dataset(session, cfg), 
-      segment(session->segment_from_path_and_format(cfg.value("path"), format_from_string(cfg.value("format"))))
+    : Dataset(session, cfg),
+      segment_session(std::make_shared<segment::Session>()),
+      segment(segment_session->segment_from_path_and_format(cfg.value("path"), format_from_string(cfg.value("format"))))
 {
 }
 
@@ -209,6 +210,7 @@ ArkimetFile::~ArkimetFile() {}
 bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     // TODO: rewrite using Segment's reader query capabilities
+    auto segment_session = std::make_shared<segment::Session>();
     auto sorter = wrap_with_query(q, dest);
     if (!q.with_data)
     {
@@ -219,7 +221,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto segment = session->segment(blob.format, blob.basedir, blob.filename);
+                        auto segment = segment_session->segment(blob.format, blob.basedir, blob.filename);
                         auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }

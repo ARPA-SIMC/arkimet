@@ -81,6 +81,20 @@ struct Span
     bool operator>(const Span& o) const { return std::tie(offset, size) > std::tie(o.offset, o.size); }
 };
 
+enum class DefaultFileSegment {
+    SEGMENT_FILE,
+    SEGMENT_GZ,
+    SEGMENT_DIR,
+    SEGMENT_TAR,
+    SEGMENT_ZIP,
+};
+
+enum class DefaultDirSegment {
+    SEGMENT_DIR,
+    SEGMENT_TAR,
+    SEGMENT_ZIP,
+};
+
 }
 
 #endif

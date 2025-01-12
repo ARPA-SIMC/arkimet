@@ -313,7 +313,7 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
-bool Index::query_data(const query::Data& q, dataset::Session& session, metadata_dest_func dest)
+bool Index::query_data(const query::Data& q, metadata_dest_func dest)
 {
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
@@ -338,7 +338,7 @@ bool Index::query_data(const query::Data& q, dataset::Session& session, metadata
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = session.segment_reader(config.format, dataset->path, data_relpath, lock);
+        reader = dataset->segment_session->segment_reader(config.format, dataset->path, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results

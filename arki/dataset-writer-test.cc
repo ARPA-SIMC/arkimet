@@ -26,18 +26,6 @@ using namespace arki::core;
 
 namespace {
 
-struct ForceDirMockDataSession : public arki::dataset::Session
-{
-public:
-    std::shared_ptr<arki::segment::data::Writer> segment_writer(const segment::data::WriterConfig& writer_config, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
-    {
-        auto session = std::make_shared<segment::Session>();
-        auto segment = session->segment(format, root, relpath);
-        auto data = std::make_shared<arki::segment::data::dir::Data>(segment);
-        return std::make_shared<arki::segment::data::dir::HoleWriter>(writer_config, data);
-    }
-};
-
 template<class Data>
 struct FixtureWriter : public DatasetTest
 {
@@ -104,7 +92,8 @@ add_method("import_largefile", [](Fixture& f) {
     skip_unless_filesystem_has_holes(".");
     // A dataset with hole files
     f.cfg->set("step", "daily");
-    f.set_session(std::make_shared<ForceDirMockDataSession>());
+    f.segment_session()->default_file_segment = segment::DefaultFileSegment::SEGMENT_DIR;
+    f.segment_session()->mock_data = true;
 
 
     {

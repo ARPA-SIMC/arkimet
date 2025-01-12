@@ -15,7 +15,7 @@ namespace dataset {
 namespace iseg {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, cfg),
+    : segmented::Dataset(session, std::make_shared<segment::Session>(), cfg),
       iseg{
           format_from_string(cfg.value("format")),
           types::parse_code_names(cfg.value("index")),
@@ -46,7 +46,7 @@ std::shared_ptr<dataset::Checker> Dataset::create_checker()
 
 std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return session->segment_reader(iseg.format, path, relpath, lock);
+    return segment_session->segment_reader(iseg.format, path, relpath, lock);
 }
 
 }

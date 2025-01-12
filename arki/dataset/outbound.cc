@@ -19,7 +19,7 @@ namespace dataset {
 namespace outbound {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, cfg)
+    : segmented::Dataset(session, std::make_shared<segment::Session>(), cfg)
 {
 }
 
@@ -45,7 +45,7 @@ void Writer::storeBlob(const segment::data::WriterConfig& writer_config, Metadat
     // Write using segment::Writer
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
-    auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
+    auto w = dataset().segment_session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
     w->append(md);
 }
 

@@ -11,6 +11,7 @@ class Segment;
 namespace segment {
 
 class Session;
+class Reader;
 class Data;
 
 }

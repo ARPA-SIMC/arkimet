@@ -35,6 +35,7 @@ public:
 class SegmentDataset : public Dataset
 {
 public:
+    std::shared_ptr<segment::Session> segment_session;
     std::shared_ptr<Segment> segment;
 
     SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);

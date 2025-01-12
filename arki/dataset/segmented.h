@@ -20,6 +20,9 @@ protected:
     Dataset(const Dataset& cfg) = default;
 
 public:
+    /// Segment session used to instantiate segment accessors
+    std::shared_ptr<segment::Session> segment_session;
+
     /// Name of the dataset::Step used to dispatch data into segments
     std::string step_name;
 
@@ -52,7 +55,7 @@ public:
     bool eatmydata = false;
 
 
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, std::shared_ptr<segment::Session> segment_session, const core::cfg::Section& cfg);
     ~Dataset();
 
     virtual bool relpath_timespan(const std::filesystem::path& path, core::Interval& interval) const;

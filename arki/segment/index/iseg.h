@@ -133,7 +133,7 @@ public:
      * Returns true if dest returned true all the time, false if generation
      * stopped because dest returned false.
      */
-    bool query_data(const query::Data& q, dataset::Session& session, metadata_dest_func dest);
+    bool query_data(const query::Data& q, metadata_dest_func dest);
 
     /**
      * Query this index, returning a summary

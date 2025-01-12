@@ -95,7 +95,7 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = dataset->session->segment_reader(dataset->iseg.format, dataset->path, old->filename, append_lock);
+                auto reader = dataset->segment_session->segment_reader(dataset->iseg.format, dataset->path, old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -210,7 +210,7 @@ public:
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = dataset->session->segment_reader(dataset->iseg.format, dataset->path, old->filename, append_lock);
+                    auto reader = dataset->segment_session->segment_reader(dataset->iseg.format, dataset->path, old->filename, append_lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -284,7 +284,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<dataset::AppendLock> append_lock(dataset().append_lock_segment(relpath));
-    auto segment = dataset().session->segment_writer(writer_config, dataset().iseg.format, dataset().path, relpath);
+    auto segment = dataset().segment_session->segment_writer(writer_config, dataset().iseg.format, dataset().path, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
 }
 

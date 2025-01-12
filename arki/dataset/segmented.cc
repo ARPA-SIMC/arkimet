@@ -52,8 +52,9 @@ void SegmentState::check_age(const std::filesystem::path& relpath, const Dataset
     }
 }
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::shared_ptr<Session> session, std::shared_ptr<segment::Session> segment_session, const core::cfg::Section& cfg)
     : local::Dataset(session, cfg),
+      segment_session(segment_session),
       step_name(str::lower(cfg.value("step"))),
       offline(cfg.value("offline") == "true"),
       smallfiles(cfg.value_bool("smallfiles"))
@@ -94,7 +95,7 @@ bool Dataset::relpath_timespan(const std::filesystem::path& path, core::Interval
 
 std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
 {
-    return session->segment_reader(scan::Scanner::format_from_filename(relpath), path, relpath, lock);
+    return segment_session->segment_reader(scan::Scanner::format_from_filename(relpath), path, relpath, lock);
 }
 
 

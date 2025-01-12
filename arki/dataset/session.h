@@ -12,13 +12,12 @@
 
 namespace arki::dataset {
 
-class Session: public virtual segment::Session
+class Session: public std::enable_shared_from_this<Session>
 {
 protected:
     matcher::Parser matcher_parser;
 
 public:
-    using segment::Session::Session;
     explicit Session(bool load_aliases=true);
     virtual ~Session();
 
@@ -69,7 +68,7 @@ public:
 };
 
 
-struct DirSegmentsSession: public virtual Session, public virtual segment::DirSegmentsMixin
+struct DirSegmentsSession: public Session
 {
     using dataset::Session::Session;
 };

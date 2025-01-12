@@ -25,11 +25,10 @@ void Tests::register_tests() {
 
 // Test querying
 add_method("query", [] {
+    metadata::TestCollection fixture("inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
-    auto segment = session->segment(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
-    reader->scan(ds->inserter_func());
+    fixture.move_to(ds->inserter_func());
 
     metadata::Collection mdc(*ds, "origin:GRIB1,200");
     wassert(actual(mdc.size()) == 1u);
@@ -49,11 +48,10 @@ add_method("query", [] {
 
 // Test querying the summary
 add_method("query_summary", [] {
+    metadata::TestCollection fixture("inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
-    auto segment = session->segment(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
-    reader->scan(ds->inserter_func());
+    fixture.move_to(ds->inserter_func());
 
     Summary summary;
     ds->create_reader()->query_summary("origin:GRIB1,200", summary);
@@ -62,11 +60,10 @@ add_method("query_summary", [] {
 
 // Test querying the summary by reftime
 add_method("query_summary_reftime", [] {
+    metadata::TestCollection fixture("inbound/test.grib1");
     auto session = make_shared<dataset::Session>();
-    auto segment = session->segment(DataFormat::GRIB, std::filesystem::current_path(), "inbound/test.grib1");
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     auto ds = std::make_shared<dataset::memory::Dataset>(session);
-    reader->scan(ds->inserter_func());
+    fixture.move_to(ds->inserter_func());
 
     Summary summary;
     ds->create_reader()->query_summary("reftime:>=2007-07", summary);
