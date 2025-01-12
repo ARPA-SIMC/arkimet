@@ -97,8 +97,8 @@ add_method("countbytes", [] {
 });
 
 add_method("cat", [] {
-    auto session = std::make_shared<segment::Session>();
-    auto segment = session->segment(DataFormat::GRIB, ".", "inbound/test.grib1");
+    auto session = std::make_shared<segment::Session>("inbound");
+    auto segment = session->segment_from_relpath_and_format("test.grib1", DataFormat::GRIB);
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
 
     // Get the normal data

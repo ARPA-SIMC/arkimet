@@ -178,10 +178,13 @@ static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const query::Data
 
 
 SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : Dataset(session, cfg),
-      segment_session(std::make_shared<segment::Session>()),
-      segment(segment_session->segment_from_path_and_format(cfg.value("path"), format_from_string(cfg.value("format"))))
+    : Dataset(session, cfg)
 {
+    std::filesystem::path basedir;
+    std::filesystem::path relpath;
+    utils::files::resolve_path(cfg.value("path"), basedir, relpath);
+    segment_session = std::make_shared<segment::Session>(basedir);
+    segment = segment_session->segment_from_relpath_and_format(relpath, format_from_string(cfg.value("format")));
 }
 
 bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
@@ -210,7 +213,6 @@ ArkimetFile::~ArkimetFile() {}
 bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     // TODO: rewrite using Segment's reader query capabilities
-    auto segment_session = std::make_shared<segment::Session>();
     auto sorter = wrap_with_query(q, dest);
     if (!q.with_data)
     {
@@ -221,7 +223,8 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto segment = segment_session->segment(blob.format, blob.basedir, blob.filename);
+                        auto segment_session = std::make_shared<segment::Session>(blob.basedir);
+                        auto segment = segment_session->segment_from_relpath_and_format(blob.filename, blob.format);
                         auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
                         md->sourceBlob().lock(reader);
                     }

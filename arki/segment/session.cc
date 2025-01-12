@@ -14,8 +14,8 @@ using namespace arki::utils;
 
 namespace arki::segment {
 
-Session::Session()
-    : reader_pool()
+Session::Session(const std::filesystem::path& root)
+    : reader_pool(), root(root)
 {
 }
 
@@ -39,6 +39,16 @@ std::shared_ptr<Segment> Session::segment_from_path_and_format(const std::filesy
     std::filesystem::path relpath;
     utils::files::resolve_path(path, basedir, relpath);
     return segment(format, basedir, relpath);
+}
+
+std::shared_ptr<Segment> Session::segment_from_relpath(const std::filesystem::path& relpath)
+{
+    return segment_from_relpath_and_format(relpath, scan::Scanner::format_from_filename(relpath));
+}
+
+std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format)
+{
+    return segment(format, root, relpath);
 }
 
 

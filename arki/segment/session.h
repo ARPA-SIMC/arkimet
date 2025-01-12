@@ -20,8 +20,9 @@ public:
     DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
     DefaultDirSegment default_dir_segment = DefaultDirSegment::SEGMENT_DIR;
     bool mock_data = false;
+    std::filesystem::path root;
 
-    explicit Session();
+    explicit Session(const std::filesystem::path& root);
     Session(const Session&) = delete;
     Session(Session&&) = delete;
     virtual ~Session();
@@ -31,6 +32,8 @@ public:
     virtual std::shared_ptr<Segment> segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
     virtual std::shared_ptr<Segment> segment_from_path(const std::filesystem::path& path);
     virtual std::shared_ptr<Segment> segment_from_path_and_format(const std::filesystem::path& path, DataFormat format);
+    virtual std::shared_ptr<Segment> segment_from_relpath(const std::filesystem::path& relpath);
+    virtual std::shared_ptr<Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format);
 
 
     virtual std::shared_ptr<segment::data::Reader> segment_reader(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);

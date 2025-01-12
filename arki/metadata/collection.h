@@ -172,19 +172,19 @@ struct TestCollection : public Collection
 
     std::shared_ptr<segment::Session> session;
 
-    TestCollection();
+    TestCollection() = default;
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    TestCollection(const std::filesystem::path& pathname, bool with_data=false);
+    TestCollection(const std::filesystem::path& path, bool with_data=false);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::filesystem::path& pathname, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, bool with_data);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::filesystem::path& pathname, DataFormat format, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data);
 };
 
 }

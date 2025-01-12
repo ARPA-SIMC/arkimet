@@ -20,8 +20,8 @@ void SegmentFixture<Data, FixtureData>::test_setup()
     sys::rmtree_ifexists("testseg");
     std::filesystem::create_directory("testseg");
     seg_mds = td.mds.clone();
-    session = std::make_shared<segment::Session>();
-    segment = session->segment(td.format, std::filesystem::current_path(), "testseg/test." + format_name(td.format));
+    session = std::make_shared<segment::Session>(std::filesystem::current_path());
+    segment = session->segment_from_relpath_and_format("testseg/test." + format_name(td.format), td.format);
 }
 
 template<class Data, class FixtureData>

@@ -15,7 +15,7 @@ namespace dataset {
 namespace iseg {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, std::make_shared<segment::Session>(), cfg),
+    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg),
       iseg{
           format_from_string(cfg.value("format")),
           types::parse_code_names(cfg.value("index")),

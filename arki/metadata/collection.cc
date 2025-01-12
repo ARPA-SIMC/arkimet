@@ -378,31 +378,35 @@ void Collection::drop_cached_data()
     for (auto& md: *this) md->drop_cached_data();
 }
 
-TestCollection::TestCollection()
-    : session(std::make_shared<segment::Session>())
+
+TestCollection::TestCollection(const std::filesystem::path& path, bool with_data)
 {
+    scan_from_file(path, with_data);
 }
 
-TestCollection::TestCollection(const std::filesystem::path& pathname, bool with_data)
-    : session(std::make_shared<segment::Session>())
+void TestCollection::scan_from_file(const std::filesystem::path& path, bool with_data)
 {
-    scan_from_file(pathname, with_data);
-}
+    std::filesystem::path basedir;
+    std::filesystem::path relpath;
+    utils::files::resolve_path(path, basedir, relpath);
+    session = std::make_shared<segment::Session>(basedir);
 
-void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool with_data)
-{
-    auto segment = session->segment_from_path(pathname);
+    auto segment = session->segment_from_relpath(relpath);
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
-void TestCollection::scan_from_file(const std::filesystem::path& pathname, DataFormat format, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data)
 {
-    auto segment = session->segment_from_path_and_format(pathname, format);
+    std::filesystem::path basedir;
+    std::filesystem::path relpath;
+    utils::files::resolve_path(path, basedir, relpath);
+    session = std::make_shared<segment::Session>(basedir);
+
+    auto segment = session->segment_from_relpath_and_format(relpath, format);
     auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
-
 
 }
 }

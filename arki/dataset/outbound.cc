@@ -19,7 +19,7 @@ namespace dataset {
 namespace outbound {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, std::make_shared<segment::Session>(), cfg)
+    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg)
 {
 }
 

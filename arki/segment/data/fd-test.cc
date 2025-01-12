@@ -24,8 +24,8 @@ void Tests<Data, FixtureData>::register_tests() {
 SegmentTests<Data, FixtureData>::register_tests();
 
 this->add_method("append", [](Fixture& f) {
-    auto session = std::make_shared<segment::Session>();
-    auto segment = session->segment(f.td.format, std::filesystem::current_path(),  "testfile." + format_name(f.td.format));
+    auto session = std::make_shared<segment::Session>(std::filesystem::current_path());
+    auto segment = session->segment_from_relpath_and_format( "testfile." + format_name(f.td.format), f.td.format);
     delete_if_exists(segment->abspath);
     wassert(actual_file(segment->abspath).not_exists());
     {
@@ -59,8 +59,8 @@ this->add_method("append", [](Fixture& f) {
 
 // Test with large files
 this->add_method("large", [](Fixture& f) {
-    auto session = std::make_shared<segment::Session>();
-    auto segment = session->segment(f.td.format, std::filesystem::current_path(),  "testfile." + format_name(f.td.format));
+    auto session = std::make_shared<segment::Session>(std::filesystem::current_path());
+    auto segment = session->segment_from_relpath_and_format("testfile." + format_name(f.td.format), f.td.format);
     delete_if_exists(segment->abspath);
     {
         // Make a file that looks HUGE, so that appending will make its size

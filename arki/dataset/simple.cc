@@ -12,7 +12,7 @@ namespace dataset {
 namespace simple {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::segmented::Dataset(session, std::make_shared<segment::Session>(), cfg),
+    : dataset::segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg),
       index_type(cfg.value("index_type"))
 {
 }
