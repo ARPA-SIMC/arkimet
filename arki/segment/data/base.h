@@ -62,7 +62,7 @@ public:
     const Data& data() const override { return *m_data; }
     // std::shared_ptr<data::Checker> checker_moved(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) const override;
 
-    std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
+    std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override;
 };
 
 }

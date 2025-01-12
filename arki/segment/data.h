@@ -260,7 +260,7 @@ public:
      *
      * Returns a Checker pointing to the new location
      */
-    virtual std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
+    virtual std::shared_ptr<Checker> move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Truncate the segment at the given offset

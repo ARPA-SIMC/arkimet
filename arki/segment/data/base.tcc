@@ -9,9 +9,10 @@
 namespace arki::segment::data {
 
 template<typename Data>
-std::shared_ptr<data::Checker> BaseChecker<Data>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+std::shared_ptr<data::Checker> BaseChecker<Data>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
 {
     using namespace arki::utils;
+    auto new_abspath = new_root / new_relpath;
 
     // Sanity checks: avoid conflicts
     if (std::filesystem::exists(new_abspath) ||
