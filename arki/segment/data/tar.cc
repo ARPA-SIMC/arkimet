@@ -195,9 +195,9 @@ size_t Checker::size()
     return sys::size(tarabspath);
 }
 
-void Checker::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+void Checker::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
 {
-    auto new_tarabspath = sys::with_suffix(new_abspath, ".tar");
+    auto new_tarabspath = sys::with_suffix(new_root / new_relpath, ".tar");
     if (rename(tarabspath.c_str(), new_tarabspath.c_str()) < 0)
     {
         std::stringstream ss;

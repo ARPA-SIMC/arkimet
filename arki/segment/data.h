@@ -200,7 +200,7 @@ struct RepackConfig
 class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
-    virtual void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
+    virtual void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) = 0;
 
 public:
     virtual ~Checker() {}

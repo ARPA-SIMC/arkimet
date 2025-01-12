@@ -492,9 +492,10 @@ size_t BaseChecker<Data>::size()
 }
 
 template<typename Data>
-void BaseChecker<Data>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+void BaseChecker<Data>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
 {
-    std::filesystem::rename(this->segment().abspath().c_str(), new_abspath.c_str());
+    auto new_abspath = new_root / new_relpath;
+    std::filesystem::rename(this->segment().abspath(), new_abspath);
 }
 
 template<typename Data>

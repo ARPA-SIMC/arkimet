@@ -79,7 +79,7 @@ template<typename Data, typename File>
 class Checker : public BaseChecker<Data>
 {
 protected:
-    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
+    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override;
 
 public:
     explicit Checker(std::shared_ptr<const Data> data);

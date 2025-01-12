@@ -184,8 +184,9 @@ size_t Checker<Data>::size()
 }
 
 template<typename Data>
-void Checker<Data>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+void Checker<Data>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
 {
+    auto new_abspath = new_root / new_relpath;
     std::filesystem::rename(gzabspath, sys::with_suffix(new_abspath, ".gz"));
     sys::rename_ifexists(gzidxabspath, sys::with_suffix(new_abspath, ".gz.idx"));
 }

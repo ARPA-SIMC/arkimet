@@ -309,9 +309,9 @@ size_t Checker::size()
     return sys::size(zipabspath);
 }
 
-void Checker::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+void Checker::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
 {
-    auto new_zipabspath = sys::with_suffix(new_abspath, ".zip");
+    auto new_zipabspath = sys::with_suffix(new_root / new_relpath, ".zip");
     if (rename(zipabspath.c_str(), new_zipabspath.c_str()) < 0)
     {
         stringstream ss;

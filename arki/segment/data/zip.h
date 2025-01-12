@@ -61,7 +61,7 @@ protected:
             metadata::Collection& mds,
             bool skip_validation=false,
             const RepackConfig& cfg=RepackConfig());
-    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) override;
+    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override;
 
 public:
     Checker(std::shared_ptr<const Data> data);
