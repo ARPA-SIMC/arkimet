@@ -34,16 +34,16 @@ bool Reader::is_dataset(const std::filesystem::path& dir)
     return true;
 }
 
-bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::filesystem::path& relpath)> dest)
+bool Reader::list_segments(const Matcher& matcher, std::function<bool(std::shared_ptr<arki::Segment>)> dest)
 {
     std::vector<filesystem::path> seg_relpaths;
     step::SegmentQuery squery(dataset().path, dataset().iseg_segment_session->format, "\\.index$", matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
-        seg_relpaths.emplace_back(move(s));
+        seg_relpaths.emplace_back(std::move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
-        if (!dest(relpath))
+        if (!dest(dataset().segment_session->segment_from_relpath_and_format(relpath, dataset().iseg_segment_session->format)))
             return false;
     return true;
 }
@@ -56,8 +56,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     if (!segmented::Reader::impl_query_data(q, dest))
         return false;
 
-    bool res = list_segments(q.matcher, [&](const std::string& relpath) {
-        auto idx = dataset().iseg_segment_session->read_index(relpath, dataset().read_lock_segment(relpath));
+    bool res = list_segments(q.matcher, [&](std::shared_ptr<Segment> segment) {
+        auto idx = dataset().iseg_segment_session->read_index(segment->relpath(), dataset().read_lock_segment(segment->relpath()));
         return idx->query_data(q, dest);
     });
     return track.done(res);
@@ -65,8 +65,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
-    list_segments(matcher, [&](const std::string& relpath) {
-        auto idx = dataset().iseg_segment_session->read_index(relpath, dataset().read_lock_segment(relpath));
+    list_segments(matcher, [&](std::shared_ptr<Segment> segment) {
+        auto idx = dataset().iseg_segment_session->read_index(segment->relpath(), dataset().read_lock_segment(segment->relpath()));
         idx->query_summary_from_db(matcher, summary);
         return true;
     });
