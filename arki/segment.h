@@ -13,8 +13,7 @@ namespace arki {
 
 class Segment : public std::enable_shared_from_this<Segment>
 {
-// protected:
-//     std::shared_ptr<segment::Session> session;
+protected:
     std::shared_ptr<const segment::Session> m_session;
     DataFormat m_format;
     std::filesystem::path m_root;
@@ -32,7 +31,7 @@ public:
     std::filesystem::path relpath() const { return m_relpath; }
     std::filesystem::path abspath() const { return m_abspath; }
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const;
+    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::ReadLock> lock) const;
 
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> detect_data() const;
@@ -61,9 +60,15 @@ class Reader
 {
 protected:
     std::shared_ptr<const Segment> m_segment;
+    std::shared_ptr<core::ReadLock> lock;
 
 public:
-    explicit Reader(std::shared_ptr<const Segment> segment);
+    explicit Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<core::ReadLock> lock);
+    Reader(const Reader&) = delete;
+    Reader(Reader&&) = delete;
+    Reader& operator=(const Reader&) = delete;
+    Reader& operator=(Reader&&) = delete;
+    virtual ~Reader();
 
     /**
      * Query the segment using the given matcher, and sending the results to
@@ -74,6 +79,7 @@ public:
      */
     virtual bool query_data(const query::Data& q, metadata_dest_func dest) = 0;
 
+#if 0
     /**
      * Add to summary the summary of the data that would be extracted with the
      * given query.
@@ -86,6 +92,7 @@ public:
      * If there is no data, it returns an unbound interval.
      */
     virtual core::Interval get_stored_time_interval() = 0;
+#endif
 };
 
 }

@@ -57,8 +57,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
         return false;
 
     bool res = list_segments(q.matcher, [&](std::shared_ptr<Segment> segment) {
-        auto idx = dataset().iseg_segment_session->read_index(segment->relpath(), dataset().read_lock_segment(segment->relpath()));
-        return idx->query_data(q, dest);
+        auto reader = segment->reader(dataset().read_lock_segment(segment->relpath()));
+        return reader->query_data(q, dest);
     });
     return track.done(res);
 }

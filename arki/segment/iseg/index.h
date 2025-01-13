@@ -41,7 +41,7 @@ namespace arki::segment::iseg {
 class Index
 {
 public:
-    std::shared_ptr<segment::iseg::Session> segment_session;
+    std::shared_ptr<const Session> segment_session;
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
@@ -96,7 +96,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
-    Index(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
+    Index(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
 
 public:
     Index(const Index&) = delete;
@@ -152,7 +152,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -167,7 +167,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
+    WIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
 public:
 
     /**
@@ -218,14 +218,14 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(std::shared_ptr<segment::iseg::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
+    AIndex(std::shared_ptr<const Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex
 {
 public:
-    CIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
+    CIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
 };
 
 }

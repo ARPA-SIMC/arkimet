@@ -28,11 +28,12 @@ Segment::~Segment()
 {
 }
 
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::ReadLock> lock) const
 {
     // TODO: detect index (iseg or .metadata file) (delegate to session, which may know about iseg config)
     // or: index is actually the segment::Reader implementation
-    auto data_reader = detect_data_reader(lock);
+    // auto data_reader = detect_data_reader(lock);
+    throw std::runtime_error("Segment::reader not implemented. TODO: delegate to scan/metadata segment types");
 }
 
 std::shared_ptr<segment::Data> Segment::detect_data() const
@@ -406,15 +407,21 @@ std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 
 namespace segment {
 
-Reader::Reader(std::shared_ptr<const Segment> segment)
-    : m_segment(segment)
+Reader::Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<core::ReadLock> lock)
+    : m_segment(segment), lock(lock)
 {
 }
 
+Reader::~Reader()
+{
+}
+
+#if 0
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     query_data(query::Data(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
+#endif
 
 }
 

@@ -47,7 +47,7 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
+Index::Index(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
     : segment_session(segment_session),
       data_relpath(data_relpath),
       data_pathname(segment_session->root / data_relpath),
@@ -434,7 +434,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
+RIndex::RIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
     : Index(segment_session, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -451,7 +451,7 @@ RIndex::RIndex(std::shared_ptr<segment::iseg::Session> segment_session, const st
 }
 
 
-WIndex::WIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
+WIndex::WIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
     : Index(segment_session, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
@@ -727,12 +727,12 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(std::shared_ptr<segment::iseg::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock)
+AIndex::AIndex(std::shared_ptr<const Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock)
     : WIndex(segment_session, segment->segment().relpath(), lock)
 {
 }
 
-CIndex::CIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock)
+CIndex::CIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock)
     : WIndex(segment_session, data_relpath, lock)
 {
 }
