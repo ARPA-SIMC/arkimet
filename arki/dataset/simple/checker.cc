@@ -415,7 +415,7 @@ public:
     void release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
         checker.m_mft->remove(segment->segment().relpath());
-        segment->move(new_segment_session->root, new_relpath);
+        segment->move(new_segment_session, new_relpath);
     }
 };
 
@@ -689,7 +689,7 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
 {
     auto segment = dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), relpath);
     m_idx->test_rename(relpath, new_relpath);
-    segment->move(dataset().path, new_relpath);
+    segment->move(dataset().segment_session, new_relpath);
 }
 
 }

@@ -9,40 +9,39 @@
 namespace arki::segment::data {
 
 template<typename Data>
-std::shared_ptr<data::Checker> BaseChecker<Data>::move(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
+std::shared_ptr<data::Checker> BaseChecker<Data>::move(std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
 {
     using namespace arki::utils;
-    auto new_abspath = new_root / new_relpath;
+
+    auto new_segment = segment_session->segment_from_relpath_and_format(new_relpath, segment().format());
 
     // Sanity checks: avoid conflicts
-    if (std::filesystem::exists(new_abspath) ||
-            std::filesystem::exists(sys::with_suffix(new_abspath, ".tar")) ||
-            std::filesystem::exists(sys::with_suffix(new_abspath, ".gz")) ||
-            std::filesystem::exists(sys::with_suffix(new_abspath, ".zip")))
+    if (std::filesystem::exists(new_segment->abspath()) ||
+            std::filesystem::exists(sys::with_suffix(new_segment->abspath(), ".tar")) ||
+            std::filesystem::exists(sys::with_suffix(new_segment->abspath(), ".gz")) ||
+            std::filesystem::exists(sys::with_suffix(new_segment->abspath(), ".zip")))
     {
         std::stringstream ss;
-        ss << "cannot archive " << this->segment().abspath() << " to " << new_abspath << " because the destination already exists";
+        ss << "cannot move " << this->segment().abspath() << " to " << new_segment->abspath() << " because the destination already exists";
         throw std::runtime_error(ss.str());
     }
 
-    auto target_metadata = sys::with_suffix(new_abspath, ".metadata");
-    auto target_summary = sys::with_suffix(new_abspath, ".summary");
+    auto target_metadata = sys::with_suffix(new_segment->abspath(), ".metadata");
+    auto target_summary = sys::with_suffix(new_segment->abspath(), ".summary");
 
     // Remove stale metadata and summaries that may have been left around
     std::filesystem::remove(target_metadata);
     std::filesystem::remove(target_summary);
 
-    std::filesystem::create_directories(new_abspath.parent_path());
+    std::filesystem::create_directories(new_segment->abspath().parent_path());
 
-    this->move_data(new_root, new_relpath);
+    this->move_data(new_segment->root(), new_segment->relpath());
 
     // Move metadata to destination
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath(), ".metadata"), target_metadata);
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath(), ".summary"), target_summary);
 
-    // TODO: get a segment as argument to the whole function?
-    auto segment = this->segment().session().segment(this->segment().format(), new_root, new_relpath);
-    auto data = segment->detect_data();
+    auto data = new_segment->detect_data();
     // TODO: what is really needed as a return value?
     return data->checker(false);
 }

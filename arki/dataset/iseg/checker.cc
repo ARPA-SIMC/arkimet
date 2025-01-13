@@ -465,7 +465,7 @@ public:
     void release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
         std::filesystem::remove(checker.dataset().path / sys::with_suffix(segment->segment().relpath(), ".index"));
-        segment->move(new_segment_session->root, new_relpath);
+        segment->move(new_segment_session, new_relpath);
     }
 };
 
@@ -739,11 +739,12 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
 
-    auto segment = dataset().segment_session->segment_checker(dataset().iseg.format, relpath);
-    segment->move(dataset().path, new_relpath);
-
     auto abspath = dataset().path / relpath;
     auto new_abspath = dataset().path / new_relpath;
+
+    auto segment = dataset().segment_session->segment_checker(dataset().iseg.format, relpath);
+    segment->move(dataset().segment_session, new_relpath);
+
     std::filesystem::rename(
             sys::with_suffix(abspath, ".index"),
             sys::with_suffix(new_abspath, ".index"));
