@@ -218,7 +218,7 @@ void CheckerSegment::archive()
 void CheckerSegment::unarchive()
 {
     auto arcrelpath = "last" / segment->segment().relpath();
-    archives()->release_segment(arcrelpath, segment->segment().root(), segment->segment().relpath());
+    archives()->release_segment(arcrelpath, dataset().segment_session, segment->segment().relpath());
     auto reader = segment->segment().detect_data_reader(lock);
     metadata::Collection mdc;
     reader->scan(mdc.inserter_func());

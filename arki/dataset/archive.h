@@ -9,6 +9,7 @@
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/matcher/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <string>
 
@@ -33,6 +34,7 @@ class Dataset : public dataset::Dataset
 {
 public:
     std::filesystem::path root;
+    std::shared_ptr<segment::Session> segment_session;
 
     Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root);
 
@@ -97,7 +99,7 @@ public:
     std::string type() const override;
 
     void index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds);
-    void release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath);
+    void release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath);
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
     void remove_old(CheckerConfig& opts) override;

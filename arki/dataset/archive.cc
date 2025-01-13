@@ -225,7 +225,7 @@ public:
 };
 
 Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root)
-    : dataset::Dataset(session, "archives"), root(root)
+    : dataset::Dataset(session, "archives"), root(root), segment_session(std::make_shared<segment::Session>(root))
 {
 }
 
@@ -469,7 +469,7 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
     archives->invalidate_summary_cache();
 }
 
-void Checker::release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
+void Checker::release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
 {
     auto path = std::filesystem::weakly_canonical(relpath);
     string name = poppath(path);
@@ -478,7 +478,7 @@ void Checker::release_segment(const std::filesystem::path& relpath, const std::f
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->release(new_root, new_relpath);
+            sc->segment(path)->release(segment_session->root, new_relpath);
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }
