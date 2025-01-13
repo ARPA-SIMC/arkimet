@@ -51,7 +51,7 @@ struct Fixture : public arki::utils::tests::Fixture
         cfg.set("unique", "origin, reftime");
         cfg.set("archive age", "7");
 
-        config = std::make_shared<archive::Dataset>(session, "testds");
+        config = std::make_shared<archive::Dataset>(session, "testds/.archive");
 
         iotrace::init();
     }

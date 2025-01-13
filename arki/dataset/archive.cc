@@ -50,7 +50,7 @@ struct ArchivesRoot
     std::shared_ptr<Archive> last;
 
     ArchivesRoot(const std::filesystem::path& dataset_root, std::shared_ptr<dataset::Dataset> parent)
-        : dataset_root(dataset_root), archive_root(dataset_root / ".archive"), parent(parent)
+        : dataset_root(dataset_root), archive_root(dataset_root), parent(parent)
           // m_scache_root(str::joinpath(root, ".summaries"))
     {
         // Create the directory if it does not exist
