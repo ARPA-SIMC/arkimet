@@ -40,9 +40,9 @@ public:
 
 struct NullHandler: public Handler
 {
-    void warning(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0))) {}
-    void verbose(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0))) {}
-    void debug(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0))) {}
+    void warning(const char*, va_list) override __attribute__((format(printf, 2, 0))) {}
+    void verbose(const char*, va_list) override __attribute__((format(printf, 2, 0))) {}
+    void debug(const char*, va_list) override __attribute__((format(printf, 2, 0))) {}
 };
 
 
@@ -61,8 +61,8 @@ struct CollectHandler : public Handler
     bool _debug;
     std::vector<std::string> collected;
 
-    CollectHandler(bool verbose=true, bool debug=false);
-    ~CollectHandler();
+    explicit CollectHandler(bool verbose=true, bool debug=false);
+    ~CollectHandler() override;
 
     void warning(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
     void verbose(const char* fmt, va_list ap) override __attribute__((format(printf, 2, 0)));
