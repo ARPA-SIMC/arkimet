@@ -7,6 +7,7 @@
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
 #include "arki/query.h"
+#include "arki/segment/data.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -48,10 +49,10 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
-    : config(config), dataset(dataset),
+Index::Index(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
+    : config(config), segment_session(segment_session),
       data_relpath(data_relpath),
-      data_pathname(dataset->path / data_relpath),
+      data_pathname(segment_session->root / data_relpath),
       index_pathname(sys::with_suffix(data_pathname, ".index")),
       lock(lock)
 {
@@ -163,14 +164,14 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = dataset->segment_reader(data_relpath, lock);
+    auto reader = segment_session->segment_reader(config.format, data_relpath, lock);
 
     while (mdq.step())
     {
         // Rebuild the Metadata
         std::unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md, reader);
-        dest(move(md));
+        dest(std::move(md));
     }
 }
 
@@ -305,11 +306,11 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
 
     if (reader)
         md.set_source(Source::createBlob(
-                config.format, dataset->path, data_relpath,
+                config.format, segment_session->root, data_relpath,
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
     else
         md.set_source(Source::createBlobUnlocked(
-                config.format, dataset->path, data_relpath,
+                config.format, segment_session->root, data_relpath,
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
@@ -338,7 +339,7 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = dataset->segment_session->segment_reader(config.format, data_relpath, lock);
+        reader = segment_session->segment_reader(config.format, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
@@ -356,7 +357,7 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
             std::unique_ptr<Metadata> md(new Metadata);
             build_md(mdq, *md, reader);
             // Buffer the results in memory, to release the database lock as soon as possible
-            mdbuf.acquire(move(md));
+            mdbuf.acquire(std::move(md));
         }
 //fprintf(stderr, "POST %zd\n", mdbuf.size());
 //system(str::fmtf("ps u %d >&2", getpid()).c_str());
@@ -435,8 +436,8 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
-    : Index(config, dataset, data_relpath, lock)
+RIndex::RIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+    : Index(config, segment_session, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
     {
@@ -452,8 +453,8 @@ RIndex::RIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dat
 }
 
 
-WIndex::WIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
-    : Index(config, dataset, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
+WIndex::WIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
+    : Index(config, segment_session, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
@@ -620,7 +621,7 @@ std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t 
     inserter.bind_get_current(m_get_current);
     while (m_get_current.step())
         res = types::source::Blob::create_unlocked(
-                config.format, dataset->path, data_relpath,
+                config.format, segment_session->root, data_relpath,
                 m_get_current.fetch<uint64_t>(0),
                 m_get_current.fetch<uint64_t>(1));
     if (res) return res;
@@ -728,13 +729,13 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
-    : WIndex(config, dataset, segment->segment().relpath(), lock)
+AIndex::AIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
+    : WIndex(config, segment_session, segment->segment().relpath(), lock)
 {
 }
 
-CIndex::CIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
-    : WIndex(config, dataset, data_relpath, lock)
+CIndex::CIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+    : WIndex(config, segment_session, data_relpath, lock)
 {
 }
 

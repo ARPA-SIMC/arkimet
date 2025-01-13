@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_ISEG_INDEX_H
-#define ARKI_DATASET_ISEG_INDEX_H
+#ifndef ARKI_SEGMENT_INDEX_ISEG_H
+#define ARKI_SEGMENT_INDEX_ISEG_H
 
 /// Index for the contents of an iseg data file
 
@@ -10,7 +10,9 @@
 #include <arki/segment/index/iseg/config.h>
 #include <arki/segment/index/iseg/attr.h>
 #include <arki/segment/index/iseg/aggregate.h>
-#include <arki/dataset/iseg.h>
+#include <arki/dataset/lock.h>
+#include <arki/query.h>
+#include <arki/summary.h>
 #include <string>
 #include <set>
 
@@ -47,7 +49,7 @@ class Index
 {
 public:
     const Config& config;
-    std::shared_ptr<dataset::iseg::Dataset> dataset;
+    std::shared_ptr<segment::Session> segment_session;
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
@@ -102,7 +104,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
-    Index(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    Index(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 
 public:
     ~Index();
@@ -154,7 +156,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
+    RIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -169,7 +171,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
+    WIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock=nullptr);
 public:
 
     /**
@@ -220,14 +222,14 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
+    AIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex
 {
 public:
-    CIndex(const Config& config, std::shared_ptr<dataset::iseg::Dataset> dataset, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
+    CIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock);
 };
 
 }

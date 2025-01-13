@@ -57,7 +57,7 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
         return false;
 
     bool res = list_segments(q.matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset->iseg, m_dataset, relpath, dataset().read_lock_segment(relpath));
+        RIndex idx(m_dataset->iseg, m_dataset->segment_session, relpath, dataset().read_lock_segment(relpath));
         return idx.query_data(q, dest);
     });
     return track.done(res);
@@ -66,7 +66,7 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
     list_segments(matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset->iseg, m_dataset, relpath, dataset().read_lock_segment(relpath));
+        RIndex idx(m_dataset->iseg, m_dataset->segment_session, relpath, dataset().read_lock_segment(relpath));
         idx.query_summary_from_db(matcher, summary);
         return true;
     });
