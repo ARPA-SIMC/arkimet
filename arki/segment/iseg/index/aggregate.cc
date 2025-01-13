@@ -6,7 +6,7 @@
 using namespace std;
 using namespace arki::utils;
 
-namespace arki::segment::index::iseg {
+namespace arki::segment::iseg::index {
 
 void Aggregate::init_select() const
 {

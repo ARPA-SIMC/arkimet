@@ -1,5 +1,5 @@
 #include "reader.h"
-#include "arki/segment/index/iseg.h"
+#include "arki/segment/iseg/index.h"
 #include "arki/dataset/step.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace arki::utils;
-using arki::segment::index::iseg::RIndex;
+using arki::segment::iseg::RIndex;
 
 namespace arki {
 namespace dataset {

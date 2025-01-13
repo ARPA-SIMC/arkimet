@@ -12,13 +12,13 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
-using arki::segment::index::iseg::Aggregate;
+using arki::segment::iseg::index::Aggregate;
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment_index_iseg_aggregate");
+} test("arki_segment_iseg_index_aggregate");
 
 void Tests::register_tests() {
 

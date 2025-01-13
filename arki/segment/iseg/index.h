@@ -7,9 +7,9 @@
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
-#include <arki/segment/index/iseg/session.h>
-#include <arki/segment/index/iseg/attr.h>
-#include <arki/segment/index/iseg/aggregate.h>
+#include <arki/segment/iseg/session.h>
+#include <arki/segment/iseg/index/attr.h>
+#include <arki/segment/iseg/index/aggregate.h>
 #include <arki/core/lock.h>
 #include <arki/query.h>
 #include <arki/summary.h>
@@ -18,7 +18,7 @@
 
 struct sqlite3;
 
-namespace arki::segment::index::iseg {
+namespace arki::segment::iseg {
 
 
 /**
@@ -41,7 +41,7 @@ namespace arki::segment::index::iseg {
 class Index
 {
 public:
-    std::shared_ptr<iseg::Session> segment_session;
+    std::shared_ptr<segment::iseg::Session> segment_session;
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
@@ -56,8 +56,8 @@ protected:
     std::filesystem::path index_pathname;
 
     // Subtables
-    segment::index::iseg::Aggregate* m_uniques = nullptr;
-    segment::index::iseg::Aggregate* m_others = nullptr;
+    segment::iseg::index::Aggregate* m_uniques = nullptr;
+    segment::iseg::index::Aggregate* m_others = nullptr;
 
     /// Optionally held read lock
     std::shared_ptr<core::Lock> lock;
@@ -96,7 +96,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
-    Index(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
+    Index(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
 
 public:
     Index(const Index&) = delete;
@@ -106,9 +106,9 @@ public:
     Index& operator=(Index&&) = delete;
 
     bool has_uniques() const { return m_uniques != nullptr; }
-    segment::index::iseg::Aggregate& uniques() { return *m_uniques; }
+    segment::iseg::index::Aggregate& uniques() { return *m_uniques; }
     bool has_others() const { return m_others != nullptr; }
-    segment::index::iseg::Aggregate& others() { return *m_others; }
+    segment::iseg::index::Aggregate& others() { return *m_others; }
 
     utils::sqlite::SQLiteDB& db() { return m_db; }
 
@@ -152,7 +152,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -167,7 +167,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
+    WIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
 public:
 
     /**
@@ -218,14 +218,14 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(std::shared_ptr<iseg::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
+    AIndex(std::shared_ptr<segment::iseg::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex
 {
 public:
-    CIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
+    CIndex(std::shared_ptr<segment::iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
 };
 
 }

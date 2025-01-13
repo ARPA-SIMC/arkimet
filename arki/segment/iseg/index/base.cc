@@ -8,7 +8,7 @@ using namespace arki;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki::segment::index::iseg {
+namespace arki::segment::iseg::index {
 
 std::string fmtin(const std::vector<int>& vals)
 {

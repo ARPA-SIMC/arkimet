@@ -1,5 +1,5 @@
-#ifndef ARKI_DATASET_INDEX_AGGREGATE_H
-#define ARKI_DATASET_INDEX_AGGREGATE_H
+#ifndef ARKI_SEGMENT_ISEG_INDEX_AGGREGATE_H
+#define ARKI_SEGMENT_ISEG_INDEX_AGGREGATE_H
 
 /*
  * dataset/index/aggregate - Handle aggregate tables in SQL indices
@@ -24,13 +24,13 @@
  */
 #include <arki/matcher/fwd.h>
 #include <arki/utils/sqlite.h>
-#include <arki/segment/index/iseg/attr.h>
+#include <arki/segment/iseg/index/attr.h>
 
 #include <vector>
 #include <set>
 #include <string>
 
-namespace arki::segment::index::iseg {
+namespace arki::segment::iseg::index {
 
 class Aggregate
 {

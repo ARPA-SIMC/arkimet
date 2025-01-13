@@ -2,7 +2,7 @@
 #define ARKI_DATASET_ISEG_H
 
 #include <arki/dataset/segmented.h>
-#include <arki/segment/index/iseg/session.h>
+#include <arki/segment/iseg/fwd.h>
 #include <arki/types/fwd.h>
 #include <set>
 
@@ -12,7 +12,7 @@ namespace iseg {
 
 struct Dataset : public segmented::Dataset
 {
-    std::shared_ptr<arki::segment::index::iseg::Session> iseg_segment_session;
+    std::shared_ptr<arki::segment::iseg::Session> iseg_segment_session;
     std::filesystem::path summary_cache_pathname;
 
     Dataset(const Dataset&) = default;

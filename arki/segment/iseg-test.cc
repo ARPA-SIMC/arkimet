@@ -1,5 +1,5 @@
 #include "arki/types/tests.h"
-#include "session.h"
+#include "iseg.h"
 
 namespace {
 using namespace std;
@@ -12,7 +12,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment_index_iseg_session");
+} test("arki_segment_iseg");
 
 void Tests::register_tests() {
 

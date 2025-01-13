@@ -12,15 +12,15 @@ using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::types;
-using arki::segment::index::iseg::AttrSubIndex;
-using arki::segment::index::iseg::Attrs;
-using arki::segment::index::iseg::NotFound;
+using arki::segment::iseg::index::AttrSubIndex;
+using arki::segment::iseg::index::Attrs;
+using arki::segment::iseg::index::NotFound;
 
 class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment_index_iseg_attr");
+} test("arki_segment_iseg_index_attr");
 
 void Tests::register_tests() {
 

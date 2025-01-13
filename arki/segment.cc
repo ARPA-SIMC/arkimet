@@ -5,6 +5,9 @@
 #include "segment/data/tar.h"
 #include "segment/data/zip.h"
 #include "segment/data/gz.h"
+#include "arki/metadata.h"
+#include "arki/summary.h"
+#include "arki/query.h"
 #include "arki/scan.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
@@ -23,6 +26,13 @@ Segment::Segment(std::shared_ptr<const segment::Session> session, DataFormat for
 
 Segment::~Segment()
 {
+}
+
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::Lock> lock) const
+{
+    // TODO: detect index (iseg or .metadata file) (delegate to session, which may know about iseg config)
+    // or: index is actually the segment::Reader implementation
+    auto data_reader = detect_data_reader(lock);
 }
 
 std::shared_ptr<segment::Data> Segment::detect_data() const
@@ -399,6 +409,11 @@ namespace segment {
 Reader::Reader(std::shared_ptr<const Segment> segment)
     : m_segment(segment)
 {
+}
+
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
+{
+    query_data(query::Data(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
 }

@@ -1,15 +1,13 @@
-#ifndef ARKI_SEGMENT_INDEX_ISEG_SESSION_H
-#define ARKI_SEGMENT_INDEX_ISEG_SESSION_H
+#ifndef ARKI_SEGMENT_ISEG_SESSION_H
+#define ARKI_SEGMENT_ISEG_SESSION_H
 
+#include <arki/segment/iseg/fwd.h>
 #include <arki/segment/session.h>
 #include <arki/types/fwd.h>
 #include <string>
 #include <set>
 
-namespace arki::segment::index::iseg {
-class RIndex;
-class AIndex;
-class CIndex;
+namespace arki::segment::iseg {
 
 class Session : public segment::Session
 {
@@ -33,6 +31,8 @@ public:
      * Useful for writing fast temporary private datasets.
      */
     bool eatmydata = false;
+
+    std::shared_ptr<arki::Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const override;
 
     std::shared_ptr<RIndex> read_index(const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock);
     std::shared_ptr<AIndex> append_index(std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);

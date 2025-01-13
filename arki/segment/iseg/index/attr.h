@@ -1,7 +1,8 @@
-#ifndef ARKI_DATASET_INDEX_ATTR_H
-#define ARKI_DATASET_INDEX_ATTR_H
+#ifndef ARKI_SEGMENT_ISEG_INDEX_ATTR_H
+#define ARKI_SEGMENT_ISEG_INDEX_ATTR_H
 
 #include <arki/types/fwd.h>
+#include <arki/matcher/fwd.h>
 #include <arki/utils/sqlite.h>
 #include <string>
 #include <vector>
@@ -10,12 +11,7 @@
 #include <set>
 #include <cstdint>
 
-namespace arki {
-namespace matcher {
-class OR;
-}
-
-namespace segment::index::iseg {
+namespace arki::segment::iseg::index {
 
 /**
  * Associate in the base one ID per value of metadata item.
@@ -119,7 +115,6 @@ public:
 	std::vector<int> obtainIDs(const Metadata& md) const;
 };
 
-}
 }
 
 #endif

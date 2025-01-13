@@ -1,5 +1,5 @@
+#include "index.h"
 #include "arki/types/tests.h"
-#include "arki/segment/index/iseg.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -13,7 +13,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_segment_index_iseg");
+} test("arki_segment_iseg_index");
 
 void Tests::register_tests() {
 

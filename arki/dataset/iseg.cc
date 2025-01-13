@@ -4,7 +4,7 @@
 #include "iseg/checker.h"
 #include "arki/defs.h"
 #include "arki/types.h"
-#include "arki/segment/index/iseg/session.h"
+#include "arki/segment/iseg/session.h"
 #include "arki/dataset/session.h"
 #include "arki/utils/string.h"
 
@@ -14,8 +14,8 @@ using namespace arki::utils;
 namespace arki::dataset::iseg {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, std::make_shared<segment::index::iseg::Session>(cfg.value("path")), cfg),
-      iseg_segment_session(std::static_pointer_cast<segment::index::iseg::Session>(segment_session)),
+    : segmented::Dataset(session, std::make_shared<segment::iseg::Session>(cfg.value("path")), cfg),
+      iseg_segment_session(std::static_pointer_cast<segment::iseg::Session>(segment_session)),
       summary_cache_pathname{path / ".summaries"}
 {
     iseg_segment_session->format = format_from_string(cfg.value("format"));

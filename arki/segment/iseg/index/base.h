@@ -1,10 +1,10 @@
-#ifndef ARKI_DATASET_INDEX_BASE_H
-#define ARKI_DATASET_INDEX_BASE_H
+#ifndef ARKI_SEGMENT_ISEG_INDEX_BASE_H
+#define ARKI_SEGMENT_ISEG_INDEX_BASE_H
 
 #include <string>
 #include <vector>
 
-namespace arki::segment::index::iseg {
+namespace arki::segment::iseg::index {
 
 // Exception we can throw if an element was not found
 struct NotFound {};

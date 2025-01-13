@@ -1,5 +1,5 @@
 #include "arki/dataset/iseg/writer.h"
-#include "arki/segment/index/iseg.h"
+#include "arki/segment/iseg/index.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
@@ -18,7 +18,7 @@ using namespace arki;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
-using arki::segment::index::iseg::AIndex;
+using arki::segment::iseg::AIndex;
 
 namespace arki {
 namespace dataset {

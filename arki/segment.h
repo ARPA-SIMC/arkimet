@@ -6,6 +6,8 @@
 #include <string>
 #include <arki/segment/fwd.h>
 #include <arki/segment/session.h>
+#include <arki/query/fwd.h>
+#include <arki/summary.h>
 
 namespace arki {
 
@@ -30,7 +32,7 @@ public:
     std::filesystem::path relpath() const { return m_relpath; }
     std::filesystem::path abspath() const { return m_abspath; }
 
-    std::shared_ptr<segment::Reader> reader() const;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::Lock> lock) const;
 
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> detect_data() const;
@@ -62,6 +64,28 @@ protected:
 
 public:
     explicit Reader(std::shared_ptr<const Segment> segment);
+
+    /**
+     * Query the segment using the given matcher, and sending the results to
+     * the given function.
+     *
+     * Returns true if dest always returned true, false if iteration stopped
+     * because dest returned false.
+     */
+    virtual bool query_data(const query::Data& q, metadata_dest_func dest) = 0;
+
+    /**
+     * Add to summary the summary of the data that would be extracted with the
+     * given query.
+     */
+    virtual void query_summary(const Matcher& matcher, Summary& summary);
+
+    /**
+     * Return the time interval of available data stored in this segment.
+     *
+     * If there is no data, it returns an unbound interval.
+     */
+    virtual core::Interval get_stored_time_interval() = 0;
 };
 
 }

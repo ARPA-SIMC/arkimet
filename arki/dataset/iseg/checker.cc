@@ -1,5 +1,5 @@
 #include "arki/dataset/iseg/checker.h"
-#include "arki/segment/index/iseg.h"
+#include "arki/segment/iseg/index.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/reporter.h"
@@ -24,7 +24,7 @@ using namespace arki;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
-using arki::segment::index::iseg::CIndex;
+using arki::segment::iseg::CIndex;
 
 namespace arki {
 namespace dataset {
