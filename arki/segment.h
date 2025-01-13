@@ -21,12 +21,12 @@ class Segment : public std::enable_shared_from_this<Segment>
 
 public:
 
-    Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath);
+    Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& relpath);
     virtual ~Segment();
 
     const segment::Session& session() const { return *m_session; }
     DataFormat format() const { return m_format; }
-    std::filesystem::path root() const { return m_root; }
+    std::filesystem::path root() const { return m_session->root; }
     std::filesystem::path relpath() const { return m_relpath; }
     std::filesystem::path abspath() const { return m_abspath; }
 

@@ -23,11 +23,6 @@ Session::~Session()
 {
 }
 
-std::shared_ptr<Segment> Session::segment(DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath) const
-{
-    return std::make_shared<Segment>(shared_from_this(), format, root, relpath);
-}
-
 std::shared_ptr<Segment> Session::segment_from_path(const std::filesystem::path& path) const
 {
     return segment_from_path_and_format(path, scan::Scanner::format_from_filename(path));
@@ -38,7 +33,7 @@ std::shared_ptr<Segment> Session::segment_from_path_and_format(const std::filesy
     std::filesystem::path basedir;
     std::filesystem::path relpath;
     utils::files::resolve_path(path, basedir, relpath);
-    return std::make_shared<Segment>(shared_from_this(), format, root, relpath);
+    return std::make_shared<Segment>(shared_from_this(), format, relpath);
 }
 
 std::shared_ptr<Segment> Session::segment_from_relpath(const std::filesystem::path& relpath) const
@@ -48,7 +43,7 @@ std::shared_ptr<Segment> Session::segment_from_relpath(const std::filesystem::pa
 
 std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const
 {
-    return std::make_shared<Segment>(shared_from_this(), format, root, relpath);
+    return std::make_shared<Segment>(shared_from_this(), format, relpath);
 }
 
 

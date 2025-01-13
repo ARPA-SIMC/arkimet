@@ -16,8 +16,8 @@ using namespace arki::utils;
 
 namespace arki {
 
-Segment::Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-    : m_session(session), m_format(format), m_root(root), m_relpath(relpath), m_abspath(std::filesystem::weakly_canonical(root / relpath))
+Segment::Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& relpath)
+    : m_session(session), m_format(format), m_relpath(relpath), m_abspath(std::filesystem::weakly_canonical(session->root / relpath))
 {
 }
 
