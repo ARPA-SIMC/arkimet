@@ -3,6 +3,7 @@
 
 #include <arki/core/file.h>
 #include <memory>
+#include <type_traits>
 
 namespace arki::core {
 
@@ -17,6 +18,30 @@ public:
     Lock& operator=(const Lock&) = delete;
     Lock&& operator=(Lock&&) = delete;
     virtual ~Lock();
+};
+
+class ReadLock: public Lock
+{
+public:
+    using Lock::Lock;
+};
+
+class AppendLock: public Lock
+{
+public:
+    using Lock::Lock;
+};
+
+class CheckLock: public Lock
+{
+public:
+    using Lock::Lock;
+
+    /**
+     * Escalate a read lock to a write lock as long as the resulting lock is in
+     * use
+     */
+    virtual std::shared_ptr<core::Lock> write_lock() = 0;
 };
 
 /**
@@ -40,6 +65,47 @@ class Null : public Lock
 {
 public:
     using Lock::Lock;
+};
+
+template<typename Base>
+class File : public Base
+{
+    static_assert(std::is_base_of_v<arki::core::Lock, Base>, "Base not derived from arki::core::Lock");
+
+public:
+    arki::core::File lockfile;
+    const core::lock::Policy* lock_policy;
+    arki::core::FLock ds_lock;
+
+    File(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+};
+
+
+class FileReadLock : public File<core::ReadLock>
+{
+public:
+    FileReadLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    ~FileReadLock() override;
+};
+
+
+class FileAppendLock : public File<core::AppendLock>
+{
+public:
+    FileAppendLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    ~FileAppendLock() override;
+};
+
+
+class FileCheckLock : public File<core::CheckLock>
+{
+public:
+    std::weak_ptr<core::Lock> current_write_lock;
+
+    FileCheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    ~FileCheckLock() override;
+
+    std::shared_ptr<core::Lock> write_lock() override;
 };
 
 

@@ -4,7 +4,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/matcher.h"
 #include "arki/matcher/utils.h"
-#include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
 #include "arki/query.h"
 #include "arki/segment/data.h"
@@ -49,7 +48,7 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
+Index::Index(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
     : config(config), segment_session(segment_session),
       data_relpath(data_relpath),
       data_pathname(segment_session->root / data_relpath),
@@ -436,7 +435,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::ReadLock> lock)
+RIndex::RIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
     : Index(config, segment_session, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -453,7 +452,7 @@ RIndex::RIndex(const Config& config, std::shared_ptr<segment::Session> segment_s
 }
 
 
-WIndex::WIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::Lock> lock)
+WIndex::WIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
     : Index(config, segment_session, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
@@ -729,12 +728,12 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<dataset::AppendLock> lock)
+AIndex::AIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock)
     : WIndex(config, segment_session, segment->segment().relpath(), lock)
 {
 }
 
-CIndex::CIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<dataset::CheckLock> lock)
+CIndex::CIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock)
     : WIndex(config, segment_session, data_relpath, lock)
 {
 }

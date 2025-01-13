@@ -122,10 +122,10 @@ struct SegmentState
 class CheckerSegment
 {
 public:
-    std::shared_ptr<dataset::CheckLock> lock;
+    std::shared_ptr<core::CheckLock> lock;
     std::shared_ptr<segment::data::Checker> segment;
 
-    CheckerSegment(std::shared_ptr<dataset::CheckLock> lock);
+    CheckerSegment(std::shared_ptr<core::CheckLock> lock);
     virtual ~CheckerSegment();
 
     /**
@@ -240,7 +240,7 @@ public:
     virtual std::unique_ptr<CheckerSegment> segment(const std::filesystem::path& relpath) = 0;
 
     /// Instantiate a CheckerSegment using an existing lock
-    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock) = 0;
 
     /**
      * List all segments known to this dataset

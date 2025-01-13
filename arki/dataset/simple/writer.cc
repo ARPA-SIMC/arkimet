@@ -29,7 +29,7 @@ class AppendSegment
 {
 public:
     std::shared_ptr<simple::Dataset> dataset;
-    std::shared_ptr<dataset::AppendLock> lock;
+    std::shared_ptr<core::AppendLock> lock;
     std::shared_ptr<segment::data::Writer> segment;
     utils::sys::Path dir;
     std::string basename;
@@ -37,7 +37,7 @@ public:
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<dataset::AppendLock> lock, std::shared_ptr<segment::data::Writer> segment)
+    AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<core::AppendLock> lock, std::shared_ptr<segment::data::Writer> segment)
         : dataset(dataset), lock(lock), segment(segment),
           dir(segment->segment().abspath().parent_path()),
           basename(segment->segment().abspath().filename())

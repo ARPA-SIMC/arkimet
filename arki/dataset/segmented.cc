@@ -174,7 +174,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }
 
-CheckerSegment::CheckerSegment(std::shared_ptr<dataset::CheckLock> lock)
+CheckerSegment::CheckerSegment(std::shared_ptr<core::CheckLock> lock)
     : lock(lock)
 {
 }

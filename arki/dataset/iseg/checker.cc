@@ -61,7 +61,7 @@ public:
 
     CheckerSegment(Checker& checker, const std::string& relpath)
         : CheckerSegment(checker, relpath, checker.dataset().check_lock_segment(relpath)) {}
-    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<core::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
         segment = checker.dataset().segment_session->segment_checker(checker.dataset().iseg.format, relpath);
@@ -501,7 +501,7 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesyste
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock)
 {
     return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
 }

@@ -28,11 +28,11 @@ class AppendSegment
 {
 public:
     std::shared_ptr<iseg::Dataset> dataset;
-    std::shared_ptr<dataset::AppendLock> append_lock;
+    std::shared_ptr<core::AppendLock> append_lock;
     std::shared_ptr<segment::data::Writer> segment;
     AIndex idx;
 
-    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<dataset::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> segment)
+    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<core::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> segment)
         : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset->iseg, dataset->segment_session, segment, append_lock)
     {
     }
@@ -283,7 +283,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
-    std::shared_ptr<dataset::AppendLock> append_lock(dataset().append_lock_segment(relpath));
+    std::shared_ptr<core::AppendLock> append_lock(dataset().append_lock_segment(relpath));
     auto segment = dataset().segment_session->segment_writer(writer_config, dataset().iseg.format, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
 }

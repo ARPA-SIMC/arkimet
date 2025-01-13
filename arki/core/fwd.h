@@ -23,6 +23,9 @@ struct AbstractInputFile;
 struct BufferedReader;
 class LineReader;
 class Lock;
+class ReadLock;
+class AppendLock;
+class CheckLock;
 
 namespace lock {
 struct Policy;

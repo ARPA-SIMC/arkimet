@@ -20,7 +20,7 @@ class Checker : public DatasetAccess<simple::Dataset, segmented::Checker>
 protected:
     Index* m_idx = nullptr;
     index::Manifest* m_mft;
-    std::shared_ptr<dataset::CheckLock> lock;
+    std::shared_ptr<core::CheckLock> lock;
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     //segment::Segment* file(const Metadata& md, const std::string& format);
@@ -32,7 +32,7 @@ public:
     std::string type() const override;
 
     std::unique_ptr<segmented::CheckerSegment> segment(const std::filesystem::path& relpath) override;
-    std::unique_ptr<segmented::CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock) override;
+    std::unique_ptr<segmented::CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock) override;
     void segments_tracked(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;

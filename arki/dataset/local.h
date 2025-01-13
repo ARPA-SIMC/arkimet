@@ -5,18 +5,12 @@
 
 #include <arki/dataset.h>
 #include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
+#include <arki/matcher/fwd.h>
 #include <filesystem>
 #include <string>
 
-namespace arki {
-class Metadata;
-class Matcher;
-
-namespace dataset {
-class Lock;
-class ReadLock;
-class AppendLock;
-class CheckLock;
+namespace arki::dataset {
 
 namespace archive {
 class Dataset;
@@ -60,9 +54,9 @@ public:
     /**
      * Create/open a dataset-wide lockfile, returning the Lock instance
      */
-    std::shared_ptr<dataset::ReadLock> read_lock_segment(const std::filesystem::path& relpath) const;
-    std::shared_ptr<dataset::AppendLock> append_lock_segment(const std::filesystem::path& relpath) const;
-    std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<core::ReadLock> read_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<core::AppendLock> append_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<core::CheckLock> check_lock_segment(const std::filesystem::path& relpath) const;
 };
 
 template<typename Parent>
@@ -133,7 +127,6 @@ public:
     void state(CheckerConfig& opts) override;
 };
 
-}
 }
 }
 #endif

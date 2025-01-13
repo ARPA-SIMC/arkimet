@@ -20,9 +20,9 @@ struct Dataset : public dataset::segmented::Dataset
     std::shared_ptr<dataset::Writer> create_writer() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
 
-    std::shared_ptr<dataset::ReadLock> read_lock_dataset() const;
-    std::shared_ptr<dataset::AppendLock> append_lock_dataset() const;
-    std::shared_ptr<dataset::CheckLock> check_lock_dataset() const;
+    std::shared_ptr<core::ReadLock> read_lock_dataset() const;
+    std::shared_ptr<core::AppendLock> append_lock_dataset() const;
+    std::shared_ptr<core::CheckLock> check_lock_dataset() const;
 };
 
 }

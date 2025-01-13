@@ -70,17 +70,17 @@ bool Dataset::hasArchive() const
     return std::filesystem::exists(path / ".archive");
 }
 
-std::shared_ptr<dataset::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
+std::shared_ptr<core::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentReadLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
+std::shared_ptr<core::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentAppendLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
+std::shared_ptr<core::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentCheckLock>(*this, relpath);
 }

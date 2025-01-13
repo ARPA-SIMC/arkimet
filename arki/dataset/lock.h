@@ -10,80 +10,37 @@ namespace local {
 class Dataset;
 }
 
-class Lock : public core::Lock
-{
-public:
-    arki::core::File lockfile;
-    const core::lock::Policy* lock_policy;
-    arki::core::FLock ds_lock;
-
-    Lock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
-};
-
-
-class ReadLock : public Lock
-{
-public:
-    ReadLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
-    ~ReadLock();
-};
-
-
-class AppendLock : public Lock
-{
-public:
-    AppendLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
-    ~AppendLock();
-};
-
-
-class CheckLock : public Lock
-{
-public:
-    std::weak_ptr<core::Lock> current_write_lock;
-
-    CheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
-    ~CheckLock();
-
-    /**
-     * Escalate a read lock to a write lock as long as the resulting lock is in
-     * use
-     */
-    std::shared_ptr<core::Lock> write_lock();
-};
-
-
-class DatasetReadLock : public ReadLock
+class DatasetReadLock : public core::lock::FileReadLock
 {
 public:
     explicit DatasetReadLock(const local::Dataset& dataset);
 };
 
-class DatasetAppendLock : public AppendLock
+class DatasetAppendLock : public core::lock::FileAppendLock
 {
 public:
     explicit DatasetAppendLock(const local::Dataset& dataset);
 };
 
-class DatasetCheckLock : public CheckLock
+class DatasetCheckLock : public core::lock::FileCheckLock
 {
 public:
     explicit DatasetCheckLock(const local::Dataset& dataset);
 };
 
-class SegmentReadLock : public ReadLock
+class SegmentReadLock : public core::lock::FileReadLock
 {
 public:
     SegmentReadLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
 };
 
-class SegmentAppendLock : public AppendLock
+class SegmentAppendLock : public core::lock::FileAppendLock
 {
 public:
     SegmentAppendLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
 };
 
-class SegmentCheckLock : public CheckLock
+class SegmentCheckLock : public core::lock::FileCheckLock
 {
 public:
     SegmentCheckLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
