@@ -207,7 +207,7 @@ void CheckerSegment::archive()
     get_metadata(wlock, mdc);
 
     // Move the segment to the archive and deindex it
-    auto new_root = dataset().path / ".archive" / "last";
+    auto new_root = dataset().archive()->root / "last";
     auto new_relpath = sys::with_suffix(dataset().step()(interval.begin), "."s + format_name(format));
     release(new_root, new_relpath);
 
