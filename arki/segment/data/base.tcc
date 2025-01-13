@@ -35,7 +35,7 @@ std::shared_ptr<data::Checker> BaseChecker<Data>::move(std::shared_ptr<const seg
 
     std::filesystem::create_directories(new_segment->abspath().parent_path());
 
-    this->move_data(new_segment->root(), new_segment->relpath());
+    this->move_data(new_segment);
 
     // Move metadata to destination
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath(), ".metadata"), target_metadata);

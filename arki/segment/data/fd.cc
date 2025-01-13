@@ -303,10 +303,9 @@ State Checker<Data, File>::check(std::function<void(const std::string&)> reporte
 }
 
 template<typename Data, typename File>
-void Checker<Data, File>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
+void Checker<Data, File>::move_data(std::shared_ptr<const Segment> new_segment)
 {
-    auto new_abspath = new_root / new_relpath;
-    std::filesystem::rename(this->segment().abspath(), new_abspath);
+    std::filesystem::rename(this->segment().abspath(), new_segment->abspath());
 }
 
 template<typename Data, typename File>

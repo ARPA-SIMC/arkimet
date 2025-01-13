@@ -94,7 +94,7 @@ public:
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
     void validate(Metadata& md, const scan::Validator& v);
-    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override;
+    void move_data(std::shared_ptr<const Segment> new_segment) override;
     bool exists_on_disk() override;
     bool is_empty() override;
     size_t size() override;

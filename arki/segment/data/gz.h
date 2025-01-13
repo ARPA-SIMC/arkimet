@@ -39,7 +39,7 @@ protected:
     std::filesystem::path gzabspath;
     std::filesystem::path gzidxabspath;
 
-    void move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override;
+    void move_data(std::shared_ptr<const Segment> new_segment) override;
 
 public:
     explicit Checker(std::shared_ptr<const Data> data);

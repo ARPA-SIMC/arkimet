@@ -184,11 +184,10 @@ size_t Checker<Data>::size()
 }
 
 template<typename Data>
-void Checker<Data>::move_data(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath)
+void Checker<Data>::move_data(std::shared_ptr<const Segment> new_segment)
 {
-    auto new_abspath = new_root / new_relpath;
-    std::filesystem::rename(gzabspath, sys::with_suffix(new_abspath, ".gz"));
-    sys::rename_ifexists(gzidxabspath, sys::with_suffix(new_abspath, ".gz.idx"));
+    std::filesystem::rename(gzabspath, sys::with_suffix(new_segment->abspath(), ".gz"));
+    sys::rename_ifexists(gzidxabspath, sys::with_suffix(new_segment->abspath(), ".gz.idx"));
 }
 
 template<typename Data>
