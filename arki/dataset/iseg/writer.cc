@@ -30,19 +30,19 @@ public:
     std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<core::AppendLock> append_lock;
     std::shared_ptr<segment::data::Writer> segment;
-    AIndex idx;
+    std::shared_ptr<AIndex> idx;
 
     AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<core::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> segment)
-        : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset->iseg, dataset->segment_session, segment, append_lock)
+        : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset->iseg_segment_session->append_index(segment, append_lock))
     {
     }
 
     WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache)
     {
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx->begin_transaction();
 
         try {
-            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx->index(md, segment->next_offset()))
             {
                 md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath().native() + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
@@ -62,10 +62,10 @@ public:
 
     WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache)
     {
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx->begin_transaction();
 
         try {
-            idx.replace(md, segment->next_offset());
+            idx->replace(md, segment->next_offset());
             // Invalidate the summary cache for this month
             scache.invalidate(md);
             segment->append(md);
@@ -81,11 +81,11 @@ public:
 
     WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache)
     {
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx->begin_transaction();
 
         try {
             // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old = idx.index(md, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx->index(md, segment->next_offset()))
             {
                 // Duplicate detected
 
@@ -95,7 +95,7 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = dataset->segment_session->segment_reader(dataset->iseg.format, old->filename, append_lock);
+                auto reader = dataset->segment_session->segment_reader(dataset->iseg_segment_session->format, old->filename, append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -109,7 +109,7 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Replace, reusing the pending datafile transaction from earlier
-                idx.replace(md, segment->next_offset());
+                idx->replace(md, segment->next_offset());
                 segment->append(md);
                 segment->commit();
                 p_idx.commit();
@@ -131,14 +131,14 @@ public:
 
     void acquire_batch_replace_never(WriterBatch& batch, index::SummaryCache& scache)
     {
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx->begin_transaction();
 
         try {
             for (auto& e: batch)
             {
                 e->dataset_name.clear();
 
-                if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, segment->next_offset()))
                 {
                     e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath().native() + ":" + std::to_string(old->offset));
                     e->result = ACQ_ERROR_DUPLICATE;
@@ -163,13 +163,13 @@ public:
 
     void acquire_batch_replace_always(WriterBatch& batch, index::SummaryCache& scache)
     {
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx->begin_transaction();
 
         try {
             for (auto& e: batch)
             {
                 e->dataset_name.clear();
-                idx.replace(e->md, segment->next_offset());
+                idx->replace(e->md, segment->next_offset());
                 // Invalidate the summary cache for this month
                 scache.invalidate(e->md);
                 segment->append(e->md);
@@ -188,7 +188,7 @@ public:
 
     void acquire_batch_replace_higher_usn(WriterBatch& batch, index::SummaryCache& scache)
     {
-        Pending p_idx = idx.begin_transaction();
+        Pending p_idx = idx->begin_transaction();
 
         try {
             for (auto& e: batch)
@@ -196,7 +196,7 @@ public:
                 e->dataset_name.clear();
 
                 // Try to acquire without replacing
-                if (std::unique_ptr<types::source::Blob> old = idx.index(e->md, segment->next_offset()))
+                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, segment->next_offset()))
                 {
                     // Duplicate detected
 
@@ -210,7 +210,7 @@ public:
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = dataset->segment_session->segment_reader(dataset->iseg.format, old->filename, append_lock);
+                    auto reader = dataset->segment_session->segment_reader(dataset->iseg_segment_session->format, old->filename, append_lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -229,7 +229,7 @@ public:
                     }
 
                     // Replace, reusing the pending datafile transaction from earlier
-                    idx.replace(e->md, segment->next_offset());
+                    idx->replace(e->md, segment->next_offset());
                     segment->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
@@ -272,7 +272,7 @@ std::string Writer::type() const { return "iseg"; }
 std::filesystem::path Writer::get_relpath(const Metadata& md)
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    return sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg.format));
+    return sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg_segment_session->format));
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md)
@@ -284,15 +284,15 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<core::AppendLock> append_lock(dataset().append_lock_segment(relpath));
-    auto segment = dataset().segment_session->segment_writer(writer_config, dataset().iseg.format, relpath);
+    auto segment = dataset().segment_session->segment_writer(writer_config, dataset().iseg_segment_session->format, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
-    if (md.source().format != dataset().iseg.format)
-        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg.format));
+    if (md.source().format != dataset().iseg_segment_session->format)
+        throw std::runtime_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg_segment_session->format));
 
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
@@ -324,9 +324,9 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
     if (batch.empty()) return;
-    if (batch[0]->md.source().format != dataset().iseg.format)
+    if (batch[0]->md.source().format != dataset().iseg_segment_session->format)
     {
-        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(batch[0]->md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg.format));
+        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(batch[0]->md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg_segment_session->format));
         return;
     }
 

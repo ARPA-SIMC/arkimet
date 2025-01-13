@@ -37,7 +37,7 @@ bool Reader::is_dataset(const std::filesystem::path& dir)
 bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::filesystem::path& relpath)> dest)
 {
     std::vector<filesystem::path> seg_relpaths;
-    step::SegmentQuery squery(dataset().path, dataset().iseg.format, "\\.index$", matcher);
+    step::SegmentQuery squery(dataset().path, dataset().iseg_segment_session->format, "\\.index$", matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
         seg_relpaths.emplace_back(move(s));
     });
@@ -57,8 +57,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
         return false;
 
     bool res = list_segments(q.matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset->iseg, m_dataset->segment_session, relpath, dataset().read_lock_segment(relpath));
-        return idx.query_data(q, dest);
+        auto idx = dataset().iseg_segment_session->read_index(relpath, dataset().read_lock_segment(relpath));
+        return idx->query_data(q, dest);
     });
     return track.done(res);
 }
@@ -66,8 +66,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
     list_segments(matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset->iseg, m_dataset->segment_session, relpath, dataset().read_lock_segment(relpath));
-        idx.query_summary_from_db(matcher, summary);
+        auto idx = dataset().iseg_segment_session->read_index(relpath, dataset().read_lock_segment(relpath));
+        idx->query_summary_from_db(matcher, summary);
         return true;
     });
 }
@@ -91,7 +91,7 @@ void Reader::summary_for_all(Summary& out)
 
     // Find the datetime extremes in the database
     core::Interval interval;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg.format), interval);
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg_segment_session->format), interval);
 
     // If there is data in the database, get all the involved
     // monthly summaries
@@ -135,7 +135,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
     // Amend open ends with the bounds from the database
     core::Interval db_interval;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg.format), db_interval);
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg_segment_session->format), db_interval);
     // If the database is empty then the result is empty:
     // we are done
     if (!db_interval.begin.is_set())

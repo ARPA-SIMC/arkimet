@@ -7,7 +7,7 @@
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
-#include <arki/segment/index/iseg/config.h>
+#include <arki/segment/index/iseg/session.h>
 #include <arki/segment/index/iseg/attr.h>
 #include <arki/segment/index/iseg/aggregate.h>
 #include <arki/core/lock.h>
@@ -41,8 +41,7 @@ namespace arki::segment::index::iseg {
 class Index
 {
 public:
-    const Config& config;
-    std::shared_ptr<segment::Session> segment_session;
+    std::shared_ptr<iseg::Session> segment_session;
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
@@ -97,10 +96,14 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
-    Index(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
+    Index(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
 
 public:
+    Index(const Index&) = delete;
+    Index(Index&&) = delete;
     ~Index();
+    Index& operator=(const Index&) = delete;
+    Index& operator=(Index&&) = delete;
 
     bool has_uniques() const { return m_uniques != nullptr; }
     segment::index::iseg::Aggregate& uniques() { return *m_uniques; }
@@ -149,7 +152,7 @@ public:
 class RIndex : public Index
 {
 public:
-    RIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock=nullptr);
 };
 
 class WIndex : public Index
@@ -164,7 +167,7 @@ protected:
 
     void compile_insert();
 
-    WIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
+    WIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock=nullptr);
 public:
 
     /**
@@ -215,14 +218,14 @@ public:
 class AIndex : public WIndex
 {
 public:
-    AIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
+    AIndex(std::shared_ptr<iseg::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex
 {
 public:
-    CIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
+    CIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
 };
 
 }

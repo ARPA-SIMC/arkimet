@@ -48,15 +48,15 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
-    : config(config), segment_session(segment_session),
+Index::Index(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
+    : segment_session(segment_session),
       data_relpath(data_relpath),
       data_pathname(segment_session->root / data_relpath),
       index_pathname(sys::with_suffix(data_pathname, ".index")),
       lock(lock)
 {
-    if (not config.unique.empty())
-        m_uniques = new Aggregate(m_db, "mduniq", config.unique);
+    if (not segment_session->unique.empty())
+        m_uniques = new Aggregate(m_db, "mduniq", segment_session->unique);
 
     // Instantiate m_others after the database has been opened, so we can scan
     // the database to see if some attributes are not available
@@ -135,7 +135,7 @@ std::set<types::Code> Index::unique_codes() const
 
 void Index::setup_pragmas()
 {
-    if (config.eatmydata)
+    if (segment_session->eatmydata)
     {
         m_db.exec("PRAGMA synchronous = OFF");
         m_db.exec("PRAGMA journal_mode = MEMORY");
@@ -156,14 +156,14 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (config.smallfiles) query += ", m.data";
+    if (segment_session->smallfiles) query += ", m.data";
     query += " FROM md AS m";
     query += " ORDER BY " + order_by;
 
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = segment_session->segment_reader(config.format, data_relpath, lock);
+    auto reader = segment_session->segment_reader(segment_session->format, data_relpath, lock);
 
     while (mdq.step())
     {
@@ -288,7 +288,7 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
             m_others->read(q.fetch<int>(j), md);
         ++j;
     }
-    if (config.smallfiles)
+    if (segment_session->smallfiles)
     {
         if (!q.isNULL(j))
         {
@@ -305,11 +305,11 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
 
     if (reader)
         md.set_source(Source::createBlob(
-                config.format, segment_session->root, data_relpath,
+                segment_session->format, segment_session->root, data_relpath,
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
     else
         md.set_source(Source::createBlobUnlocked(
-                config.format, segment_session->root, data_relpath,
+                segment_session->format, segment_session->root, data_relpath,
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
@@ -319,7 +319,7 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
 
     if (m_uniques) query += ", m.uniq";
     if (m_others) query += ", m.other";
-    if (config.smallfiles) query += ", m.data";
+    if (segment_session->smallfiles) query += ", m.data";
 
     query += " FROM md AS m";
 
@@ -338,7 +338,7 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
     metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = segment_session->segment_reader(config.format, data_relpath, lock);
+        reader = segment_session->segment_reader(segment_session->format, data_relpath, lock);
 
     // Limited scope for mdq, so we finalize the query before starting to
     // emit results
@@ -435,8 +435,8 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
-    : Index(config, segment_session, data_relpath, lock)
+RIndex::RIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
+    : Index(segment_session, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
     {
@@ -446,21 +446,21 @@ RIndex::RIndex(const Config& config, std::shared_ptr<segment::Session> segment_s
     }
 
     m_db.open(index_pathname);
-    if (config.trace_sql) m_db.trace();
+    if (segment_session->trace_sql) m_db.trace();
 
     init_others();
 }
 
 
-WIndex::WIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
-    : Index(config, segment_session, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
+WIndex::WIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
+    : Index(segment_session, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
     if (need_create)
     {
         m_db.open(index_pathname);
-        if (config.trace_sql) m_db.trace();
+        if (segment_session->trace_sql) m_db.trace();
         setup_pragmas();
         if (!m_others)
         {
@@ -471,7 +471,7 @@ WIndex::WIndex(const Config& config, std::shared_ptr<segment::Session> segment_s
         init_db();
     } else {
         m_db.open(index_pathname);
-        if (config.trace_sql) m_db.trace();
+        if (segment_session->trace_sql) m_db.trace();
         setup_pragmas();
         init_others();
     }
@@ -479,8 +479,8 @@ WIndex::WIndex(const Config& config, std::shared_ptr<segment::Session> segment_s
 
 void WIndex::init_db()
 {
-    if (m_uniques) m_uniques->initDB(config.index);
-    if (m_others) m_others->initDB(config.index);
+    if (m_uniques) m_uniques->initDB(segment_session->index);
+    if (m_others) m_others->initDB(segment_session->index);
 
     // Create the main table
     std::string query = "CREATE TABLE IF NOT EXISTS md ("
@@ -490,7 +490,7 @@ void WIndex::init_db()
         " reftime TEXT NOT NULL";
     if (m_uniques) query += ", uniq INTEGER NOT NULL";
     if (m_others) query += ", other INTEGER NOT NULL";
-    if (config.smallfiles) query += ", data TEXT";
+    if (segment_session->smallfiles) query += ", data TEXT";
     if (m_uniques)
         query += ", UNIQUE(reftime, uniq)";
     else
@@ -519,7 +519,7 @@ void WIndex::compile_insert()
         un_ot += ", other";
         placeholders += ", ?";
     }
-    if (config.smallfiles)
+    if (segment_session->smallfiles)
     {
         un_ot += ", data";
         placeholders += ", ?";
@@ -595,7 +595,7 @@ struct Inserter
 
         if (id_uniques != -1) q.bind(++qidx, id_uniques);
         if (id_others != -1) q.bind(++qidx, id_others);
-        if (idx.config.smallfiles)
+        if (idx.segment_session->smallfiles)
         {
             if (const types::Value* v = md.get<types::Value>())
             {
@@ -620,7 +620,7 @@ std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t 
     inserter.bind_get_current(m_get_current);
     while (m_get_current.step())
         res = types::source::Blob::create_unlocked(
-                config.format, segment_session->root, data_relpath,
+                segment_session->format, segment_session->root, data_relpath,
                 m_get_current.fetch<uint64_t>(0),
                 m_get_current.fetch<uint64_t>(1));
     if (res) return res;
@@ -728,13 +728,13 @@ void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
     });
 }
 
-AIndex::AIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock)
-    : WIndex(config, segment_session, segment->segment().relpath(), lock)
+AIndex::AIndex(std::shared_ptr<iseg::Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock)
+    : WIndex(segment_session, segment->segment().relpath(), lock)
 {
 }
 
-CIndex::CIndex(const Config& config, std::shared_ptr<segment::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock)
-    : WIndex(config, segment_session, data_relpath, lock)
+CIndex::CIndex(std::shared_ptr<iseg::Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock)
+    : WIndex(segment_session, data_relpath, lock)
 {
 }
 
