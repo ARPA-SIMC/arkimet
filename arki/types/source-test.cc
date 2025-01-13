@@ -5,7 +5,7 @@
 #include "arki/structured/json.h"
 #include "arki/structured/memory.h"
 #include "arki/structured/keys.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/core/binary.h"
 #include "arki/stream.h"
 #include "arki/utils/sys.h"

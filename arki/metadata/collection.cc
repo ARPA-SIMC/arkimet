@@ -1,6 +1,6 @@
 #include "collection.h"
 #include "arki/exceptions.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"

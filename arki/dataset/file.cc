@@ -4,7 +4,7 @@
 #include "arki/query/progress.h"
 #include "arki/metadata.h"
 #include "arki/segment/data.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata/sort.h"

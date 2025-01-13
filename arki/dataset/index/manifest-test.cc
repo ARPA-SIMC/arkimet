@@ -1,4 +1,4 @@
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/dataset/tests.h"
 #include "arki/dataset/index/manifest.h"
 #include "arki/dataset/maintenance.h"

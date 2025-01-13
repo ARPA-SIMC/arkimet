@@ -9,7 +9,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/types/note.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"

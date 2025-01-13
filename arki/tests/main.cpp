@@ -1,6 +1,6 @@
 #include "arki/utils/testrunner.h"
 #include "arki/utils/term.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/runtime.h"
 #include <signal.h>
 #include <cstdlib>

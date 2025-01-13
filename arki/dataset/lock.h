@@ -1,7 +1,7 @@
 #ifndef ARKI_DATASET_LOCK_H
 #define ARKI_DATASET_LOCK_H
 
-#include <arki/core/file.h>
+#include <arki/core/lock.h>
 #include <memory>
 
 namespace arki {

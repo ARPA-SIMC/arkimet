@@ -1,8 +1,8 @@
-#ifndef ARKI_SEGMENT_TESTS_TCC
-#define ARKI_SEGMENT_TESTS_TCC
+#ifndef ARKI_SEGMENT_DATA_TESTS_TCC
+#define ARKI_SEGMENT_DATA_TESTS_TCC
 
 #include "arki/segment/data/tests.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/stream.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"

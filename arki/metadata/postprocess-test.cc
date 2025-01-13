@@ -2,7 +2,7 @@
 #include "arki/segment/data.h"
 #include "arki/metadata/data.h"
 #include "arki/types/source/blob.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/core/cfg.h"
 #include "arki/core/binary.h"
 #include "arki/stream.h"

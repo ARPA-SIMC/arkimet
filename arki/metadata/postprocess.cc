@@ -2,7 +2,6 @@
 #include "postprocess.h"
 #include "arki/exceptions.h"
 #include "arki/stream.h"
-#include "arki/core/file.h"
 #include "arki/core/cfg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
