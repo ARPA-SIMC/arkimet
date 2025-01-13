@@ -412,10 +412,10 @@ public:
         checker.m_mft->flush();
     }
 
-    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override
+    void release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
         checker.m_mft->remove(segment->segment().relpath());
-        segment->move(new_root, new_relpath);
+        segment->move(new_segment_session->root, new_relpath);
     }
 };
 

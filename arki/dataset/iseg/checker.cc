@@ -462,10 +462,10 @@ public:
         // TODO: remove relevant summary
     }
 
-    void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath) override
+    void release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
         std::filesystem::remove(checker.dataset().path / sys::with_suffix(segment->segment().relpath(), ".index"));
-        segment->move(new_root, new_relpath);
+        segment->move(new_segment_session->root, new_relpath);
     }
 };
 
