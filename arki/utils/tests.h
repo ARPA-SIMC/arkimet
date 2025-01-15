@@ -581,14 +581,24 @@ struct TestCase
     virtual void teardown() {}
 
     /**
+     * Set up before each test method is run.
+     */
+    virtual void test_setup() {}
+
+    /**
+     * Clean up after each test method is run.
+     */
+    virtual void test_teardown() {}
+
+    /**
      * Set up before the test method is run
      */
-    virtual void method_setup(TestMethodResult&) {}
+    virtual void method_setup(TestMethodResult&) { test_setup(); }
 
     /**
      * Clean up after the test method is run
      */
-    virtual void method_teardown(TestMethodResult&) {}
+    virtual void method_teardown(TestMethodResult&) { test_teardown(); }
 
     /**
      * Call setup(), run all the tests that have been registered, then
