@@ -34,7 +34,7 @@ std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::fil
 }
 
 
-std::shared_ptr<segment::data::Reader> Session::segment_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<segment::data::Reader> Session::segment_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock) const
 {
     auto seg = segment_from_relpath_and_format(relpath, format);
     auto res = reader_pool.find(seg->abspath());

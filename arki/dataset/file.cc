@@ -190,7 +190,7 @@ SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg
 bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
     if (!reader->scan(dest))
         return false;
     if (sorter) return sorter->flush();
@@ -225,7 +225,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                         const auto& blob = md->sourceBlob();
                         auto segment_session = std::make_shared<segment::Session>(blob.basedir);
                         auto segment = segment_session->segment_from_relpath_and_format(blob.filename, blob.format);
-                        auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
+                        auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
                         md->sourceBlob().lock(reader);
                     }
                     return dest(md);

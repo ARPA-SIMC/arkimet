@@ -172,7 +172,7 @@ struct TemporaryWriteLock : public core::Lock
         trace("%s [%d] Obtained escalate to write check lock\n", parent->lockfile.path().c_str(), (int)getpid());
     }
 
-    ~TemporaryWriteLock()
+    ~TemporaryWriteLock() override
     {
         trace("%s [%d] Deescalate to readonly check lock\n", parent->lockfile.path().c_str(), (int)getpid());
         parent->ds_lock.l_type = F_UNLCK;
@@ -265,9 +265,9 @@ struct OFDPolicy : public Policy
 };
 
 
-bool NullPolicy::setlk(NamedFileDescriptor& fd, FLock&) const { return true; }
-bool NullPolicy::setlkw(NamedFileDescriptor& fd, FLock&) const { return true; }
-bool NullPolicy::getlk(NamedFileDescriptor& fd, FLock&) const { return true; }
+bool NullPolicy::setlk(NamedFileDescriptor&, FLock&) const { return true; }
+bool NullPolicy::setlkw(NamedFileDescriptor&, FLock&) const { return true; }
+bool NullPolicy::getlk(NamedFileDescriptor&, FLock&) const { return true; }
 
 bool OFDPolicy::setlk(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_setlk(fd); }
 bool OFDPolicy::setlkw(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_setlkw(fd); }

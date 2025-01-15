@@ -70,7 +70,7 @@ public:
     simple::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
 
-    void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
+    void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) override
     {
         auto reader = segment->data().reader(lock);
         reader->scan(mds.inserter_func());
@@ -192,7 +192,7 @@ public:
 
         // Read the metadata
         metadata::Collection mds;
-        get_metadata(lock, mds);
+        get_metadata(checker.lock, mds);
 
         // Sort by reference time and offset
         RepackSort cmp;
@@ -261,7 +261,7 @@ public:
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
-        get_metadata(lock, mds);
+        get_metadata(checker.lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);
@@ -294,7 +294,7 @@ public:
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
-        get_metadata(lock, mds);
+        get_metadata(checker.lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);
@@ -328,7 +328,7 @@ public:
         auto lock = checker.lock->write_lock();
 
         metadata::Collection mds;
-        get_metadata(lock, mds);
+        get_metadata(checker.lock, mds);
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);

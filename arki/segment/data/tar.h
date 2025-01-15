@@ -19,7 +19,7 @@ public:
     bool single_file() const override;
     time_t timestamp() const override;
 
-    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const override;
+    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
@@ -33,7 +33,7 @@ class Reader : public data::BaseReader<Data>
 public:
     core::File fd;
 
-    Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
@@ -69,7 +69,7 @@ public:
     bool is_empty() override;
     size_t size() override;
 
-    bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) override;
+    bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
     core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;

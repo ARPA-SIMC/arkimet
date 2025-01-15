@@ -20,7 +20,7 @@ protected:
     std::shared_ptr<const Data> m_data;
 
 public:
-    BaseReader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+    BaseReader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)
         : data::Reader(lock), m_data(data)
     {
     }
@@ -54,7 +54,7 @@ protected:
     std::shared_ptr<const Data> m_data;
 
 public:
-    BaseChecker(std::shared_ptr<const Data> data) : m_data(data)
+    explicit BaseChecker(std::shared_ptr<const Data> data) : m_data(data)
     {
     }
 

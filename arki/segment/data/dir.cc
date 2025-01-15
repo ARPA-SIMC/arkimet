@@ -225,7 +225,7 @@ time_t Data::timestamp() const
 {
     return sys::timestamp(segment().abspath() / ".sequence");
 }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     try {
         return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
@@ -275,7 +275,7 @@ bool Data::can_store(DataFormat format)
 }
 
 
-Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)
     : BaseReader<Data>(data, lock), dirfd(data->segment().abspath(), O_DIRECTORY)
 {
 }
@@ -498,7 +498,7 @@ void BaseChecker<Data>::move_data(std::shared_ptr<const Segment> new_segment)
 }
 
 template<typename Data>
-bool BaseChecker<Data>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool BaseChecker<Data>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest)
 {
     Scanner scanner(this->segment());
 

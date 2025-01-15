@@ -31,13 +31,13 @@ public:
     std::filesystem::path relpath() const { return m_relpath; }
     std::filesystem::path abspath() const { return m_abspath; }
 
-    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::ReadLock> lock) const;
+    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
 
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> detect_data() const;
 
     /// Instantiate the right Reader implementation for a segment that already exists
-    std::shared_ptr<segment::data::Reader> detect_data_reader(std::shared_ptr<core::Lock> lock) const;
+    std::shared_ptr<segment::data::Reader> detect_data_reader(std::shared_ptr<const core::ReadLock> lock) const;
 
     /// Instantiate the right Writer implementation for a segment that already exists
     std::shared_ptr<segment::data::Writer> detect_data_writer(const segment::data::WriterConfig& config) const;
@@ -60,10 +60,10 @@ class Reader
 {
 protected:
     std::shared_ptr<const Segment> m_segment;
-    std::shared_ptr<core::ReadLock> lock;
+    std::shared_ptr<const core::ReadLock> lock;
 
 public:
-    explicit Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<core::ReadLock> lock);
+    explicit Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock);
     Reader(const Reader&) = delete;
     Reader(Reader&&) = delete;
     Reader& operator=(const Reader&) = delete;

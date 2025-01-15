@@ -62,7 +62,7 @@ public:
 
     const Step& step() const { return *m_step; }
 
-    virtual std::shared_ptr<segment::data::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
+    virtual std::shared_ptr<segment::data::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock);
 };
 
 /**
@@ -131,7 +131,7 @@ public:
     /**
      * Get the metadata for the contents of this segment known to the dataset
      */
-    virtual void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) = 0;
+    virtual void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) = 0;
 
     /// Convert the segment into a tar segment
     virtual void tar() = 0;

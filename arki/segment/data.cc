@@ -31,7 +31,7 @@ Data::~Data()
 
 namespace data {
 
-Reader::Reader(std::shared_ptr<core::Lock> lock)
+Reader::Reader(std::shared_ptr<const core::ReadLock> lock)
     : lock(lock)
 {
 }

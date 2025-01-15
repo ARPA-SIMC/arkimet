@@ -103,7 +103,7 @@ struct CheckBackend : public AppendCheckBackend
 const char* Data::type() const { return "tar"; }
 bool Data::single_file() const { return true; }
 time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath(), ".tar")); }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     return std::make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
@@ -130,7 +130,7 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 
 
 
-Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)
     : data::BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath(), ".tar"), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
@@ -206,7 +206,7 @@ void Checker::move_data(std::shared_ptr<const Segment> new_segment)
     }
 }
 
-bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest)
 {
     auto reader = this->data().reader(lock);
     return reader->scan_data(dest);

@@ -55,7 +55,7 @@ this->add_method("create", [](Fixture& f) {
 
 this->add_method("scan", [](Fixture& f) {
     auto checker = f.create();
-    auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<arki::core::lock::NullReadLock>());
     if (strcmp(reader->data().type(), "tar") == 0)
         throw TestSkipped("scanning .tar segments is not yet supported");
     metadata::Collection mds;
@@ -70,7 +70,7 @@ this->add_method("scan", [](Fixture& f) {
 this->add_method("read", [](Fixture& f) {
     wassert_true(Data::can_store(f.td.format));
     auto checker = f.create();
-    auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<arki::core::lock::NullReadLock>());
     size_t pad_size = f.td.format == DataFormat::VM2 ? 1 : 0;
     for (auto& md: f.seg_mds)
     {
@@ -94,7 +94,7 @@ this->add_method("read", [](Fixture& f) {
 
 this->add_method("repack", [](Fixture& f) {
     auto checker = f.create();
-    auto reader = checker->data().reader(std::make_shared<core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<core::lock::NullReadLock>());
     for (auto& md: f.seg_mds)
         md->sourceBlob().lock(reader);
     auto p = wcallchecked(checker->repack(f.segment->root(), f.seg_mds));
@@ -208,7 +208,7 @@ this->add_method("issue244", [](Fixture& f) {
     metadata::Collection mds;
     mds.push_back(md);
     auto checker = f.create(mds);
-    auto reader = checker->data().reader(std::make_shared<arki::core::lock::Null>());
+    auto reader = checker->data().reader(std::make_shared<arki::core::lock::NullReadLock>());
 
     // Writing normally uses sendfile
     {

@@ -26,16 +26,16 @@ public:
     using Lock::Lock;
 };
 
-class AppendLock: public Lock
+class AppendLock: public ReadLock
 {
 public:
-    using Lock::Lock;
+    using ReadLock::ReadLock;
 };
 
-class CheckLock: public Lock
+class CheckLock: public ReadLock
 {
 public:
-    using Lock::Lock;
+    using ReadLock::ReadLock;
 
     /**
      * Escalate a read lock to a write lock as long as the resulting lock is in
@@ -61,12 +61,29 @@ struct FLock : public ::flock
 
 namespace lock {
 
-class Null : public Lock
+class NullReadLock : public ReadLock
 {
 public:
-    using Lock::Lock;
+    using ReadLock::ReadLock;
 };
 
+/**
+ * Implement read/append/check locks on files.
+ *
+ * A read lock is a F_RDLK lock taken on the first byte of the file.
+ * An append lock is a F_WRLCK lock taken on the second byte of the file.
+ * A check lock is a F_WRLCK lock taken on the second byte of the file.
+ * A check write lock is a F_WRLCK lock taken on both the first and second
+ * bytes of the file.
+ *
+ * The intention is such that:
+ *  * appending does not interfere with reading
+ *  * a readonly check does not block reading
+ *  * a readonly check blocks appending, which may otherwise add new data that
+ *    interfere with invariants during checks
+ *  * a check write lock blocks reading, because it can completely rewrite
+ *    segments
+ */
 template<typename Base>
 class File : public Base
 {

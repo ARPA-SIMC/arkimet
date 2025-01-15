@@ -132,7 +132,7 @@ add_method("add_remove", [] {
     Summary s;
     auto session = std::make_shared<segment::Session>("inbound");
     auto segment = session->segment_from_relpath_and_format("test.grib1", DataFormat::GRIB);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
     reader->scan([&](std::shared_ptr<Metadata> md) { s.add(*md); return true; });
 
     m->acquire("a.grib1", 1000010, s);

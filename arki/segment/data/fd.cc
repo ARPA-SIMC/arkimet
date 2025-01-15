@@ -136,7 +136,7 @@ time_t Data::timestamp() const
 
 
 template<typename Data>
-Reader<Data>::Reader(std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+Reader<Data>::Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)
     : BaseReader<Data>(data, lock), fd(data->segment().abspath(), O_RDONLY
 #ifdef linux
                 | O_CLOEXEC
@@ -288,7 +288,7 @@ size_t Checker<Data, File>::size()
 }
 
 template<typename Data, typename File>
-bool Checker<Data, File>::rescan_data(std::function<void(const std::string&)>, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Checker<Data, File>::rescan_data(std::function<void(const std::string&)>, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest)
 {
     auto reader = this->data().reader(lock);
     return reader->scan_data(dest);
@@ -428,7 +428,7 @@ namespace single {
 
 const char* Data::type() const { return "single"; }
 bool Data::single_file() const { return true; }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     try {
         return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
@@ -484,7 +484,7 @@ void HoleFile::test_add_padding(size_t)
 
 const char* Data::type() const { return "concat"; }
 bool Data::single_file() const { return true; }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     try {
         return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
@@ -549,7 +549,7 @@ void File::test_add_padding(size_t size)
 
 const char* Data::type() const { return "lines"; }
 bool Data::single_file() const { return true; }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     try {
         return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);

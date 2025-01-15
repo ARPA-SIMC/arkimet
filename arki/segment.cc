@@ -28,7 +28,7 @@ Segment::~Segment()
 {
 }
 
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<core::ReadLock> lock) const
+std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     // TODO: detect index (iseg or .metadata file) (delegate to session, which may know about iseg config)
     // or: index is actually the segment::Reader implementation
@@ -147,7 +147,7 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
     }
 }
 
-std::shared_ptr<segment::data::Reader> Segment::detect_data_reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<segment::data::Reader> Segment::detect_data_reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     return detect_data()->reader(lock);
 }
@@ -407,7 +407,7 @@ std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 
 namespace segment {
 
-Reader::Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<core::ReadLock> lock)
+Reader::Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock)
     : m_segment(segment), lock(lock)
 {
 }

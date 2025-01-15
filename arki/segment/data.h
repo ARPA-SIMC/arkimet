@@ -64,7 +64,7 @@ public:
     /**
      * Instantiate a reader for this segment
      */
-    virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<core::Lock> lock) const = 0;
+    virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const = 0;
 
     /**
      * Instantiate a writer for this segment
@@ -83,9 +83,9 @@ namespace data {
 class Reader : public std::enable_shared_from_this<Reader>
 {
 public:
-    std::shared_ptr<core::Lock> lock;
+    std::shared_ptr<const core::ReadLock> lock;
 
-    Reader(std::shared_ptr<core::Lock> lock);
+    Reader(std::shared_ptr<const core::ReadLock> lock);
     virtual ~Reader();
 
     virtual const Segment& segment() const = 0;
@@ -193,7 +193,7 @@ struct RepackConfig
     static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
 
     RepackConfig();
-    RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
+    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
 };
 
 
@@ -225,7 +225,7 @@ public:
     /**
      * Rescan the segment, possibly fixing fixable issues found during the rescan
      */
-    virtual bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest) = 0;
+    virtual bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) = 0;
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.

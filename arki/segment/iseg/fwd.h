@@ -4,9 +4,6 @@
 #include <arki/segment/fwd.h>
 
 namespace arki::segment::iseg {
-class Segment;
-class Session;
-
 class RIndex;
 class AIndex;
 class CIndex;

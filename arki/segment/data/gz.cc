@@ -128,7 +128,7 @@ bool Data::can_store(DataFormat format)
 }
 
 template<typename Data>
-Reader<Data>::Reader(const std::shared_ptr<const Data> data, std::shared_ptr<core::Lock> lock)
+Reader<Data>::Reader(const std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)
     : BaseReader<Data>(data, lock), fd(sys::with_suffix(this->segment().abspath(), ".gz"), O_RDONLY), reader(fd)
 {
     // Read index
@@ -191,7 +191,7 @@ void Checker<Data>::move_data(std::shared_ptr<const Segment> new_segment)
 }
 
 template<typename Data>
-bool Checker<Data>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<core::Lock> lock, metadata_dest_func dest)
+bool Checker<Data>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest)
 {
     auto reader = this->data().reader(lock);
     return reader->scan_data(dest);
@@ -300,7 +300,7 @@ namespace gzconcat {
 
 const char* Data::type() const { return "gzconcat"; }
 bool Data::single_file() const { return true; }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
@@ -333,7 +333,7 @@ namespace gzlines {
 
 const char* Data::type() const { return "gzlines"; }
 bool Data::single_file() const { return true; }
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<core::Lock> lock) const
+std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }

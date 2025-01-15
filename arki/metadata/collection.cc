@@ -392,7 +392,7 @@ void TestCollection::scan_from_file(const std::filesystem::path& path, bool with
     session = std::make_shared<segment::Session>(basedir);
 
     auto segment = session->segment_from_relpath(relpath);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
@@ -404,7 +404,7 @@ void TestCollection::scan_from_file(const std::filesystem::path& path, DataForma
     session = std::make_shared<segment::Session>(basedir);
 
     auto segment = session->segment_from_relpath_and_format(relpath, format);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
     reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 

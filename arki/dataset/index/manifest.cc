@@ -1,6 +1,7 @@
 #include "manifest.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/query.h"
 #include "arki/dataset/simple.h"
 #include "arki/metadata.h"
@@ -82,7 +83,7 @@ bool Manifest::query_data(const query::Data& q, metadata_dest_func dest)
         if (!std::filesystem::exists(fullpath)) continue;
         std::shared_ptr<arki::segment::data::Reader> reader;
         if (q.with_data)
-            reader = dataset->segment_reader(file, lock.lock());
+            reader = dataset->segment_reader(file, std::dynamic_pointer_cast<const core::ReadLock>(lock.lock()));
         // This generates filenames relative to the metadata
         // We need to use m_path as the dirname, and prepend dirname(*i) to the filenames
         Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
@@ -148,7 +149,7 @@ void Manifest::query_segment(const std::filesystem::path& relpath, metadata_dest
         throw std::runtime_error("cannot query_segment while there is no lock held");
     auto prepend_fname = relpath.parent_path();
     auto abspath = m_path / relpath;
-    auto reader = dataset->segment_reader(relpath, lock.lock());
+    auto reader = dataset->segment_reader(relpath, std::dynamic_pointer_cast<const core::ReadLock>(lock.lock()));
     Metadata::read_file(sys::with_suffix(abspath, ".metadata"), [&](std::shared_ptr<Metadata> md) {
         // Tweak Blob sources replacing the file name with relpath
         if (const source::Blob* s = md->has_source_blob())

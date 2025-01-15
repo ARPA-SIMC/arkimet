@@ -99,7 +99,7 @@ add_method("countbytes", [] {
 add_method("cat", [] {
     auto session = std::make_shared<segment::Session>("inbound");
     auto segment = session->segment_from_relpath_and_format("test.grib1", DataFormat::GRIB);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::Null>());
+    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
 
     // Get the normal data
     vector<uint8_t> plain;

@@ -81,7 +81,7 @@ public:
     iseg::Dataset& dataset() override { return checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
 
-    void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
+    void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) override
     {
         idx().scan(mds.inserter_func(), "reftime, offset");
     }

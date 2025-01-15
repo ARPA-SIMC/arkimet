@@ -9,15 +9,27 @@ namespace arki {
 class Segment;
 
 namespace segment {
-
 class Session;
 class Reader;
 class Data;
+
+namespace data {
+class Reader;
+class Writer;
+struct WriterConfig;
+class Checker;
+struct RepackConfig;
+}
+
+namespace iseg {
+class Segment;
+class Session;
+class Reader;
+}
 
 }
 
 }
 
 #endif
-
 

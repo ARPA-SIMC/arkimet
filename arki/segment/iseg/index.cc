@@ -47,7 +47,8 @@ struct IndexGlobalData
 };
 static IndexGlobalData igd;
 
-Index::Index(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
+template<typename LockType>
+Index<LockType>::Index(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<LockType> lock)
     : segment_session(segment_session),
       data_relpath(data_relpath),
       data_pathname(segment_session->root / data_relpath),
@@ -61,18 +62,21 @@ Index::Index(std::shared_ptr<const Session> segment_session, const std::filesyst
     // the database to see if some attributes are not available
 }
 
-Index::~Index()
+template<typename LockType>
+Index<LockType>::~Index()
 {
     delete m_uniques;
     delete m_others;
 }
 
-core::Pending Index::begin_transaction()
+template<typename LockType>
+core::Pending Index<LockType>::begin_transaction()
 {
     return core::Pending(new SqliteTransaction(m_db));
 }
 
-std::set<types::Code> Index::available_other_tables() const
+template<typename LockType>
+std::set<types::Code> Index<LockType>::available_other_tables() const
 {
     // See what metadata types are already handled by m_uniques,
     // if any
@@ -99,7 +103,8 @@ std::set<types::Code> Index::available_other_tables() const
     return available_columns;
 }
 
-std::set<types::Code> Index::all_other_tables() const
+template<typename LockType>
+std::set<types::Code> Index<LockType>::all_other_tables() const
 {
     std::set<types::Code> res;
 
@@ -117,14 +122,16 @@ std::set<types::Code> Index::all_other_tables() const
     return res;
 }
 
-void Index::init_others()
+template<typename LockType>
+void Index<LockType>::init_others()
 {
     std::set<types::Code> other_members = available_other_tables();
     if (not other_members.empty())
         m_others = new Aggregate(m_db, "mdother", other_members);
 }
 
-std::set<types::Code> Index::unique_codes() const
+template<typename LockType>
+std::set<types::Code> Index<LockType>::unique_codes() const
 {
     std::set<types::Code> res;
     if (m_uniques) res = m_uniques->members();
@@ -132,7 +139,8 @@ std::set<types::Code> Index::unique_codes() const
     return res;
 }
 
-void Index::setup_pragmas()
+template<typename LockType>
+void Index<LockType>::setup_pragmas()
 {
     if (segment_session->eatmydata)
     {
@@ -150,7 +158,8 @@ void Index::setup_pragmas()
     m_db.exec("PRAGMA legacy_file_format = 0");
 }
 
-void Index::scan(metadata_dest_func dest, const std::string& order_by) const
+template<typename LockType>
+void Index<LockType>::scan(metadata_dest_func dest, const std::string& order_by) const
 {
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -173,7 +182,8 @@ void Index::scan(metadata_dest_func dest, const std::string& order_by) const
     }
 }
 
-void Index::query_segment(metadata_dest_func dest) const
+template<typename LockType>
+void Index<LockType>::query_segment(metadata_dest_func dest) const
 {
     scan(dest);
 }
@@ -202,7 +212,8 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, core::Interval& interv
     }
 }
 
-void Index::add_joins_and_constraints(const Matcher& m, std::string& query) const
+template<typename LockType>
+void Index<LockType>::add_joins_and_constraints(const Matcher& m, std::string& query) const
 {
     std::vector<std::string> constraints;
 
@@ -270,7 +281,8 @@ void Index::add_joins_and_constraints(const Matcher& m, std::string& query) cons
         query += " WHERE " + str::join(" AND ", constraints.begin(), constraints.end());
 }
 
-void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const
+template<typename LockType>
+void Index<LockType>::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const
 {
     // Rebuild the Metadata
     md.set(Reftime::createPosition(core::Time::create_sql(q.fetchString(3))));
@@ -312,7 +324,8 @@ void Index::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data
                 q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
-bool Index::query_data(const query::Data& q, metadata_dest_func dest)
+template<typename LockType>
+bool Index<LockType>::query_data(const query::Data& q, metadata_dest_func dest)
 {
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
@@ -334,7 +347,7 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
 
     nag::debug("Running query %s", query.c_str());
 
-    metadata::Collection mdbuf;
+    arki::metadata::Collection mdbuf;
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
         reader = segment_session->segment_reader(segment_session->format, data_relpath, lock);
@@ -372,7 +385,8 @@ bool Index::query_data(const query::Data& q, metadata_dest_func dest)
     return res;
 }
 
-bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
+template<typename LockType>
+bool Index<LockType>::query_summary_from_db(const Matcher& m, Summary& summary) const
 {
     std::string query = "SELECT COUNT(1), SUM(size), MIN(reftime), MAX(reftime)";
 
@@ -434,7 +448,7 @@ bool Index::query_summary_from_db(const Matcher& m, Summary& summary) const
 }
 
 
-RIndex::RIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
+RIndex::RIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<const core::ReadLock> lock)
     : Index(segment_session, data_relpath, lock)
 {
     if (!sys::access(index_pathname, F_OK))
@@ -451,8 +465,9 @@ RIndex::RIndex(std::shared_ptr<const Session> segment_session, const std::filesy
 }
 
 
-WIndex::WIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::Lock> lock)
-    : Index(segment_session, data_relpath, lock), m_get_current("get_current", m_db), m_insert(m_db), m_replace("replace", m_db)
+template<typename LockType>
+WIndex<LockType>::WIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<LockType> lock)
+    : Index<LockType>(segment_session, data_relpath, lock), m_get_current("get_current", this->m_db), m_insert(this->m_db), m_replace("replace", this->m_db)
 {
     bool need_create = !sys::access(index_pathname, F_OK);
 
@@ -460,10 +475,10 @@ WIndex::WIndex(std::shared_ptr<const Session> segment_session, const std::filesy
     {
         m_db.open(index_pathname);
         if (segment_session->trace_sql) m_db.trace();
-        setup_pragmas();
+        this->setup_pragmas();
         if (!m_others)
         {
-            std::set<types::Code> other_members = all_other_tables();
+            std::set<types::Code> other_members = this->all_other_tables();
             if (not other_members.empty())
                 m_others = new Aggregate(m_db, "mdother", other_members);
         }
@@ -471,12 +486,13 @@ WIndex::WIndex(std::shared_ptr<const Session> segment_session, const std::filesy
     } else {
         m_db.open(index_pathname);
         if (segment_session->trace_sql) m_db.trace();
-        setup_pragmas();
-        init_others();
+        this->setup_pragmas();
+        this->init_others();
     }
 }
 
-void WIndex::init_db()
+template<typename LockType>
+void WIndex<LockType>::init_db()
 {
     if (m_uniques) m_uniques->initDB(segment_session->index);
     if (m_others) m_others->initDB(segment_session->index);
@@ -503,7 +519,8 @@ void WIndex::init_db()
     if (m_others) m_db.exec("CREATE INDEX IF NOT EXISTS md_idx_other ON md (other)");
 }
 
-void WIndex::compile_insert()
+template<typename LockType>
+void WIndex<LockType>::compile_insert()
 {
     // Precompile insert query
     std::string un_ot;
@@ -540,9 +557,10 @@ void WIndex::compile_insert()
 
 namespace {
 
+template<typename LockType>
 struct Inserter
 {
-    WIndex& idx;
+    WIndex<LockType>& idx;
     const Metadata& md;
     char timebuf[25];
     int timebuf_len;
@@ -550,7 +568,7 @@ struct Inserter
     int id_others = -1;
     std::vector<uint8_t> buf;
 
-    Inserter(WIndex& idx, const Metadata& md)
+    Inserter(WIndex<LockType>& idx, const Metadata& md)
         : idx(idx), md(md)
     {
         if (const reftime::Position* reftime = md.get<reftime::Position>())
@@ -608,11 +626,12 @@ struct Inserter
 
 }
 
-std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t ofs)
+template<typename LockType>
+std::unique_ptr<types::source::Blob> WIndex<LockType>::index(const Metadata& md, uint64_t ofs)
 {
     std::unique_ptr<types::source::Blob> res;
     if (!m_insert.compiled()) compile_insert();
-    Inserter inserter(*this, md);
+    Inserter<LockType> inserter(*this, md);
 
     // Check if a conflicting metadata exists in the dataset
     m_get_current.reset();
@@ -632,7 +651,8 @@ std::unique_ptr<types::source::Blob> WIndex::index(const Metadata& md, uint64_t 
     return res;
 }
 
-void WIndex::replace(Metadata& md, uint64_t ofs)
+template<typename LockType>
+void WIndex<LockType>::replace(Metadata& md, uint64_t ofs)
 {
     if (!m_replace.compiled())
         compile_insert();
@@ -644,7 +664,8 @@ void WIndex::replace(Metadata& md, uint64_t ofs)
         ;
 }
 
-void WIndex::remove(off_t ofs)
+template<typename LockType>
+void WIndex<LockType>::remove(off_t ofs)
 {
     Query remove("remove", m_db);
     remove.compile("DELETE FROM md WHERE offset=?");
@@ -653,19 +674,22 @@ void WIndex::remove(off_t ofs)
         ;
 }
 
-void WIndex::flush()
+template<typename LockType>
+void WIndex<LockType>::flush()
 {
     // Not needed for index data consistency, but we need it to ensure file
     // timestamps are consistent at this point.
     m_db.checkpoint();
 }
 
-void WIndex::reset()
+template<typename LockType>
+void WIndex<LockType>::reset()
 {
     m_db.exec("DELETE FROM md");
 }
 
-void WIndex::vacuum()
+template<typename LockType>
+void WIndex<LockType>::vacuum()
 {
     //m_db.exec("PRAGMA journal_mode = TRUNCATE");
     if (m_uniques)
@@ -677,7 +701,8 @@ void WIndex::vacuum()
     //m_db.exec("PRAGMA journal_mode = PERSIST");
 }
 
-void WIndex::test_make_overlap(unsigned overlap_size, unsigned data_idx)
+template<typename LockType>
+void WIndex<LockType>::test_make_overlap(unsigned overlap_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -695,7 +720,8 @@ void WIndex::test_make_overlap(unsigned overlap_size, unsigned data_idx)
     query.run(overlap_size, offset);
 }
 
-void WIndex::test_make_hole(unsigned hole_size, unsigned data_idx)
+template<typename LockType>
+void WIndex<LockType>::test_make_hole(unsigned hole_size, unsigned data_idx)
 {
     // Get the minimum offset to move
     uint64_t offset = 0;
@@ -736,5 +762,11 @@ CIndex::CIndex(std::shared_ptr<const Session> segment_session, const std::filesy
     : WIndex(segment_session, data_relpath, lock)
 {
 }
+
+template class Index<const core::ReadLock>;
+template class Index<core::AppendLock>;
+template class Index<core::CheckLock>;
+template class WIndex<core::AppendLock>;
+template class WIndex<core::CheckLock>;
 
 }

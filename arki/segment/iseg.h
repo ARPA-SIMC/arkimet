@@ -11,9 +11,9 @@ class Segment: public arki::Segment
 public:
     using arki::Segment::Segment;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<core::ReadLock> lock) const override;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
 
-    std::shared_ptr<RIndex> read_index(std::shared_ptr<core::ReadLock> lock) const;
+    std::shared_ptr<RIndex> read_index(std::shared_ptr<const core::ReadLock> lock) const;
 };
 
 class Reader : public segment::Reader
@@ -21,7 +21,7 @@ class Reader : public segment::Reader
     std::shared_ptr<RIndex> m_index;
 
 public:
-    explicit Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<core::ReadLock> lock);
+    explicit Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<const core::ReadLock> lock);
 
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     // void query_summary(const Matcher& matcher, Summary& summary) override;
