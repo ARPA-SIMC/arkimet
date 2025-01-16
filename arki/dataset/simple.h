@@ -9,6 +9,14 @@ class Index;
 
 namespace simple {
 
+struct SegmentSession : public segment::Session
+{
+public:
+    using segment::Session::Session;
+
+    std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
+};
+
 struct Dataset : public dataset::segmented::Dataset
 {
     Dataset(const Dataset&) = default;

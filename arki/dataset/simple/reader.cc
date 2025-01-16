@@ -61,11 +61,6 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     for (const auto& segmentinfo: segmentinfos)
     {
         auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
-        // TODO: delegate to a dataset::simple segment_session to create a
-        // segment reader which is EmptyReader (and nag::warning) if .metadata does not exist
-        if (!std::filesystem::exists(sys::with_suffix(segment->abspath(), ".metadata")))
-            continue;
-
         auto reader = segment->reader(lock);
         reader->query_data(q, [&](std::shared_ptr<Metadata> md) {
             return sorter.add(md);
@@ -84,11 +79,6 @@ void Reader::query_segments_for_summary(const Matcher& matcher, Summary& summary
     for (const auto& segmentinfo: segmentinfos)
     {
         auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
-        // TODO: delegate to a dataset::simple segment_session to create a
-        // segment reader which is EmptyReader (and nag::warning) if .metadata does not exist
-        if (!std::filesystem::exists(sys::with_suffix(segment->abspath(), ".metadata")))
-            continue;
-
         auto reader = segment->reader(lock);
         reader->query_summary(matcher, summary);
     }

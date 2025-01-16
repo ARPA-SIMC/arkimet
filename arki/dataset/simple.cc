@@ -3,6 +3,7 @@
 #include "simple/writer.h"
 #include "simple/checker.h"
 #include "arki/dataset/lock.h"
+#include "arki/segment/metadata.h"
 #include "arki/nag.h"
 
 using namespace std;
@@ -12,8 +13,28 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
+std::shared_ptr<segment::Reader> SegmentSession::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+{
+    auto md_abspath = sys::with_suffix(segment->abspath(), ".metadata");
+    if (auto st_md = sys::stat(md_abspath))
+    {
+        auto data = segment->detect_data();
+        if (auto ts = data->timestamp())
+        {
+            if (st_md->st_mtime < ts.value())
+                nag::warning("%s: outdated .metadata file", segment->abspath().c_str());
+            return std::make_shared<segment::metadata::Reader>(segment, lock);
+        } else {
+            nag::warning("%s: segment data is not available", segment->abspath().c_str());
+            return std::make_shared<segment::EmptyReader>(segment, lock);
+        }
+    } else
+        // Skip segment if .metadata does not exist
+        return std::make_shared<segment::EmptyReader>(segment, lock);
+}
+
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg)
+    : dataset::segmented::Dataset(session, std::make_shared<SegmentSession>(cfg.value("path")), cfg)
 {
     if (cfg.value("index_type") == "sqlite")
         nag::warning("%s: dataset has index_type=sqlite. It is now ignored, and automatically converted to plain MANIFEST", name().c_str());
