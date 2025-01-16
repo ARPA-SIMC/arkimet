@@ -1,5 +1,5 @@
 #include "archive.h"
-#include "index/manifest.h"
+#include "simple/manifest.h"
 #include "simple.h"
 #include "offline.h"
 #include "arki/matcher.h"
@@ -23,7 +23,7 @@ namespace archive {
 
 bool is_archive(const std::filesystem::path& dir)
 {
-    return index::Manifest::exists(dir);
+    return simple::manifest::exists(dir);
 }
 
 
@@ -160,7 +160,7 @@ struct ArchivesRoot
         std::shared_ptr<dataset::Dataset> ds;
         if (std::filesystem::exists(sys::with_suffix(pathname, ".summary")))
         {
-            if (index::Manifest::exists(pathname))
+            if (simple::manifest::exists(pathname))
                 ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
             else
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);

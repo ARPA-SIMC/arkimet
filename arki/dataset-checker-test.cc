@@ -56,23 +56,17 @@ class TestsChecker : public FixtureTestCase<FixtureChecker<Data>>
     void register_tests() override;
 };
 
-TestsChecker<GRIBData> test_checker_grib_simple_plain("arki_dataset_checker_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<GRIBData> test_checker_grib_simple_sqlite("arki_dataset_checker_grib_simple_sqlite", "type=simple\nindex_type=sqlite\n");
+TestsChecker<GRIBData> test_checker_grib_simple("arki_dataset_checker_grib_simple", "type=simple");
 TestsChecker<GRIBData> test_checker_grib_iseg("arki_dataset_checker_grib_iseg", "type=iseg\nformat=grib\n");
-TestsChecker<BUFRData> test_checker_bufr_simple_plain("arki_dataset_checker_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<BUFRData> test_checker_bufr_simple("arki_dataset_checker_bufr_simple", "type=simple");
 TestsChecker<BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsChecker<VM2Data> test_checker_vm2_simple_plain("arki_dataset_checker_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<VM2Data> test_checker_vm2_simple_sqlite("arki_dataset_checker_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<VM2Data> test_checker_vm2_simple("arki_dataset_checker_vm2_simple", "type=simple");
 TestsChecker<VM2Data> test_checker_vm2_iseg("arki_dataset_checker_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsChecker<ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<ODIMData> test_checker_odim_simple("arki_dataset_checker_odim_simple", "type=simple");
 TestsChecker<ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
-TestsChecker<NCData> test_checker_nc_simple_plain("arki_dataset_checker_nc_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<NCData> test_checker_nc_simple_sqlite("arki_dataset_checker_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<NCData> test_checker_nc_simple("arki_dataset_checker_nc_simple", "type=simple");
 TestsChecker<NCData> test_checker_nc_iseg("arki_dataset_checker_nc_iseg", "type=iseg\nformat=nc\n");
-TestsChecker<JPEGData> test_checker_jpeg_simple_plain("arki_dataset_checker_jpeg_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<JPEGData> test_checker_jpeg_simple_sqlite("arki_dataset_checker_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<JPEGData> test_checker_jpeg_simple("arki_dataset_checker_jpeg_simple", "type=simple");
 TestsChecker<JPEGData> test_checker_jpeg_iseg("arki_dataset_checker_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 template<class Data>

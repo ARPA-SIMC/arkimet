@@ -359,7 +359,7 @@ void Checker::state(CheckerConfig& opts)
 
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
-    const string& root = dataset().path;
+    const auto& root = dataset().path;
 
     if (files::hasDontpackFlagfile(root))
     {
@@ -367,7 +367,7 @@ void Checker::repack(CheckerConfig& opts, unsigned test_flags)
         return;
     }
 
-    unique_ptr<maintenance::Agent> repacker;
+    std::unique_ptr<maintenance::Agent> repacker;
     if (opts.readonly)
         repacker.reset(new maintenance::MockRepacker(*opts.reporter, *this, test_flags));
     else

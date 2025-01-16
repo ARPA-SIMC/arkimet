@@ -33,18 +33,21 @@ std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::fil
     return std::make_shared<Segment>(shared_from_this(), format, relpath);
 }
 
-
-std::shared_ptr<segment::data::Reader> Session::segment_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::data::Reader> Session::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
 {
-    auto seg = segment_from_relpath_and_format(relpath, format);
-    auto res = reader_pool.find(seg->abspath());
+    auto res = reader_pool.find(segment->abspath());
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto reader = seg->detect_data_reader(lock);
-        reader_pool[seg->abspath()] = reader;
+        auto reader = segment->detect_data_reader(lock);
+        reader_pool[segment->abspath()] = reader;
         return reader;
     }
     return res->second.lock();
+}
+
+std::shared_ptr<segment::data::Reader> Session::segment_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock) const
+{
+    return segment_reader(segment_from_relpath_and_format(relpath, format), lock);
 }
 
 std::shared_ptr<segment::data::Writer> Session::segment_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& relpath) const

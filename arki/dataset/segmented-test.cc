@@ -55,8 +55,7 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 };
 
-Tests test_simple_plain("arki_dataset_segmented_simple_plain", "type=simple\nindex_type=plain\n");
-Tests test_simple_sqlite("arki_dataset_segmented_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests test_simple_plain("arki_dataset_segmented_simple", "type=simple");
 Tests test_iseg("arki_dataset_segmented_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
@@ -763,10 +762,8 @@ class Tests103 : public FixtureTestCase<Issue103Fixture>
     void register_tests() override;
 };
 
-Tests103 test103_simple_plain("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\n");
-Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain_dir", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-Tests103 test103_simple_sqlite("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\n");
-Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite_dir", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
+Tests103 test103_simple("arki_dataset_segmented_issue103_simple", "type=simple");
+Tests103 test103_simple_dir("arki_dataset_segmented_issue103_simple_dir", "type=simple", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_iseg("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\n");
 Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg_dir", "type=iseg\nformat=vm2\n", DatasetTest::TEST_FORCE_DIR);
 

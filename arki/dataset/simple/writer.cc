@@ -1,5 +1,5 @@
 #include "arki/dataset/simple/writer.h"
-#include "arki/dataset/index/manifest.h"
+#include "arki/dataset/simple/manifest.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
@@ -20,9 +20,7 @@ using namespace arki::types;
 using namespace arki::utils;
 using arki::core::Time;
 
-namespace arki {
-namespace dataset {
-namespace simple {
+namespace arki::dataset::simple {
 
 /// Accumulate metadata and summaries while writing
 class AppendSegment
@@ -33,7 +31,6 @@ public:
     std::shared_ptr<segment::data::Writer> segment;
     utils::sys::Path dir;
     std::string basename;
-    bool flushed = true;
     metadata::Collection mds;
     Summary sum;
 
@@ -66,25 +63,17 @@ public:
         copy->set_source(Source::createBlobUnlocked(source.format, dir.path(), basename, source.offset, source.size));
         sum.add(*copy);
         mds.acquire(std::move(copy));
-        flushed = false;
     }
 
     WriterAcquireResult acquire(Metadata& md)
     {
-        auto mft = index::Manifest::create(dataset, dataset->index_type);
-        mft->lock = lock;
-        mft->openRW();
-
         // Try appending
         try {
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            time_t ts = segment->data().timestamp();
-            mft->acquire(segment->segment().relpath(), ts, sum);
             mds.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".metadata"));
             sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
-            mft->flush();
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -93,12 +82,8 @@ public:
         }
     }
 
-    void acquire_batch(WriterBatch& batch)
+    bool acquire_batch(WriterBatch& batch)
     {
-        auto mft = index::Manifest::create(dataset, dataset->index_type);
-        mft->lock = lock;
-        mft->openRW();
-
         try {
             for (auto& e: batch)
             {
@@ -111,28 +96,26 @@ public:
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             batch.set_all_error("Failed to store in dataset '" + dataset->name() + "': " + e.what());
-            return;
+            return false;
         }
 
         segment->commit();
-        time_t ts = segment->data().timestamp();
-        mft->acquire(segment->segment().relpath(), ts, sum);
         mds.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".metadata"));
         sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
-        mft->flush();
+        return true;
     }
 };
 
 
 Writer::Writer(std::shared_ptr<simple::Dataset> dataset)
-    : DatasetAccess(dataset)
+    : DatasetAccess(dataset), manifest(dataset->path, dataset->eatmydata)
 {
     // Create the directory if it does not exist
     std::filesystem::create_directories(dataset->path);
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(dataset->path))
+    if (!manifest::exists(dataset->path))
         files::createDontpackFlagfile(dataset->path);
 }
 
@@ -143,19 +126,29 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "simple"; }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, DataFormat format)
+void Writer::invalidate_summary()
 {
-    auto lock = dataset().append_lock_dataset();
+    std::filesystem::remove(dataset().path / "summary");
+}
+
+void Writer::invalidate_summary(const std::filesystem::path& relpath)
+{
+    std::filesystem::remove(dataset().path / sys::with_suffix(relpath, ".summary"));
+    invalidate_summary();
+}
+
+
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, DataFormat format, std::shared_ptr<core::AppendLock> lock)
+{
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
     auto writer = dataset().segment_session->segment_writer(writer_config, format, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
-    auto lock = dataset().append_lock_dataset();
     auto segment = dataset().segment_session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
@@ -170,8 +163,18 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 
-    auto segment = file(writer_config, md, md.source().format);
-    return segment->acquire(md);
+    auto lock = dataset().append_lock_dataset();
+    auto segment = file(writer_config, md, md.source().format, lock);
+    auto res = segment->acquire(md);
+    if (res == ACQ_OK)
+    {
+        time_t ts = segment->segment->data().timestamp();
+        manifest.reread();
+        manifest.set(segment->segment->segment().relpath(), ts, segment->sum.get_reference_time());
+        manifest.flush();
+        invalidate_summary();
+    }
+    return res;
 }
 
 void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
@@ -184,12 +187,23 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
 
     std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
 
-    // Import segment by segment
+    // Import data grouped by segment
+    auto lock = dataset().append_lock_dataset();
+    manifest.reread();
+    bool changed = false;
     for (auto& s: by_segment)
     {
-        auto segment = file(writer_config, s.first);
-        segment->acquire_batch(s.second);
+        auto segment = file(writer_config, s.first, lock);
+        if (segment->acquire_batch(s.second))
+        {
+            time_t ts = segment->segment->data().timestamp();
+            manifest.set(segment->segment->segment().relpath(), ts, segment->sum.get_reference_time());
+            invalidate_summary();
+            changed = true;
+        }
     }
+    if (changed)
+        manifest.flush();
 }
 
 void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
@@ -214,6 +228,4 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
     }
 }
 
-}
-}
 }

@@ -1,5 +1,5 @@
-#include "arki/dataset/simple/checker.h"
-#include "arki/dataset/index/manifest.h"
+#include "checker.h"
+#include "manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
@@ -84,7 +84,8 @@ public:
             return segmented::SegmentState(segment::SEGMENT_MISSING);
         }
 
-        if (!checker.m_idx->has_segment(segment->segment().relpath()))
+        const auto* segment_info = checker.manifest.segment(segment->segment().relpath());
+        if (!segment_info)
         {
             if (segment->is_empty())
             {
@@ -103,7 +104,7 @@ public:
         time_t ts_data = segment->data().timestamp();
         time_t ts_md = sys::timestamp(path_metadata, 0);
         time_t ts_sum = sys::timestamp(sys::with_suffix(segment->segment().abspath(), ".summary"), 0);
-        time_t ts_idx = checker.m_mft->segment_mtime(segment->segment().relpath());
+        time_t ts_idx = segment_info->mtime;
 
         segment::State state = segment::SEGMENT_OK;
 
@@ -234,19 +235,20 @@ public:
         mds.add_to_summary(sum);
         sum.writeAtomically(path_summary);
 
-
         // Reindex with the new file information
         time_t mtime = segment->data().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath(), mtime, sum);
+        checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
+        checker.manifest.flush();
 
         return size_pre - size_post;
     }
 
     size_t remove(bool with_data) override
     {
-        checker.m_mft->remove(segment->segment().relpath());
+        checker.manifest.remove(segment->segment().relpath());
         std::filesystem::remove(sys::with_suffix(segment->segment().abspath(), ".metadata"));
         std::filesystem::remove(sys::with_suffix(segment->segment().abspath(), ".summary"));
+        checker.manifest.flush();
         if (!with_data) return 0;
         return segment->remove();
     }
@@ -281,7 +283,8 @@ public:
 
         // Reindex with the new file information
         time_t mtime = segment->data().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath(), mtime, sum);
+        checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
+        checker.manifest.flush();
     }
 
     void zip() override
@@ -314,7 +317,8 @@ public:
 
         // Reindex with the new file information
         time_t mtime = segment->data().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath(), mtime, sum);
+        checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
+        checker.manifest.flush();
     }
 
     size_t compress(unsigned groupsize) override
@@ -350,7 +354,8 @@ public:
 
         // Reindex with the new file information
         time_t mtime = segment->data().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath(), mtime, sum);
+        checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
+        checker.manifest.flush();
 
         if (old_size > new_size)
             return old_size - new_size;
@@ -373,8 +378,8 @@ public:
         sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
 
         // Add to manifest
-        checker.m_mft->acquire(segment->segment().relpath(), mtime, sum);
-        checker.m_mft->flush();
+        checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
+        checker.manifest.flush();
     }
 
     void rescan(dataset::Reporter& reporter) override
@@ -408,20 +413,21 @@ public:
         sum.writeAtomically(path_summary);
 
         // Add to manifest
-        checker.m_mft->acquire(segment->segment().relpath(), segment->data().timestamp(), sum);
-        checker.m_mft->flush();
+        checker.manifest.set(segment->segment().relpath(), segment->data().timestamp(), sum.get_reference_time());
+        checker.manifest.flush();
     }
 
     void release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
-        checker.m_mft->remove(segment->segment().relpath());
+        checker.manifest.remove(segment->segment().relpath());
         segment->move(new_segment_session, new_relpath);
+        checker.manifest.flush();
     }
 };
 
 
 Checker::Checker(std::shared_ptr<simple::Dataset> dataset)
-    : DatasetAccess(dataset), m_mft(0)
+    : DatasetAccess(dataset), manifest(dataset->path, dataset->eatmydata)
 {
     // Create the directory if it does not exist
     std::filesystem::create_directories(dataset->path);
@@ -430,34 +436,38 @@ Checker::Checker(std::shared_ptr<simple::Dataset> dataset)
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(dataset->path))
+    if (!manifest::exists(dataset->path))
         files::createDontpackFlagfile(dataset->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(dataset, dataset->index_type);
-    m_mft = mft.release();
-    m_mft->lock = lock;
-    m_mft->openRW();
-    m_idx = m_mft;
+    manifest.reread();
 }
 
 Checker::~Checker()
 {
-    m_mft->flush();
-    delete m_idx;
+    manifest.flush();
 }
 
 std::string Checker::type() const { return "simple"; }
 
+metadata::Collection Checker::query_segment(const std::filesystem::path& relpath)
+{
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    auto reader = segment->detect_data()->reader(lock);
+    metadata::Collection mds;
+    reader->scan(mds.inserter_func());
+    return mds;
+}
+
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     segmented::Checker::repack(opts, test_flags);
-    m_mft->flush();
+    manifest.flush();
 }
 
 void Checker::check(CheckerConfig& opts)
 {
     segmented::Checker::check(opts);
-    m_mft->flush();
+    manifest.flush();
 }
 
 std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesystem::path& relpath)
@@ -472,25 +482,20 @@ std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std:
 
 void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    std::vector<std::string> names;
-    m_idx->list_segments([&](const std::string& relpath) { names.push_back(relpath); });
-
-    for (const auto& relpath: names)
+    auto files = manifest.file_list();
+    for (const auto& info: files)
     {
-        CheckerSegment segment(*this, relpath, lock);
+        CheckerSegment segment(*this, info.relpath, lock);
         dest(segment);
     }
 }
 
 void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    // TODO: implement filtering
-    std::vector<std::string> names;
-    m_idx->list_segments_filtered(matcher, [&](const std::filesystem::path& relpath) { names.push_back(relpath); });
-
-    for (const auto& relpath: names)
+    auto files = manifest.file_list(matcher);
+    for (const auto& info: files)
     {
-        CheckerSegment segment(*this, relpath, lock);
+        CheckerSegment segment(*this, info.relpath, lock);
         dest(segment);
     }
 }
@@ -498,7 +503,7 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
     scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
-        if (m_idx->has_segment(relpath)) return;
+        if (manifest.segment(relpath)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
     });
@@ -511,7 +516,7 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     if (!m) return segments_untracked(dest);
 
     scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
-        if (m_idx->has_segment(relpath)) return;
+        if (manifest.segment(relpath)) return;
         if (!dataset().step().pathMatches(relpath, *m)) return;
         CheckerSegment segment(*this, relpath, lock);
         dest(segment);
@@ -520,22 +525,23 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
 
 size_t Checker::vacuum(dataset::Reporter& reporter)
 {
-    reporter.operation_progress(name(), "repack", "running VACUUM ANALYZE on the dataset index, if applicable");
-    return m_mft->vacuum();
+    return 0;
 }
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
-    m_idx->test_deindex(relpath);
-    string pathname = dataset().path / relpath;
-    std::filesystem::remove(pathname + ".metadata");
-    std::filesystem::remove(pathname + ".summary");
+    manifest.remove(relpath);
+    auto pathname = dataset().path / relpath;
+    std::filesystem::remove(sys::with_suffix(pathname, ".metadata"));
+    std::filesystem::remove(sys::with_suffix(pathname, ".summary"));
+    manifest.flush();
 }
 
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
-    m_idx->test_deindex(relpath);
+    manifest.remove(relpath);
     sys::touch(sys::with_suffix(dataset().path / relpath, ".metadata"), 1496167200);
+    manifest.flush();
 }
 
 std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
@@ -562,9 +568,11 @@ void Checker::check_issue51(CheckerConfig& opts)
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    m_idx->list_segments([&](const std::filesystem::path& relpath) {
-        metadata::Collection mds;
-        m_idx->query_segment(relpath, mds.inserter_func());
+    const auto& files = manifest.file_list();
+    for (const auto& info: files)
+    {
+        const auto& relpath = info.relpath;
+        metadata::Collection mds = query_segment(relpath);
         if (mds.empty()) return;
         File datafile(dataset().path / relpath, O_RDONLY);
         // Iterate all metadata in the segment
@@ -604,7 +612,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             }
         }
         nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
-    });
+    }
 
     if (opts.readonly)
     {
@@ -648,38 +656,47 @@ void Checker::check_issue51(CheckerConfig& opts)
 
 void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
+    metadata::Collection mds = query_segment(relpath);
     dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), relpath)->test_make_overlap(mds, overlap_size, data_idx);
-    m_idx->test_make_overlap(relpath, overlap_size, data_idx);
+
+    // TODO: delegate to segment checker
+    auto pathname = dataset().path / sys::with_suffix(relpath, ".metadata");
+    utils::files::PreserveFileTimes pf(pathname);
+    sys::File fd(pathname, O_RDWR);
+    fd.lseek(0);
+    mds.write_to(fd);
+    fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
 
 void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
+    metadata::Collection mds = query_segment(relpath);
     dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), relpath)->test_make_hole(mds, hole_size, data_idx);
-    m_idx->test_make_hole(relpath, hole_size, data_idx);
+
+    // TODO: delegate to segment checker
+    auto pathname = dataset().path / sys::with_suffix(relpath, ".metadata");
+    utils::files::PreserveFileTimes pf(pathname);
+    sys::File fd(pathname, O_RDWR);
+    fd.lseek(0);
+    mds.write_to(fd);
+    fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
 
 void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
+    metadata::Collection mds = query_segment(relpath);
     dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), relpath)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
+    metadata::Collection mds = query_segment(relpath);
     dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), relpath)->test_truncate_by_data(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
+    metadata::Collection mds = query_segment(relpath);
     mds.swap(d1_idx, d2_idx);
 
     segment(relpath)->reorder(mds);
@@ -688,7 +705,7 @@ void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_i
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
     auto segment = dataset().segment_session->segment_checker(scan::Scanner::format_from_filename(relpath), relpath);
-    m_idx->test_rename(relpath, new_relpath);
+    manifest.rename(relpath, new_relpath);
     segment->move(dataset().segment_session, new_relpath);
 }
 

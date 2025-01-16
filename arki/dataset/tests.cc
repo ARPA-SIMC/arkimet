@@ -10,7 +10,6 @@
 #include "arki/dataset/iseg/reader.h"
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/checker.h"
-#include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/scan/grib.h"
@@ -195,9 +194,9 @@ std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
     if (!wcfg) wcfg = cfg.get();
 
     if (wcfg->value("index_type") == "sqlite")
-        return "index.sqlite";
+        throw std::runtime_error("sqlite manifests are not supported anymore");
     else
-        return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+        return "MANIFEST";
 }
 
 std::string DatasetTest::destfile(const Metadata& md) const
@@ -236,7 +235,7 @@ unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
 
 std::string manifest_idx_fname()
 {
-    return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+    return "MANIFEST";
 }
 
 State DatasetTest::scan_state(bool quick)

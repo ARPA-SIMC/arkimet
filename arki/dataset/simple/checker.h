@@ -5,6 +5,7 @@
 
 #include <arki/dataset/simple.h>
 #include <arki/dataset/impl.h>
+#include <arki/dataset/simple/manifest.h>
 #include <string>
 
 namespace arki {
@@ -18,9 +19,10 @@ namespace simple {
 class Checker : public DatasetAccess<simple::Dataset, segmented::Checker>
 {
 protected:
-    Index* m_idx = nullptr;
-    index::Manifest* m_mft;
+    manifest::Writer manifest;
     std::shared_ptr<core::CheckLock> lock;
+
+    metadata::Collection query_segment(const std::filesystem::path& relpath);
 
     /// Return a (shared) instance of the Segment for the given relative pathname
     //segment::Segment* file(const Metadata& md, const std::string& format);
