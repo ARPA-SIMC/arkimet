@@ -95,7 +95,7 @@ bool Dataset::relpath_timespan(const std::filesystem::path& path, core::Interval
 
 std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock)
 {
-    return segment_session->segment_reader(scan::Scanner::format_from_filename(relpath), relpath, lock);
+    return segment_session->segment_data_reader(scan::Scanner::format_from_filename(relpath), relpath, lock);
 }
 
 
@@ -224,7 +224,7 @@ void CheckerSegment::unarchive()
     index(std::move(mdc));
 }
 
-void CheckerSegment::remove_data(const std::vector<uint64_t>& offsets)
+void CheckerSegment::remove_data(const std::vector<uint64_t>&)
 {
     throw std::runtime_error(dataset().name() + ": dataset segment does not support removing items");
 }

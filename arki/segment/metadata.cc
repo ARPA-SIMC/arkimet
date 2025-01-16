@@ -61,7 +61,7 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 {
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = m_segment->session().segment_reader(m_segment->format(), m_segment->relpath(), lock);
+        reader = m_segment->session().segment_data_reader(m_segment->format(), m_segment->relpath(), lock);
 
     auto mdbuf = index.query_data(q.matcher, reader);
 

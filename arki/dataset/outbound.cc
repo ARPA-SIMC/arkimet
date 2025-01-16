@@ -45,7 +45,7 @@ void Writer::storeBlob(const segment::data::WriterConfig& writer_config, Metadat
     // Write using segment::Writer
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
-    auto w = dataset().segment_session->segment_writer(writer_config, md.source().format, relpath);
+    auto w = dataset().segment_session->segment_data_writer(writer_config, md.source().format, relpath);
     w->append(md);
 }
 

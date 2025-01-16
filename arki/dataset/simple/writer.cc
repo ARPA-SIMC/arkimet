@@ -142,14 +142,14 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
-    auto writer = dataset().segment_session->segment_writer(writer_config, format, relpath);
+    auto writer = dataset().segment_session->segment_data_writer(writer_config, format, relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
-    auto segment = dataset().segment_session->segment_writer(writer_config, scan::Scanner::format_from_filename(relpath), relpath);
+    auto segment = dataset().segment_session->segment_data_writer(writer_config, scan::Scanner::format_from_filename(relpath), relpath);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment));
 }
 

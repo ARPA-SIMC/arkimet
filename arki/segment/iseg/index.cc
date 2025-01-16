@@ -171,7 +171,7 @@ void Index<LockType>::scan(metadata_dest_func dest, const std::string& order_by)
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = segment_session->segment_reader(segment_session->format, data_relpath, lock);
+    auto reader = segment_session->segment_data_reader(segment_session->format, data_relpath, lock);
 
     while (mdq.step())
     {
