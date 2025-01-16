@@ -450,6 +450,10 @@ bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
     return true;
 }
 
+void EmptyReader::query_summary(const Matcher& matcher, Summary& summary)
+{
+}
+
 }
 
 }

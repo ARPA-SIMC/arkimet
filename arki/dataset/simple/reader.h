@@ -15,7 +15,7 @@ class Reader : public DatasetAccess<simple::Dataset, segmented::Reader>
 protected:
     manifest::Reader manifest;
 
-    void query_segments_for_summary(const Matcher& matcher, Summary& summary);
+    void query_segments_for_summary(const Matcher& matcher, Summary& summary, std::shared_ptr<core::ReadLock> lock);
     bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 

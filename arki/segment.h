@@ -79,13 +79,13 @@ public:
      */
     virtual bool query_data(const query::Data& q, metadata_dest_func dest) = 0;
 
-#if 0
     /**
      * Add to summary the summary of the data that would be extracted with the
      * given query.
      */
-    virtual void query_summary(const Matcher& matcher, Summary& summary);
+    virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
 
+#if 0
     /**
      * Return the time interval of available data stored in this segment.
      *
@@ -104,6 +104,7 @@ public:
     using Reader::Reader;
 
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
+    void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
 }

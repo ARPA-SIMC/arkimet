@@ -42,6 +42,15 @@ arki::metadata::Collection Index::query_data(const Matcher& matcher, std::shared
     return res;
 }
 
+void Index::query_summary(const Matcher& matcher, Summary& summary)
+{
+    Metadata::read_file(md_path, [&](std::shared_ptr<Metadata> md) {
+        if (!matcher(*md))
+            return true;
+        summary.add(*md);
+        return true;
+    });
+}
 
 Reader::Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock)
     : segment::Reader(segment, lock), index(*segment, sys::with_suffix(segment->abspath(), ".metadata"))
@@ -61,6 +70,20 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 
     // pass it to consumer
     return mdbuf.move_to(dest);
+}
+
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
+{
+    auto summary_path = sys::with_suffix(m_segment->abspath(), ".summary");
+    if (sys::access(summary_path, R_OK))
+    {
+        Summary s;
+        s.read_file(summary_path);
+        s.filter(matcher, summary);
+    } else {
+        // Resummarize from metadata
+        index.query_summary(matcher, summary);
+    }
 }
 
 }

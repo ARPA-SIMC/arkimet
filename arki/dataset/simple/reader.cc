@@ -77,25 +77,20 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     return track.done(true);
 }
 
-void Reader::query_segments_for_summary(const Matcher& matcher, Summary& summary)
+void Reader::query_segments_for_summary(const Matcher& matcher, Summary& summary, std::shared_ptr<core::ReadLock> lock)
 {
     manifest.reread();
     auto segmentinfos = manifest.file_list(matcher);
     for (const auto& segmentinfo: segmentinfos)
     {
-        // TODO: create a segment and delegate to Segment reader
-        auto pathname = dataset().path / segmentinfo.relpath;
-        auto summary_path = sys::with_suffix(pathname, ".summary");
-
-        // Silently skip files that have been deleted
-        if (!sys::access(summary_path, R_OK))
+        auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
+        // TODO: delegate to a dataset::simple segment_session to create a
+        // segment reader which is EmptyReader (and nag::warning) if .metadata does not exist
+        if (!std::filesystem::exists(sys::with_suffix(segment->abspath(), ".metadata")))
             continue;
 
-        // TODO: we can resummarize from metadata (can be done by new Segment reader)
-
-        Summary s;
-        s.read_file(summary_path);
-        s.filter(matcher, summary);
+        auto reader = segment->reader(lock);
+        reader->query_summary(matcher, summary);
     }
 }
 
@@ -109,7 +104,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     // If the matcher discriminates on reference times, query the individual segments
     if (matcher.get(TYPE_REFTIME))
     {
-        query_segments_for_summary(matcher, summary);
+        query_segments_for_summary(matcher, summary, lock);
         return;
     }
 
@@ -125,7 +120,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     } else if (sys::access(dataset().path, W_OK)) {
         // Rebuild the cache
         Summary s;
-        query_segments_for_summary(Matcher(), s);
+        query_segments_for_summary(Matcher(), s, lock);
 
         // Save the summary
         s.writeAtomically(cache_pathname);
@@ -134,7 +129,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         // in memory
         s.filter(matcher, summary);
     } else
-        query_segments_for_summary(matcher, summary);
+        query_segments_for_summary(matcher, summary, lock);
 }
 
 Reader::Reader(std::shared_ptr<simple::Dataset> dataset)

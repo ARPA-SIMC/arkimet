@@ -44,4 +44,9 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
     return mdbuf.move_to(dest);
 }
 
+void Reader::query_summary(const Matcher& matcher, Summary& summary)
+{
+    m_index->query_summary_from_db(matcher, summary);
+}
+
 }

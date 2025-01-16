@@ -66,8 +66,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
     list_segments(matcher, [&](std::shared_ptr<Segment> segment) {
-        auto idx = dataset().iseg_segment_session->read_index(segment->relpath(), dataset().read_lock_segment(segment->relpath()));
-        idx->query_summary_from_db(matcher, summary);
+        auto reader = segment->reader(dataset().read_lock_segment(segment->relpath()));
+        reader->query_summary(matcher, summary);
         return true;
     });
 }
