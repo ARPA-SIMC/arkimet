@@ -157,7 +157,7 @@ FileCheckLock::~FileCheckLock()
 
 namespace {
 
-struct TemporaryWriteLock : public core::Lock
+struct TemporaryWriteLock : public core::CheckWriteLock
 {
     std::shared_ptr<FileCheckLock> parent;
 
@@ -184,12 +184,12 @@ struct TemporaryWriteLock : public core::Lock
 
 }
 
-std::shared_ptr<core::Lock> FileCheckLock::write_lock()
+std::shared_ptr<core::CheckWriteLock> FileCheckLock::write_lock()
 {
     if (!current_write_lock.expired())
         return current_write_lock.lock();
 
-    std::shared_ptr<core::Lock> res(new TemporaryWriteLock(std::static_pointer_cast<FileCheckLock>(this->shared_from_this())));
+    std::shared_ptr<core::CheckWriteLock> res(new TemporaryWriteLock(std::static_pointer_cast<FileCheckLock>(this->shared_from_this())));
     current_write_lock = res;
     return res;
 }

@@ -32,6 +32,12 @@ public:
     using ReadLock::ReadLock;
 };
 
+class CheckWriteLock: public Lock
+{
+public:
+    using Lock::Lock;
+};
+
 class CheckLock: public ReadLock
 {
 public:
@@ -41,7 +47,7 @@ public:
      * Escalate a read lock to a write lock as long as the resulting lock is in
      * use
      */
-    virtual std::shared_ptr<core::Lock> write_lock() = 0;
+    virtual std::shared_ptr<core::CheckWriteLock> write_lock() = 0;
 };
 
 /**
@@ -117,12 +123,12 @@ public:
 class FileCheckLock : public File<core::CheckLock>
 {
 public:
-    std::weak_ptr<core::Lock> current_write_lock;
+    std::weak_ptr<core::CheckWriteLock> current_write_lock;
 
     FileCheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
     ~FileCheckLock() override;
 
-    std::shared_ptr<core::Lock> write_lock() override;
+    std::shared_ptr<core::CheckWriteLock> write_lock() override;
 };
 
 
