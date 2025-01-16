@@ -174,8 +174,8 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
     throw std::runtime_error("cannot simulate dataset acquisition: unknown dataset type \""+type+"\"");
 }
 
-CheckerSegment::CheckerSegment(std::shared_ptr<core::CheckLock> lock)
-    : lock(lock)
+CheckerSegment::CheckerSegment(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
+    : lock(lock), segment_checker(segment->checker(lock)), segment_data_checker(segment->data_checker())
 {
 }
 
@@ -195,12 +195,12 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    auto format = scan::Scanner::format_from_filename(segment->segment().relpath());
+    auto format = scan::Scanner::format_from_filename(segment_data_checker->segment().relpath());
 
     // Get the time range for this relpath
     core::Interval interval;
-    if (!dataset().relpath_timespan(segment->segment().relpath(), interval))
-        throw std::runtime_error("cannot archive segment "s + segment->segment().abspath().native() + " because its name does not match the dataset step");
+    if (!dataset().relpath_timespan(segment_data_checker->segment().relpath(), interval))
+        throw std::runtime_error("cannot archive segment "s + segment_data_checker->segment().abspath().native() + " because its name does not match the dataset step");
 
     // Get the contents of this segment
     metadata::Collection mdc;
@@ -216,9 +216,9 @@ void CheckerSegment::archive()
 
 void CheckerSegment::unarchive()
 {
-    auto arcrelpath = "last" / segment->segment().relpath();
-    archives()->release_segment(arcrelpath, dataset().segment_session, segment->segment().relpath());
-    auto reader = segment->segment().detect_data_reader(lock);
+    auto arcrelpath = "last" / segment_data_checker->segment().relpath();
+    archives()->release_segment(arcrelpath, dataset().segment_session, segment_data_checker->segment().relpath());
+    auto reader = segment_data_checker->segment().detect_data_reader(lock);
     metadata::Collection mdc;
     reader->scan(mdc.inserter_func());
     index(std::move(mdc));
@@ -298,8 +298,8 @@ void Checker::remove_all(CheckerConfig& opts)
 void Checker::tar(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        auto data = segment.segment->segment().detect_data();
-        if (data->single_file()) return;
+        const auto& data = segment.segment_data_checker->data();
+        if (data.single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(), "should be tarred");
         else
@@ -315,8 +315,8 @@ void Checker::tar(CheckerConfig& opts)
 void Checker::zip(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        auto data = segment.segment->segment().detect_data();
-        if (data->single_file()) return;
+        const auto& data = segment.segment_data_checker->data();
+        if (data.single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(), "should be zipped");
         else
@@ -332,8 +332,8 @@ void Checker::zip(CheckerConfig& opts)
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        auto data = segment.segment->segment().detect_data();
-        if (!data->single_file()) return;
+        const auto& data = segment.segment_data_checker->data();
+        if (!data.single_file()) return;
         if (opts.readonly)
             opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
         else
