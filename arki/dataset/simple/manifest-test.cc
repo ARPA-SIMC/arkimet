@@ -243,9 +243,11 @@ add_method("add_remove", [] {
 });
 
 add_method("read_legacy_sqlite", [] {
-    manifest::Writer writer("testds", false);
-    fill1(writer);
-    create_sqlite(writer.file_list());
+    {
+        manifest::Writer writer("testds", false);
+        fill1(writer);
+        create_sqlite(writer.file_list());
+    }
 
     wassert(actual_file("testds/MANIFEST").not_exists());
     wassert(actual_file("testds/index.sqlite").exists());
@@ -258,6 +260,27 @@ add_method("read_legacy_sqlite", [] {
     wassert(actual(segs[0].relpath) == "2007/07-07.grib");
     wassert(actual(segs[1].relpath) == "2007/07-08.grib");
     wassert(actual(segs[2].relpath) == "2007/10-09.grib");
+});
+
+add_method("migrate_legacy_sqlite", [] {
+    {
+        manifest::Writer writer("testds", false);
+        fill1(writer);
+        create_sqlite(writer.file_list());
+    }
+
+    wassert(actual_file("testds/MANIFEST").not_exists());
+    wassert(actual_file("testds/index.sqlite").exists());
+
+    manifest::Writer writer("testds", false);
+    wassert_false(writer.is_dirty());
+    writer.reread();
+    wassert_true(writer.is_dirty());
+    writer.flush();
+    wassert_false(writer.is_dirty());
+
+    wassert(actual_file("testds/MANIFEST").exists());
+    wassert(actual_file("testds/index.sqlite").not_exists());
 });
 
 }

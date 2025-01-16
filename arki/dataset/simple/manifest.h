@@ -85,6 +85,8 @@ class Writer : public Reader
 public:
     Writer(const std::filesystem::path& root, bool eatmydata);
 
+    bool is_dirty() const { return dirty; }
+
     void reread();
 
     void set(const std::filesystem::path& relpath, time_t mtime, const core::Interval& time);

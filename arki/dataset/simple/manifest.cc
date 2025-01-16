@@ -268,6 +268,9 @@ void Writer::flush()
     if (::rename(pathname.c_str(), target.c_str()) < 0)
         throw_system_error("cannot rename " + pathname.native() + " to " + target.native());
 
+    if (legacy_sql)
+        std::filesystem::remove(m_root / "index.sqlite");
+
     dirty = false;
 }
 
