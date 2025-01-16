@@ -32,30 +32,7 @@ Segment::~Segment()
 
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
-    auto data = detect_data();
-
-    // stat the metadata file, if it exists
-    auto md_abspath = sys::with_suffix(abspath(), ".metadata");
-    auto st_md = sys::stat(md_abspath);
-    // If it exists and it looks new enough, use it
-    if (st_md.get())
-    {
-        auto ts = data->timestamp();
-        if (!ts)
-        {
-            nag::warning("%s: segment data is not available", abspath().c_str());
-            return std::make_shared<segment::EmptyReader>(shared_from_this(), lock);
-        }
-
-        if (st_md->st_mtime >= ts.value())
-            return std::make_shared<segment::metadata::Reader>(shared_from_this(), lock);
-        else
-            nag::warning("%s: outdated .metadata file: falling back to data scan", abspath().c_str());
-    }
-
-    // Else scan the file as usual
-    //return std::make_shared<segment::scan::Reader>(reader);
-    throw std::runtime_error("scan::Reader not yet implemented");
+    return session().segment_reader(shared_from_this(), lock);
 }
 
 std::shared_ptr<segment::Data> Segment::detect_data() const

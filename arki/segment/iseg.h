@@ -11,8 +11,6 @@ class Segment: public arki::Segment
 public:
     using arki::Segment::Segment;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-
     std::shared_ptr<RIndex> read_index(std::shared_ptr<const core::ReadLock> lock) const;
 };
 

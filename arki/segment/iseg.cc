@@ -12,17 +12,6 @@ std::shared_ptr<RIndex> Segment::read_index(std::shared_ptr<const core::ReadLock
     return std::make_shared<RIndex>(std::static_pointer_cast<const iseg::Session>(m_session), relpath(), lock);
 }
 
-std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::ReadLock> lock) const
-{
-    auto data = detect_data();
-    if (!data->timestamp())
-    {
-        nag::warning("%s: segment data is not available", abspath().c_str());
-        return std::make_shared<segment::EmptyReader>(shared_from_this(), lock);
-    }
-    return std::make_shared<Reader>(std::static_pointer_cast<const iseg::Segment>(shared_from_this()), lock);
-}
-
 Reader::Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<const core::ReadLock> lock)
     : segment::Reader(segment, lock),
       m_index(segment->read_index(lock))

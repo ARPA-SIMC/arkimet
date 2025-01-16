@@ -31,7 +31,7 @@ public:
     std::filesystem::path relpath() const { return m_relpath; }
     std::filesystem::path abspath() const { return m_abspath; }
 
-    virtual std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
 
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> detect_data() const;
