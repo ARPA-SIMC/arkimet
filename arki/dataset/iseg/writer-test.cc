@@ -84,7 +84,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.index").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/" + f.idxfname()).not_exists());
+    wassert(actual_file("testds/MANIFEST").not_exists());
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
     wassert_false(files::hasDontpackFlagfile("testds"));
 

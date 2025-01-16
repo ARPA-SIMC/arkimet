@@ -149,10 +149,10 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.metadata"));
     wassert(actual(sys::timestamp("testds/2007/07-08.grib.metadata")) <= sys::timestamp("testds/2007/07-08.grib.summary"));
-    wassert(actual(sys::timestamp("testds/2007/07-08.grib.summary")) <= sys::timestamp("testds/" + f.idxfname()));
+    wassert(actual(sys::timestamp("testds/2007/07-08.grib.summary")) <= sys::timestamp("testds/MANIFEST"));
     wassert_true(files::hasDontpackFlagfile("testds"));
 
     wassert(f.ensure_localds_clean(1, 2));
@@ -181,10 +181,10 @@ add_method("append", [](Fixture& f) {
     wassert(actual_file("testds/20/2007.grib").exists());
     wassert(actual_file("testds/20/2007.grib.metadata").exists());
     wassert(actual_file("testds/20/2007.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
     wassert(actual(sys::timestamp("testds/20/2007.grib")) <= sys::timestamp("testds/20/2007.grib.metadata"));
     wassert(actual(sys::timestamp("testds/20/2007.grib.metadata")) <= sys::timestamp("testds/20/2007.grib.summary"));
-    wassert(actual(sys::timestamp("testds/20/2007.grib.summary")) <= sys::timestamp("testds/" + f.idxfname()));
+    wassert(actual(sys::timestamp("testds/20/2007.grib.summary")) <= sys::timestamp("testds/MANIFEST"));
 
     // Dataset is fine and clean
     wassert(f.ensure_localds_clean(1, 2));

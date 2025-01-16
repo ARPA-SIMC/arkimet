@@ -20,10 +20,6 @@ namespace tests {
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
 
-// Return the file name of the Manifest index
-std::string manifest_idx_fname();
-
-
 /**
  * State of all segments in the dataset
  */
@@ -125,9 +121,6 @@ public:
     dataset::Dataset& config();
     std::shared_ptr<dataset::Dataset> dataset_config();
     std::shared_ptr<dataset::local::Dataset> local_config();
-
-    // Return the file name of the index of the current dataset
-    std::string idxfname(const core::cfg::Section* wcfg = 0) const;
 
     /**
      * Return the segment pathname in the current dataset where md is expected

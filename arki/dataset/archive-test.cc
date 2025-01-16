@@ -76,7 +76,7 @@ add_method("acquire_last", [](Fixture& f) {
         wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.metadata").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.summary").exists());
-        wassert(actual_file("testds/.archive/last/" + manifest_idx_fname()).exists());
+        wassert(actual_file("testds/.archive/last/MANIFEST").exists());
 
         metadata::Collection mdc;
         Metadata::read_file("testds/.archive/last/test-sorted.grib1.metadata", mdc.inserter_func());

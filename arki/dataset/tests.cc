@@ -188,17 +188,6 @@ std::shared_ptr<dataset::local::Dataset> DatasetTest::local_config()
     return dynamic_pointer_cast<dataset::local::Dataset>(m_dataset);
 }
 
-std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
-{
-    // TODO: is this still needed after ondisk2 dismissal?
-    if (!wcfg) wcfg = cfg.get();
-
-    if (wcfg->value("index_type") == "sqlite")
-        throw std::runtime_error("sqlite manifests are not supported anymore");
-    else
-        return "MANIFEST";
-}
-
 std::string DatasetTest::destfile(const Metadata& md) const
 {
     const auto* rt = md.get<types::reftime::Position>();
@@ -231,11 +220,6 @@ std::set<std::string> DatasetTest::destfiles(const metadata::Collection& mds) co
 unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
 {
     return destfiles(mds).size();
-}
-
-std::string manifest_idx_fname()
-{
-    return "MANIFEST";
 }
 
 State DatasetTest::scan_state(bool quick)
@@ -395,7 +379,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
     wassert(actual(mdc.size()) == resultcount);
 
     if (filecount > 0 && reader->type() != "iseg")
-        wassert(actual_file(reader->dataset().path / idxfname()).exists());
+        wassert(actual_file(reader->dataset().path / "MANIFEST").exists());
     tc.clear();
 }
 

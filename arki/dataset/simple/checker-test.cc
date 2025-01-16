@@ -67,7 +67,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     f.clean_and_import();
     setup();
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
     // Query is ok
     {
@@ -102,14 +102,14 @@ add_method("scan_missing_summary", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
 
     // Restart again
     f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
     // Repack here should act as if the dataset were empty
     wassert(actual(*f.makeSimpleChecker()).repack_clean(true));
@@ -123,7 +123,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 });
 
 // Test maintenance scan on compressed archives
@@ -148,7 +148,7 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
     // Query is ok
     wassert(f.ensure_localds_clean(3, 3));
@@ -194,14 +194,14 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
 
     // Restart again
     f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
     removemd();
 
     // Repack here should act as if the dataset were empty
@@ -224,7 +224,7 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 });
 
 }
