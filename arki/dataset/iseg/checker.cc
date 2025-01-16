@@ -651,7 +651,7 @@ void Checker::remove(const metadata::Collection& mds)
         Time time = md->get<types::reftime::Position>()->get_Position();
         auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg_segment_session->format));
 
-        if (!Segment::is_segment(dataset().path / relpath))
+        if (!dataset().segment_session->is_data_segment(relpath))
             continue;
 
         by_segment[relpath].push_back(source->offset);
@@ -674,7 +674,7 @@ void Checker::remove(const metadata::Collection& mds)
         scache.invalidate(i.first, i.second);
 }
 
-size_t Checker::vacuum(dataset::Reporter& reporter)
+size_t Checker::vacuum(dataset::Reporter&)
 {
     return 0;
 }

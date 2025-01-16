@@ -2,6 +2,9 @@
 #include "data.h"
 #include "data/fd.h"
 #include "data/dir.h"
+#include "data/tar.h"
+#include "data/zip.h"
+#include "data/gz.h"
 #include "metadata.h"
 #include "arki/core/file.h"
 #include "arki/scan.h"
@@ -24,6 +27,62 @@ Session::Session(const std::filesystem::path& root)
 Session::~Session()
 {
 }
+
+bool Session::is_data_segment(const std::filesystem::path& relpath) const
+{
+    auto abspath = root / relpath;
+    std::unique_ptr<struct stat> st = sys::stat(abspath);
+    if (!st.get())
+        return false;
+
+    auto extension = abspath.extension();
+
+    if (extension == ".metadata")
+        return false;
+
+    if (extension == ".summary")
+        return false;
+
+    if (extension == ".gz.idx")
+        return false;
+
+    if (extension == ".zip")
+    {
+        if (S_ISDIR(st->st_mode))
+            return false;
+        auto format = arki::scan::Scanner::format_from_filename(abspath.stem());
+        return segment::data::zip::Data::can_store(format);
+    }
+
+    if (extension == ".gz")
+    {
+        if (S_ISDIR(st->st_mode))
+            return false;
+        return segment::data::gz::Data::can_store(
+            arki::scan::Scanner::format_from_filename(abspath.stem()));
+    }
+
+    if (extension == ".tar")
+    {
+        if (S_ISDIR(st->st_mode))
+            return false;
+        return segment::data::tar::Data::can_store(
+                arki::scan::Scanner::format_from_filename(abspath.stem()));
+    }
+
+    auto format = arki::scan::Scanner::detect_format(abspath);
+    if (not format)
+        return false;
+
+    if (!S_ISDIR(st->st_mode))
+        return segment::data::fd::Data::can_store(format.value());
+
+    if (!std::filesystem::exists(abspath / ".sequence"))
+        return false;
+
+    return segment::data::dir::Data::can_store(format.value());
+}
+
 
 std::shared_ptr<Segment> Session::segment_from_relpath(const std::filesystem::path& relpath) const
 {

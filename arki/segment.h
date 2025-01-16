@@ -45,9 +45,6 @@ public:
     /// Instantiate the right Checker implementation for a segment that already exists
     std::shared_ptr<segment::data::Checker> detect_data_checker() const;
 
-    /// Check if the given file or directory is a segment
-    static bool is_segment(const std::filesystem::path& abspath);
-
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
      */

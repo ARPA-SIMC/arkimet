@@ -432,8 +432,7 @@ void Checker::scan_dir(const std::filesystem::path& root, std::function<void(con
             return false;
 
         string name = entry->d_name;
-        auto abspath = root / relpath / name;
-        if (Segment::is_segment(abspath))
+        if (dataset().segment_session->is_data_segment(relpath / name))
         {
             auto basename = Segment::basename(name);
             dest(relpath / basename);

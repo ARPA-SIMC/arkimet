@@ -371,7 +371,7 @@ public:
      * Scan a dataset for data files, returning a set of pathnames relative to
      * root.
      */
-    static void scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest);
+    void scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest);
 
 };
 
