@@ -212,7 +212,7 @@ libarkimet = both_libraries('arkimet',
 # Unit testing
 #
 
-test_common_sources = [
+testlib = static_library('testlib', [
     'utils/tests.cc',
     'utils/testrunner.cc',
     'tests/main.cpp',
@@ -224,9 +224,9 @@ test_common_sources = [
     'matcher/tests.cc',
     'segment/data/tests.cc',
     'dataset/tests.cc',
-]
+], include_directories: toplevel_inc)
 
-test_core_sources = test_common_sources + [
+test_core_sources = [
     'tests/tests-test.cc',
     'core/time-test.cc',
     'core/fuzzytime-test.cc',
@@ -336,7 +336,7 @@ if meteo_vm2_dep.found()
     test_core_sources += ['utils/vm2-test.cc', 'scan/vm2-test.cc']
 endif
 
-test_segment_sources = test_common_sources + [
+test_segment_sources = [
     'segment/defs-test.cc',
     'segment/data-test.cc',
     'segment/data/common-test.cc',
@@ -359,7 +359,7 @@ test_segment_sources = test_common_sources + [
     'segment-test.cc',
 ]
 
-test_ds_core_sources = test_common_sources + [
+test_ds_core_sources = [
     'dataset/lock-test.cc',
     'dataset/reporter-test.cc',
     'dataset/time-test.cc',
@@ -391,7 +391,7 @@ if libcurl_dep.found()
     ]
 endif
 
-test_ds_simple_sources = test_common_sources + [
+test_ds_simple_sources = [
     'dataset/simple-test.cc',
     'dataset/simple/manifest-test.cc',
     'dataset/simple/reader-test.cc',
@@ -401,7 +401,7 @@ test_ds_simple_sources = test_common_sources + [
     'dataset/maintenance-test.cc',
 ]
 
-test_ds_iseg_sources = test_common_sources + [
+test_ds_iseg_sources = [
     'dataset/iseg-test.cc',
     'dataset/iseg/reader-test.cc',
     'dataset/iseg/writer-test.cc',
@@ -410,10 +410,10 @@ test_ds_iseg_sources = test_common_sources + [
     'dataset/maintenance-test.cc',
 ]
 
-test_ds_read_sources = test_common_sources + ['dataset-reader-test.cc']
-test_ds_write_sources = test_common_sources + ['dataset-writer-test.cc']
-test_ds_check_sources = test_common_sources + ['dataset-checker-test.cc']
-test_ds_concurrent_sources = test_common_sources + ['dataset-concurrency-test.cc']
+test_ds_read_sources = ['dataset-reader-test.cc']
+test_ds_write_sources = ['dataset-writer-test.cc']
+test_ds_check_sources = ['dataset-checker-test.cc']
+test_ds_concurrent_sources = ['dataset-concurrency-test.cc']
 
 runtest = find_program('runtest')
 
@@ -434,6 +434,7 @@ foreach test_info: [
   test_executable = executable('test-' + name, sources,
       include_directories: toplevel_inc,
       link_with: [
+          testlib,
           libarkimet,
       ],
       cpp_pch: 'pch/arkimet_pch.h',
