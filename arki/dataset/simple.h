@@ -11,8 +11,6 @@ namespace simple {
 
 struct Dataset : public dataset::segmented::Dataset
 {
-    std::string index_type;
-
     Dataset(const Dataset&) = default;
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 

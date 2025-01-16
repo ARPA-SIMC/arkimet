@@ -3,6 +3,7 @@
 #include "simple/writer.h"
 #include "simple/checker.h"
 #include "arki/dataset/lock.h"
+#include "arki/nag.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -12,9 +13,10 @@ namespace dataset {
 namespace simple {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg),
-      index_type(cfg.value("index_type"))
+    : dataset::segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg)
 {
+    if (cfg.value("index_type") == "sqlite")
+        nag::warning("%s: dataset has index_type=sqlite. It is now ignored, and automatically converted to plain MANIFEST", name().c_str());
 }
 
 std::shared_ptr<dataset::Reader> Dataset::create_reader()
