@@ -35,11 +35,13 @@ public:
     virtual std::shared_ptr<Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const;
 
     virtual std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const;
+    virtual std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const;
 
     virtual std::shared_ptr<segment::data::Reader> segment_data_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock) const;
     virtual std::shared_ptr<segment::data::Reader> segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const;
     virtual std::shared_ptr<segment::data::Writer> segment_data_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& relpath) const;
     virtual std::shared_ptr<segment::data::Checker> segment_data_checker(DataFormat format, const std::filesystem::path& relpath) const;
+    virtual std::shared_ptr<segment::data::Checker> segment_data_checker(std::shared_ptr<const Segment> segment) const;
 };
 
 }

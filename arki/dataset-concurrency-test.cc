@@ -230,14 +230,15 @@ struct RepackForever : public TestSubprocess
     int main() noexcept override
     {
         try {
-            string segment = "2007/07-07." + format_name(fixture.td.format);
+            std::filesystem::path relpath = "2007/07-07." + format_name(fixture.td.format);
             notify_ready();
 
             while (true)
             {
                 auto ds(fixture.makeSegmentedChecker());
-                auto seg = ds->segment(segment);
-                seg->repack();
+                auto segment = ds->dataset().segment_session->segment_from_relpath(relpath);
+                auto cseg = ds->segment(segment);
+                cseg->repack();
             }
             return 0;
         } catch (std::exception& e) {

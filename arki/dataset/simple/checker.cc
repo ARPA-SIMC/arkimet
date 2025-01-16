@@ -59,10 +59,11 @@ class CheckerSegment : public segmented::CheckerSegment
 public:
     Checker& checker;
 
-    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<core::CheckLock> lock)
+    CheckerSegment(Checker& checker, std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.dataset().segment_session->segment_data_checker(scan::Scanner::format_from_filename(relpath), relpath);
+        segmented::CheckerSegment::checker = segment->checker(lock);
+        this->segment = segment->data_checker();
     }
 
     std::filesystem::path path_relative() const override { return segment->segment().relpath(); }
@@ -470,14 +471,14 @@ void Checker::check(CheckerConfig& opts)
     manifest.flush();
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesystem::path& relpath)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(std::shared_ptr<const Segment> segment)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, segment, lock));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, segment, lock));
 }
 
 void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
@@ -485,8 +486,9 @@ void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& seg
     auto files = manifest.file_list();
     for (const auto& info: files)
     {
-        CheckerSegment segment(*this, info.relpath, lock);
-        dest(segment);
+        auto segment = dataset().segment_session->segment_from_relpath(info.relpath);
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     }
 }
 
@@ -495,17 +497,18 @@ void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<vo
     auto files = manifest.file_list(matcher);
     for (const auto& info: files)
     {
-        CheckerSegment segment(*this, info.relpath, lock);
-        dest(segment);
+        auto segment = dataset().segment_session->segment_from_relpath(info.relpath);
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     }
 }
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
-        if (manifest.segment(relpath)) return;
-        CheckerSegment segment(*this, relpath, lock);
-        dest(segment);
+    scan_dir([&](std::shared_ptr<const Segment> segment) {
+        if (manifest.segment(segment->relpath())) return;
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     });
 }
 
@@ -515,11 +518,11 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    scan_dir(dataset().path, [&](const std::filesystem::path& relpath) {
-        if (manifest.segment(relpath)) return;
-        if (!dataset().step().pathMatches(relpath, *m)) return;
-        CheckerSegment segment(*this, relpath, lock);
-        dest(segment);
+    scan_dir([&](std::shared_ptr<const Segment> segment) {
+        if (manifest.segment(segment->relpath())) return;
+        if (!dataset().step().pathMatches(segment->relpath(), *m)) return;
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     });
 }
 
@@ -696,10 +699,11 @@ void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned 
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
 {
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
     metadata::Collection mds = query_segment(relpath);
     mds.swap(d1_idx, d2_idx);
 
-    segment(relpath)->reorder(mds);
+    this->segment(segment)->reorder(mds);
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)

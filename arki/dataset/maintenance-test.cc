@@ -817,7 +817,9 @@ void RepackTest<Fixture>::register_tests_concat()
             sys::touch("testds" / f.test_relpath, 199926000);
 
             NullReporter reporter;
-            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan(reporter);
+            auto checker = f.makeSegmentedChecker();
+            auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
+            checker->segment(segment)->rescan(reporter);
         }
 
         // Ensure that the archive is still clean
@@ -826,7 +828,8 @@ void RepackTest<Fixture>::register_tests_concat()
         // Do a repack, it should change the timestamp
         {
             auto checker(f.makeSegmentedChecker());
-            wassert(actual(checker->segment(f.test_relpath)->repack()) == 0u);
+            auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
+            wassert(actual(checker->segment(segment)->repack()) == 0u);
         }
 
         // Ensure that the archive is still clean

@@ -59,12 +59,11 @@ public:
     Checker& checker;
     std::shared_ptr<CIndex> m_idx;
 
-    CheckerSegment(Checker& checker, const std::string& relpath)
-        : CheckerSegment(checker, relpath, checker.dataset().check_lock_segment(relpath)) {}
-    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<core::CheckLock> lock)
+    CheckerSegment(Checker& checker, std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
         : segmented::CheckerSegment(lock), checker(checker)
     {
-        segment = checker.dataset().segment_session->segment_data_checker(checker.dataset().iseg_segment_session->format, relpath);
+        segmented::CheckerSegment::checker = segment->checker(lock);
+        this->segment = segment->data_checker();
     }
     ~CheckerSegment()
     {
@@ -478,31 +477,33 @@ Checker::Checker(std::shared_ptr<iseg::Dataset> dataset)
 
 std::string Checker::type() const { return "iseg"; }
 
-void Checker::list_segments(std::function<void(const std::filesystem::path& relpath)> dest)
+void Checker::list_segments(std::function<void(std::shared_ptr<const Segment>)> dest)
 {
     list_segments(Matcher(), dest);
 }
 
-void Checker::list_segments(const Matcher& matcher, std::function<void(const std::filesystem::path& relpath)> dest)
+void Checker::list_segments(const Matcher& matcher, std::function<void(std::shared_ptr<const Segment>)> dest)
 {
+    auto format = dataset().iseg_segment_session->format;
     std::vector<std::filesystem::path> seg_relpaths;
-    step::SegmentQuery squery(dataset().path, dataset().iseg_segment_session->format, "\\.index$", matcher);
+    step::SegmentQuery squery(dataset().path, format, "\\.index$", matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
         seg_relpaths.emplace_back(std::move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
-        dest(relpath);
+        dest(dataset().segment_session->segment_from_relpath_and_format(relpath, format));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::filesystem::path& relpath)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(std::shared_ptr<const Segment> segment)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath));
+    auto lock = dataset().check_lock_segment(segment->relpath());
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, segment, lock));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, segment, lock));
 }
 
 void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
@@ -512,9 +513,10 @@ void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& seg
 
 void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    list_segments(matcher, [&](const std::filesystem::path& relpath) {
-        CheckerSegment segment(*this, relpath);
-        dest(segment);
+    list_segments(matcher, [&](std::shared_ptr<const Segment> segment) {
+        auto lock = dataset().check_lock_segment(segment->relpath());
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     });
 }
 
@@ -528,12 +530,14 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     step::SegmentQuery squery(dataset().path, dataset().iseg_segment_session->format, matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& relpath) {
         if (sys::stat(dataset().path / sys::with_suffix(relpath, ".index"))) return;
-        CheckerSegment segment(*this, relpath);
+        auto lock = dataset().check_lock_segment(relpath);
+        auto segment = dataset().segment_session->segment_from_relpath(relpath);
+        CheckerSegment csegment(*this, segment, lock);
         // See #279: directory segments that are empty directories are found by
         // a filesystem scan, but are not considered segments
-        if (!segment.segment->exists_on_disk())
+        if (!csegment.segment->exists_on_disk())
             return;
-        dest(segment);
+        dest(csegment);
     });
 }
 
@@ -546,13 +550,13 @@ void Checker::check_issue51(CheckerConfig& opts)
     std::map<std::filesystem::path, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    list_segments([&](const std::filesystem::path& relpath) {
-        auto lock = dataset().check_lock_segment(relpath);
-        auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    list_segments([&](std::shared_ptr<const Segment> segment) {
+        auto lock = dataset().check_lock_segment(segment->relpath());
+        auto idx = m_dataset->iseg_segment_session->check_index(segment->relpath(), lock);
         metadata::Collection mds;
         idx->scan(mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
-        File datafile(dataset().path / relpath, O_RDONLY);
+        File datafile(segment->abspath(), O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -570,7 +574,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
             {
-                opts.reporter->segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), segment->relpath(), "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
                 return;
             }
             // Check if it ends with 7777
@@ -583,13 +587,13 @@ void Checker::check_issue51(CheckerConfig& opts)
             if (memcmp(tail, "777", 3) == 0)
             {
                 ++count_issue51;
-                broken_mds[relpath].push_back(*md);
+                broken_mds[segment->relpath()].push_back(*md);
             } else {
                 ++count_corrupted;
-                opts.reporter->segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), segment->relpath(), "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
             }
         }
-        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
+        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), segment->relpath().c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
     });
 
     if (opts.readonly)
@@ -634,7 +638,7 @@ void Checker::check_issue51(CheckerConfig& opts)
 void Checker::remove(const metadata::Collection& mds)
 {
     // Group mds by segment
-    std::unordered_map<std::string, std::vector<uint64_t>> by_segment;
+    std::unordered_map<std::filesystem::path, std::vector<uint64_t>> by_segment;
     // Take note of months to invalidate in summary cache
     std::set<std::pair<int, int>> months;
 
@@ -664,7 +668,8 @@ void Checker::remove(const metadata::Collection& mds)
         writer_config.drop_cached_data_on_commit = false;
         writer_config.eatmydata = dataset().eatmydata;
 
-        auto seg = segment(i.first);
+        auto segment = dataset().segment_session->segment_from_relpath(i.first);
+        auto seg = this->segment(segment);
         seg->remove_data(i.second);
         arki::nag::verbose("%s: %s: %zu data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
     }
@@ -730,7 +735,8 @@ void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_i
         idx->scan(mds.inserter_func(), "offset");
         mds.swap(d1_idx, d2_idx);
     }
-    segment_prelocked(relpath, lock)->reorder(mds);
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    segment_prelocked(segment, lock)->reorder(mds);
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)

@@ -62,7 +62,7 @@ add_method("auto_instantiate_existing", [] {
     };
     auto get_checker = [&](const char* format, const char* name) {
         auto segment = session->segment_from_relpath_and_format(name, format_from_string(format));
-        return segment->detect_data_checker();
+        return segment->data_checker();
     };
 
     wassert(actual(get_writer("grib", "testfile.grib")->data().type()) == "concat");

@@ -460,7 +460,10 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->index(move(mds));
+        {
+            auto segment = sc->dataset().segment_session->segment_from_relpath(path);
+            sc->segment(segment)->index(std::move(mds));
+        }
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }
@@ -478,7 +481,10 @@ void Checker::release_segment(const std::filesystem::path& relpath, std::shared_
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->release(segment_session, new_relpath);
+        {
+            auto segment = sc->dataset().segment_session->segment_from_relpath(path);
+            sc->segment(segment)->release(segment_session, new_relpath);
+        }
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }

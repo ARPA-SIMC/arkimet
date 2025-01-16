@@ -123,6 +123,10 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const S
     throw std::runtime_error("scan::Reader not yet implemented");
 }
 
+std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::Checker>(segment, lock);
+}
 
 std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
 {
@@ -155,6 +159,12 @@ std::shared_ptr<segment::data::Checker> Session::segment_data_checker(DataFormat
 {
     auto seg = segment_from_relpath_and_format(relpath, format);
     auto data = seg->detect_data();
+    return data->checker(false);
+}
+
+std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
+{
+    auto data = segment->detect_data();
     return data->checker(false);
 }
 

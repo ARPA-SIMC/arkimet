@@ -423,10 +423,10 @@ void Checker::check(CheckerConfig& opts)
     local::Checker::check(opts);
 }
 
-void Checker::scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest)
+void Checker::scan_dir(std::function<void(std::shared_ptr<const Segment> segment)> dest)
 {
-    files::PathWalk walker(root);
-    walker.consumer = [&](const std::filesystem::path& relpath, sys::Path::iterator& entry, struct stat& st) {
+    files::PathWalk walker(dataset().path);
+    walker.consumer = [&](const std::filesystem::path& relpath, const sys::Path::iterator& entry, struct stat&) {
         // Skip '.', '..' and hidden files
         if (entry->d_name[0] == '.')
             return false;
@@ -435,7 +435,8 @@ void Checker::scan_dir(const std::filesystem::path& root, std::function<void(con
         if (dataset().segment_session->is_data_segment(relpath / name))
         {
             auto basename = Segment::basename(name);
-            dest(relpath / basename);
+            auto segment = dataset().segment_session->segment_from_relpath(relpath / basename);
+            dest(segment);
             return false;
         }
 

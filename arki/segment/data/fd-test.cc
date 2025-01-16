@@ -65,7 +65,7 @@ this->add_method("large", [](Fixture& f) {
     {
         // Make a file that looks HUGE, so that appending will make its size
         // not fit in a 32bit off_t
-        segment->detect_data_checker()->test_truncate(0x7FFFFFFF);
+        segment->data_checker()->test_truncate(0x7FFFFFFF);
         wassert(actual(sys::size(segment->abspath())) == 0x7FFFFFFFu);
     }
 

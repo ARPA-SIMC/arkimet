@@ -32,6 +32,7 @@ public:
     std::filesystem::path abspath() const { return m_abspath; }
 
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;
 
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> detect_data() const;
@@ -43,7 +44,7 @@ public:
     std::shared_ptr<segment::data::Writer> detect_data_writer(const segment::data::WriterConfig& config) const;
 
     /// Instantiate the right Checker implementation for a segment that already exists
-    std::shared_ptr<segment::data::Checker> detect_data_checker() const;
+    std::shared_ptr<segment::data::Checker> data_checker() const;
 
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
@@ -90,6 +91,21 @@ public:
      */
     virtual core::Interval get_stored_time_interval() = 0;
 #endif
+};
+
+class Checker
+{
+protected:
+    std::shared_ptr<const Segment> m_segment;
+    std::shared_ptr<core::CheckLock> lock;
+
+public:
+    explicit Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
+    Checker(const Checker&) = delete;
+    Checker(Checker&&) = delete;
+    Checker& operator=(const Checker&) = delete;
+    Checker& operator=(Checker&&) = delete;
+    virtual ~Checker();
 };
 
 /**

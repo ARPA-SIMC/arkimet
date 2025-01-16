@@ -123,6 +123,7 @@ class CheckerSegment
 {
 public:
     std::shared_ptr<core::CheckLock> lock;
+    std::shared_ptr<segment::Checker> checker;
     std::shared_ptr<segment::data::Checker> segment;
 
     CheckerSegment(std::shared_ptr<core::CheckLock> lock);
@@ -237,10 +238,10 @@ public:
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
 
     /// Instantiate a CheckerSegment
-    virtual std::unique_ptr<CheckerSegment> segment(const std::filesystem::path& relpath) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment(std::shared_ptr<const Segment> segment) = 0;
 
     /// Instantiate a CheckerSegment using an existing lock
-    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment_prelocked(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) = 0;
 
     /**
      * List all segments known to this dataset
@@ -371,7 +372,7 @@ public:
      * Scan a dataset for data files, returning a set of pathnames relative to
      * root.
      */
-    void scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest);
+    void scan_dir(std::function<void(std::shared_ptr<const Segment> segment)> dest);
 
 };
 

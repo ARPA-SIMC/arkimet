@@ -33,8 +33,8 @@ public:
 
     std::string type() const override;
 
-    std::unique_ptr<segmented::CheckerSegment> segment(const std::filesystem::path& relpath) override;
-    std::unique_ptr<segmented::CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<core::CheckLock> lock) override;
+    std::unique_ptr<segmented::CheckerSegment> segment(std::shared_ptr<const Segment> segment) override;
+    std::unique_ptr<segmented::CheckerSegment> segment_prelocked(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) override;
     void segments_tracked(std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)>) override;
     void segments_untracked(std::function<void(segmented::CheckerSegment& relpath)>) override;

@@ -665,7 +665,9 @@ add_method("unarchive_segment", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.grib").exists());
 
     {
-        f.makeSegmentedChecker()->segment("2007/07-07.grib")->unarchive();
+        auto checker = f.makeSegmentedChecker();
+        auto segment = checker->dataset().segment_session->segment_from_relpath("2007/07-07.grib");
+        checker->segment(segment)->unarchive();
     }
 
     wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
@@ -719,7 +721,9 @@ add_method("unarchive_segment_lastonly", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.grib").exists());
 
     try {
-        f.makeSegmentedChecker()->segment("../test-ds/2007/07-07.grib")->unarchive();
+        auto checker = f.makeSegmentedChecker();
+        auto segment = checker->dataset().segment_session->segment_from_relpath("../test-ds/2007/07-07.grib");
+        checker->segment(segment)->unarchive();
         wassert(throw std::runtime_error("unarchive_segment should have thrown at this point"));
     } catch (std::exception& e) {
         wassert(actual(e.what()).contains("segment is not in last/ archive"));
@@ -746,7 +750,7 @@ add_method("scan_dir_empty", [](Fixture& f) {
 
     auto checker(f.makeSegmentedChecker());
     std::vector<std::string> res;
-    wassert(checker->scan_dir("testds", [&](const std::string& relpath) { res.push_back(relpath); }));
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
     wassert(actual(res.size()) == 0u);
 });
 
@@ -772,7 +776,7 @@ add_method("scan_dir_dir1", [](Fixture& f) {
 
     auto checker(wcallchecked(f.makeSegmentedChecker()));
     std::vector<std::string> res;
-    wassert(checker->scan_dir("testds", [&](const std::string& relpath) { res.push_back(relpath); }));
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
     wassert(actual(res.size()) == 7u);
     std::sort(res.begin(), res.end());
 
@@ -801,7 +805,7 @@ add_method("scan_dir_dir2", [](Fixture& f) {
 
     auto checker(wcallchecked(f.makeSegmentedChecker()));
     std::vector<std::string> res;
-    wassert(checker->scan_dir("testds", [&](const std::string& relpath) { res.push_back(relpath); }));
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
     wassert(actual(res.size()) == 5u);
     std::sort(res.begin(), res.end());
 
@@ -821,7 +825,7 @@ add_method("scan_dir_dir2", [](Fixture& f) {
 
     auto checker(f.makeSegmentedChecker());
     std::vector<std::string> res;
-    wassert(checker->scan_dir("testds", [&](const std::string& relpath) { res.push_back(relpath); }));
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
     wassert(actual(res.size()) == 0u);
 });
 
