@@ -394,10 +394,10 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
 this->add_method("read_repack", [](Fixture& f) {
     skip_unless_filesystem_has_ofd_locks(".");
 
-    auto orig_data = f.td.mds[1].get_data().read();
+    auto orig_data = wcallchecked(f.td.mds[1].get_data().read());
 
-    f.reset_test("step=single");
-    f.import_all(f.td.mds);
+    wassert(f.reset_test("step=single"));
+    wassert(f.import_all(f.td.mds));
 
     auto reader = f.dataset_config()->create_reader();
     reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
