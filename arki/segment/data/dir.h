@@ -22,13 +22,13 @@ public:
 
     const char* type() const override;
     bool single_file() const override;
-    time_t timestamp() const override;
+    std::optional<time_t> timestamp() const override;
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
     static bool can_store(DataFormat format);
 };
 
@@ -93,21 +93,21 @@ public:
 
     /// Call f for each nnnnnn.format file in the directory segment, passing the file name
     void foreach_datafile(std::function<void(const char*)> f);
-    void validate(Metadata& md, const scan::Validator& v);
+    void validate(Metadata& md, const arki::scan::Validator& v);
     void move_data(std::shared_ptr<const Segment> new_segment) override;
     bool exists_on_disk() override;
     bool is_empty() override;
     size_t size() override;
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
-    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
-    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
-    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
+    void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
 };
 
 
@@ -127,7 +127,7 @@ class HoleChecker : public BaseChecker<Data>
 {
 public:
     using BaseChecker<Data>::BaseChecker;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
 };
 
 

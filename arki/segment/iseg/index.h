@@ -129,10 +129,11 @@ public:
     /**
      * Query data sending the results to the given consumer.
      *
-     * Returns true if dest returned true all the time, false if generation
-     * stopped because dest returned false.
+     * @param matcher: query used to select data
+     * @param reader: if set, generate blob sources attached to this data reader
+     * @returns the collection of metadata matching the query
      */
-    bool query_data(const query::Data& q, metadata_dest_func dest);
+    arki::metadata::Collection query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader);
 
     /**
      * Query this index, returning a summary

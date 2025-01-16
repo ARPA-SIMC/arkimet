@@ -27,6 +27,7 @@ using namespace std;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::metadata::Collection;
 
 namespace arki::segment::data {
 namespace fd {
@@ -45,12 +46,12 @@ struct Creator : public AppendCreator
     File out;
     size_t written = 0;
 
-    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& tmpabspath)
+    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& tmpabspath)
         : AppendCreator(segment, mds), out(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)
     {
     }
 
-    size_t append(const metadata::Data& data) override
+    size_t append(const arki::metadata::Data& data) override
     {
         size_t wrpos = written;
         written += out.write_data(data);
@@ -74,7 +75,7 @@ struct CheckBackend : public AppendCheckBackend
     core::File data;
     struct stat st;
 
-    CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const Collection& mds)
         : AppendCheckBackend(reporter, segment, mds), data(segment.abspath())
     {
     }
@@ -127,11 +128,11 @@ std::shared_ptr<segment::Data> Data::detect_data(std::shared_ptr<const Segment> 
 }
 
 
-time_t Data::timestamp() const
+std::optional<time_t> Data::timestamp() const
 {
-    struct stat st;
-    sys::stat(segment().abspath(), st);
-    return st.st_mtime;
+    if (auto st = sys::stat(segment().abspath()))
+        return std::optional<time_t>(st->st_mtime);
+    return std::optional<time_t>();
 }
 
 
@@ -149,7 +150,7 @@ template<typename Data>
 bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
-    auto scanner = scan::Scanner::get_scanner(segment.format());
+    auto scanner = arki::scan::Scanner::get_scanner(segment.format());
     return scanner->scan_segment(static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
 }
 
@@ -210,7 +211,7 @@ template<typename Data, typename File>
 const types::source::Blob& Writer<Data, File>::append(Metadata& md)
 {
     this->fired = false;
-    const metadata::Data& data = md.get_data();
+    const arki::metadata::Data& data = md.get_data();
     pending.emplace_back(this->config, md, source::Blob::create_unlocked(this->segment().format(), this->segment().root(), this->segment().relpath(), current_pos, data.size()));
     current_pos += fd.write_data(data);
     return *pending.back().new_source;
@@ -295,7 +296,7 @@ bool Checker<Data, File>::rescan_data(std::function<void(const std::string&)>, s
 }
 
 template<typename Data, typename File>
-State Checker<Data, File>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+State Checker<Data, File>::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
 {
     CheckBackend<Data> checker(this->segment(), reporter, mds);
     checker.accurate = !quick;
@@ -317,14 +318,14 @@ size_t Checker<Data, File>::remove()
 }
 
 template<typename Data, typename File>
-core::Pending Checker<Data, File>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Data, File>::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(this->segment().abspath(), ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath()));
 
     Creator<File> creator(this->segment(), mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(this->segment().abspath());
+    creator.validator = &arki::scan::Validator::by_filename(this->segment().abspath());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -351,7 +352,7 @@ void Checker<Data, File>::test_truncate(size_t offset)
 }
 
 template<typename Data, typename File>
-void Checker<Data, File>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+void Checker<Data, File>::test_make_hole(Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     utils::files::PreserveFileTimes pt(this->segment().abspath());
     sys::File fd(this->segment().abspath(), O_RDWR);
@@ -377,7 +378,7 @@ void Checker<Data, File>::test_make_hole(metadata::Collection& mds, unsigned hol
 }
 
 template<typename Data, typename File>
-void Checker<Data, File>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+void Checker<Data, File>::test_make_overlap(Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     utils::files::PreserveFileTimes pt(this->segment().abspath());
     sys::File fd(this->segment().abspath(), O_RDWR);
@@ -399,7 +400,7 @@ void Checker<Data, File>::test_make_overlap(metadata::Collection& mds, unsigned 
 }
 
 template<typename Data, typename File>
-void Checker<Data, File>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+void Checker<Data, File>::test_corrupt(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     utils::files::PreserveFileTimes pt(this->segment().abspath());
@@ -452,7 +453,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 
 namespace concat {
 
-size_t File::write_data(const metadata::Data& data)
+size_t File::write_data(const arki::metadata::Data& data)
 {
     // Prevent caching (ignore function result)
     //(void)posix_fadvise(df.fd, pos, buf.size(), POSIX_FADV_DONTNEED);
@@ -467,7 +468,7 @@ void File::test_add_padding(size_t size)
         write("", 1);
 }
 
-size_t HoleFile::write_data(const metadata::Data& data)
+size_t HoleFile::write_data(const arki::metadata::Data& data)
 {
     // Get the current file size
     off_t size = lseek(0, SEEK_END);
@@ -510,7 +511,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
         return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
 
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(segment, mds, segment.abspath());
     creator.create();
@@ -519,7 +520,7 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Co
 }
 
 
-core::Pending HoleChecker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending HoleChecker::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
 {
     filesystem::path tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
@@ -568,7 +569,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     fd::Creator<File> creator(segment, mds, segment.abspath());
     creator.create();

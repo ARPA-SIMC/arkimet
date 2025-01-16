@@ -25,7 +25,7 @@ Session::~Session()
 
 std::shared_ptr<Segment> Session::segment_from_relpath(const std::filesystem::path& relpath) const
 {
-    return segment_from_relpath_and_format(relpath, scan::Scanner::format_from_filename(relpath));
+    return segment_from_relpath_and_format(relpath, arki::scan::Scanner::format_from_filename(relpath));
 }
 
 std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const

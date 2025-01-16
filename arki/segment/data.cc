@@ -17,6 +17,7 @@
 using namespace std;
 using namespace std::string_literals;
 using namespace arki::utils;
+using arki::metadata::Collection;
 
 namespace arki::segment {
 
@@ -49,7 +50,7 @@ bool Reader::scan(metadata_dest_func dest)
     if (st_md.get() && st_md->st_mtime >= data().timestamp())
     {
         std::filesystem::path root(segment().abspath().parent_path());
-        return Metadata::read_file(metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
+        return Metadata::read_file(arki::metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
             md->sourceBlob().lock(shared_from_this());
             return dest(md);
         });
@@ -105,21 +106,21 @@ RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
 }
 
 
-std::shared_ptr<segment::data::Checker> Checker::tar(metadata::Collection& mds)
+std::shared_ptr<segment::data::Checker> Checker::tar(Collection& mds)
 {
     auto checker = segment::data::tar::Data::create(segment(), mds);
     remove();
     return checker;
 }
 
-std::shared_ptr<segment::data::Checker> Checker::zip(metadata::Collection& mds)
+std::shared_ptr<segment::data::Checker> Checker::zip(Collection& mds)
 {
     auto checker = segment::data::zip::Data::create(segment(), mds);
     remove();
     return checker;
 }
 
-std::shared_ptr<segment::data::Checker> Checker::compress(metadata::Collection& mds, unsigned groupsize)
+std::shared_ptr<segment::data::Checker> Checker::compress(Collection& mds, unsigned groupsize)
 {
     std::shared_ptr<segment::data::Checker> res;
     switch (segment().format())
@@ -134,7 +135,7 @@ std::shared_ptr<segment::data::Checker> Checker::compress(metadata::Collection& 
     return res;
 }
 
-void Checker::test_truncate_by_data(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_truncate_by_data(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     test_truncate(s.offset);

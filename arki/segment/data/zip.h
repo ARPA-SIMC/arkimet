@@ -20,14 +20,14 @@ struct Data : public arki::segment::Data
 
     const char* type() const override;
     bool single_file() const override;
-    time_t timestamp() const override;
+    std::optional<time_t> timestamp() const override;
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
     static bool can_store(DataFormat format);
-    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
 };
 
 
@@ -46,7 +46,7 @@ class Checker : public data::BaseChecker<Data>
 {
 protected:
     std::filesystem::path zipabspath;
-    void validate(Metadata& md, const scan::Validator& v);
+    void validate(Metadata& md, const arki::scan::Validator& v);
 
     /**
      * If skip_validation is true, repack will skip validating the data that is
@@ -58,7 +58,7 @@ protected:
      */
     core::Pending repack_impl(
             const std::filesystem::path& rootdir,
-            metadata::Collection& mds,
+            arki::metadata::Collection& mds,
             bool skip_validation=false,
             const RepackConfig& cfg=RepackConfig());
     void move_data(std::shared_ptr<const Segment> new_segment) override;
@@ -71,14 +71,14 @@ public:
     size_t size() override;
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
-    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
-    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
-    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
+    void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
 };
 
 }

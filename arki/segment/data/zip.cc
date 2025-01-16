@@ -25,6 +25,7 @@ using namespace std;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::metadata::Collection;
 
 namespace arki::segment::data::zip {
 
@@ -34,16 +35,16 @@ struct Creator : public AppendCreator
 {
 protected:
     std::shared_ptr<File> out;
-    std::shared_ptr<metadata::ArchiveOutput> zipout;
+    std::shared_ptr<arki::metadata::ArchiveOutput> zipout;
 
 public:
     size_t idx = 0;
     char fname[100];
 
-    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(segment, mds),
           out(std::make_shared<File>(dest_abspath, O_WRONLY | O_CREAT | O_TRUNC, 0666)),
-          zipout(metadata::ArchiveOutput::create_file("zip", out))
+          zipout(arki::metadata::ArchiveOutput::create_file("zip", out))
     {
         zipout->set_subdir(std::string());
     }
@@ -80,7 +81,7 @@ struct CheckBackend : public AppendCheckBackend
     map<size_t, size_t> on_disk;
     size_t max_sequence = 0;
 
-    CheckBackend(const Segment& segment, const std::filesystem::path& zipabspath, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const Segment& segment, const std::filesystem::path& zipabspath, std::function<void(const std::string&)> reporter, const Collection& mds)
         : AppendCheckBackend(reporter, segment, mds), reader(segment.format(), core::File(zipabspath, O_RDONLY))
     {
     }
@@ -219,7 +220,12 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Data::type() const { return "zip"; }
 bool Data::single_file() const { return true; }
-time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath(), ".zip")); }
+std::optional<time_t> Data::timestamp() const
+{
+    if (auto st = sys::stat(sys::with_suffix(segment().abspath(), ".zip")))
+        return std::optional<time_t>(st->st_mtime);
+    return std::optional<time_t>();
+}
 
 std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
@@ -238,7 +244,7 @@ bool Data::can_store(DataFormat format)
 {
     return true;
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".zip"));
     creator.create();
@@ -262,7 +268,7 @@ bool Reader::scan_data(metadata_dest_func dest)
     std::sort(spans.begin(), spans.end());
 
     // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(segment().format());
+    auto scanner = arki::scan::Scanner::get_scanner(segment().format());
     for (const auto& span : spans)
     {
         std::vector<uint8_t> data = zip.get(span);
@@ -326,14 +332,14 @@ bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std:
     return reader->scan_data(dest);
 }
 
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
 {
     CheckBackend checker(segment(), zipabspath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-void Checker::validate(Metadata& md, const scan::Validator& v)
+void Checker::validate(Metadata& md, const arki::scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
@@ -356,14 +362,14 @@ size_t Checker::remove()
     return size;
 }
 
-core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
 
     Creator creator(segment(), mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath());
+    creator.validator = &arki::scan::Validator::by_filename(segment().abspath());
 
     creator.create();
 
@@ -396,7 +402,7 @@ void Checker::test_truncate(size_t offset)
     }
 }
 
-void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+void Checker::test_make_hole(Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     utils::files::PreserveFileTimes pf(zipabspath);
 
@@ -422,12 +428,12 @@ void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsi
     zip.close();
 }
 
-void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+void Checker::test_make_overlap(Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
 
-void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_corrupt(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     Span span(s.offset, s.size);

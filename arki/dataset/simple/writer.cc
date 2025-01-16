@@ -168,7 +168,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     auto res = segment->acquire(md);
     if (res == ACQ_OK)
     {
-        time_t ts = segment->segment->data().timestamp();
+        time_t ts = segment->segment->data().timestamp().value();
         manifest.reread();
         manifest.set(segment->segment->segment().relpath(), ts, segment->sum.get_reference_time());
         manifest.flush();
@@ -196,7 +196,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
         auto segment = file(writer_config, s.first, lock);
         if (segment->acquire_batch(s.second))
         {
-            time_t ts = segment->segment->data().timestamp();
+            time_t ts = segment->segment->data().timestamp().value();
             manifest.set(segment->segment->segment().relpath(), ts, segment->sum.get_reference_time());
             invalidate_summary();
             changed = true;

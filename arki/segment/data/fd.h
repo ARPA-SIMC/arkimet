@@ -20,7 +20,7 @@ public:
     using core::File::File;
 
     void fdtruncate_nothrow(off_t pos) noexcept;
-    virtual size_t write_data(const metadata::Data& data) = 0;
+    virtual size_t write_data(const arki::metadata::Data& data) = 0;
     virtual void test_add_padding(size_t size) = 0;
 };
 
@@ -30,7 +30,7 @@ class Data : public arki::segment::Data
 public:
     using arki::segment::Data::Data;
 
-    time_t timestamp() const override;
+    std::optional<time_t> timestamp() const override;
     static bool can_store(DataFormat format);
 
     static std::shared_ptr<segment::Data> detect_data(std::shared_ptr<const Segment> segment);
@@ -89,14 +89,14 @@ public:
     size_t size() override;
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
-    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override;
+    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
+    core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;
-    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
-    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
-    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
+    void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
 };
 
 }
@@ -131,7 +131,7 @@ class File : public fd::File
 {
 public:
     using fd::File::File;
-    size_t write_data(const metadata::Data& buf) override;
+    size_t write_data(const arki::metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
@@ -139,7 +139,7 @@ class HoleFile : public fd::File
 {
 public:
     using fd::File::File;
-    size_t write_data(const metadata::Data& buf) override;
+    size_t write_data(const arki::metadata::Data& buf) override;
     void test_add_padding(size_t size) override;
 };
 
@@ -155,7 +155,7 @@ public:
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
 
     static const unsigned padding = 0;
 };
@@ -189,7 +189,7 @@ class HoleChecker : public fd::Checker<Data, HoleFile>
 {
 public:
     using fd::Checker<Data, HoleFile>::Checker;
-    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override;
 };
 
 }
@@ -215,7 +215,7 @@ public:
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
 
     static const unsigned padding = 1;
 };

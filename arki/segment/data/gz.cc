@@ -20,6 +20,7 @@ using namespace std;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::metadata::Collection;
 
 namespace arki::segment::data {
 namespace gz {
@@ -34,16 +35,16 @@ struct Creator : public AppendCreator
     size_t written = 0;
     std::filesystem::path dest_abspath_idx;
 
-    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(segment, mds), out(dest_abspath), gzout(out, 0)
     {
     }
-    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath, const std::filesystem::path& dest_abspath_idx, unsigned groupsize)
+    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& dest_abspath, const std::filesystem::path& dest_abspath_idx, unsigned groupsize)
         : AppendCreator(segment, mds), out(dest_abspath), gzout(out, groupsize), dest_abspath_idx(dest_abspath_idx)
     {
     }
 
-    size_t append(const metadata::Data& data) override
+    size_t append(const arki::metadata::Data& data) override
     {
         size_t wrpos = written;
         gzout.add(data.read());
@@ -77,7 +78,7 @@ struct CheckBackend : public AppendCheckBackend
     const std::filesystem::path& gzabspath;
     std::vector<uint8_t> all_data;
 
-    CheckBackend(const std::filesystem::path& gzabspath, const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const std::filesystem::path& gzabspath, const Segment& segment, std::function<void(const std::string&)> reporter, const Collection& mds)
         : AppendCheckBackend(reporter, segment, mds), gzabspath(gzabspath)
     {
     }
@@ -109,9 +110,11 @@ struct CheckBackend : public AppendCheckBackend
 
 }
 
-time_t Data::timestamp() const
+std::optional<time_t> Data::timestamp() const
 {
-    return max(sys::timestamp(sys::with_suffix(segment().abspath(), ".gz")), sys::timestamp(sys::with_suffix(segment().abspath(), ".gz.idx"), 0));
+    if (auto st = sys::stat(sys::with_suffix(segment().abspath(), ".gz")))
+        return std::optional<time_t>(st->st_mtime);
+    return std::optional<time_t>();
 }
 
 bool Data::can_store(DataFormat format)
@@ -140,7 +143,7 @@ Reader<Data>::Reader(const std::shared_ptr<const Data> data, std::shared_ptr<con
 template<typename Data>
 bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = scan::Scanner::get_scanner(this->segment().format());
+    auto scanner = arki::scan::Scanner::get_scanner(this->segment().format());
     compress::TempUnzip uncompressed(this->segment().abspath());
     return scanner->scan_segment(this->shared_from_this(), dest);
 }
@@ -198,7 +201,7 @@ bool Checker<Data>::rescan_data(std::function<void(const std::string&)> reporter
 }
 
 template<typename Data>
-State Checker<Data>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+State Checker<Data>::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
 {
     CheckBackend<Data> checker(gzabspath, this->segment(), reporter, mds);
     checker.accurate = !quick;
@@ -215,7 +218,7 @@ size_t Checker<Data>::remove()
 }
 
 template<typename Data>
-core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(gzabspath, ".repack");
     files::FinalizeTempfilesTransaction* finalize;
@@ -230,7 +233,7 @@ core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, metada
         };
 
         Creator creator(this->segment(), mds, tmpabspath);
-        creator.validator = &scan::Validator::by_filename(this->segment().abspath());
+        creator.validator = &arki::scan::Validator::by_filename(this->segment().abspath());
         if (Data::padding == 1) creator.padding.push_back('\n');
         creator.create();
     } else {
@@ -243,7 +246,7 @@ core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, metada
         };
 
         Creator creator(this->segment(), mds, tmpabspath, tmpidxabspath, cfg.gz_group_size);
-        creator.validator = &scan::Validator::by_filename(this->segment().abspath());
+        creator.validator = &arki::scan::Validator::by_filename(this->segment().abspath());
         if (Data::padding == 1) creator.padding.push_back('\n');
         creator.create();
     }
@@ -273,19 +276,19 @@ void Checker<Data>::test_truncate(size_t offset)
 }
 
 template<typename Data>
-void Checker<Data>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+void Checker<Data>::test_make_hole(Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole not implemented");
 }
 
 template<typename Data>
-void Checker<Data>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+void Checker<Data>::test_make_overlap(Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
 
 template<typename Data>
-void Checker<Data>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+void Checker<Data>::test_corrupt(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     utils::files::PreserveFileTimes pt(this->segment().abspath());
@@ -312,7 +315,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
     {
@@ -345,7 +348,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
     {

@@ -21,6 +21,14 @@ class Checker;
 struct RepackConfig;
 }
 
+namespace metadata {
+class Reader;
+}
+
+namespace scan {
+class Reader;
+}
+
 namespace iseg {
 class Segment;
 class Session;

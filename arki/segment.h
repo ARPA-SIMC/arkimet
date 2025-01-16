@@ -95,6 +95,17 @@ public:
 #endif
 };
 
+/**
+ * Reader that always returns no results
+ */
+class EmptyReader: public Reader
+{
+public:
+    using Reader::Reader;
+
+    bool query_data(const query::Data& q, metadata_dest_func dest) override;
+};
+
 }
 
 }

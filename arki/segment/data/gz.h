@@ -14,7 +14,7 @@ class Data : public arki::segment::Data
 {
 public:
     using arki::segment::Data::Data;
-    time_t timestamp() const override;
+    std::optional<time_t> timestamp() const override;
     static bool can_store(DataFormat format);
 };
 
@@ -49,14 +49,14 @@ public:
     bool is_empty() override;
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
-    State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) override;
+    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
-    void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
-    void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
-    void test_corrupt(const metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
+    void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
+    void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
 };
 
 }
@@ -75,7 +75,7 @@ public:
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
-    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg);
+    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 0;
 };
 
@@ -108,7 +108,7 @@ struct Data : public gz::Data
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
 
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
-    static std::shared_ptr<Checker> create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg);
+    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 1;
 };
 

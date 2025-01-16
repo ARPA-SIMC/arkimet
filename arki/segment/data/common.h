@@ -14,10 +14,10 @@ namespace segment {
 struct AppendCreator
 {
     const Segment& segment;
-    metadata::Collection& mds;
-    const scan::Validator* validator = nullptr;
+    arki::metadata::Collection& mds;
+    const arki::scan::Validator* validator = nullptr;
 
-    AppendCreator(const Segment& segment, metadata::Collection& mds);
+    AppendCreator(const Segment& segment, arki::metadata::Collection& mds);
     virtual ~AppendCreator();
 
     /// Create a source for md as imported into this segment at the given Span
@@ -27,7 +27,7 @@ struct AppendCreator
     virtual Span append_md(Metadata& md);
 
     /// Append data to the segment, returning the offset at which it has been written
-    virtual size_t append(const metadata::Data& data);
+    virtual size_t append(const arki::metadata::Data& data);
 
     /// Perform segment creation
     void create();
@@ -37,12 +37,12 @@ struct AppendCheckBackend
 {
     const Segment& segment;
     std::function<void(const std::string&)> reporter;
-    const metadata::Collection& mds;
+    const arki::metadata::Collection& mds;
     bool accurate = false;
     size_t end_of_known_data = 0;
-    const scan::Validator* validator = nullptr;
+    const arki::scan::Validator* validator = nullptr;
 
-    AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const metadata::Collection& mds);
+    AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const arki::metadata::Collection& mds);
     virtual ~AppendCheckBackend();
 
     virtual void validate(Metadata& md, const types::source::Blob& source) = 0;

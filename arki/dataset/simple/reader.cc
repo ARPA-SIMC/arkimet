@@ -44,6 +44,11 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     //       if they don't overlap then we can just sort metadata on a
     //       segment-by-segment basis)
 
+    // TODO: we can also rely on checker to only archive segments if they are
+    // properly repacked, removing the need for a sorter by reftime below
+    // And since sorter works on segment granularity anyway, we might not need
+    // a sorter at all in that case
+
     std::shared_ptr<metadata::sort::Compare> compare;
     if (q.sorter)
         compare = q.sorter;
@@ -55,37 +60,16 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     metadata::sort::Stream sorter(*compare, dest);
     for (const auto& segmentinfo: segmentinfos)
     {
-        // TODO: delegate to segment reader
         auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
-        auto prepend_fname = segmentinfo.relpath.parent_path();
-        auto fullpath = sys::with_suffix(segment->abspath(), ".metadata");
-        if (!std::filesystem::exists(fullpath)) continue;
-        std::shared_ptr<arki::segment::data::Reader> reader;
-        if (q.with_data)
-            reader = dataset().segment_session->segment_reader(segment, lock);
-        // This generates filenames relative to the metadata
-        // We need to use m_path as the dirname, and prepend dirname(*i) to the filenames
-        Metadata::read_file(fullpath, [&](std::shared_ptr<Metadata> md) {
-            // Filter using the matcher in the query
-            if (!q.matcher(*md)) return true;
+        // TODO: delegate to a dataset::simple segment_session to create a
+        // segment reader which is EmptyReader (and nag::warning) if .metadata does not exist
+        if (!std::filesystem::exists(sys::with_suffix(segment->abspath(), ".metadata")))
+            continue;
 
-            // Tweak Blob sources replacing basedir and prepending a directory to the file name
-            if (const types::source::Blob* s = md->has_source_blob())
-            {
-                if (q.with_data)
-                    md->set_source(types::Source::createBlob(s->format, dataset().path, prepend_fname / s->filename, s->offset, s->size, reader));
-                else
-                    md->set_source(types::Source::createBlobUnlocked(s->format, dataset().path, prepend_fname / s->filename, s->offset, s->size));
-            }
-            return sorter.add(md);
-        });
-#if 0
-        auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
         auto reader = segment->reader(lock);
         reader->query_data(q, [&](std::shared_ptr<Metadata> md) {
             return sorter.add(md);
         });
-#endif
         if (!sorter.flush())
             return track.done(false);
     }

@@ -101,7 +101,7 @@ public:
 
         auto path_metadata = sys::with_suffix(segment->segment().abspath(), ".metadata");
         // TODO: replace with a method of Segment
-        time_t ts_data = segment->data().timestamp();
+        time_t ts_data = segment->data().timestamp().value();
         time_t ts_md = sys::timestamp(path_metadata, 0);
         time_t ts_sum = sys::timestamp(sys::with_suffix(segment->segment().abspath(), ".summary"), 0);
         time_t ts_idx = segment_info->mtime;
@@ -236,7 +236,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->data().timestamp();
+        time_t mtime = segment->data().timestamp().value();
         checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
         checker.manifest.flush();
 
@@ -282,7 +282,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->data().timestamp();
+        time_t mtime = segment->data().timestamp().value();
         checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
         checker.manifest.flush();
     }
@@ -316,7 +316,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->data().timestamp();
+        time_t mtime = segment->data().timestamp().value();
         checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
         checker.manifest.flush();
     }
@@ -353,7 +353,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Reindex with the new file information
-        time_t mtime = segment->data().timestamp();
+        time_t mtime = segment->data().timestamp().value();
         checker.manifest.set(segment->segment().relpath(), mtime, sum.get_reference_time());
         checker.manifest.flush();
 
@@ -365,7 +365,7 @@ public:
 
     void index(metadata::Collection&& mds) override
     {
-        time_t mtime = segment->data().timestamp();
+        time_t mtime = segment->data().timestamp().value();
 
         // Iterate the metadata, computing the summary and making the data
         // paths relative
@@ -413,7 +413,7 @@ public:
         sum.writeAtomically(path_summary);
 
         // Add to manifest
-        checker.manifest.set(segment->segment().relpath(), segment->data().timestamp(), sum.get_reference_time());
+        checker.manifest.set(segment->segment().relpath(), segment->data().timestamp().value(), sum.get_reference_time());
         checker.manifest.flush();
     }
 

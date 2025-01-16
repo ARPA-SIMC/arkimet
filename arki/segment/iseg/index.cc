@@ -314,6 +314,8 @@ void Index<LockType>::build_md(Query& q, Metadata& md, std::shared_ptr<arki::seg
     int notes_l = q.fetchBytes(2);
     md.set_notes_encoded(notes_p, notes_l);
 
+    // TODO: if using smallfiles there is no need to lock the source
+
     if (reader)
         md.set_source(Source::createBlob(
                 segment_session->format, segment_session->root, data_relpath,
@@ -325,8 +327,11 @@ void Index<LockType>::build_md(Query& q, Metadata& md, std::shared_ptr<arki::seg
 }
 
 template<typename LockType>
-bool Index<LockType>::query_data(const query::Data& q, metadata_dest_func dest)
+arki::metadata::Collection Index<LockType>::query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader)
 {
+    // Buffer the results in memory, to release the database lock as soon as possible
+    arki::metadata::Collection res;
+
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
 
     if (m_uniques) query += ", m.uniq";
@@ -336,52 +341,25 @@ bool Index<LockType>::query_data(const query::Data& q, metadata_dest_func dest)
     query += " FROM md AS m";
 
     try {
-        add_joins_and_constraints(q.matcher, query);
+        add_joins_and_constraints(matcher, query);
     } catch (NotFound&) {
         // If one of the subqueries did not find any match, we can directly
         // return true here, as we are not going to get any result
-        return true;
+        return res;
     }
 
     query += " ORDER BY m.reftime";
 
     nag::debug("Running query %s", query.c_str());
 
-    arki::metadata::Collection mdbuf;
-    std::shared_ptr<arki::segment::data::Reader> reader;
-    if (q.with_data)
-        reader = segment_session->segment_reader(segment_session->format, data_relpath, lock);
-
-    // Limited scope for mdq, so we finalize the query before starting to
-    // emit results
+    Query mdq("mdq", m_db);
+    mdq.compile(query);
+    while (mdq.step())
     {
-        Query mdq("mdq", m_db);
-        mdq.compile(query);
-
-        // TODO: see if it's worth sorting mdbuf by file and offset
-
-//fprintf(stderr, "PRE\n");
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
-        while (mdq.step())
-        {
-            // Rebuild the Metadata
-            std::unique_ptr<Metadata> md(new Metadata);
-            build_md(mdq, *md, reader);
-            // Buffer the results in memory, to release the database lock as soon as possible
-            mdbuf.acquire(std::move(md));
-        }
-//fprintf(stderr, "POST %zd\n", mdbuf.size());
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
+        auto md = std::make_unique<Metadata>();
+        build_md(mdq, *md, reader);
+        res.acquire(std::move(md));
     }
-
-    // Sort and output the rest
-    if (q.sorter) mdbuf.sort(*q.sorter);
-
-    // pass it to consumer
-    bool res = mdbuf.move_to(dest);
-
-//fprintf(stderr, "POSTQ %zd\n", mdbuf.size());
-//system(str::fmtf("ps u %d >&2", getpid()).c_str());
     return res;
 }
 

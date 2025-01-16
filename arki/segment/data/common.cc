@@ -9,11 +9,12 @@
 #include <sstream>
 
 using namespace std;
+using arki::metadata::Collection;
 
 namespace arki {
 namespace segment {
 
-AppendCreator::AppendCreator(const Segment& segment, metadata::Collection& mds)
+AppendCreator::AppendCreator(const Segment& segment, Collection& mds)
     : segment(segment), mds(mds)
 {
 }
@@ -22,7 +23,7 @@ AppendCreator::~AppendCreator()
 {
 }
 
-size_t AppendCreator::append(const metadata::Data& data)
+size_t AppendCreator::append(const arki::metadata::Data& data)
 {
     throw std::runtime_error("append of buffers not implemented for this segment");
 }
@@ -57,7 +58,7 @@ void AppendCreator::create()
 }
 
 
-AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const metadata::Collection& mds)
+AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const Collection& mds)
     : segment(segment), reporter(reporter), mds(mds)
 {
 }
@@ -180,7 +181,7 @@ State AppendCheckBackend::validate_data()
     if (mds.empty())
         return State(SEGMENT_OK);
 
-    validator = &scan::Validator::by_format(mds[0].source().format);
+    validator = &arki::scan::Validator::by_format(mds[0].source().format);
     size_t end = offset_end();
 
     for (const auto& md: mds)

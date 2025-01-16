@@ -51,7 +51,7 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
-// Add here only simple-specific tests that are not convered by tests in dataset-writer-test.cc
+// Add here only simple-specific tests that are not convered by tests in dataset-checker-test.cc
 
 // Test maintenance scan on missing summary
 add_method("scan_missing_summary", [](Fixture& f) {
@@ -160,7 +160,7 @@ add_method("scan_compressed", [](Fixture& f) {
     {
         metadata::Collection mdc;
         auto reader = f.makeSimpleReader();
-        mdc.add(*reader, Matcher());
+        wassert(mdc.add(*reader, Matcher()));
         wassert(actual(mdc.size()) == 2u);
     }
 

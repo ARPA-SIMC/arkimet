@@ -253,8 +253,12 @@ void CheckTest<Fixture>::register_tests_concat()
         std::filesystem::create_directories("testds" / f.test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("does not exist in directory segment"));
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        wassert(f.query_results({0, 2}));
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-07\\.\\w+: segment data is not available"));
+        nag_messages.clear();
     });
 
     this->add_method("check_hugefile", [&](Fixture& f) {
@@ -351,8 +355,12 @@ void CheckTest<TestFixture>::register_tests()
         f.remove_segment();
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("the segment has disappeared"));
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        wassert(f.query_results({0, 2}));
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-07\\.\\w+: segment data is not available"));
+        nag_messages.clear();
     });
 
     this->add_method("check_unknown_empty", R"(

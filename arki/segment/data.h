@@ -17,6 +17,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <cstdint>
 
 namespace arki::segment {
@@ -57,9 +58,11 @@ public:
     virtual bool single_file() const = 0;
 
     /**
-     * Get the last modification timestamp of the segment
+     * Get the last modification timestamp of the segment.
+     *
+     * Returns missing if the data segment does not exist.
      */
-    virtual time_t timestamp() const = 0;
+    virtual std::optional<time_t> timestamp() const = 0;
 
     /**
      * Instantiate a reader for this segment
@@ -207,7 +210,7 @@ public:
 
     virtual const Segment& segment() const = 0;
     virtual const Data& data() const = 0;
-    virtual segment::State check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick=true) = 0;
+    virtual segment::State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
     virtual size_t size() = 0;
 
@@ -233,25 +236,25 @@ public:
      * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
     // TODO: remove rootdir
-    virtual core::Pending repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
+    virtual core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to
      * point to the right locations inside the tarball
      */
-    virtual std::shared_ptr<Checker> tar(metadata::Collection& mds);
+    virtual std::shared_ptr<Checker> tar(arki::metadata::Collection& mds);
 
     /**
      * Replace this segment with a zip segment, updating the metadata in mds to
      * point to the right locations inside the tarball
      */
-    virtual std::shared_ptr<Checker> zip(metadata::Collection& mds);
+    virtual std::shared_ptr<Checker> zip(arki::metadata::Collection& mds);
 
     /**
      * Replace this segment with a compressed segment, updating the metadata in
      * mds to point to the right locations if needed
      */
-    virtual std::shared_ptr<Checker> compress(metadata::Collection& mds, unsigned groupsize);
+    virtual std::shared_ptr<Checker> compress(arki::metadata::Collection& mds, unsigned groupsize);
 
     /**
      * Move this segment to a new location.
@@ -271,7 +274,7 @@ public:
      * Truncate the data so that the data at position `data_idx` in `mds` and
      * all following ones disappear
      */
-    virtual void test_truncate_by_data(const metadata::Collection& mds, unsigned data_idx);
+    virtual void test_truncate_by_data(const arki::metadata::Collection& mds, unsigned data_idx);
 
     /**
      * Move all the data in the segment starting from the one in position
@@ -280,7 +283,7 @@ public:
      * `mds` represents the state of the segment before the move, and is
      * updated to reflect the new state of the segment.
      */
-    virtual void test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
+    virtual void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
 
     /**
      * Move all the data in the segment starting from the one in position
@@ -289,13 +292,13 @@ public:
      * `mds` represents the state of the segment before the move, and is
      * updated to reflect the new state of the segment.
      */
-    virtual void test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
+    virtual void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
 
     /**
      * Corrupt the data at position `data_idx`, by replacing its first byte
      * with the value 0.
      */
-    virtual void test_corrupt(const metadata::Collection& mds, unsigned data_idx) = 0;
+    virtual void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) = 0;
 };
 
 }

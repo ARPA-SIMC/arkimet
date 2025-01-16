@@ -28,6 +28,7 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::core;
 using namespace arki::utils;
+using arki::metadata::Collection;
 
 namespace arki::segment::data::dir {
 
@@ -39,7 +40,7 @@ struct Creator : public AppendCreator
     size_t current_pos = 0;
     bool hardlink = false;
 
-    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(segment, mds), dest_abspath(dest_abspath)
     {
     }
@@ -96,7 +97,7 @@ struct CheckBackend : public AppendCheckBackend
     std::unique_ptr<struct stat> st;
     dir::Scanner scanner;
 
-    CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const Collection& mds)
         : AppendCheckBackend(reporter, segment, mds), scanner(segment)
     {
     }
@@ -187,7 +188,7 @@ struct CheckBackend : public AppendCheckBackend
         // Check files on disk that were not accounted for
         for (const auto& di: scanner.on_disk)
         {
-            auto scanner = scan::Scanner::get_scanner(segment.format());
+            auto scanner = arki::scan::Scanner::get_scanner(segment.format());
             auto idx = di.first;
             if (accurate)
             {
@@ -221,9 +222,11 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Data::type() const { return "dir"; }
 bool Data::single_file() const { return false; }
-time_t Data::timestamp() const
+std::optional<time_t> Data::timestamp() const
 {
-    return sys::timestamp(segment().abspath() / ".sequence");
+    if (auto st = sys::stat(segment().abspath() / ".sequence"))
+        return std::optional<time_t>(st->st_mtime);
+    return std::optional<time_t>();
 }
 std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
@@ -250,7 +253,7 @@ std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
     else
         return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(segment, mds, segment.abspath());
     creator.create();
@@ -421,7 +424,7 @@ void BaseWriter<Data>::rollback_nothrow() noexcept
 
 void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
-    const metadata::Data& data = md.get_data();
+    const auto& data = md.get_data();
     data.write(fd);
     if (!config.eatmydata)
         if (fdatasync(fd) < 0)
@@ -523,7 +526,7 @@ bool BaseChecker<Data>::rescan_data(std::function<void(const std::string&)> repo
 }
 
 template<typename Data>
-State BaseChecker<Data>::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+State BaseChecker<Data>::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
 {
     CheckBackend checker(this->segment(), reporter, mds);
     checker.accurate = !quick;
@@ -531,7 +534,7 @@ State BaseChecker<Data>::check(std::function<void(const std::string&)> reporter,
 }
 
 template<typename Data>
-void BaseChecker<Data>::validate(Metadata& md, const scan::Validator& v)
+void BaseChecker<Data>::validate(Metadata& md, const arki::scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob()) {
         if (blob->filename != this->segment().relpath())
@@ -580,7 +583,7 @@ size_t BaseChecker<Data>::remove()
 }
 
 template<typename Data>
-core::Pending BaseChecker<Data>::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending BaseChecker<Data>::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {
@@ -661,7 +664,7 @@ core::Pending BaseChecker<Data>::repack(const std::filesystem::path& rootdir, me
 
     Creator creator(this->segment(), mds, tmpabspath);
     creator.hardlink = true;
-    creator.validator = &scan::Validator::by_format(this->segment().format());
+    creator.validator = &arki::scan::Validator::by_format(this->segment().format());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -684,7 +687,7 @@ void BaseChecker<Data>::test_truncate(size_t offset)
 }
 
 template<typename Data>
-void BaseChecker<Data>::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+void BaseChecker<Data>::test_make_hole(Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     SequenceFile seqfile(this->segment().abspath());
     utils::files::PreserveFileTimes pf(seqfile.path());
@@ -717,7 +720,7 @@ void BaseChecker<Data>::test_make_hole(metadata::Collection& mds, unsigned hole_
 }
 
 template<typename Data>
-void BaseChecker<Data>::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+void BaseChecker<Data>::test_make_overlap(Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     for (unsigned i = data_idx; i < mds.size(); ++i)
     {
@@ -731,7 +734,7 @@ void BaseChecker<Data>::test_make_overlap(metadata::Collection& mds, unsigned ov
 }
 
 template<typename Data>
-void BaseChecker<Data>::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+void BaseChecker<Data>::test_corrupt(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     File fd(s.absolutePathname() / SequenceFile::data_fname(s.offset, s.format), O_WRONLY);
@@ -739,7 +742,7 @@ void BaseChecker<Data>::test_corrupt(const metadata::Collection& mds, unsigned d
 }
 
 
-State HoleChecker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+State HoleChecker::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
     return BaseChecker::check(reporter, mds, true);
@@ -774,7 +777,7 @@ void Scanner::list_files()
 bool Scanner::scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest)
 {
     // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(segment.format());
+    auto scanner = arki::scan::Scanner::get_scanner(segment.format());
     for (const auto& fi : on_disk)
     {
         auto md = scanner->scan_singleton(segment.abspath() / fi.second.fname);
@@ -789,7 +792,7 @@ bool Scanner::scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest
 bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared_ptr<data::Reader> reader, metadata_dest_func dest)
 {
     // Scan them one by one
-    auto scanner = scan::Scanner::get_scanner(segment.format());
+    auto scanner = arki::scan::Scanner::get_scanner(segment.format());
     for (const auto& fi : on_disk)
     {
         std::shared_ptr<Metadata> md;

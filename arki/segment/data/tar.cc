@@ -24,6 +24,7 @@ using namespace std;
 using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
+using arki::metadata::Collection;
 
 namespace arki::segment::data::tar {
 
@@ -36,12 +37,12 @@ struct Creator : public AppendCreator
     size_t idx = 0;
     char fname[100];
 
-    Creator(const Segment& segment, metadata::Collection& mds, const std::filesystem::path& dest_abspath)
+    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& dest_abspath)
         : AppendCreator(segment, mds), out(dest_abspath), tarout(out)
     {
     }
 
-    size_t append(const metadata::Data& data) override
+    size_t append(const arki::metadata::Data& data) override
     {
         // Append it to the new file
         snprintf(fname, 99, "%06zu.%s", idx, format_name(segment.format()).c_str());
@@ -64,7 +65,7 @@ struct CheckBackend : public AppendCheckBackend
     core::File data;
     struct stat st;
 
-    CheckBackend(const std::filesystem::path& tarabspath, const Segment& segment, std::function<void(const std::string&)> reporter, const metadata::Collection& mds)
+    CheckBackend(const std::filesystem::path& tarabspath, const Segment& segment, std::function<void(const std::string&)> reporter, const Collection& mds)
         : AppendCheckBackend(reporter, segment, mds), data(tarabspath)
     {
     }
@@ -102,7 +103,13 @@ struct CheckBackend : public AppendCheckBackend
 
 const char* Data::type() const { return "tar"; }
 bool Data::single_file() const { return true; }
-time_t Data::timestamp() const { return sys::timestamp(sys::with_suffix(segment().abspath(), ".tar")); }
+std::optional<time_t> Data::timestamp() const
+{
+    if (auto st = sys::stat(sys::with_suffix(segment().abspath(), ".tar")))
+        return std::optional<time_t>(st->st_mtime);
+    return std::optional<time_t>();
+}
+
 std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     return std::make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
@@ -120,7 +127,7 @@ bool Data::can_store(DataFormat format)
 {
     return true;
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, metadata::Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".tar"));
     creator.create();
@@ -212,14 +219,14 @@ bool Checker::rescan_data(std::function<void(const std::string&)> reporter, std:
     return reader->scan_data(dest);
 }
 
-State Checker::check(std::function<void(const std::string&)> reporter, const metadata::Collection& mds, bool quick)
+State Checker::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
 {
     CheckBackend checker(tarabspath, segment(), reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-void Checker::validate(Metadata& md, const scan::Validator& v)
+void Checker::validate(Metadata& md, const arki::scan::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
@@ -242,14 +249,14 @@ size_t Checker::remove()
     return size;
 }
 
-core::Pending Checker::repack(const std::filesystem::path& rootdir, metadata::Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
     core::Pending p(new files::RenameTransaction(tmpabspath, tarabspath));
 
     Creator creator(segment(), mds, tmpabspath);
-    creator.validator = &scan::Validator::by_filename(segment().abspath());
+    creator.validator = &arki::scan::Validator::by_filename(segment().abspath());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -272,17 +279,17 @@ void Checker::test_truncate(size_t offset)
     out.close();
 }
 
-void Checker::test_make_hole(metadata::Collection& mds, unsigned hole_size, unsigned data_idx)
+void Checker::test_make_hole(Collection& mds, unsigned hole_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_hole not implemented");
 }
 
-void Checker::test_make_overlap(metadata::Collection& mds, unsigned overlap_size, unsigned data_idx)
+void Checker::test_make_overlap(Collection& mds, unsigned overlap_size, unsigned data_idx)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
 
-void Checker::test_corrupt(const metadata::Collection& mds, unsigned data_idx)
+void Checker::test_corrupt(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
     utils::files::PreserveFileTimes pt(segment().abspath());

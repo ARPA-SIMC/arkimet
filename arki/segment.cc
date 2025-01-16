@@ -1,10 +1,12 @@
 #include "segment.h"
+#include "segment/metadata.h"
 #include "segment/data/missing.h"
 #include "segment/data/fd.h"
 #include "segment/data/dir.h"
 #include "segment/data/tar.h"
 #include "segment/data/zip.h"
 #include "segment/data/gz.h"
+#include "arki/nag.h"
 #include "arki/metadata.h"
 #include "arki/summary.h"
 #include "arki/query.h"
@@ -30,10 +32,30 @@ Segment::~Segment()
 
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
-    // TODO: detect index (iseg or .metadata file) (delegate to session, which may know about iseg config)
-    // or: index is actually the segment::Reader implementation
-    // auto data_reader = detect_data_reader(lock);
-    throw std::runtime_error("Segment::reader not implemented. TODO: delegate to scan/metadata segment types");
+    auto data = detect_data();
+
+    // stat the metadata file, if it exists
+    auto md_abspath = sys::with_suffix(abspath(), ".metadata");
+    auto st_md = sys::stat(md_abspath);
+    // If it exists and it looks new enough, use it
+    if (st_md.get())
+    {
+        auto ts = data->timestamp();
+        if (!ts)
+        {
+            nag::warning("%s: segment data is not available", abspath().c_str());
+            return std::make_shared<segment::EmptyReader>(shared_from_this(), lock);
+        }
+
+        if (st_md->st_mtime >= ts.value())
+            return std::make_shared<segment::metadata::Reader>(shared_from_this(), lock);
+        else
+            nag::warning("%s: outdated .metadata file: falling back to data scan", abspath().c_str());
+    }
+
+    // Else scan the file as usual
+    //return std::make_shared<segment::scan::Reader>(reader);
+    throw std::runtime_error("scan::Reader not yet implemented");
 }
 
 std::shared_ptr<segment::Data> Segment::detect_data() const
@@ -422,6 +444,11 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     query_data(query::Data(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 #endif
+
+bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
+{
+    return true;
+}
 
 }
 

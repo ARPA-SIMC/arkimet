@@ -9,6 +9,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/matcher/parser.h"
 #include "arki/summary.h"
+#include "arki/nag.h"
 #include "arki/scan.h"
 #include "arki/scan/validator.h"
 #include "arki/types/source.h"
@@ -331,27 +332,20 @@ this->add_method("read_missing_segment", [](Fixture& f) {
     f.segment_session()->segment_checker(f.td.format, f.import_results[0]->sourceBlob().filename)->remove();
 
     unsigned count_ok = 0;
-    unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
-        try {
+    {
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
             md->get_data().read();
             ++count_ok;
-        } catch (std::runtime_error& e) {
-            wassert(actual(e.what()).contains("the segment has disappeared"));
-            ++count_err;
-        }
-        return true;
-    });
-
-    if (f.smallfiles())
-    {
-        wassert(actual(count_ok) == 3u);
-        wassert(actual(count_err) == 0u);
-    } else {
-        wassert(actual(count_ok) == 2u);
-        wassert(actual(count_err) == 1u);
+            return true;
+        });
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-08\\.\\w+: segment data is not available"));
+        nag_messages.collected.clear();
     }
+    wassert(actual(count_ok) == 2u);
 });
 
 this->add_method("issue116", [](Fixture& f) {
