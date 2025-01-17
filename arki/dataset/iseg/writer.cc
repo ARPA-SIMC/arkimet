@@ -29,11 +29,11 @@ class AppendSegment
 public:
     std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<core::AppendLock> append_lock;
-    std::shared_ptr<segment::data::Writer> segment;
+    std::shared_ptr<segment::data::Writer> data_writer;
     std::shared_ptr<AIndex> idx;
 
-    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<core::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> segment)
-        : dataset(dataset), append_lock(append_lock), segment(segment), idx(dataset->iseg_segment_session->append_index(segment, append_lock))
+    AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<core::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> data_writer)
+        : dataset(dataset), append_lock(append_lock), data_writer(data_writer), idx(dataset->iseg_segment_session->append_index(data_writer, append_lock))
     {
     }
 
@@ -42,15 +42,15 @@ public:
         Pending p_idx = idx->begin_transaction();
 
         try {
-            if (std::unique_ptr<types::source::Blob> old = idx->index(md, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx->index(md, data_writer->next_offset()))
             {
-                md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath().native() + ":" + std::to_string(old->offset));
+                md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
             // Invalidate the summary cache for this month
             scache.invalidate(md);
-            segment->append(md);
-            segment->commit();
+            data_writer->append(md);
+            data_writer->commit();
             p_idx.commit();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -65,11 +65,11 @@ public:
         Pending p_idx = idx->begin_transaction();
 
         try {
-            idx->replace(md, segment->next_offset());
+            idx->replace(md, data_writer->next_offset());
             // Invalidate the summary cache for this month
             scache.invalidate(md);
-            segment->append(md);
-            segment->commit();
+            data_writer->append(md);
+            data_writer->commit();
             p_idx.commit();
             return ACQ_OK;
         } catch (std::exception& e) {
@@ -85,7 +85,7 @@ public:
 
         try {
             // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old = idx->index(md, segment->next_offset()))
+            if (std::unique_ptr<types::source::Blob> old = idx->index(md, data_writer->next_offset()))
             {
                 // Duplicate detected
 
@@ -109,16 +109,16 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Replace, reusing the pending datafile transaction from earlier
-                idx->replace(md, segment->next_offset());
-                segment->append(md);
-                segment->commit();
+                idx->replace(md, data_writer->next_offset());
+                data_writer->append(md);
+                data_writer->commit();
                 p_idx.commit();
                 return ACQ_OK;
             } else {
-                segment->append(md);
+                data_writer->append(md);
                 // Invalidate the summary cache for this month
                 scache.invalidate(md);
-                segment->commit();
+                data_writer->commit();
                 p_idx.commit();
                 return ACQ_OK;
             }
@@ -138,16 +138,16 @@ public:
             {
                 e->dataset_name.clear();
 
-                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, segment->next_offset()))
+                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, data_writer->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath().native() + ":" + std::to_string(old->offset));
+                    e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset));
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
 
                 // Invalidate the summary cache for this month
                 scache.invalidate(e->md);
-                segment->append(e->md);
+                data_writer->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
             }
@@ -157,7 +157,7 @@ public:
             return;
         }
 
-        segment->commit();
+        data_writer->commit();
         p_idx.commit();
     }
 
@@ -169,10 +169,10 @@ public:
             for (auto& e: batch)
             {
                 e->dataset_name.clear();
-                idx->replace(e->md, segment->next_offset());
+                idx->replace(e->md, data_writer->next_offset());
                 // Invalidate the summary cache for this month
                 scache.invalidate(e->md);
-                segment->append(e->md);
+                data_writer->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
             }
@@ -182,7 +182,7 @@ public:
             return;
         }
 
-        segment->commit();
+        data_writer->commit();
         p_idx.commit();
     }
 
@@ -196,7 +196,7 @@ public:
                 e->dataset_name.clear();
 
                 // Try to acquire without replacing
-                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, segment->next_offset()))
+                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, data_writer->next_offset()))
                 {
                     // Duplicate detected
 
@@ -204,7 +204,7 @@ public:
                     int new_usn;
                     if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
@@ -223,21 +223,21 @@ public:
                     // If the new element has no higher Update Sequence Number, report a duplicate
                     if (old_usn > new_usn)
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->segment().relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
 
                     // Replace, reusing the pending datafile transaction from earlier
-                    idx->replace(e->md, segment->next_offset());
-                    segment->append(e->md);
+                    idx->replace(e->md, data_writer->next_offset());
+                    data_writer->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
                     continue;
                 } else {
                     // Invalidate the summary cache for this month
                     scache.invalidate(e->md);
-                    segment->append(e->md);
+                    data_writer->append(e->md);
                     e->result = ACQ_OK;
                     e->dataset_name = dataset->name();
                 }
@@ -248,7 +248,7 @@ public:
             return;
         }
 
-        segment->commit();
+        data_writer->commit();
         p_idx.commit();
     }
 };
@@ -284,8 +284,8 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<core::AppendLock> append_lock(dataset().append_lock_segment(relpath));
-    auto segment = dataset().segment_session->segment_data_writer(writer_config, dataset().iseg_segment_session->format, relpath);
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, segment));
+    auto data_writer = dataset().segment_session->segment_data_writer(writer_config, dataset().iseg_segment_session->format, relpath);
+    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, data_writer));
 }
 
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
