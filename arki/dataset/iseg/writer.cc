@@ -29,11 +29,12 @@ class AppendSegment
 public:
     std::shared_ptr<iseg::Dataset> dataset;
     std::shared_ptr<core::AppendLock> append_lock;
+    std::shared_ptr<const Segment> segment;
     std::shared_ptr<segment::data::Writer> data_writer;
     std::shared_ptr<AIndex> idx;
 
     AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<core::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> data_writer)
-        : dataset(dataset), append_lock(append_lock), data_writer(data_writer), idx(dataset->iseg_segment_session->append_index(data_writer, append_lock))
+        : dataset(dataset), append_lock(append_lock), segment(data_writer->segment().shared_from_this()), data_writer(data_writer), idx(dataset->iseg_segment_session->append_index(data_writer, append_lock))
     {
     }
 
@@ -44,7 +45,7 @@ public:
         try {
             if (std::unique_ptr<types::source::Blob> old = idx->index(md, data_writer->next_offset()))
             {
-                md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset));
+                md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
             // Invalidate the summary cache for this month
@@ -95,7 +96,7 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = dataset->segment_session->segment_data_reader(dataset->iseg_segment_session->format, old->filename, append_lock);
+                auto reader = segment->detect_data_reader(append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -140,7 +141,7 @@ public:
 
                 if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, data_writer->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset));
+                    e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset));
                     e->result = ACQ_ERROR_DUPLICATE;
                     continue;
                 }
@@ -204,13 +205,13 @@ public:
                     int new_usn;
                     if (!scan::Scanner::update_sequence_number(e->md, new_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = dataset->segment_session->segment_data_reader(dataset->iseg_segment_session->format, old->filename, append_lock);
+                    auto reader = segment->detect_data_reader(append_lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -223,7 +224,7 @@ public:
                     // If the new element has no higher Update Sequence Number, report a duplicate
                     if (old_usn > new_usn)
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + data_writer->segment().relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
                         e->result = ACQ_ERROR_DUPLICATE;
                         continue;
                     }
@@ -284,7 +285,8 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<core::AppendLock> append_lock(dataset().append_lock_segment(relpath));
-    auto data_writer = dataset().segment_session->segment_data_writer(writer_config, dataset().iseg_segment_session->format, relpath);
+    auto segment = dataset().segment_session->segment_from_relpath_and_format(relpath, dataset().iseg_segment_session->format);
+    auto data_writer = dataset().segment_session->segment_data_writer(segment, writer_config);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, data_writer));
 }
 

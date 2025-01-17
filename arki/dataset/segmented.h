@@ -61,8 +61,6 @@ public:
     virtual bool relpath_timespan(const std::filesystem::path& path, core::Interval& interval) const;
 
     const Step& step() const { return *m_step; }
-
-    virtual std::shared_ptr<segment::data::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock);
 };
 
 /**

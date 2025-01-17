@@ -149,9 +149,13 @@ std::shared_ptr<segment::data::Writer> Session::segment_data_writer(const segmen
 {
     // Ensure that the directory containing the segment exists
     auto seg = segment_from_relpath_and_format(relpath, format);
-    std::filesystem::create_directories(seg->abspath().parent_path());
+    return segment_data_writer(seg, config);
+}
 
-    auto data = seg->detect_data();
+std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::data::WriterConfig& config) const
+{
+    std::filesystem::create_directories(segment->abspath().parent_path());
+    auto data = segment->detect_data();
     return data->writer(config, false);
 }
 

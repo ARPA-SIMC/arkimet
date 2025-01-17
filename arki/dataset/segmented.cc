@@ -93,11 +93,6 @@ bool Dataset::relpath_timespan(const std::filesystem::path& path, core::Interval
     return step().path_timespan(path, interval);
 }
 
-std::shared_ptr<segment::data::Reader> Dataset::segment_reader(const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock)
-{
-    return segment_session->segment_data_reader(scan::Scanner::format_from_filename(relpath), relpath, lock);
-}
-
 
 Reader::~Reader()
 {
