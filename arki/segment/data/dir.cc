@@ -583,7 +583,7 @@ size_t BaseChecker<Data>::remove()
 }
 
 template<typename Data>
-core::Pending BaseChecker<Data>::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
+core::Pending BaseChecker<Data>::repack(Collection& mds, const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {

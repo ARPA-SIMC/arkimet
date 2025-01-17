@@ -72,7 +72,7 @@ public:
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
     size_t remove() override;
-    core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
     void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;

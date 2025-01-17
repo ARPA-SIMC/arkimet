@@ -81,10 +81,10 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     auto& index = checker().index();
     auto pending_index = index.begin_transaction();
 
-    // Make a copy of the file with the right data in it, sorted by
-    // reftime, and update the offsets in the index
+    // Make a copy of the file with the data in it ordered as mds is ordered,
+    // and update the offsets in the index
     auto data_checker = data().checker(false);
-    auto pending_repack = data_checker->repack(segment().root(), mds, repack_config);
+    auto pending_repack = data_checker->repack(mds, repack_config);
 
     // Reindex mds
     index.reset();

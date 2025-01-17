@@ -362,7 +362,7 @@ size_t Checker::remove()
     return size;
 }
 
-core::Pending Checker::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 

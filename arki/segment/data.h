@@ -221,11 +221,8 @@ public:
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
-     *
-     * `rootdir` is the directory to use as root for the Blob sources in `mds`.
      */
-    // TODO: remove rootdir
-    virtual core::Pending repack(const std::filesystem::path& rootdir, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
+    virtual core::Pending repack(arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to

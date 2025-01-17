@@ -318,7 +318,7 @@ size_t Checker<Data, File>::remove()
 }
 
 template<typename Data, typename File>
-core::Pending Checker<Data, File>::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Data, File>::repack(Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(this->segment().abspath(), ".repack");
 
@@ -520,7 +520,7 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& 
 }
 
 
-core::Pending HoleChecker::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
+core::Pending HoleChecker::repack(Collection& mds, const RepackConfig& cfg)
 {
     filesystem::path tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 

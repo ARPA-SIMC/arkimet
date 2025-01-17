@@ -218,7 +218,7 @@ size_t Checker<Data>::remove()
 }
 
 template<typename Data>
-core::Pending Checker<Data>::repack(const std::filesystem::path& rootdir, Collection& mds, const RepackConfig& cfg)
+core::Pending Checker<Data>::repack(Collection& mds, const RepackConfig& cfg)
 {
     auto tmpabspath = sys::with_suffix(gzabspath, ".repack");
     files::FinalizeTempfilesTransaction* finalize;

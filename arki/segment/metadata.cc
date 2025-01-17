@@ -164,8 +164,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
 
     // Write out the data with the new order
     auto data_checker = data().checker(false);
-    // TODO: remove the root argument, currently unused
-    auto p_repack = data_checker->repack(segment().root(), mds, repack_config);
+    auto p_repack = data_checker->repack(mds, repack_config);
 
     // Remove existing cached metadata, since we scramble their order
     std::filesystem::remove(path_metadata);
