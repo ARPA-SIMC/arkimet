@@ -22,4 +22,3 @@ void Tests::register_tests() {
 }
 
 }
-

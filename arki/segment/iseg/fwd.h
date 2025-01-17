@@ -7,6 +7,10 @@ namespace arki::segment::iseg {
 class RIndex;
 class AIndex;
 class CIndex;
+
+class Reader;
+class Checker;
+class Fixer;
 }
 
 #endif

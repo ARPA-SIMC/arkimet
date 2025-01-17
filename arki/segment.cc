@@ -237,6 +237,16 @@ Checker::~Checker()
 }
 
 
+Fixer::Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock)
+    : lock(lock), m_checker(checker)
+{
+}
+
+
+Fixer::~Fixer()
+{
+}
+
 }
 
 }

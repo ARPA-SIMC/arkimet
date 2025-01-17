@@ -12,6 +12,7 @@ namespace segment {
 class Session;
 class Reader;
 class Checker;
+class Fixer;
 class Data;
 
 namespace data {

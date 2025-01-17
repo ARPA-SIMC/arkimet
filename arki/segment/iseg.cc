@@ -70,4 +70,9 @@ arki::metadata::Collection Checker::scan()
     return res;
 }
 
+std::shared_ptr<segment::Fixer> Checker::fixer()
+{
+    return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
+}
+
 }

@@ -39,6 +39,14 @@ public:
     using segment::Checker::Checker;
 
     arki::metadata::Collection scan() override;
+
+    std::shared_ptr<segment::Fixer> fixer() override;
+};
+
+class Fixer : public segment::Fixer
+{
+public:
+    using segment::Fixer::Fixer;
 };
 
 }

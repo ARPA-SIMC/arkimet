@@ -57,7 +57,7 @@ public:
 
 namespace segment {
 
-class Reader
+class Reader : public std::enable_shared_from_this<Reader>
 {
 protected:
     std::shared_ptr<const Segment> m_segment;
@@ -105,7 +105,7 @@ public:
 #endif
 };
 
-class Checker
+class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
     std::shared_ptr<core::CheckLock> lock;
@@ -124,6 +124,26 @@ public:
      * Return the metadata for the contents of the whole segment
      */
     virtual arki::metadata::Collection scan() = 0;
+
+    /**
+     * Lock for writing and return a Fixer for this segment
+     */
+    virtual std::shared_ptr<Fixer> fixer() = 0;
+};
+
+class Fixer : public std::enable_shared_from_this<Fixer>
+{
+protected:
+    std::shared_ptr<core::CheckWriteLock> lock;
+    std::shared_ptr<Checker> m_checker;
+
+public:
+    Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock);
+    Fixer(const Fixer&) = delete;
+    Fixer(Fixer&&) = delete;
+    Fixer& operator=(const Fixer&) = delete;
+    Fixer& operator=(Fixer&&) = delete;
+    virtual ~Fixer();
 };
 
 /**
