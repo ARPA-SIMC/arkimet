@@ -194,6 +194,14 @@ segment::Fixer::ConvertResult CheckerSegment::zip()
     return res;
 }
 
+segment::Fixer::ConvertResult CheckerSegment::compress(unsigned groupsize)
+{
+    auto fixer = segment_checker->fixer();
+    auto res = fixer->compress(groupsize);
+    segment_data_checker = fixer->data().checker(false);
+    return res;
+}
+
 size_t CheckerSegment::remove(bool with_data)
 {
     auto fixer = segment_checker->fixer();
@@ -351,7 +359,8 @@ void Checker::compress(CheckerConfig& opts, unsigned groupsize)
             opts.reporter->segment_compress(name(), segment.path_relative(), "should be compressed");
         else
         {
-            size_t freed = segment.compress(groupsize);
+            auto res = segment.compress(groupsize);
+            auto freed = res.size_pre > res.size_post ? res.size_pre - res.size_post : 0;
             opts.reporter->segment_compress(name(), segment.path_relative(), "compressed (" + std::to_string(freed) + " freed)");
         }
     });

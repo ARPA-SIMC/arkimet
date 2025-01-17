@@ -152,53 +152,6 @@ public:
         return res;
     }
 
-    size_t compress(unsigned groupsize) override
-    {
-        if (std::filesystem::exists(sys::with_suffix(segment_data_checker->segment().abspath(), ".gz")) ||
-                std::filesystem::exists(sys::with_suffix(segment_data_checker->segment().abspath(), ".gz.idx")))
-            return 0;
-
-        auto write_lock = lock->write_lock();
-        Pending p = idx().begin_transaction();
-
-        // Rescan file
-        metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
-
-        // Create the .gz segment
-        size_t old_size = segment_data_checker->size();
-        segment_data_checker = segment_data_checker->compress(mds, groupsize);
-        size_t new_size = segment_data_checker->size();
-
-        // Reindex the new metadata
-        idx().reset();
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-        {
-            const source::Blob& source = (*i)->sourceBlob();
-            if (idx().index(**i, source.offset))
-                throw std::runtime_error("duplicate detected while compressing segment");
-        }
-
-        // Remove the .metadata file if present, because we are shuffling the
-        // data file and it will not be valid anymore
-        auto mdpathname = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        if (std::filesystem::exists(mdpathname))
-            if (unlink(mdpathname.c_str()) < 0)
-            {
-                stringstream ss;
-                ss << "cannot remove obsolete metadata file " << mdpathname;
-                throw std::system_error(errno, std::system_category(), ss.str());
-            }
-
-        // Commit the changes in the database
-        p.commit();
-
-        if (old_size > new_size)
-            return old_size - new_size;
-        else
-            return 0;
-    }
-
     void remove_data(const std::vector<uint64_t>& offsets) override
     {
         if (!segment_data_checker->exists_on_disk())

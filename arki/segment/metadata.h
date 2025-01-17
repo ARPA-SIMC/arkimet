@@ -52,6 +52,7 @@ public:
     size_t remove(bool with_data) override;
     ConvertResult tar() override;
     ConvertResult zip() override;
+    ConvertResult compress(unsigned groupsize) override;
 };
 
 }

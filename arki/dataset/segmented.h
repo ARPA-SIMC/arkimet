@@ -140,7 +140,7 @@ public:
      * Returns the size difference between the original size and the compressed
      * size
      */
-    virtual size_t compress(unsigned groupsize) = 0;
+    virtual segment::Fixer::ConvertResult compress(unsigned groupsize);
 
     virtual std::filesystem::path path_relative() const = 0;
     virtual const segmented::Dataset& dataset() const = 0;

@@ -270,7 +270,7 @@ Fixer::ConvertResult Fixer::zip()
         if (!ts)
         {
             std::stringstream buf;
-            buf << segment().abspath() << ": tar segment already exists but cannot be accessed";
+            buf << segment().abspath() << ": zip segment already exists but cannot be accessed";
             throw std::runtime_error(buf.str());
         }
         res.segment_mtime = ts.value();
@@ -302,7 +302,60 @@ Fixer::ConvertResult Fixer::zip()
     if (!ts)
     {
         std::stringstream buf;
-        buf << segment().abspath() << ": cannot access tar segment after creating it";
+        buf << segment().abspath() << ": cannot access zip segment after creating it";
+        throw std::runtime_error(buf.str());
+    }
+    res.segment_mtime = ts.value();
+
+    // The summary is unchanged: touch it to confirm it as still valid
+    sys::touch(path_summary, res.segment_mtime);
+
+    return res;
+}
+
+Fixer::ConvertResult Fixer::compress(unsigned groupsize)
+{
+    ConvertResult res;
+    if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".gz"))
+                or std::filesystem::exists(sys::with_suffix(segment().abspath(), ".gz.idx")))
+    {
+        auto ts = data().timestamp();
+        if (!ts)
+        {
+            std::stringstream buf;
+            buf << segment().abspath() << ": gz segment already exists but cannot be accessed";
+            throw std::runtime_error(buf.str());
+        }
+        res.segment_mtime = ts.value();
+        return res;
+    }
+
+    auto path_metadata = segment().abspath_metadata();
+    auto path_summary = segment().abspath_summary();
+
+    auto data_checker = data().checker(false);
+    res.size_pre = data_checker->size();
+
+    // Rescan file and sort for repacking
+    auto mds = checker().scan();
+    mds.sort();
+
+    std::filesystem::remove(path_metadata);
+
+    // Create the .zip segment
+    auto new_data_checker = data_checker->compress(mds, groupsize);
+    res.size_post = new_data_checker->size();
+
+    // Write out the new metadata
+    mds.prepare_for_segment_metadata();
+    mds.writeAtomically(path_metadata);
+
+    checker().update_data();
+    auto ts = data().timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << segment().abspath() << ": cannot access gz segment after creating it";
         throw std::runtime_error(buf.str());
     }
     res.segment_mtime = ts.value();

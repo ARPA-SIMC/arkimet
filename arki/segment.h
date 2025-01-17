@@ -205,6 +205,15 @@ public:
     virtual ConvertResult zip() = 0;
 
     /**
+     * Compress the segment
+     *
+     * @param groupsize the number of data elements to compress together:
+     *                  higher for more compression, lower for more efficent
+     *                  seeking
+     */
+    virtual ConvertResult compress(unsigned groupsize) = 0;
+
+    /**
      * Remove the segment.
      *
      * @param with_data: if false, only metadata is removed, and data is preserved.
