@@ -58,6 +58,7 @@ add_method("read_all", [&] {
     wassert(actual(all[0]).is_similar(td.mds[0]));
     wassert(actual(all[1]).is_similar(td.mds[1]));
     wassert(actual(all[2]).is_similar(td.mds[2]));
+    wassert(actual(all[0].sourceBlob().filename) == "test/test." + format_name(td.format));
 });
 
 add_method("query_data_unlocked", [&] {

@@ -206,7 +206,7 @@ public:
         auto p_repack = segment_data_checker->repack(dataset_checker.dataset().path, mds, repack_config);
 
         // Strip paths from mds sources
-        mds.strip_source_paths();
+        mds.prepare_for_segment_metadata();
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);
@@ -358,7 +358,7 @@ public:
 
         // Iterate the metadata, computing the summary and making the data
         // paths relative
-        mds.strip_source_paths();
+        mds.prepare_for_segment_metadata();
         Summary sum;
         mds.add_to_summary(sum);
 

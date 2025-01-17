@@ -127,6 +127,12 @@ std::unique_ptr<Blob> Blob::makeAbsolute() const
     return res;
 }
 
+std::unique_ptr<Blob> Blob::for_segment_metadata() const
+{
+    // TODO: try changing this to use the empty string for the pathname
+    return fileOnly();
+}
+
 std::unique_ptr<Blob> Blob::makeRelativeTo(const std::filesystem::path& path) const
 {
     auto pathname = absolutePathname();

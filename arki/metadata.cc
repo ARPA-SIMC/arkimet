@@ -973,10 +973,16 @@ void Metadata::makeInline()
 
 void Metadata::make_absolute()
 {
-    const source::Blob* blob = has_source_blob();
-    if (!blob)
-        return;
-    set_source(blob->makeAbsolute());
+    if (const source::Blob* blob = has_source_blob())
+        set_source(blob->makeAbsolute());
+}
+
+void Metadata::prepare_for_segment_metadata()
+{
+    if (const source::Blob* blob = has_source_blob())
+        set_source(blob->for_segment_metadata());
+    else
+        throw std::runtime_error("metadata intended for segment metadata does not have a blob source");
 }
 
 size_t Metadata::data_size() const

@@ -44,8 +44,8 @@ public:
             return;
 
         // Read the metadata
-        auto reader = segment->data().reader(lock);
-        reader->scan(mds.inserter_func());
+        auto reader = segment->segment().reader(lock);
+        reader->read_all(mds.inserter_func());
 
         // Read the summary
         if (!mds.empty())
@@ -72,8 +72,9 @@ public:
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            mds.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".metadata"));
-            sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
+            mds.prepare_for_segment_metadata();
+            mds.writeAtomically(segment->segment().abspath_metadata());
+            sum.writeAtomically(segment->segment().abspath_summary());
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -100,8 +101,9 @@ public:
         }
 
         segment->commit();
-        mds.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".metadata"));
-        sum.writeAtomically(sys::with_suffix(segment->segment().abspath(), ".summary"));
+        mds.prepare_for_segment_metadata();
+        mds.writeAtomically(segment->segment().abspath_metadata());
+        sum.writeAtomically(segment->segment().abspath_summary());
         return true;
     }
 };

@@ -286,6 +286,8 @@ public:
     void makeInline();
     /// Make all source blobs absolute
     void make_absolute();
+    /// Preprocess to be efficiently stored as segment metadata alongside the data
+    void prepare_for_segment_metadata();
 
     /*
      * Notes access and manipulation

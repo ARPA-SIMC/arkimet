@@ -337,13 +337,10 @@ bool Collection::move_to(metadata_dest_func dest)
     return success;
 }
 
-void Collection::strip_source_paths()
+void Collection::prepare_for_segment_metadata()
 {
-    for (auto i = vals.begin(); i != vals.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        (*i)->set_source(upcast<Source>(source.fileOnly()));
-    }
+    for (auto& i: vals)
+        i->prepare_for_segment_metadata();
 }
 
 void Collection::sort(const sort::Compare& cmp)

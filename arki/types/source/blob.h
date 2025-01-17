@@ -100,6 +100,14 @@ zip file segment implementation.
     std::unique_ptr<Blob> makeRelativeTo(const std::filesystem::path& path) const;
 
     /**
+     * Return a new source for storing in segment metadata.
+     *
+     * This relies on the invariant that the written metadata is stored next to
+     * the data, so only offset and size are needed to locate the data.
+     */
+    std::unique_ptr<Blob> for_segment_metadata() const;
+
+    /**
      * Make sure this blob has a reader that keeps a read lock on the source file
      */
     void lock(std::shared_ptr<segment::data::Reader> reader);

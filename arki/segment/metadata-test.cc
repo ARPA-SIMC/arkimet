@@ -55,6 +55,8 @@ add_method("read_all", [] {
     metadata::Collection all;
     wassert_true(reader->read_all(all.inserter_func()));
     wassert_true(all == td.mds);
+    wassert(actual(all[0].sourceBlob().basedir) == reader->segment().root());
+    wassert(actual(all[0].sourceBlob().filename) == "test/test." + format_name(td.format));
 });
 
 add_method("query_data_unlocked", [] {

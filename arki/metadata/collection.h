@@ -135,7 +135,7 @@ public:
      * This is useful to prepare a Metadata bundle for being written next to
      * the file(s) that it describes.
      */
-    void strip_source_paths();
+    void prepare_for_segment_metadata();
 
     /**
      * Ensure that all metadata point to data in the same file and that
