@@ -14,9 +14,12 @@ using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
 
+template<class Data>
 class Tests : public TestCase
 {
     using TestCase::TestCase;
+    using TestCase::add_method;
+
     void register_tests() override;
 
     void test_setup() override
@@ -24,7 +27,14 @@ class Tests : public TestCase
         sys::rmtree_ifexists("test");
         std::filesystem::create_directories("test");
     }
-} test("arki_segment_scan");
+};
+
+Tests<GRIBData> test_grib("arki_segment_scan_grib");
+Tests<BUFRData> test_bufr("arki_segment_scan_bufr");
+Tests<VM2Data> test_vm2("arki_segment_scan_vm2");
+Tests<ODIMData> test_odim("arki_segment_scan_odim");
+Tests<NCData> test_netcdf("arki_segment_scan_netcdf");
+Tests<JPEGData> test_jpeg("arki_segment_scan_jpeg");
 
 std::shared_ptr<segment::scan::Reader> make_reader(TestData& td, const char* name="test/test")
 {
@@ -36,10 +46,11 @@ std::shared_ptr<segment::scan::Reader> make_reader(TestData& td, const char* nam
 
 }
 
-void Tests::register_tests() {
+template<typename Data>
+void Tests<Data>::register_tests() {
 
-add_method("read_all", [] {
-    GRIBData td;
+add_method("read_all", [&] {
+    Data td;
     auto reader = make_reader(td);
     metadata::Collection all;
     wassert_true(reader->read_all(all.inserter_func()));
@@ -49,8 +60,8 @@ add_method("read_all", [] {
     wassert(actual(all[2]).is_similar(td.mds[2]));
 });
 
-add_method("query_data_unlocked", [] {
-    GRIBData td;
+add_method("query_data_unlocked", [&] {
+    Data td;
     auto reader = make_reader(td);
     metadata::Collection all;
     matcher::Parser parser;
@@ -62,8 +73,8 @@ add_method("query_data_unlocked", [] {
     wassert_false(all[0].sourceBlob().reader);
 });
 
-add_method("query_data_locked", [] {
-    GRIBData td;
+add_method("query_data_locked", [&] {
+    Data td;
     auto reader = make_reader(td);
     metadata::Collection all;
     matcher::Parser parser;
@@ -75,12 +86,12 @@ add_method("query_data_locked", [] {
     wassert_true(all[0].sourceBlob().reader);
 });
 
-add_method("query_summary", [] {
-    GRIBData td;
+add_method("query_summary", [&] {
+    Data td;
     auto reader = make_reader(td);
-    wassert(actual_file("test/test.grib").exists());
-    wassert(actual_file("test/test.grib.metadata").not_exists());
-    wassert(actual_file("test/test.grib.summary").not_exists());
+    wassert(actual(reader->segment()).has_data());
+    wassert(actual(reader->segment()).not_has_metadata());
+    wassert(actual(reader->segment()).not_has_summary());
 
     Summary summary;
     reader->query_summary(Matcher(), summary);

@@ -29,6 +29,17 @@ Segment::~Segment()
 {
 }
 
+std::filesystem::path Segment::abspath_metadata() const
+{
+    return sys::with_suffix(m_abspath, ".metadata");
+}
+
+std::filesystem::path Segment::abspath_summary() const
+{
+    return sys::with_suffix(m_abspath, ".summary");
+}
+
+
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
     return session().segment_reader(shared_from_this(), lock);

@@ -11,8 +11,8 @@ using namespace arki::utils;
 
 namespace arki::segment::metadata {
 
-Index::Index(const Segment& segment, const std::filesystem::path& md_path)
-    : segment(segment), md_path(md_path)
+Index::Index(const Segment& segment)
+    : segment(segment), md_path(segment.abspath_metadata())
 {
 }
 
@@ -73,7 +73,7 @@ void Index::query_summary(const Matcher& matcher, Summary& summary)
 }
 
 Reader::Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock)
-    : segment::Reader(segment, lock), index(*segment, sys::with_suffix(segment->abspath(), ".metadata"))
+    : segment::Reader(segment, lock), index(*segment)
 {
 }
 
@@ -104,7 +104,7 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
-    auto summary_path = sys::with_suffix(m_segment->abspath(), ".summary");
+    auto summary_path = m_segment->abspath_summary();
     if (sys::access(summary_path, R_OK))
     {
         Summary s;
@@ -121,7 +121,7 @@ arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;
 
-    auto md_abspath = sys::with_suffix(m_segment->abspath(), ".metadata");
+    auto md_abspath = m_segment->abspath_metadata();
     if (auto st_md = sys::stat(md_abspath))
     {
         if (auto data_ts = m_data->timestamp())

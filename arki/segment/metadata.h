@@ -13,7 +13,7 @@ class Index
     std::filesystem::path md_path;
 
 public:
-    explicit Index(const Segment& segment, const std::filesystem::path& md_path);
+    explicit Index(const Segment& segment);
 
     bool read_all(std::shared_ptr<arki::segment::data::Reader> reader, metadata_dest_func dest);
     arki::metadata::Collection query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader);

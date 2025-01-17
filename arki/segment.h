@@ -30,6 +30,8 @@ public:
     std::filesystem::path root() const { return m_session->root; }
     std::filesystem::path relpath() const { return m_relpath; }
     std::filesystem::path abspath() const { return m_abspath; }
+    std::filesystem::path abspath_metadata() const;
+    std::filesystem::path abspath_summary() const;
 
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
     std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;
@@ -67,6 +69,9 @@ public:
     Reader& operator=(const Reader&) = delete;
     Reader& operator=(Reader&&) = delete;
     virtual ~Reader();
+
+    /// Access the segment
+    const Segment& segment() const { return *m_segment; }
 
     /**
      * Send all data from the segment to dest, in the order in which they are

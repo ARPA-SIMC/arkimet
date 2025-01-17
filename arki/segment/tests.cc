@@ -25,4 +25,34 @@ void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadat
     mds.writeAtomically(sys::with_suffix(segment->abspath(), ".metadata"));
 }
 
+void ActualSegment::has_data()
+{
+    wassert_true((bool)_actual->detect_data()->timestamp());
+}
+
+void ActualSegment::not_has_data()
+{
+    wassert_false((bool)_actual->detect_data()->timestamp());
+}
+
+void ActualSegment::has_metadata()
+{
+    wassert(actual_file(_actual->abspath_metadata()).exists());
+}
+
+void ActualSegment::not_has_metadata()
+{
+    wassert(actual_file(_actual->abspath_metadata()).not_exists());
+}
+
+void ActualSegment::has_summary()
+{
+    wassert(actual_file(_actual->abspath_summary()).exists());
+}
+
+void ActualSegment::not_has_summary()
+{
+    wassert(actual_file(_actual->abspath_summary()).not_exists());
+}
+
 }

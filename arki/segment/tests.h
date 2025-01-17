@@ -21,6 +21,32 @@ void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::C
  */
 void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds);
 
+struct ActualSegment : public arki::utils::tests::Actual<std::shared_ptr<const Segment>>
+{
+    explicit ActualSegment(std::shared_ptr<const Segment> s) : Actual<std::shared_ptr<const Segment>>(s) {}
+
+    /// The segment has its data part
+    void has_data();
+
+    /// The segment does not have its data part
+    void not_has_data();
+
+    /// The segment has its data part
+    void has_metadata();
+
+    /// The segment does not have its data part
+    void not_has_metadata();
+
+    /// The segment has its data part
+    void has_summary();
+
+    /// The segment does not have its data part
+    void not_has_summary();
+};
+
+inline arki::tests::ActualSegment actual(std::shared_ptr<const Segment> actual) { return arki::tests::ActualSegment(actual); }
+inline arki::tests::ActualSegment actual(const Segment& actual) { return arki::tests::ActualSegment(actual.shared_from_this()); }
+
 }
 
 #endif
