@@ -175,7 +175,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
 }
 
 CheckerSegment::CheckerSegment(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
-    : lock(lock), segment_checker(segment->checker(lock)), segment_data_checker(segment->data_checker())
+    : lock(lock), segment(segment), segment_checker(segment->checker(lock)), segment_data_checker(segment->data_checker())
 {
 }
 

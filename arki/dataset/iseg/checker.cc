@@ -1,4 +1,5 @@
 #include "arki/dataset/iseg/checker.h"
+#include "arki/segment/iseg.h"
 #include "arki/segment/iseg/index.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/step.h"
@@ -70,7 +71,7 @@ public:
     CIndex& idx()
     {
         if (!m_idx)
-            m_idx = dataset_checker.m_dataset->iseg_segment_session->check_index(path_relative(), lock);
+            m_idx = static_pointer_cast<const segment::iseg::Segment>(segment)->check_index(lock);
         return *m_idx;
     }
     std::filesystem::path path_relative() const override { return segment_data_checker->segment().relpath(); }
