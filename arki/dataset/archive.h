@@ -99,7 +99,13 @@ public:
     std::string type() const override;
 
     void index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds);
-    void release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath);
+    /**
+     * Deindex the segment at relpath and move it to new_relpath in segment_session.
+     *
+     * Only the data part of the segment is moved. The segment metadata is
+     * returned so it can be reindexed
+     */
+    arki::metadata::Collection release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath);
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
     void remove_old(CheckerConfig& opts) override;

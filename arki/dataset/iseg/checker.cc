@@ -451,10 +451,12 @@ public:
         // TODO: remove relevant summary
     }
 
-    void release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
+    arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
+        metadata::Collection mds = segment_checker->scan();
         std::filesystem::remove(dataset_checker.dataset().path / sys::with_suffix(segment_data_checker->segment().relpath(), ".index"));
         segment_data_checker->move(new_segment_session, new_relpath);
+        return mds;
     }
 };
 

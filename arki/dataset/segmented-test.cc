@@ -667,7 +667,7 @@ add_method("unarchive_segment", [](Fixture& f) {
     {
         auto checker = f.makeSegmentedChecker();
         auto segment = checker->dataset().segment_session->segment_from_relpath("2007/07-07.grib");
-        checker->segment(segment)->unarchive();
+        wassert(checker->segment(segment)->unarchive());
     }
 
     wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());

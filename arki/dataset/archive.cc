@@ -472,8 +472,9 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
     archives->invalidate_summary_cache();
 }
 
-void Checker::release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
+arki::metadata::Collection Checker::release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
 {
+    arki::metadata::Collection res;
     auto path = std::filesystem::weakly_canonical(relpath);
     string name = poppath(path);
     if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath.native() + ": segment is not in last/ archive");
@@ -483,7 +484,7 @@ void Checker::release_segment(const std::filesystem::path& relpath, std::shared_
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
         {
             auto segment = sc->dataset().segment_session->segment_from_relpath(path);
-            sc->segment(segment)->release(segment_session, new_relpath);
+            res = sc->segment(segment)->release(segment_session, new_relpath);
         }
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
@@ -491,6 +492,7 @@ void Checker::release_segment(const std::filesystem::path& relpath, std::shared_
     else
         throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " does not exist in " + archives->archive_root.native());
     archives->invalidate_summary_cache();
+    return res;
 }
 
 unsigned Checker::test_count_archives() const
