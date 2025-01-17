@@ -132,7 +132,7 @@ public:
     virtual segment::Fixer::ConvertResult tar();
 
     /// Convert the segment into a zip segment
-    virtual void zip() = 0;
+    virtual segment::Fixer::ConvertResult zip();
 
     /**
      * Compress the segment

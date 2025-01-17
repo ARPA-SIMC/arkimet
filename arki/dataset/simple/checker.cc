@@ -223,38 +223,15 @@ public:
         return res;
     }
 
-    void zip() override
+    segment::Fixer::ConvertResult zip() override
     {
-        if (std::filesystem::exists(sys::with_suffix(segment_data_checker->segment().abspath(), ".zip")))
-            return;
-
-        auto path_metadata = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        auto path_summary = sys::with_suffix(segment_data_checker->segment().abspath(), ".summary");
-        auto lock = dataset_checker.lock->write_lock();
-
-        metadata::Collection mds = segment_checker->scan();
-
-        // Remove existing cached metadata, since we scramble their order
-        std::filesystem::remove(path_metadata);
-        std::filesystem::remove(path_summary);
-
-        // Create the .tar segment
-        segment_data_checker = segment_data_checker->zip(mds);
-
-        // Write out the new metadata
-        mds.prepare_for_segment_metadata();
-        mds.writeAtomically(path_metadata);
-
-        // Regenerate the summary. It is unchanged, really, but its timestamp
-        // has become obsolete by now
-        Summary sum;
-        mds.add_to_summary(sum);
-        sum.writeAtomically(path_summary);
+        auto res = segmented::CheckerSegment::zip();
 
         // Reindex with the new file information
-        time_t mtime = segment_data_checker->data().timestamp().value();
-        dataset_checker.manifest.set(segment_data_checker->segment().relpath(), mtime, sum.get_reference_time());
+        dataset_checker.manifest.set_mtime(segment_data_checker->segment().relpath(), res.segment_mtime);
         dataset_checker.manifest.flush();
+
+        return res;
     }
 
     size_t compress(unsigned groupsize) override

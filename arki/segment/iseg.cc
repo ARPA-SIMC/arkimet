@@ -187,4 +187,59 @@ Fixer::ConvertResult Fixer::tar()
     return res;
 }
 
+Fixer::ConvertResult Fixer::zip()
+{
+    ConvertResult res;
+    if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".zip")))
+    {
+        auto ts = data().timestamp();
+        if (!ts)
+        {
+            std::stringstream buf;
+            buf << segment().abspath() << ": tar segment already exists but cannot be accessed";
+            throw std::runtime_error(buf.str());
+        }
+        res.segment_mtime = ts.value();
+        return res;
+    }
+
+    auto& index = checker().index();
+    auto data_checker = data().checker(false);
+    res.size_pre = data_checker->size();
+
+    auto pending_index = index.begin_transaction();
+
+    // Rescan file and sort for repacking
+    auto mds = checker().scan();
+    mds.sort();
+
+    // Create the .zip segment
+    auto new_data_checker = data_checker->zip(mds);
+    res.size_post = new_data_checker->size();
+
+    // Reindex the new metadata
+    // TODO: move this reset+reindex to Index, since it hits rule-of-three
+    index.reset();
+    for (const auto& md: mds)
+    {
+        const auto& source = md->sourceBlob();
+        if (index.index(*md, source.offset))
+            throw std::runtime_error("duplicate detected while reordering segment");
+    }
+
+    // Commit the changes in the database
+    pending_index.commit();
+
+    checker().update_data();
+    auto ts = data().timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << segment().abspath() << ": cannot access tar segment after creating it";
+        throw std::runtime_error(buf.str());
+    }
+    res.segment_mtime = ts.value();
+    return res;
+}
+
 }

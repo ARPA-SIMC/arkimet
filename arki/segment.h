@@ -200,6 +200,11 @@ public:
     virtual ConvertResult tar() = 0;
 
     /**
+     * Convert the segment to use zip for the data.
+     */
+    virtual ConvertResult zip() = 0;
+
+    /**
      * Remove the segment.
      *
      * @param with_data: if false, only metadata is removed, and data is preserved.

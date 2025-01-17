@@ -186,6 +186,14 @@ segment::Fixer::ConvertResult CheckerSegment::tar()
     return res;
 }
 
+segment::Fixer::ConvertResult CheckerSegment::zip()
+{
+    auto fixer = segment_checker->fixer();
+    auto res = fixer->zip();
+    segment_data_checker = fixer->data().checker(false);
+    return res;
+}
+
 size_t CheckerSegment::remove(bool with_data)
 {
     auto fixer = segment_checker->fixer();
