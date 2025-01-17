@@ -37,9 +37,9 @@ public:
     std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
 
-    std::shared_ptr<RIndex> read_index(const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock);
-    std::shared_ptr<AIndex> append_index(std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
-    std::shared_ptr<CIndex> check_index(const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
+    std::shared_ptr<RIndex> read_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<AIndex> append_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const;
+    std::shared_ptr<CIndex> check_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const;
 };
 
 }

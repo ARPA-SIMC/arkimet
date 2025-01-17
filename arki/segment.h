@@ -32,6 +32,7 @@ public:
     std::filesystem::path abspath() const { return m_abspath; }
     std::filesystem::path abspath_metadata() const;
     std::filesystem::path abspath_summary() const;
+    std::filesystem::path abspath_iseg_index() const;
 
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
     std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;

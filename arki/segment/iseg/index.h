@@ -7,6 +7,7 @@
 #include <arki/utils/sqlite.h>
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
+#include <arki/segment/iseg.h>
 #include <arki/segment/iseg/session.h>
 #include <arki/segment/iseg/index/attr.h>
 #include <arki/segment/iseg/index/aggregate.h>
@@ -42,16 +43,14 @@ template<typename LockType>
 class Index
 {
 public:
-    std::shared_ptr<const Session> segment_session;
+    /// Segment for which this is the index
+    std::shared_ptr<const Segment> segment;
+
+    /// iseg segment session
+    const segment::iseg::Session& session() const { return *static_cast<const segment::iseg::Session*>(&segment->session()); }
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
-
-    /// Relative pathname of the segment from the root of the dataset
-    std::filesystem::path data_relpath;
-
-    /// Absolute pathname of the data file that we index
-    std::filesystem::path data_pathname;
 
     /// Absolute pathname of the index file
     std::filesystem::path index_pathname;
@@ -97,7 +96,7 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
 
-    Index(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<LockType> lock=nullptr);
+    Index(std::shared_ptr<const Segment> segment, std::shared_ptr<LockType> lock=nullptr);
 
 public:
     Index(const Index&) = delete;
@@ -154,14 +153,13 @@ public:
 class RIndex : public Index<const core::ReadLock>
 {
 public:
-    RIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<const core::ReadLock> lock=nullptr);
+    RIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock);
 };
 
 template<typename LockType>
 class WIndex : public Index<LockType>
 {
 protected:
-    using Index<LockType>::data_relpath;
     using Index<LockType>::index_pathname;
     using Index<LockType>::m_db;
     using Index<LockType>::m_uniques;
@@ -176,9 +174,10 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<LockType> lock=nullptr);
+    WIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<LockType> lock);
 public:
-    using Index<LockType>::segment_session;
+    using Index<LockType>::session;
+    using Index<LockType>::segment;
 
     /**
      * Index the given metadata item.
@@ -228,14 +227,14 @@ public:
 class AIndex : public WIndex<core::AppendLock>
 {
 public:
-    AIndex(std::shared_ptr<const Session> segment_session, std::shared_ptr<segment::data::Writer> segment, std::shared_ptr<core::AppendLock> lock);
+    AIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
 };
 
 
 class CIndex : public WIndex<core::CheckLock>
 {
 public:
-    CIndex(std::shared_ptr<const Session> segment_session, const std::filesystem::path& data_relpath, std::shared_ptr<core::CheckLock> lock);
+    CIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
 };
 
 extern template class Index<const core::ReadLock>;

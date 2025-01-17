@@ -545,7 +545,7 @@ void Checker::check_issue51(CheckerConfig& opts)
     // Iterate all segments
     list_segments([&](std::shared_ptr<const Segment> segment) {
         auto lock = dataset().check_lock_segment(segment->relpath());
-        auto idx = m_dataset->iseg_segment_session->check_index(segment->relpath(), lock);
+        auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
         metadata::Collection mds;
         idx->scan(mds.inserter_func(), "reftime, offset");
         if (mds.empty()) return;
@@ -679,56 +679,60 @@ size_t Checker::vacuum(dataset::Reporter&)
 
 void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
     metadata::Collection mds;
     idx->query_segment(mds.inserter_func());
-    dataset().segment_session->segment_data_checker(dataset().iseg_segment_session->format, relpath)->test_make_overlap(mds, overlap_size, data_idx);
+    dataset().segment_session->segment_data_checker(segment)->test_make_overlap(mds, overlap_size, data_idx);
     idx->test_make_overlap(overlap_size, data_idx);
 }
 
 void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
     metadata::Collection mds;
     idx->query_segment(mds.inserter_func());
-    dataset().segment_session->segment_data_checker(dataset().iseg_segment_session->format, relpath)->test_make_hole(mds, hole_size, data_idx);
+    dataset().segment_session->segment_data_checker(segment)->test_make_hole(mds, hole_size, data_idx);
     idx->test_make_hole(hole_size, data_idx);
 }
 
 void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
     metadata::Collection mds;
     idx->query_segment(mds.inserter_func());
-    dataset().segment_session->segment_data_checker(dataset().iseg_segment_session->format, relpath)->test_corrupt(mds, data_idx);
+    dataset().segment_session->segment_data_checker(segment)->test_corrupt(mds, data_idx);
 }
 
 void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
     metadata::Collection mds;
     idx->query_segment(mds.inserter_func());
-    dataset().segment_session->segment_data_checker(dataset().iseg_segment_session->format, relpath)->test_truncate_by_data(mds, data_idx);
+    dataset().segment_session->segment_data_checker(segment)->test_truncate_by_data(mds, data_idx);
 }
 
 void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     metadata::Collection mds;
     {
-        auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+        auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
         idx->scan(mds.inserter_func(), "offset");
         mds.swap(d1_idx, d2_idx);
     }
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
     segment_prelocked(segment, lock)->reorder(mds);
 }
 
@@ -751,9 +755,10 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
 
 std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
     metadata::Collection mds;
     idx->query_segment(mds.inserter_func());
     md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
@@ -774,9 +779,10 @@ std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::p
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
+    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
     auto lock = dataset().check_lock_segment(relpath);
     auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(relpath, lock);
+    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
     idx->reset();
 }
 

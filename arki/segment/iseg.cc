@@ -11,12 +11,12 @@ namespace arki::segment::iseg {
 
 std::shared_ptr<RIndex> Segment::read_index(std::shared_ptr<const core::ReadLock> lock) const
 {
-    return std::make_shared<RIndex>(std::static_pointer_cast<const iseg::Session>(m_session), relpath(), lock);
+    return std::static_pointer_cast<const iseg::Session>(m_session)->read_index(shared_from_this(), lock);
 }
 
 std::shared_ptr<CIndex> Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
 {
-    return std::make_shared<CIndex>(std::static_pointer_cast<const iseg::Session>(m_session), relpath(), lock);
+    return std::static_pointer_cast<const iseg::Session>(m_session)->check_index(shared_from_this(), lock);
 }
 
 Reader::Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<const core::ReadLock> lock)

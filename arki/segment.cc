@@ -39,6 +39,11 @@ std::filesystem::path Segment::abspath_summary() const
     return sys::with_suffix(m_abspath, ".summary");
 }
 
+std::filesystem::path Segment::abspath_iseg_index() const
+{
+    return sys::with_suffix(m_abspath, ".index");
+}
+
 
 std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::ReadLock> lock) const
 {

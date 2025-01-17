@@ -34,7 +34,7 @@ public:
     std::shared_ptr<AIndex> idx;
 
     AppendSegment(std::shared_ptr<iseg::Dataset> dataset, std::shared_ptr<core::AppendLock> append_lock, std::shared_ptr<segment::data::Writer> data_writer)
-        : dataset(dataset), append_lock(append_lock), segment(data_writer->segment().shared_from_this()), data_writer(data_writer), idx(dataset->iseg_segment_session->append_index(data_writer, append_lock))
+        : dataset(dataset), append_lock(append_lock), segment(data_writer->segment().shared_from_this()), data_writer(data_writer), idx(dataset->iseg_segment_session->append_index(data_writer->segment().shared_from_this(), append_lock))
     {
     }
 
