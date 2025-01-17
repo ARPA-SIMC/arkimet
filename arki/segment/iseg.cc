@@ -12,6 +12,11 @@ std::shared_ptr<RIndex> Segment::read_index(std::shared_ptr<const core::ReadLock
     return std::make_shared<RIndex>(std::static_pointer_cast<const iseg::Session>(m_session), relpath(), lock);
 }
 
+std::shared_ptr<CIndex> Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<CIndex>(std::static_pointer_cast<const iseg::Session>(m_session), relpath(), lock);
+}
+
 Reader::Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<const core::ReadLock> lock)
     : segment::Reader(segment, lock),
       m_index(segment->read_index(lock))
@@ -37,5 +42,12 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     m_index->query_summary_from_db(matcher, summary);
 }
+
+
+Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
+    : segment::Checker(segment, lock)
+{
+}
+
 
 }

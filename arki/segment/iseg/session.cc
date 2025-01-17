@@ -11,6 +11,7 @@ std::shared_ptr<arki::Segment> Session::segment_from_relpath_and_format(const st
     return std::make_shared<arki::segment::iseg::Segment>(shared_from_this(), format, relpath);
 }
 
+
 std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
 {
     auto data = segment->detect_data();
@@ -21,6 +22,12 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const a
     }
     return std::make_shared<Reader>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
 }
+
+std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<Checker>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
+}
+
 
 std::shared_ptr<RIndex> Session::read_index(const std::filesystem::path& data_relpath, std::shared_ptr<core::ReadLock> lock)
 {

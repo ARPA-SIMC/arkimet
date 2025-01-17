@@ -19,7 +19,7 @@ protected:
     void list_segments(const Matcher& matcher, std::function<void(std::shared_ptr<const Segment>)> dest);
 
 public:
-    Checker(std::shared_ptr<iseg::Dataset> dataset);
+    explicit Checker(std::shared_ptr<iseg::Dataset> dataset);
 
     std::string type() const override;
 

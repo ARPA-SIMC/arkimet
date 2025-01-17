@@ -30,6 +30,11 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
+class Checker : public segment::Checker
+{
+public:
+    using segment::Checker::Checker;
+};
 
 }
 

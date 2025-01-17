@@ -100,7 +100,7 @@ protected:
     std::shared_ptr<core::CheckLock> lock;
 
 public:
-    explicit Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
+    Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
     Checker(const Checker&) = delete;
     Checker(Checker&&) = delete;
     Checker& operator=(const Checker&) = delete;

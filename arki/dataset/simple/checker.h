@@ -28,7 +28,7 @@ protected:
     //segment::Segment* file(const Metadata& md, const std::string& format);
 
 public:
-    Checker(std::shared_ptr<simple::Dataset> dataset);
+    explicit Checker(std::shared_ptr<simple::Dataset> dataset);
     virtual ~Checker();
 
     std::string type() const override;

@@ -33,6 +33,12 @@ std::shared_ptr<segment::Reader> SegmentSession::segment_reader(std::shared_ptr<
         return std::make_shared<segment::EmptyReader>(segment, lock);
 }
 
+std::shared_ptr<segment::Checker> SegmentSession::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::metadata::Checker>(segment, lock);
+}
+
+
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : dataset::segmented::Dataset(session, std::make_shared<SegmentSession>(cfg.value("path")), cfg)
 {

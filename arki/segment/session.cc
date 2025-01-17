@@ -125,7 +125,7 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const S
 
 std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
 {
-    return std::make_shared<segment::Checker>(segment, lock);
+    throw std::runtime_error("scan::Checker not yet implemented");
 }
 
 std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const

@@ -12,6 +12,7 @@ public:
     using arki::Segment::Segment;
 
     std::shared_ptr<RIndex> read_index(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<CIndex> check_index(std::shared_ptr<core::CheckLock> lock) const;
 };
 
 class Reader : public segment::Reader
@@ -24,6 +25,12 @@ public:
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     // core::Interval get_stored_time_interval() override;
+};
+
+class Checker : public segment::Checker
+{
+public:
+    Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
 };
 
 }

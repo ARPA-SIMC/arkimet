@@ -1113,7 +1113,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
 
 bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
 {
-    return read_file(fd, fd.path(), mdc);
+    return read_file(fd, metadata::ReadContext(fd.path()), mdc);
 }
 
 bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest)
