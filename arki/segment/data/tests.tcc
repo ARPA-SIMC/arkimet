@@ -53,20 +53,6 @@ this->add_method("create", [](Fixture& f) {
     wassert_true(checker->exists_on_disk());
 });
 
-this->add_method("scan", [](Fixture& f) {
-    auto checker = f.create();
-    auto reader = checker->data().reader(std::make_shared<arki::core::lock::NullReadLock>());
-    if (strcmp(reader->data().type(), "tar") == 0)
-        throw TestSkipped("scanning .tar segments is not yet supported");
-    metadata::Collection mds;
-    reader->scan(mds.inserter_func());
-    wassert(actual(mds.size()) == f.seg_mds.size());
-    wassert(actual(mds[0]).is_similar(f.seg_mds[0]));
-    wassert(actual(mds[1]).is_similar(f.seg_mds[1]));
-    wassert(actual(mds[2]).is_similar(f.seg_mds[2]));
-    wassert(actual(mds.size()) == 3u);
-});
-
 this->add_method("read", [](Fixture& f) {
     wassert_true(Data::can_store(f.td.format));
     auto checker = f.create();

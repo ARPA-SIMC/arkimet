@@ -41,25 +41,6 @@ Reader::~Reader()
 {
 }
 
-bool Reader::scan(metadata_dest_func dest)
-{
-    // stat the metadata file, if it exists
-    auto md_abspath = sys::with_suffix(segment().abspath(), ".metadata");
-    unique_ptr<struct stat> st_md = sys::stat(md_abspath);
-    // If it exists and it looks new enough, use it
-    if (st_md.get() && st_md->st_mtime >= data().timestamp())
-    {
-        std::filesystem::path root(segment().abspath().parent_path());
-        return Metadata::read_file(arki::metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
-            md->sourceBlob().lock(shared_from_this());
-            return dest(md);
-        });
-    }
-
-    // Else scan the file as usual
-    return scan_data(dest);
-}
-
 stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
 {
     vector<uint8_t> buf = read(src);

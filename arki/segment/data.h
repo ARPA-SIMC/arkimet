@@ -95,17 +95,6 @@ public:
     virtual const Data& data() const = 0;
 
     /**
-     * Scan the segment contents, and sends the resulting metadata to \a dest.
-     *
-     * If a .metadata file exists for this segment and its timestamp is the
-     * same than the segment or newer, it will be used instead performing the
-     * scan.
-     *
-     * Returns true if dest always returned true.
-     */
-    bool scan(metadata_dest_func dest);
-
-    /**
      * Scan the segment contents ignoring all existing metadata (if any).
      *
      * Sends the resulting metadata to \a dest
