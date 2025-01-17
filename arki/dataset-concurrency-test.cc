@@ -401,7 +401,7 @@ this->add_method("read_repack", [](Fixture& f) {
     wassert(f.import_all(f.td.mds));
 
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
+    wassert(reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
             auto e = wassert_throws(std::runtime_error, {
@@ -414,7 +414,7 @@ this->add_method("read_repack", [](Fixture& f) {
 
         wassert(actual(md->get_data().read()) == orig_data);
         return false;
-    });
+    }));
 });
 
 // Test parallel check and write
