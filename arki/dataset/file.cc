@@ -190,8 +190,8 @@ SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg
 bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
-    if (!reader->scan(dest))
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    if (!reader->read_all(dest))
         return false;
     if (sorter) return sorter->flush();
     return true;

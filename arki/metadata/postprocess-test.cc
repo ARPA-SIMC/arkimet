@@ -99,13 +99,13 @@ add_method("countbytes", [] {
 add_method("cat", [] {
     auto session = std::make_shared<segment::Session>("inbound");
     auto segment = session->segment_from_relpath_and_format("test.grib1", DataFormat::GRIB);
-    auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
 
     // Get the normal data
     vector<uint8_t> plain;
     {
         core::BinaryEncoder enc(plain);
-        reader->scan([&](std::shared_ptr<Metadata> md) {
+        reader->read_all([&](std::shared_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->get_data().read();
