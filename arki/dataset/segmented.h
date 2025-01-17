@@ -168,16 +168,6 @@ public:
     virtual size_t repack(unsigned test_flags=0) = 0;
 
     /**
-     * Rewrite the segment so that the data has the same order as `mds`.
-     *
-     * In the resulting file, there are no holes between data.
-     *
-     * @returns The size difference between the initial segment size and the
-     * final segment size.
-     */
-    virtual size_t reorder(metadata::Collection& mds, unsigned test_flags=0) = 0;
-
-    /**
      * Remove the segment
      */
     virtual size_t remove(bool with_data=false) = 0;
@@ -326,7 +316,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
+    virtual void test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx);
 
     /**
      * Rename the segment, leaving its contents unchanged.

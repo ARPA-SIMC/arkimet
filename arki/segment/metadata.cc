@@ -156,4 +156,47 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
     return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
 }
 
+Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config)
+{
+    ReorderResult res;
+    auto path_metadata = segment().abspath_metadata();
+    auto path_summary = segment().abspath_summary();
+
+    // Write out the data with the new order
+    auto data_checker = data().checker(false);
+    // TODO: remove the root argument, currently unused
+    auto p_repack = data_checker->repack(segment().root(), mds, repack_config);
+
+    // Remove existing cached metadata, since we scramble their order
+    std::filesystem::remove(path_metadata);
+
+    res.size_pre = data_checker->size();
+
+    p_repack.commit();
+
+    res.size_post = data_checker->size();
+
+    // Write out the new metadata
+    mds.prepare_for_segment_metadata();
+    mds.writeAtomically(path_metadata);
+
+    auto ts = data().timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << segment().abspath() << ": segment data missing after a reorder";
+        throw std::runtime_error(buf.str());
+    }
+    res.segment_mtime = ts.value();
+
+    // Sync timestamps. We need it for the summary since it is now older than
+    // the other files, and since we read the segment data timestamp we can
+    // sync it to all extra files
+    sys::touch(path_metadata, res.segment_mtime);
+    sys::touch(path_summary, res.segment_mtime);
+
+    return res;
+}
+
+
 }

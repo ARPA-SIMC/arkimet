@@ -182,8 +182,6 @@ public:
 
     size_t repack(unsigned test_flags) override
     {
-        auto lock = dataset_checker.lock->write_lock();
-
         // Read the metadata
         metadata::Collection mds = segment_checker->scan();
 
@@ -191,48 +189,20 @@ public:
         RepackSort cmp;
         mds.sort(cmp);
 
-        return reorder(mds, test_flags);
-    }
-
-    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
-    {
-        auto path_metadata = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        auto path_summary = sys::with_suffix(segment_data_checker->segment().abspath(), ".summary");
-
-        // Write out the data with the new order
         segment::data::RepackConfig repack_config;
         repack_config.gz_group_size = dataset().gz_group_size;
         repack_config.test_flags = test_flags;
-        auto p_repack = segment_data_checker->repack(dataset_checker.dataset().path, mds, repack_config);
 
-        // Strip paths from mds sources
-        mds.prepare_for_segment_metadata();
+        auto fixer = segment_checker->fixer();
 
-        // Remove existing cached metadata, since we scramble their order
-        std::filesystem::remove(path_metadata);
-        std::filesystem::remove(path_summary);
-
-        size_t size_pre = segment_data_checker->size();
-
-        p_repack.commit();
-
-        size_t size_post = segment_data_checker->size();
-
-        // Write out the new metadata
-        mds.writeAtomically(path_metadata);
-
-        // Regenerate the summary. It is unchanged, really, but its timestamp
-        // has become obsolete by now
-        Summary sum;
-        mds.add_to_summary(sum);
-        sum.writeAtomically(path_summary);
+        // Write out the data with the new order
+        auto res = fixer->reorder(mds, repack_config);
 
         // Reindex with the new file information
-        time_t mtime = segment_data_checker->data().timestamp().value();
-        dataset_checker.manifest.set(segment_data_checker->segment().relpath(), mtime, sum.get_reference_time());
+        dataset_checker.manifest.set_mtime(segment->relpath(), res.segment_mtime);
         dataset_checker.manifest.flush();
 
-        return size_pre - size_post;
+        return res.size_pre - res.size_post;
     }
 
     size_t remove(bool with_data) override
@@ -676,15 +646,6 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     mds.prepare_for_segment_metadata();
     mds.write_to(fd);
     fd.ftruncate(fd.lseek(0, SEEK_CUR));
-}
-
-void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
-{
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    metadata::Collection mds = query_segment(relpath);
-    mds.swap(d1_idx, d2_idx);
-
-    this->segment(segment)->reorder(mds);
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)

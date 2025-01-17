@@ -294,70 +294,20 @@ public:
 
     size_t repack(unsigned test_flags=0) override
     {
-        // Lock away writes and reads
-        auto write_lock = lock->write_lock();
-        Pending p = idx().begin_transaction();
+        metadata::Collection mds = segment_checker->scan();
+        mds.sort();
 
-        metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
+        segment::data::RepackConfig repack_config;
+        repack_config.gz_group_size = dataset().gz_group_size;
+        repack_config.test_flags = test_flags;
 
-        auto res = reorder_segment_backend(p, mds, test_flags);
+        auto fixer = segment_checker->fixer();
+        auto res = fixer->reorder(mds, repack_config);
 
         //reporter.operation_progress(dataset_checker.name(), "repack", "running VACUUM ANALYZE on segment " + segment->relpath);
         idx().vacuum();
 
-        return res;
-    }
-
-    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
-    {
-        // Lock away writes and reads
-        auto write_lock = lock->write_lock();
-        Pending p = idx().begin_transaction();
-
-        return reorder_segment_backend(p, mds, test_flags);
-    }
-
-    size_t reorder_segment_backend(Pending& p, metadata::Collection& mds, unsigned test_flags)
-    {
-        // Make a copy of the file with the right data in it, sorted by
-        // reftime, and update the offsets in the index
-        segment::data::RepackConfig repack_config;
-        repack_config.gz_group_size = dataset().gz_group_size;
-        repack_config.test_flags = test_flags;
-        Pending p_repack = segment_data_checker->repack(dataset_checker.dataset().path, mds, repack_config);
-
-        // Reindex mds
-        idx().reset();
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-        {
-            const source::Blob& source = (*i)->sourceBlob();
-            if (idx().index(**i, source.offset))
-                throw std::runtime_error("duplicate detected while reordering segment");
-        }
-
-        size_t size_pre = segment_data_checker->size();
-
-        // Remove the .metadata file if present, because we are shuffling the
-        // data file and it will not be valid anymore
-        auto mdpathname = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        if (std::filesystem::exists(mdpathname))
-            if (unlink(mdpathname.c_str()) < 0)
-            {
-                stringstream ss;
-                ss << "cannot remove obsolete metadata file " << mdpathname;
-                throw std::system_error(errno, std::system_category(), ss.str());
-            }
-
-        // Commit the changes in the file system
-        p_repack.commit();
-
-        // Commit the changes in the database
-        p.commit();
-
-        size_t size_post = segment_data_checker->size();
-
-        return size_pre - size_post;
+        return res.size_pre - res.size_post;
     }
 
     size_t remove(bool with_data) override
@@ -699,19 +649,6 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     idx->query_segment(mds.inserter_func());
     dataset().segment_session->segment_data_checker(segment)->test_make_hole(mds, hole_size, data_idx);
     idx->test_make_hole(hole_size, data_idx);
-}
-
-void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx)
-{
-    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
-    auto lock = dataset().check_lock_segment(relpath);
-    metadata::Collection mds;
-    {
-        auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
-        idx->scan(mds.inserter_func(), "offset");
-        mds.swap(d1_idx, d2_idx);
-    }
-    segment_prelocked(segment, lock)->reorder(mds);
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)

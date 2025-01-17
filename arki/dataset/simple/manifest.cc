@@ -211,6 +211,16 @@ void Writer::reread()
         dirty = true;
 }
 
+SegmentInfo* Writer::segment(const std::filesystem::path& relpath)
+{
+    SegmentInfo sample{relpath, 0, core::Interval()};
+    auto lb = lower_bound(segmentinfo_cache.begin(), segmentinfo_cache.end(), sample, [](const auto& a, const auto& b) { return a.relpath < b.relpath; });
+    if (lb != segmentinfo_cache.end() && lb->relpath == relpath)
+        return &*lb;
+    else
+        return nullptr;
+}
+
 void Writer::set(const std::filesystem::path& relpath, time_t mtime, const core::Interval& time)
 {
     // Add to index
@@ -227,6 +237,16 @@ void Writer::set(const std::filesystem::path& relpath, time_t mtime, const core:
         *lb = info;
 
     dirty = true;
+}
+
+void Writer::set_mtime(const std::filesystem::path& relpath, time_t mtime)
+{
+    if (auto* info = segment(relpath))
+    {
+        info->mtime = mtime;
+        dirty = true;
+    } else
+        throw std::runtime_error(relpath.native() + ": cannot update mtime since segment is not in index");
 }
 
 void Writer::remove(const std::filesystem::path& relpath)

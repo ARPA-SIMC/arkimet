@@ -460,16 +460,16 @@ this->add_method("write_check", [](Fixture& f) {
 });
 
 this->add_method("read_repack2", [](Fixture& f) {
-    f.import_all(f.td.mds);
+    wassert(f.import_all(f.td.mds));
 
     core::lock::TestWait lock_wait;
 
     metadata::Collection mdc;
     RepackForever<Fixture> rf(f);
-    rf.during([&]{
+    wassert(rf.during([&]{
         for (unsigned i = 0; i < 60; ++i)
             mdc.add(*f.config().create_reader(), Matcher());
-    });
+    }));
 
     wassert(actual(mdc.size()) == 60u * 3);
 });

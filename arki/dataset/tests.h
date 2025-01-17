@@ -213,6 +213,11 @@ public:
     void archived_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
 
     /**
+     * Dump spans of each data in each segment to stderr
+     */
+    void dump_data_spans();
+
+    /**
      * Raise TestSkipped if the current dataset has type 'simple'
      */
     void skip_if_type_simple();

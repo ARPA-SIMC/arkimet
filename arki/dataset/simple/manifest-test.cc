@@ -242,6 +242,20 @@ add_method("add_remove", [] {
     wassert(actual(segs[2].relpath) == "2007/10-09.grib");
 });
 
+add_method("add_remove", [] {
+    // Test adding and removing files
+    manifest::Writer writer("testds", false);
+    fill1(writer);
+
+    writer.set_mtime("2007/07-08.grib", 4242);
+    wassert_true(writer.is_dirty());
+
+    wassert(actual(writer.segment("2007/07-08.grib")->mtime) == 4242);
+
+    auto e = wassert_throws(std::runtime_error, writer.set_mtime("missing.grib", 1234));
+    wassert(actual(e.what()).contains("segment is not in index"));
+});
+
 add_method("read_legacy_sqlite", [] {
     {
         manifest::Writer writer("testds", false);

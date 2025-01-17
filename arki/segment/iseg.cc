@@ -66,13 +66,56 @@ CIndex& Checker::index()
 arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;
-    index().scan(res.inserter_func(), "reftime, offset");
+    index().scan(res.inserter_func(), "offset");
     return res;
 }
 
 std::shared_ptr<segment::Fixer> Checker::fixer()
 {
     return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
+}
+
+Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config)
+{
+    ReorderResult res;
+    auto& index = checker().index();
+    auto pending_index = index.begin_transaction();
+
+    // Make a copy of the file with the right data in it, sorted by
+    // reftime, and update the offsets in the index
+    auto data_checker = data().checker(false);
+    auto pending_repack = data_checker->repack(segment().root(), mds, repack_config);
+
+    // Reindex mds
+    index.reset();
+    for (const auto& md: mds)
+    {
+        const auto& source = md->sourceBlob();
+        if (index.index(*md, source.offset))
+            throw std::runtime_error("duplicate detected while reordering segment");
+    }
+
+    res.size_pre = data_checker->size();
+
+    // Commit the changes in the file system
+    pending_repack.commit();
+
+    // Commit the changes in the database
+    pending_index.commit();
+
+    res.size_post = data_checker->size();
+
+    auto ts = data().timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << segment().abspath() << ": segment data missing after a reorder";
+        throw std::runtime_error(buf.str());
+    }
+    res.segment_mtime = ts.value();
+
+    return res;
+
 }
 
 }

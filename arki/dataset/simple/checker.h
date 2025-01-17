@@ -51,7 +51,6 @@ public:
 
     void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1) override;
     void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0) override;
-    void test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx) override;
     void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) override;
 
     friend class CheckerSegment;

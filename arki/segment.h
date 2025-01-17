@@ -142,12 +142,35 @@ protected:
     std::shared_ptr<Checker> m_checker;
 
 public:
+    struct ReorderResult
+    {
+        size_t size_pre;
+        size_t size_post;
+        time_t segment_mtime;
+    };
+
     Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock);
     Fixer(const Fixer&) = delete;
     Fixer(Fixer&&) = delete;
     Fixer& operator=(const Fixer&) = delete;
     Fixer& operator=(Fixer&&) = delete;
     virtual ~Fixer();
+
+    const Segment& segment() const { return m_checker->segment(); }
+    const Checker& checker() const { return *m_checker; }
+    Checker& checker() { return *m_checker; }
+    const segment::Data& data() const { return m_checker->data(); }
+    segment::Data& data() { return m_checker->data(); }
+
+    /**
+     * Rewrite the segment so that the data has the same order as `mds`.
+     *
+     * In the resulting file, there are no holes between data.
+     *
+     * @returns The size difference between the initial segment size and the
+     * final segment size.
+     */
+    virtual ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) = 0;
 
     virtual void test_corrupt_data(unsigned data_idx);
     virtual void test_truncate_data(unsigned data_idx);

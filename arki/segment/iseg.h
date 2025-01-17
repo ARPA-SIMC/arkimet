@@ -45,6 +45,11 @@ class Fixer : public segment::Fixer
 {
 public:
     using segment::Fixer::Fixer;
+
+    const Checker& checker() const { return *static_cast<const Checker*>(m_checker.get()); }
+    Checker& checker() { return *static_cast<Checker*>(m_checker.get()); }
+
+    ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) override;
 };
 
 }

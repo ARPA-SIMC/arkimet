@@ -89,7 +89,9 @@ public:
 
     void reread();
 
+    SegmentInfo* segment(const std::filesystem::path& relpath);
     void set(const std::filesystem::path& relpath, time_t mtime, const core::Interval& time);
+    void set_mtime(const std::filesystem::path& relpath, time_t mtime);
     void remove(const std::filesystem::path& relpath);
     void flush();
     void rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath);

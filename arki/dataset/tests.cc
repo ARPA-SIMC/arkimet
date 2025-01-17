@@ -234,6 +234,22 @@ State DatasetTest::scan_state(bool quick)
     return res;
 }
 
+void DatasetTest::dump_data_spans()
+{
+    auto checker = makeSegmentedChecker();
+    State res;
+    CheckerConfig opts;
+    checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
+        metadata::Collection mds = segment.segment_checker->scan();
+        fprintf(stderr, " * %s:\n", segment.segment->relpath().c_str());
+        for (const auto& md: mds)
+        {
+            const auto& blob = md->sourceBlob();
+            fprintf(stderr, "   %s %zu+%zu=%zu\n", md->get(TYPE_REFTIME)->to_string().c_str(), (size_t)blob.offset, (size_t)blob.size, (size_t)(blob.offset + blob.size));
+        }
+    });
+}
+
 State DatasetTest::scan_state(const Matcher& matcher, bool quick)
 {
     CheckerConfig opts;
