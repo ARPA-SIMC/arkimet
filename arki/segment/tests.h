@@ -8,6 +8,13 @@
 namespace arki::tests {
 
 /**
+ * Create a bare data segment.
+ *
+ * mds metadata sources are updated to point inside the segment
+ */
+void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds);
+
+/**
  * Create a segment with attached metadata.
  *
  * mds metadata sources are updated to point inside the segment
