@@ -445,6 +445,13 @@ void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned d
     fixer->test_corrupt_data(data_idx);
 }
 
+void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
+{
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    auto csegment = this->segment(segment);
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->test_truncate_data(data_idx);
+}
 
 
 }

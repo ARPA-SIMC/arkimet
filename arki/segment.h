@@ -150,6 +150,7 @@ public:
     virtual ~Fixer();
 
     virtual void test_corrupt_data(unsigned data_idx);
+    virtual void test_truncate_data(unsigned data_idx);
 };
 
 /**

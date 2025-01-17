@@ -318,7 +318,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx=0) = 0;
+    virtual void test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx=0);
 
     /**
      * Swap the data in the segment at position `d1_idx` with the one at

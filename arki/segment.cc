@@ -254,6 +254,12 @@ void Fixer::test_corrupt_data(unsigned data_idx)
     m_checker->data().checker(false)->test_corrupt(mds, data_idx);
 }
 
+void Fixer::test_truncate_data(unsigned data_idx)
+{
+    arki::metadata::Collection mds = m_checker->scan();
+    m_checker->data().checker(false)->test_truncate_by_data(mds, data_idx);
+}
+
 }
 
 }
