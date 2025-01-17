@@ -6,6 +6,7 @@
 #include "data/zip.h"
 #include "data/gz.h"
 #include "metadata.h"
+#include "scan.h"
 #include "arki/core/file.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
@@ -119,8 +120,7 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const S
     }
 
     // Else scan the file as usual
-    //return std::make_shared<segment::scan::Reader>(reader);
-    throw std::runtime_error("scan::Reader not yet implemented");
+    return std::make_shared<segment::scan::Reader>(segment, lock);
 }
 
 std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const

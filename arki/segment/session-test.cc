@@ -3,6 +3,7 @@
 #include "arki/utils/sys.h"
 #include "session.h"
 #include "metadata.h"
+#include "scan.h"
 
 using namespace std;
 using namespace arki;
@@ -47,6 +48,19 @@ add_method("detect_metadata_reader", [] {
     wassert(actual(e.what()).contains("misses a policy"));
 });
 
+add_method("detect_scan_reader", [] {
+    GRIBData td;
+    auto segment = make_segment(td);
+    fill_scan_segment(segment, td.mds);
+    wassert(actual_file("test/test.grib").exists());
+    wassert(actual_file("test/test.grib.metadata").not_exists());
+
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    wassert_true(dynamic_cast<segment::scan::Reader*>(reader.get()));
+
+    auto e = wassert_throws(std::runtime_error, segment->checker(std::make_shared<core::lock::NullCheckLock>()));
+    wassert(actual(e.what()).contains("misses a policy"));
+});
 
 }
 
