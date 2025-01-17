@@ -66,7 +66,7 @@ CIndex& Checker::index()
 arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;
-    m_index->scan(res.inserter_func(), "reftime, offset");
+    index().scan(res.inserter_func(), "reftime, offset");
     return res;
 }
 

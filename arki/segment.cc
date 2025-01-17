@@ -8,6 +8,7 @@
 #include "segment/data/gz.h"
 #include "arki/nag.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/summary.h"
 #include "arki/query.h"
 #include "arki/utils/files.h"
@@ -245,6 +246,12 @@ Fixer::Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteL
 
 Fixer::~Fixer()
 {
+}
+
+void Fixer::test_corrupt_data(unsigned data_idx)
+{
+    arki::metadata::Collection mds = m_checker->scan();
+    m_checker->data().checker(false)->test_corrupt(mds, data_idx);
 }
 
 }

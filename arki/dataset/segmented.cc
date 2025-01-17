@@ -437,6 +437,16 @@ void Checker::scan_dir(std::function<void(std::shared_ptr<const Segment> segment
     walker.walk();
 }
 
+void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
+{
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    auto csegment = this->segment(segment);
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->test_corrupt_data(data_idx);
+}
+
+
+
 }
 }
 }

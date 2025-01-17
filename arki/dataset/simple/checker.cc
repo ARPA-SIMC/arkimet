@@ -678,13 +678,6 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
 
-void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
-{
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    metadata::Collection mds = query_segment(relpath);
-    dataset().segment_session->segment_data_checker(segment)->test_corrupt(mds, data_idx);
-}
-
 void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     auto segment = dataset().segment_session->segment_from_relpath(relpath);

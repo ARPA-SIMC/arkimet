@@ -120,6 +120,10 @@ public:
     Checker& operator=(Checker&&) = delete;
     virtual ~Checker();
 
+    const Segment& segment() const { return *m_segment; }
+    const segment::Data& data() const { return *m_data; }
+    segment::Data& data() { return *m_data; }
+
     /**
      * Return the metadata for the contents of the whole segment
      */
@@ -144,6 +148,8 @@ public:
     Fixer& operator=(const Fixer&) = delete;
     Fixer& operator=(Fixer&&) = delete;
     virtual ~Fixer();
+
+    virtual void test_corrupt_data(unsigned data_idx);
 };
 
 /**

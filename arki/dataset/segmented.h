@@ -311,7 +311,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx=0) = 0;
+    virtual void test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx=0);
 
     /**
      * Truncate the segment at position `data_idx`.
