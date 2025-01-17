@@ -178,6 +178,12 @@ CheckerSegment::~CheckerSegment()
 {
 }
 
+size_t CheckerSegment::remove(bool with_data)
+{
+    auto fixer = segment_checker->fixer();
+    return fixer->remove(with_data);
+}
+
 void CheckerSegment::archive()
 {
     // TODO: this is a hack to ensure that 'last' is created (and clean) before

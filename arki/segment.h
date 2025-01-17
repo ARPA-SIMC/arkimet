@@ -141,6 +141,13 @@ protected:
     std::shared_ptr<core::CheckWriteLock> lock;
     std::shared_ptr<Checker> m_checker;
 
+    /**
+     * Remove the file if it exists.
+     *
+     * @returns the number of bytes freed.
+     */
+    size_t remove_ifexists(const std::filesystem::path& path);
+
 public:
     struct ReorderResult
     {
@@ -171,6 +178,14 @@ public:
      * final segment size.
      */
     virtual ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) = 0;
+
+    /**
+     * Remove the segment.
+     *
+     * @param with_data: if false, only metadata is removed, and data is preserved.
+     * @returns the number of bytes freed
+     */
+    virtual size_t remove(bool with_data) = 0;
 
     virtual void test_corrupt_data(unsigned data_idx);
     virtual void test_truncate_data(unsigned data_idx);

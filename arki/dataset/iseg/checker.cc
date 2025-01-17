@@ -310,19 +310,6 @@ public:
         return res.size_pre - res.size_post;
     }
 
-    size_t remove(bool with_data) override
-    {
-        auto idx_abspath = sys::with_suffix(segment_data_checker->segment().abspath(), ".index");
-        size_t res = 0;
-        if (std::filesystem::exists(idx_abspath))
-        {
-            res = sys::size(idx_abspath);
-            sys::unlink(idx_abspath);
-        }
-        if (!with_data) return res;
-        return res + segment_data_checker->remove();
-    }
-
     void index(metadata::Collection&& mds) override
     {
         // Add to index

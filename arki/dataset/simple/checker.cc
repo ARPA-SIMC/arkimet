@@ -207,12 +207,9 @@ public:
 
     size_t remove(bool with_data) override
     {
-        dataset_checker.manifest.remove(segment_data_checker->segment().relpath());
-        std::filesystem::remove(sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata"));
-        std::filesystem::remove(sys::with_suffix(segment_data_checker->segment().abspath(), ".summary"));
+        dataset_checker.manifest.remove(segment->relpath());
         dataset_checker.manifest.flush();
-        if (!with_data) return 0;
-        return segment_data_checker->remove();
+        return segmented::CheckerSegment::remove(with_data);
     }
 
     void tar() override
@@ -234,6 +231,7 @@ public:
         segment_data_checker = segment_data_checker->tar(mds);
 
         // Write out the new metadata
+        mds.prepare_for_segment_metadata();
         mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
@@ -267,6 +265,7 @@ public:
         segment_data_checker = segment_data_checker->zip(mds);
 
         // Write out the new metadata
+        mds.prepare_for_segment_metadata();
         mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
@@ -303,6 +302,7 @@ public:
         size_t new_size = segment_data_checker->size();
 
         // Write out the new metadata
+        mds.prepare_for_segment_metadata();
         mds.writeAtomically(path_metadata);
 
         // Regenerate the summary. It is unchanged, really, but its timestamp
@@ -328,11 +328,11 @@ public:
 
         // Iterate the metadata, computing the summary and making the data
         // paths relative
-        mds.prepare_for_segment_metadata();
         Summary sum;
         mds.add_to_summary(sum);
 
         // Regenerate .metadata and .summary
+        mds.prepare_for_segment_metadata();
         mds.writeAtomically(sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata"));
         sum.writeAtomically(sys::with_suffix(segment_data_checker->segment().abspath(), ".summary"));
 
@@ -368,6 +368,7 @@ public:
             sum.add(*md);
 
         // Regenerate .metadata and .summary
+        mds.prepare_for_segment_metadata();
         mds.writeAtomically(path_metadata);
         sum.writeAtomically(path_summary);
 

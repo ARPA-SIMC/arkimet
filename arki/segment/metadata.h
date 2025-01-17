@@ -49,6 +49,7 @@ public:
     using segment::Fixer::Fixer;
 
     ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) override;
+    size_t remove(bool with_data) override;
 };
 
 }

@@ -170,7 +170,7 @@ public:
     /**
      * Remove the segment
      */
-    virtual size_t remove(bool with_data=false) = 0;
+    virtual size_t remove(bool with_data=false);
 
     /**
      * Add information about a file to the index

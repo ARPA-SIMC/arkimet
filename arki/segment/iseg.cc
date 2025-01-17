@@ -115,7 +115,18 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     res.segment_mtime = ts.value();
 
     return res;
+}
 
+size_t Fixer::remove(bool with_data)
+{
+    size_t res = 0;
+    res += remove_ifexists(segment().abspath_iseg_index());
+
+    if (!with_data)
+        return res;
+
+    auto data_checker = data().checker(false);
+    return res + data_checker->remove();
 }
 
 }

@@ -248,6 +248,17 @@ Fixer::~Fixer()
 {
 }
 
+size_t Fixer::remove_ifexists(const std::filesystem::path& path)
+{
+    size_t res = 0;
+    if (std::filesystem::exists(path))
+    {
+        res = sys::size(path);
+        sys::unlink(path);
+    }
+    return res;
+}
+
 void Fixer::test_corrupt_data(unsigned data_idx)
 {
     arki::metadata::Collection mds = m_checker->scan();

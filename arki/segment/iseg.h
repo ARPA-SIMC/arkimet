@@ -50,6 +50,7 @@ public:
     Checker& checker() { return *static_cast<Checker*>(m_checker.get()); }
 
     ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) override;
+    size_t remove(bool with_data) override;
 };
 
 }
