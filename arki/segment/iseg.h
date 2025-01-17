@@ -29,9 +29,12 @@ public:
 
 class Checker : public segment::Checker
 {
+    std::shared_ptr<CIndex> m_index;
+
 public:
     Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
 
+    CIndex& index();
     arki::metadata::Collection scan() override;
 };
 

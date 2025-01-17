@@ -203,15 +203,14 @@ void CheckerSegment::archive()
         throw std::runtime_error("cannot archive segment "s + segment_data_checker->segment().abspath().native() + " because its name does not match the dataset step");
 
     // Get the contents of this segment
-    metadata::Collection mdc;
-    get_metadata(lock, mdc);
+    metadata::Collection mds = segment_checker->scan();
 
     // Move the segment to the archive and deindex it
     auto new_relpath = "last" / sys::with_suffix(dataset().step()(interval.begin), "."s + format_name(format));
     release(dataset().archive()->segment_session, new_relpath);
 
     // Acquire in the achive
-    archives()->index_segment(new_relpath, std::move(mdc));
+    archives()->index_segment(new_relpath, std::move(mds));
 }
 
 void CheckerSegment::unarchive()

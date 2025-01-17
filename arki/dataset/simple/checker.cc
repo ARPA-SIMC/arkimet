@@ -69,11 +69,6 @@ public:
     simple::Dataset& dataset() override { return dataset_checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(dataset_checker.archive()); }
 
-    void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) override
-    {
-        mds = segment_checker->scan();
-    }
-
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
         if (!segment_data_checker->exists_on_disk())
@@ -190,8 +185,7 @@ public:
         auto lock = dataset_checker.lock->write_lock();
 
         // Read the metadata
-        metadata::Collection mds;
-        get_metadata(dataset_checker.lock, mds);
+        metadata::Collection mds = segment_checker->scan();
 
         // Sort by reference time and offset
         RepackSort cmp;
@@ -260,8 +254,7 @@ public:
         auto path_summary = sys::with_suffix(segment_data_checker->segment().abspath(), ".summary");
         auto lock = dataset_checker.lock->write_lock();
 
-        metadata::Collection mds;
-        get_metadata(dataset_checker.lock, mds);
+        metadata::Collection mds = segment_checker->scan();
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);
@@ -294,8 +287,7 @@ public:
         auto path_summary = sys::with_suffix(segment_data_checker->segment().abspath(), ".summary");
         auto lock = dataset_checker.lock->write_lock();
 
-        metadata::Collection mds;
-        get_metadata(dataset_checker.lock, mds);
+        metadata::Collection mds = segment_checker->scan();
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);
@@ -329,8 +321,7 @@ public:
         auto path_summary = sys::with_suffix(segment_data_checker->segment().abspath(), ".summary");
         auto lock = dataset_checker.lock->write_lock();
 
-        metadata::Collection mds;
-        get_metadata(dataset_checker.lock, mds);
+        metadata::Collection mds = segment_checker->scan();
 
         // Remove existing cached metadata, since we scramble their order
         std::filesystem::remove(path_metadata);

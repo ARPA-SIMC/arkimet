@@ -58,7 +58,6 @@ class CheckerSegment : public segmented::CheckerSegment
 {
 public:
     Checker& dataset_checker;
-    std::shared_ptr<CIndex> m_idx;
 
     CheckerSegment(Checker& checker, std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
         : segmented::CheckerSegment(segment, lock), dataset_checker(checker)
@@ -70,19 +69,12 @@ public:
 
     CIndex& idx()
     {
-        if (!m_idx)
-            m_idx = static_pointer_cast<const segment::iseg::Segment>(segment)->check_index(lock);
-        return *m_idx;
+        return static_pointer_cast<segment::iseg::Checker>(segment_checker)->index();
     }
     std::filesystem::path path_relative() const override { return segment_data_checker->segment().relpath(); }
     const iseg::Dataset& dataset() const override { return dataset_checker.dataset(); }
     iseg::Dataset& dataset() override { return dataset_checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(dataset_checker.archive()); }
-
-    void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) override
-    {
-        idx().scan(mds.inserter_func(), "reftime, offset");
-    }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {

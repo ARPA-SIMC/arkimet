@@ -130,11 +130,6 @@ public:
     CheckerSegment(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
     virtual ~CheckerSegment();
 
-    /**
-     * Get the metadata for the contents of this segment known to the dataset
-     */
-    virtual void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) = 0;
-
     /// Convert the segment into a tar segment
     virtual void tar() = 0;
 

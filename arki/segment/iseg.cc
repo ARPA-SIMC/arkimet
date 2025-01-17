@@ -49,9 +49,18 @@ Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::C
 {
 }
 
+CIndex& Checker::index()
+{
+    if (!m_index)
+        m_index = std::static_pointer_cast<const Segment>(m_segment)->check_index(lock);
+    return *m_index;
+}
+
 arki::metadata::Collection Checker::scan()
 {
-    throw std::runtime_error("not yet implemented");
+    arki::metadata::Collection res;
+    m_index->scan(res.inserter_func(), "reftime, offset");
+    return res;
 }
 
 }
