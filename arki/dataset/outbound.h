@@ -28,9 +28,6 @@ struct Dataset : public segmented::Dataset
  */
 class Writer : public DatasetAccess<Dataset, segmented::Writer>
 {
-protected:
-    void storeBlob(const segment::data::WriterConfig& writer_config, Metadata& md, const std::filesystem::path& reldest);
-
 public:
     // Initialise the dataset with the information from the configurationa in 'cfg'
     Writer(std::shared_ptr<Dataset> config);

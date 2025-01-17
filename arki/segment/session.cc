@@ -140,30 +140,11 @@ std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_
     return res->second.lock();
 }
 
-std::shared_ptr<segment::data::Reader> Session::segment_data_reader(DataFormat format, const std::filesystem::path& relpath, std::shared_ptr<const core::ReadLock> lock) const
-{
-    return segment_data_reader(segment_from_relpath_and_format(relpath, format), lock);
-}
-
-std::shared_ptr<segment::data::Writer> Session::segment_data_writer(const segment::data::WriterConfig& config, DataFormat format, const std::filesystem::path& relpath) const
-{
-    // Ensure that the directory containing the segment exists
-    auto seg = segment_from_relpath_and_format(relpath, format);
-    return segment_data_writer(seg, config);
-}
-
 std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::data::WriterConfig& config) const
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
     auto data = segment->detect_data();
     return data->writer(config, false);
-}
-
-std::shared_ptr<segment::data::Checker> Session::segment_data_checker(DataFormat format, const std::filesystem::path& relpath) const
-{
-    auto seg = segment_from_relpath_and_format(relpath, format);
-    auto data = seg->detect_data();
-    return data->checker(false);
 }
 
 std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
