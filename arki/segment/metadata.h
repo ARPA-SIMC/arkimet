@@ -15,6 +15,7 @@ class Index
 public:
     explicit Index(const Segment& segment, const std::filesystem::path& md_path);
 
+    bool read_all(std::shared_ptr<arki::segment::data::Reader> reader, metadata_dest_func dest);
     arki::metadata::Collection query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader);
     void query_summary(const Matcher& matcher, Summary& summary);
 };
@@ -25,7 +26,9 @@ class Reader : public segment::Reader
 
 public:
     Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock);
+    ~Reader();
 
+    bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };

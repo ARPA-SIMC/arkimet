@@ -73,6 +73,20 @@ public:
     using ReadLock::ReadLock;
 };
 
+class NullCheckLock : public CheckLock
+{
+public:
+    using CheckLock::CheckLock;
+
+    std::shared_ptr<core::CheckWriteLock> write_lock() override;
+};
+
+class NullCheckWriteLock : public CheckWriteLock
+{
+public:
+    using CheckWriteLock::CheckWriteLock;
+};
+
 /**
  * Implement read/append/check locks on files.
  *

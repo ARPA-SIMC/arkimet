@@ -82,6 +82,11 @@ bool FLock::ofd_getlk(NamedFileDescriptor& fd)
 
 namespace lock {
 
+std::shared_ptr<core::CheckWriteLock> NullCheckLock::write_lock()
+{
+    return std::make_shared<NullCheckWriteLock>();
+}
+
 template<typename Base>
 File<Base>::File(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
     : lockfile(pathname, O_RDWR | O_CREAT, 0777), lock_policy(lock_policy)

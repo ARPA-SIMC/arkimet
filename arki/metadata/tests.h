@@ -5,8 +5,7 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 
-namespace arki {
-namespace tests {
+namespace arki::tests {
 
 struct TestData
 {
@@ -51,7 +50,7 @@ void fill(Metadata& md);
 
 struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 {
-    ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
+    explicit ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
 
     void operator==(std::shared_ptr<Metadata> expected) const { return operator==(*expected); }
     void operator!=(std::shared_ptr<Metadata> expected) const { return operator!=(*expected); }
@@ -82,8 +81,8 @@ struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 };
 
 inline arki::tests::ActualMetadata actual(const arki::Metadata& actual) { return arki::tests::ActualMetadata(actual); }
+inline arki::tests::ActualMetadata actual(std::shared_ptr<const arki::Metadata> actual) { return arki::tests::ActualMetadata(*actual); }
 
-}
 }
 
 #endif

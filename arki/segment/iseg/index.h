@@ -124,7 +124,7 @@ public:
     /**
      * Send the metadata of all data items known by the index
      */
-    void scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
+    bool scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
 
     /**
      * Query data sending the results to the given consumer.

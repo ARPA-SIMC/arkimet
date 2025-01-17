@@ -1,7 +1,9 @@
-#include "arki/core/tests.h"
+#include "arki/segment/tests.h"
+#include "arki/core/lock.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
 #include "segment.h"
+#include "segment/metadata.h"
 
 namespace {
 using namespace std;

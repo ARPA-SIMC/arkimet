@@ -22,6 +22,7 @@ class Reader : public segment::Reader
 public:
     Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<const core::ReadLock> lock);
 
+    bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
     // core::Interval get_stored_time_interval() override;

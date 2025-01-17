@@ -159,7 +159,7 @@ void Index<LockType>::setup_pragmas()
 }
 
 template<typename LockType>
-void Index<LockType>::scan(metadata_dest_func dest, const std::string& order_by) const
+bool Index<LockType>::scan(metadata_dest_func dest, const std::string& order_by) const
 {
     std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
     if (m_uniques) query += ", m.uniq";
@@ -178,8 +178,10 @@ void Index<LockType>::scan(metadata_dest_func dest, const std::string& order_by)
         // Rebuild the Metadata
         std::unique_ptr<Metadata> md(new Metadata);
         build_md(mdq, *md, reader);
-        dest(std::move(md));
+        if (!dest(std::move(md)))
+            return false;
     }
+    return true;
 }
 
 template<typename LockType>

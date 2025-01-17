@@ -196,6 +196,10 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 }
 #endif
 
+bool EmptyReader::read_all(metadata_dest_func dest)
+{
+    return true;
+}
 
 bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
 {

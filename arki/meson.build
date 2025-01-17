@@ -222,6 +222,7 @@ testlib = static_library('testlib', [
     'stream/tests.cc',
     'metadata/tests.cc',
     'matcher/tests.cc',
+    'segment/tests.cc',
     'segment/data/tests.cc',
     'dataset/tests.cc',
 ], include_directories: toplevel_inc)

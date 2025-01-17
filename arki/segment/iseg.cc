@@ -2,6 +2,8 @@
 #include "iseg/session.h"
 #include "iseg/index.h"
 #include "data.h"
+#include "arki/types/source/blob.h"
+#include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
 
@@ -23,11 +25,16 @@ Reader::Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<con
 {
 }
 
+bool Reader::read_all(metadata_dest_func dest)
+{
+    return m_index->scan(dest);
+}
+
 bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 {
     std::shared_ptr<arki::segment::data::Reader> reader;
     if (q.with_data)
-        reader = m_segment->session().segment_data_reader(m_segment->format(), m_segment->relpath(), lock);
+        reader = m_segment->session().segment_data_reader(m_segment, lock);
 
     auto mdbuf = m_index->query_data(q.matcher, reader);
 

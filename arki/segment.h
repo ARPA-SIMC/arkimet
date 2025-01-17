@@ -69,6 +69,12 @@ public:
     virtual ~Reader();
 
     /**
+     * Send all data from the segment to dest, in the order in which they are
+     * stored
+     */
+    virtual bool read_all(metadata_dest_func dest) = 0;
+
+    /**
      * Query the segment using the given matcher, and sending the results to
      * the given function.
      *
@@ -122,6 +128,7 @@ class EmptyReader: public Reader
 public:
     using Reader::Reader;
 
+    bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
