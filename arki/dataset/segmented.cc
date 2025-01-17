@@ -178,6 +178,14 @@ CheckerSegment::~CheckerSegment()
 {
 }
 
+segment::Fixer::ConvertResult CheckerSegment::tar()
+{
+    auto fixer = segment_checker->fixer();
+    auto res = fixer->tar();
+    segment_data_checker = fixer->data().checker(false);
+    return res;
+}
+
 size_t CheckerSegment::remove(bool with_data)
 {
     auto fixer = segment_checker->fixer();

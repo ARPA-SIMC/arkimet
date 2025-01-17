@@ -197,7 +197,6 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     return res;
 }
 
-
 size_t Fixer::remove(bool with_data)
 {
     size_t res = 0;
@@ -208,6 +207,58 @@ size_t Fixer::remove(bool with_data)
 
     auto data_checker = data().checker(false);
     return res + data_checker->remove();
+}
+
+Fixer::ConvertResult Fixer::tar()
+{
+    ConvertResult res;
+    if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".tar")))
+    {
+        auto ts = data().timestamp();
+        if (!ts)
+        {
+            std::stringstream buf;
+            buf << segment().abspath() << ": tar segment already exists but cannot be accessed";
+            throw std::runtime_error(buf.str());
+        }
+        res.segment_mtime = ts.value();
+        return res;
+    }
+
+    auto path_metadata = segment().abspath_metadata();
+    auto path_summary = segment().abspath_summary();
+
+    auto data_checker = data().checker(false);
+    res.size_pre = data_checker->size();
+
+    // Rescan file and sort for repacking
+    auto mds = checker().scan();
+    mds.sort();
+
+    std::filesystem::remove(path_metadata);
+
+    // Create the .tar segment
+    auto new_data_checker = data_checker->tar(mds);
+    res.size_post = new_data_checker->size();
+
+    // Write out the new metadata
+    mds.prepare_for_segment_metadata();
+    mds.writeAtomically(path_metadata);
+
+    checker().update_data();
+    auto ts = data().timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << segment().abspath() << ": cannot access tar segment after creating it";
+        throw std::runtime_error(buf.str());
+    }
+    res.segment_mtime = ts.value();
+
+    // The summary is unchanged: touch it to confirm it as still valid
+    sys::touch(path_summary, res.segment_mtime);
+
+    return res;
 }
 
 }

@@ -237,6 +237,10 @@ Checker::~Checker()
 {
 }
 
+void Checker::update_data()
+{
+    m_data = m_segment->detect_data();
+}
 
 Fixer::Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock)
     : lock(lock), m_checker(checker)

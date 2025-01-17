@@ -129,7 +129,7 @@ public:
     virtual ~CheckerSegment();
 
     /// Convert the segment into a tar segment
-    virtual void tar() = 0;
+    virtual segment::Fixer::ConvertResult tar();
 
     /// Convert the segment into a zip segment
     virtual void zip() = 0;

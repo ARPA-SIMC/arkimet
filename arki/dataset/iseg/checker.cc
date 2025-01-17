@@ -152,45 +152,6 @@ public:
         return res;
     }
 
-    void tar() override
-    {
-        if (std::filesystem::exists(sys::with_suffix(segment_data_checker->segment().abspath(), ".tar")))
-            return;
-
-        auto write_lock = lock->write_lock();
-        Pending p = idx().begin_transaction();
-
-        // Rescan file
-        metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
-
-        // Create the .tar segment
-        segment_data_checker = segment_data_checker->tar(mds);
-
-        // Reindex the new metadata
-        idx().reset();
-        for (metadata::Collection::const_iterator i = mds.begin(); i != mds.end(); ++i)
-        {
-            const source::Blob& source = (*i)->sourceBlob();
-            if (idx().index(**i, source.offset))
-                throw std::runtime_error("duplicate detected while tarring segment");
-        }
-
-        // Remove the .metadata file if present, because we are shuffling the
-        // data file and it will not be valid anymore
-        auto mdpathname = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        if (std::filesystem::exists(mdpathname))
-            if (unlink(mdpathname.c_str()) < 0)
-            {
-                stringstream ss;
-                ss << "cannot remove obsolete metadata file " << mdpathname;
-                throw std::system_error(errno, std::system_category(), ss.str());
-            }
-
-        // Commit the changes in the database
-        p.commit();
-    }
-
     void zip() override
     {
         if (std::filesystem::exists(sys::with_suffix(segment_data_checker->segment().abspath(), ".zip")))
@@ -203,7 +164,7 @@ public:
         metadata::Collection mds;
         idx().scan(mds.inserter_func(), "reftime, offset");
 
-        // Create the .tar segment
+        // Create the .zip segment
         segment_data_checker = segment_data_checker->zip(mds);
 
         // Reindex the new metadata
@@ -243,7 +204,7 @@ public:
         metadata::Collection mds;
         idx().scan(mds.inserter_func(), "reftime, offset");
 
-        // Create the .tar segment
+        // Create the .gz segment
         size_t old_size = segment_data_checker->size();
         segment_data_checker = segment_data_checker->compress(mds, groupsize);
         size_t new_size = segment_data_checker->size();

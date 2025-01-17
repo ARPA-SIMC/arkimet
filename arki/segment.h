@@ -125,6 +125,14 @@ public:
     segment::Data& data() { return *m_data; }
 
     /**
+     * Redo detection of the data accessor.
+     *
+     * Call this, for example, after converting the segment to a different
+     * format.
+     */
+    void update_data();
+
+    /**
      * Return the metadata for the contents of the whole segment
      */
     virtual arki::metadata::Collection scan() = 0;
@@ -151,9 +159,16 @@ protected:
 public:
     struct ReorderResult
     {
-        size_t size_pre;
-        size_t size_post;
-        time_t segment_mtime;
+        size_t size_pre = 0;
+        size_t size_post = 0;
+        time_t segment_mtime = 0;
+    };
+
+    struct ConvertResult
+    {
+        size_t size_pre = 0;
+        size_t size_post = 0;
+        time_t segment_mtime = 0;
     };
 
     Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock);
@@ -178,6 +193,11 @@ public:
      * final segment size.
      */
     virtual ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) = 0;
+
+    /**
+     * Convert the segment to use tar for the data.
+     */
+    virtual ConvertResult tar() = 0;
 
     /**
      * Remove the segment.
