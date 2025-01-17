@@ -96,8 +96,9 @@ public:
 class Checker
 {
 protected:
-    std::shared_ptr<const Segment> m_segment;
     std::shared_ptr<core::CheckLock> lock;
+    std::shared_ptr<const Segment> m_segment;
+    std::shared_ptr<segment::Data> m_data;
 
 public:
     Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
@@ -106,6 +107,11 @@ public:
     Checker& operator=(const Checker&) = delete;
     Checker& operator=(Checker&&) = delete;
     virtual ~Checker();
+
+    /**
+     * Return the metadata for the contents of the whole segment
+     */
+    virtual arki::metadata::Collection scan() = 0;
 };
 
 /**

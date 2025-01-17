@@ -1,6 +1,7 @@
 #include "metadata.h"
 #include "data.h"
 #include "arki/query.h"
+#include "arki/core/lock.h"
 #include "arki/utils/sys.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
@@ -84,6 +85,41 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
         // Resummarize from metadata
         index.query_summary(matcher, summary);
     }
+}
+
+
+arki::metadata::Collection Checker::scan()
+{
+    arki::metadata::Collection res;
+
+    auto md_abspath = sys::with_suffix(m_segment->abspath(), ".metadata");
+    if (auto st_md = sys::stat(md_abspath))
+    {
+        if (auto data_ts = m_data->timestamp())
+        {
+            // Metadata exists and it looks new enough: use it
+            auto data_reader = m_data->reader(lock);
+            std::filesystem::path root(m_segment->abspath().parent_path());
+            arki::Metadata::read_file(arki::metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
+                md->sourceBlob().lock(data_reader);
+                res.acquire(md);
+                return true;
+            });
+        } else {
+            std::stringstream buf;
+            buf << m_segment->abspath() << ": cannot scan segment since its data is missing";
+            throw std::runtime_error(buf.str());
+        }
+    } else {
+        // Rescan the file
+        auto data_reader = m_data->reader(lock);
+        data_reader->scan_data([&](std::shared_ptr<Metadata> md) {
+            res.acquire(md);
+            return true;
+        });
+    }
+
+    return res;
 }
 
 }

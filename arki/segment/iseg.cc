@@ -49,5 +49,9 @@ Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::C
 {
 }
 
+arki::metadata::Collection Checker::scan()
+{
+    throw std::runtime_error("not yet implemented");
+}
 
 }

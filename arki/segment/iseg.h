@@ -31,6 +31,8 @@ class Checker : public segment::Checker
 {
 public:
     Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
+
+    arki::metadata::Collection scan() override;
 };
 
 }

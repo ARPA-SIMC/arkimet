@@ -71,8 +71,7 @@ public:
 
     void get_metadata(std::shared_ptr<const core::ReadLock> lock, metadata::Collection& mds) override
     {
-        auto reader = segment_data_checker->data().reader(lock);
-        reader->scan(mds.inserter_func());
+        mds = segment_checker->scan();
     }
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override

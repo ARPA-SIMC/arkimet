@@ -34,6 +34,8 @@ class Checker : public segment::Checker
 {
 public:
     using segment::Checker::Checker;
+
+    arki::metadata::Collection scan() override;
 };
 
 }

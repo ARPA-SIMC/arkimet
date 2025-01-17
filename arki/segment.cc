@@ -208,7 +208,7 @@ void EmptyReader::query_summary(const Matcher& matcher, Summary& summary)
 
 
 Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
-    : m_segment(segment), lock(lock)
+    : lock(lock), m_segment(segment), m_data(segment->detect_data())
 {
 }
 
