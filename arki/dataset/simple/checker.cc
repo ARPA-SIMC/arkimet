@@ -441,9 +441,9 @@ std::string Checker::type() const { return "simple"; }
 metadata::Collection Checker::query_segment(const std::filesystem::path& relpath)
 {
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    auto reader = segment->detect_data()->reader(lock);
+    auto reader = segment->reader(lock);
     metadata::Collection mds;
-    reader->scan(mds.inserter_func());
+    reader->read_all(mds.inserter_func());
     return mds;
 }
 
@@ -669,6 +669,7 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     utils::files::PreserveFileTimes pf(pathname);
     sys::File fd(pathname, O_RDWR);
     fd.lseek(0);
+    mds.prepare_for_segment_metadata();
     mds.write_to(fd);
     fd.ftruncate(fd.lseek(0, SEEK_CUR));
 }
