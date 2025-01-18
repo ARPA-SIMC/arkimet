@@ -256,8 +256,8 @@ public:
 
         // Regenerate .metadata and .summary
         mds.prepare_for_segment_metadata();
-        mds.writeAtomically(segment_data_checker->segment().abspath_metadata());
-        sum.writeAtomically(segment_data_checker->segment().abspath_summary());
+        mds.writeAtomically(segment->abspath_metadata());
+        sum.writeAtomically(segment->abspath_summary());
 
         // Add to manifest
         dataset_checker.manifest.set(segment_data_checker->segment().relpath(), mtime, sum.get_reference_time());
@@ -266,8 +266,8 @@ public:
 
     void rescan(dataset::Reporter& reporter) override
     {
-        auto path_metadata = segment_data_checker->segment().abspath_metadata();
-        auto path_summary = segment_data_checker->segment().abspath_summary();
+        auto path_metadata = segment->abspath_metadata();
+        auto path_summary = segment->abspath_summary();
 
         metadata::Collection mds;
         segment_data_checker->rescan_data(
@@ -283,15 +283,15 @@ public:
         sum.writeAtomically(path_summary);
 
         // Add to manifest
-        dataset_checker.manifest.set(segment_data_checker->segment().relpath(), segment_data_checker->data().timestamp().value(), sum.get_reference_time());
+        dataset_checker.manifest.set(segment->relpath(), segment_data_checker->data().timestamp().value(), sum.get_reference_time());
         dataset_checker.manifest.flush();
     }
 
     arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
         metadata::Collection mds = segment_checker->scan();
-        dataset_checker.manifest.remove(segment_data_checker->segment().relpath());
         segment_data_checker->move(new_segment_session, new_relpath);
+        dataset_checker.manifest.remove(segment_data_checker->segment().relpath());
         dataset_checker.manifest.flush();
         return mds;
     }
