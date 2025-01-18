@@ -256,8 +256,8 @@ public:
 
         // Regenerate .metadata and .summary
         mds.prepare_for_segment_metadata();
-        mds.writeAtomically(sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata"));
-        sum.writeAtomically(sys::with_suffix(segment_data_checker->segment().abspath(), ".summary"));
+        mds.writeAtomically(segment_data_checker->segment().abspath_metadata());
+        sum.writeAtomically(segment_data_checker->segment().abspath_summary());
 
         // Add to manifest
         dataset_checker.manifest.set(segment_data_checker->segment().relpath(), mtime, sum.get_reference_time());
@@ -266,29 +266,16 @@ public:
 
     void rescan(dataset::Reporter& reporter) override
     {
-        auto path_metadata = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        auto path_summary = sys::with_suffix(segment_data_checker->segment().abspath(), ".summary");
-
-        // Delete cached info to force a full rescan
-        std::filesystem::remove(path_metadata);
-        std::filesystem::remove(path_summary);
-
-        auto dirname = segment_data_checker->segment().abspath().parent_path();
-        auto basename = segment_data_checker->segment().abspath().filename();
+        auto path_metadata = segment_data_checker->segment().abspath_metadata();
+        auto path_summary = segment_data_checker->segment().abspath_summary();
 
         metadata::Collection mds;
         segment_data_checker->rescan_data(
                 [&](const std::string& msg) { reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), msg); },
-                lock, [&](std::shared_ptr<Metadata> md) {
-                    auto& source = md->sourceBlob();
-                    md->set_source(Source::createBlobUnlocked(segment_data_checker->segment().format(), dirname, basename, source.offset, source.size));
-                    mds.acquire(md);
-                    return true;
-                });
+                lock, mds.inserter_func());
 
         Summary sum;
-        for (const auto& md: mds)
-            sum.add(*md);
+        mds.add_to_summary(sum);
 
         // Regenerate .metadata and .summary
         mds.prepare_for_segment_metadata();
