@@ -220,6 +220,8 @@ public:
 
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
+    void remove(const metadata::Collection& mds) override;
+
 
     /// Instantiate a CheckerSegment
     virtual std::unique_ptr<CheckerSegment> segment(std::shared_ptr<const Segment> segment) = 0;

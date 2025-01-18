@@ -14,9 +14,11 @@
 #include "arki/scan.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/files.h"
+#include "arki/nag.h"
 #include <algorithm>
 
 using namespace std;
@@ -314,6 +316,43 @@ void Checker::remove_all(CheckerConfig& opts)
     });
 
     local::Checker::remove_all(opts);
+}
+
+void Checker::remove(const metadata::Collection& mds)
+{
+    // Group mds by segment
+    std::unordered_map<std::filesystem::path, std::vector<uint64_t>> by_segment;
+
+    // Build a todo-list of entries to delete for each segment
+    for (const auto& md: mds)
+    {
+        const types::source::Blob* source = md->has_source_blob();
+        if (!source)
+            throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
+
+        if (source->basedir != dataset().path)
+            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir.native() + " but this dataset is at " + dataset().path.native());
+
+        core::Time time = md->get<types::reftime::Position>()->get_Position();
+        auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(source->format));
+
+        if (!dataset().segment_session->is_data_segment(relpath))
+            continue;
+
+        by_segment[relpath].push_back(source->offset);
+    }
+
+    for (const auto& i: by_segment)
+    {
+        segment::data::WriterConfig writer_config;
+        writer_config.drop_cached_data_on_commit = false;
+        writer_config.eatmydata = dataset().eatmydata;
+
+        auto segment = dataset().segment_session->segment_from_relpath(i.first);
+        auto seg = this->segment(segment);
+        seg->remove_data(i.second);
+        arki::nag::verbose("%s: %s: %zu data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
+    }
 }
 
 void Checker::tar(CheckerConfig& opts)

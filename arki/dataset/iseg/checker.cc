@@ -375,41 +375,16 @@ void Checker::check_issue51(CheckerConfig& opts)
 
 void Checker::remove(const metadata::Collection& mds)
 {
-    // Group mds by segment
-    std::unordered_map<std::filesystem::path, std::vector<uint64_t>> by_segment;
-    // Take note of months to invalidate in summary cache
+    segmented::Checker::remove(mds);
+
+    // Months to invalidate in summary cache
     std::set<std::pair<int, int>> months;
 
     // Build a todo-list of entries to delete for each segment
     for (const auto& md: mds)
     {
-        const types::source::Blob* source = md->has_source_blob();
-        if (!source)
-            throw std::runtime_error("cannot remove metadata from dataset, because it has no Blob source");
-
-        if (source->basedir != dataset().path)
-            throw std::runtime_error("cannot remove metadata from dataset: its basedir is " + source->basedir.native() + " but this dataset is at " + dataset().path.native());
-
         Time time = md->get<types::reftime::Position>()->get_Position();
-        auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg_segment_session->format));
-
-        if (!dataset().segment_session->is_data_segment(relpath))
-            continue;
-
-        by_segment[relpath].push_back(source->offset);
         months.insert(std::make_pair(time.ye, time.mo));
-    }
-
-    for (const auto& i: by_segment)
-    {
-        segment::data::WriterConfig writer_config;
-        writer_config.drop_cached_data_on_commit = false;
-        writer_config.eatmydata = dataset().eatmydata;
-
-        auto segment = dataset().segment_session->segment_from_relpath(i.first);
-        auto seg = this->segment(segment);
-        seg->remove_data(i.second);
-        arki::nag::verbose("%s: %s: %zu data marked as deleted", name().c_str(), i.first.c_str(), i.second.size());
     }
 
     index::SummaryCache scache(dataset().summary_cache_pathname);
