@@ -180,6 +180,13 @@ public:
     using Index<LockType>::segment;
 
     /**
+     * Completely reindex the segment using the given metadata.
+     *
+     * All data in the index is removed and replaced with that in mds.
+     */
+    void reindex(const arki::metadata::Collection& mds);
+
+    /**
      * Index the given metadata item.
      *
      * If the item already exists, returns the blob source pointing to the data

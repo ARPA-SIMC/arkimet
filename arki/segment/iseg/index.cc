@@ -606,6 +606,18 @@ struct Inserter
 }
 
 template<typename LockType>
+void WIndex<LockType>::reindex(const arki::metadata::Collection& mds)
+{
+    reset();
+    for (const auto& md: mds)
+    {
+        const auto& source = md->sourceBlob();
+        if (index(*md, source.offset))
+            throw std::runtime_error("duplicate detected while reordering segment");
+    }
+}
+
+template<typename LockType>
 std::unique_ptr<types::source::Blob> WIndex<LockType>::index(const Metadata& md, uint64_t ofs)
 {
     std::unique_ptr<types::source::Blob> res;

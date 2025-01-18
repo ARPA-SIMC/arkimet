@@ -163,14 +163,7 @@ Fixer::ConvertResult Fixer::tar()
     res.size_post = new_data_checker->size();
 
     // Reindex the new metadata
-    // TODO: move this reset+reindex to Index, since it hits rule-of-three
-    index.reset();
-    for (const auto& md: mds)
-    {
-        const auto& source = md->sourceBlob();
-        if (index.index(*md, source.offset))
-            throw std::runtime_error("duplicate detected while reordering segment");
-    }
+    index.reindex(mds);
 
     // Commit the changes in the database
     pending_index.commit();
@@ -218,14 +211,7 @@ Fixer::ConvertResult Fixer::zip()
     res.size_post = new_data_checker->size();
 
     // Reindex the new metadata
-    // TODO: move this reset+reindex to Index, since it hits rule-of-three
-    index.reset();
-    for (const auto& md: mds)
-    {
-        const auto& source = md->sourceBlob();
-        if (index.index(*md, source.offset))
-            throw std::runtime_error("duplicate detected while reordering segment");
-    }
+    index.reindex(mds);
 
     // Commit the changes in the database
     pending_index.commit();
@@ -274,14 +260,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     res.size_post = new_data_checker->size();
 
     // Reindex the new metadata
-    // TODO: move this reset+reindex to Index, since it hits rule-of-three
-    index.reset();
-    for (const auto& md: mds)
-    {
-        const auto& source = md->sourceBlob();
-        if (index.index(*md, source.offset))
-            throw std::runtime_error("duplicate detected while reordering segment");
-    }
+    index.reindex(mds);
 
     // Commit the changes in the database
     pending_index.commit();
