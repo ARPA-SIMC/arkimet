@@ -27,7 +27,7 @@ class CheckTests : public CheckTest<TestFixture>
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
-    bool can_delete_data() const override { return false; }
+    bool can_delete_data() const override { return true; }
 };
 
 template<typename TestFixture>
@@ -38,7 +38,7 @@ class FixTests : public FixTest<TestFixture>
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
-    bool can_delete_data() const override { return false; }
+    bool can_delete_data() const override { return true; }
 };
 
 template<typename TestFixture>
@@ -51,7 +51,7 @@ class RepackTests : public RepackTest<TestFixture>
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
-    bool can_delete_data() const override { return false; }
+    bool can_delete_data() const override { return true; }
 };
 
 template<typename Fixture>
@@ -60,11 +60,11 @@ void CheckTests<Fixture>::register_tests()
     CheckTest<Fixture>::register_tests();
 
     this->add_method("check_empty_metadata", R"(
-    - `.metadata` file must not be empty [unaligned]
+    - an empty `.metadata` file marks a deleted segment [deleted]
     )", [](Fixture& f) {
         sys::File mdf("testds" / sys::with_suffix(f.test_relpath, ".metadata"), O_RDWR);
         mdf.ftruncate(0);
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_DELETED));
     });
 
     this->add_method("check_metadata_timestamp", R"(

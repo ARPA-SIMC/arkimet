@@ -168,16 +168,24 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
+    if (mds.empty())
+    {
+        mds.writeAtomically(path_metadata);
+        std::filesystem::remove(segment().abspath_summary());
+        res.data_timespan = core::Interval();
+    } else {
 
-    Summary sum;
-    mds.add_to_summary(sum);
+        Summary sum;
+        mds.add_to_summary(sum);
 
-    // Write out the new metadata
-    mds.prepare_for_segment_metadata();
-    mds.writeAtomically(path_metadata);
-    sum.writeAtomically(path_summary);
+        // Write out the new metadata
+        mds.prepare_for_segment_metadata();
+        mds.writeAtomically(path_metadata);
+        sum.writeAtomically(path_summary);
 
-    res.data_timespan = sum.get_reference_time();
+        res.data_timespan = sum.get_reference_time();
+    }
+    res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
     return res;
 }
 
@@ -204,14 +212,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(path_metadata);
 
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": segment data missing after a reorder";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("reorder");
 
     // Sync timestamps. We need it for the summary since it is now older than
     // the other files, and since we read the segment data timestamp we can
@@ -271,14 +272,7 @@ Fixer::ConvertResult Fixer::tar()
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": cannot access tar segment after creating it";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
 
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
@@ -323,14 +317,7 @@ Fixer::ConvertResult Fixer::zip()
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": cannot access zip segment after creating it";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
 
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
@@ -376,14 +363,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": cannot access gz segment after creating it";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
 
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);

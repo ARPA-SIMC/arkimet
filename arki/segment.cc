@@ -252,6 +252,18 @@ Fixer::~Fixer()
 {
 }
 
+time_t Fixer::get_data_mtime_after_fix(const char* operation_desc)
+{
+    auto ts = data().timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << segment().abspath() << ": segment data missing after " << operation_desc;
+        throw std::runtime_error(buf.str());
+    }
+    return ts.value();
+}
+
 size_t Fixer::remove_ifexists(const std::filesystem::path& path)
 {
     size_t res = 0;

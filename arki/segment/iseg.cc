@@ -90,6 +90,7 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 
     pending_del.commit();
 
+    res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
     res.data_timespan = index.query_data_timespan();
     return res;
 }
@@ -123,16 +124,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     pending_index.commit();
 
     res.size_post = data_checker->size();
-
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": segment data missing after a reorder";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
-
+    res.segment_mtime = get_data_mtime_after_fix("reorder");
     return res;
 }
 
@@ -185,14 +177,7 @@ Fixer::ConvertResult Fixer::tar()
     pending_index.commit();
 
     checker().update_data();
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": cannot access tar segment after creating it";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
     return res;
 }
 
@@ -233,14 +218,7 @@ Fixer::ConvertResult Fixer::zip()
     pending_index.commit();
 
     checker().update_data();
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": cannot access zip segment after creating it";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
     return res;
 }
 
@@ -282,14 +260,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     pending_index.commit();
 
     checker().update_data();
-    auto ts = data().timestamp();
-    if (!ts)
-    {
-        std::stringstream buf;
-        buf << segment().abspath() << ": cannot access gz segment after creating it";
-        throw std::runtime_error(buf.str());
-    }
-    res.segment_mtime = ts.value();
+    res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
     return res;
 }
 

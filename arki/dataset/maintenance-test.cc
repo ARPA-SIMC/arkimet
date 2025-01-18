@@ -413,7 +413,7 @@ void CheckTest<TestFixture>::register_tests()
             - segments that only contain data that has been removed are
               identified as fully deleted [deleted]
         )", [&](Fixture& f) {
-            f.delete_all_in_segment();
+            wassert(f.delete_all_in_segment());
             wassert(f.state_is(3, segment::SEGMENT_DELETED));
             wassert(f.query_results({0, 2}));
         });

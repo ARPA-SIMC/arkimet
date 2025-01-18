@@ -123,7 +123,8 @@ public:
 
         // TODO: turn this into a Segment::exists/Segment::scan
         metadata::Collection contents;
-        if (std::filesystem::exists(path_metadata))
+        bool metadata_file_exists = std::filesystem::exists(path_metadata);
+        if (metadata_file_exists)
         {
             Metadata::read_file(metadata::ReadContext(path_metadata, dataset_checker.dataset().path), [&](std::shared_ptr<Metadata> md) {
                 // Tweak Blob sources replacing the file name with segment->relpath
@@ -147,7 +148,10 @@ public:
         if (contents.empty())
         {
             reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "index knows of this segment but contains no data for it");
-            state = segment::SEGMENT_UNALIGNED;
+            if (metadata_file_exists)
+                state = segment::SEGMENT_DELETED;
+            else
+                state = segment::SEGMENT_UNALIGNED;
         } else {
             if (!contents.expand_date_range(segment_interval))
             {
@@ -178,6 +182,16 @@ public:
         auto res = segmented::SegmentState(state, segment_interval);
         res.check_age(segment_data_checker->segment().relpath(), dataset_checker.dataset(), reporter);
         return res;
+    }
+
+    void remove_data(const std::set<uint64_t>& offsets) override
+    {
+        auto fixer = segment_checker->fixer();
+        auto res = fixer->mark_removed(offsets);
+
+        // Reindex with the new file information
+        dataset_checker.manifest.set(segment->relpath(), res.segment_mtime, res.data_timespan);
+        dataset_checker.manifest.flush();
     }
 
     size_t repack(unsigned test_flags) override
@@ -404,10 +418,14 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
-    manifest.remove(relpath);
-    auto pathname = dataset().path / relpath;
-    std::filesystem::remove(sys::with_suffix(pathname, ".metadata"));
-    std::filesystem::remove(sys::with_suffix(pathname, ".summary"));
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    auto mtime = segment->detect_data()->timestamp();
+    if (!mtime)
+        throw std::runtime_error(relpath.native() + ": cannot get timestamp in test_delete_from_index");
+
+    manifest.set(relpath, mtime.value(), core::Interval());
+    metadata::Collection().writeAtomically(segment->abspath_metadata());
+    std::filesystem::remove(segment->abspath_summary());
     manifest.flush();
 }
 
