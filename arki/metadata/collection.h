@@ -5,6 +5,7 @@
 
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/segment/fwd.h>
@@ -12,6 +13,7 @@
 #include <vector>
 #include <filesystem>
 #include <string>
+#include <set>
 
 namespace arki {
 class Summary;
@@ -164,6 +166,16 @@ public:
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();
+
+    /**
+     * Return a copy of this collection without duplicates.
+     *
+     * @param unique_components metadata to consider in searching for duplicates
+     *
+     * All data for which the metadata items listed in \a unique_components are
+     * the same will be removed from the result, except for the last one.
+     */
+    Collection without_duplicates(const std::set<types::Code>& unique_components) const;
 };
 
 struct TestCollection : public Collection

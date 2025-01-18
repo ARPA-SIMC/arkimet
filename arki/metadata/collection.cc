@@ -16,6 +16,7 @@
 #include "arki/dataset.h"
 #include <algorithm>
 #include <memory>
+#include <unordered_set>
 #include <fcntl.h>
 
 using namespace std;
@@ -373,6 +374,71 @@ bool Collection::expand_date_range(core::Interval& interval) const
 void Collection::drop_cached_data()
 {
     for (auto& md: *this) md->drop_cached_data();
+}
+
+namespace {
+
+/// Create unique strings from metadata
+struct IDMaker
+{
+    std::set<types::Code> components;
+
+    explicit IDMaker(const std::set<types::Code>& components) : components(components) {}
+
+    std::vector<uint8_t> make_string(const Metadata& md) const
+    {
+        std::vector<uint8_t> res;
+        core::BinaryEncoder enc(res);
+        for (const auto& i: components)
+            if (const Type* t = md.get(i))
+                t->encodeBinary(enc);
+        return res;
+    }
+};
+
+}
+
+Collection Collection::without_duplicates(const std::set<types::Code>& unique_components) const
+{
+    if (unique_components.empty())
+        return *this;
+
+    // unordered_map may be more efficient, but we would ned to implement hash for vector<uint8_t>
+    std::map<std::vector<uint8_t>, std::shared_ptr<Metadata>> last_seen;
+    std::unordered_set<const Metadata*> duplicates;
+    IDMaker id_maker(unique_components);
+    for (const auto& md: vals)
+    {
+        auto id = id_maker.make_string(*md);
+        if (id.empty())
+        {
+            duplicates.emplace(md.get());
+            continue;
+        }
+
+        auto old = last_seen.find(id);
+        if (old == last_seen.end())
+            last_seen.emplace(id, md);
+        else
+        {
+            duplicates.emplace(old->second.get());
+            old->second = md;
+        }
+    }
+
+    if (duplicates.empty())
+        return *this;
+
+    // duplicates is now a subset of this collection with the same order, and
+    // we can use to iterate efficiently
+    Collection res;
+    for (const auto& md: vals)
+    {
+        if (duplicates.find(md.get()) != duplicates.end())
+            continue; // Duplicate found: skip
+        res.acquire(md);
+    }
+    return res;
 }
 
 
