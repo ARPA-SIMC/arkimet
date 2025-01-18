@@ -48,6 +48,7 @@ class Fixer : public segment::Fixer
 public:
     using segment::Fixer::Fixer;
 
+    void mark_removed(const std::set<uint64_t>& offsets) override;
     ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) override;
     size_t remove(bool with_data) override;
     ConvertResult tar() override;

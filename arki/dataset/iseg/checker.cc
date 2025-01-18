@@ -129,19 +129,10 @@ public:
         return res;
     }
 
-    void remove_data(const std::vector<uint64_t>& offsets) override
+    void remove_data(const std::set<uint64_t>& offsets) override
     {
-        if (!segment_data_checker->exists_on_disk())
-            return;
-
-        // Delete from DB, and get file name
-        Pending p_del = idx().begin_transaction();
-
-        for (const auto& offset: offsets)
-            idx().remove(offset);
-
-        // Commit delete from DB
-        p_del.commit();
+        auto fixer = segment_checker->fixer();
+        fixer->mark_removed(offsets);
     }
 
     size_t repack(unsigned test_flags=0) override

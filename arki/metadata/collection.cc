@@ -441,6 +441,18 @@ Collection Collection::without_duplicates(const std::set<types::Code>& unique_co
     return res;
 }
 
+Collection Collection::without_data(const std::set<uint64_t>& offsets) const
+{
+    Collection res;
+    for (const auto& md: vals)
+    {
+        if (offsets.find(md->sourceBlob().offset) != offsets.end())
+            continue; // Data to remove: skip
+        res.acquire(md);
+    }
+    return res;
+}
+
 void Collection::dump(FILE* out, const std::set<types::Code>& extra_items) const
 {
     for (size_t i = 0; i < size(); ++i)

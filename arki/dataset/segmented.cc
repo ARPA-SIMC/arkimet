@@ -247,7 +247,7 @@ void CheckerSegment::unarchive()
     index(std::move(mdc));
 }
 
-void CheckerSegment::remove_data(const std::vector<uint64_t>&)
+void CheckerSegment::remove_data(const std::set<uint64_t>&)
 {
     throw std::runtime_error(dataset().name() + ": dataset segment does not support removing items");
 }
@@ -321,7 +321,7 @@ void Checker::remove_all(CheckerConfig& opts)
 void Checker::remove(const metadata::Collection& mds)
 {
     // Group mds by segment
-    std::unordered_map<std::filesystem::path, std::vector<uint64_t>> by_segment;
+    std::unordered_map<std::filesystem::path, std::set<uint64_t>> by_segment;
 
     // Build a todo-list of entries to delete for each segment
     for (const auto& md: mds)
@@ -339,7 +339,7 @@ void Checker::remove(const metadata::Collection& mds)
         if (!dataset().segment_session->is_data_segment(relpath))
             continue;
 
-        by_segment[relpath].push_back(source->offset);
+        by_segment[relpath].emplace(source->offset);
     }
 
     for (const auto& i: by_segment)

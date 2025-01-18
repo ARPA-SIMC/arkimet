@@ -185,6 +185,14 @@ public:
     segment::Data& data() { return m_checker->data(); }
 
     /**
+     * Mark the data at the given offsets as removed.
+     *
+     * If the segment has an index, the data segment remains unchanged until
+     * the next repack
+     */
+    virtual void mark_removed(const std::set<uint64_t>& offsets) = 0;
+
+    /**
      * Rewrite the segment so that the data has the same order as `mds`.
      *
      * In the resulting file, there are no holes between data.

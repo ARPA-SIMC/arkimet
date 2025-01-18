@@ -178,6 +178,11 @@ public:
     Collection without_duplicates(const std::set<types::Code>& unique_components) const;
 
     /**
+     * Return a copy of this collection without the data at the given offsets.
+     */
+    Collection without_data(const std::set<uint64_t>& offsets) const;
+
+    /**
      * Print the contents of the collection
      */
     void dump(FILE* out, const std::set<types::Code>& extra_items = std::set<types::Code>()) const;

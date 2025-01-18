@@ -78,6 +78,17 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
     return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
 }
 
+void Fixer::mark_removed(const std::set<uint64_t>& offsets)
+{
+    auto& index = checker().index();
+    auto pending_del = index.begin_transaction();
+
+    for (const auto& offset: offsets)
+        index.remove(offset);
+
+    pending_del.commit();
+}
+
 Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config)
 {
     ReorderResult res;
