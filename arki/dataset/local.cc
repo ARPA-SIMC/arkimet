@@ -115,15 +115,43 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::p
     auto name = path.filename();
     auto file = path / "config";
 
-    File in(file, O_RDONLY);
-    // Parse the config file into a new section
-    auto res = core::cfg::Section::parse(in);
-    // Fill in missing bits
-    res->set("name", name);
+    if (std::filesystem::exists(file))
+    {
+        File in(file, O_RDONLY);
+        // Parse the config file into a new section
+        auto res = core::cfg::Section::parse(in);
+        // Fill in missing bits
+        res->set("name", name);
 
-    if (res->value("type") != "remote")
-        res->set("path", std::filesystem::weakly_canonical(path));
-    return res;
+        if (res->value("type") != "remote")
+            res->set("path", std::filesystem::weakly_canonical(path));
+        return res;
+    } else {
+        auto abspath = std::filesystem::canonical(path);
+        if (abspath.parent_path().filename() == ".archive")
+        {
+            auto containing_path = abspath.parent_path().parent_path();
+            file = containing_path / "config";
+            if (std::filesystem::exists(file))
+            {
+                File in(file, O_RDONLY);
+                // Parse the config file into a new section
+                auto res = core::cfg::Section::parse(in);
+                // Fill in missing bits
+                res->set("name", name);
+                res->set("type", "simple");
+                res->set("path", abspath);
+                res->unset("archive age");
+                res->unset("delete age");
+                return res;
+            } else {
+                throw std::runtime_error(path.native() + ": path looks like an archive component but containing configuration not found at " + file.native());
+            }
+        } else {
+            throw std::runtime_error(path.native() + ": path is a directory but dataset configuration not found");
+        }
+    }
+
 }
 
 std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::filesystem::path& path)
