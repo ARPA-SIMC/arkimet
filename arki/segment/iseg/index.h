@@ -121,6 +121,13 @@ public:
     core::Pending begin_transaction();
 
     /**
+     * Return the min-max reftime interval known to the index.
+     *
+     * Begin extreme is included in the range, end extreme is excluded
+     */
+    core::Interval query_data_timespan() const;
+
+    /**
      * Send the metadata of all data items known by the index
      */
     bool scan(metadata_dest_func consumer, const std::string& order_by="offset") const;

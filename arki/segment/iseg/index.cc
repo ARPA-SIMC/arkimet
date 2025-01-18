@@ -189,18 +189,20 @@ void Index<LockType>::query_segment(metadata_dest_func dest) const
     scan(dest);
 }
 
-/// Begin extreme is included in the range, end extreme is excluded
-static void db_time_extremes(utils::sqlite::SQLiteDB& db, core::Interval& interval)
+template<typename LockType>
+core::Interval Index<LockType>::query_data_timespan() const
 {
+    core::Interval interval;
+
     // SQLite can compute min and max of an indexed column very fast,
     // provided that it is the ONLY thing queried.
-    Query q1("min_date", db);
+    Query q1("min_date", m_db);
     q1.compile("SELECT MIN(reftime) FROM md");
     while (q1.step())
         if (!q1.isNULL(0))
             interval.begin.set_sql(q1.fetchString(0));
 
-    Query q2("min_date", db);
+    Query q2("min_date", m_db);
     q2.compile("SELECT MAX(reftime) FROM md");
     while (q2.step())
     {
@@ -211,6 +213,8 @@ static void db_time_extremes(utils::sqlite::SQLiteDB& db, core::Interval& interv
             interval.end.normalise();
         }
     }
+
+    return interval;
 }
 
 template<typename LockType>
@@ -238,8 +242,7 @@ void Index<LockType>::add_joins_and_constraints(const Matcher& m, std::string& q
             }
         } else {
             // Compare with the reftime bounds in the database
-            core::Interval db_interval;
-            db_time_extremes(m_db, db_interval);
+            core::Interval db_interval = query_data_timespan();
             if (db_interval.begin.is_set() && db_interval.end.is_set())
             {
                 // Intersect the time bounds of the query with the time

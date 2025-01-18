@@ -7,6 +7,7 @@
 #include <arki/segment/fwd.h>
 #include <arki/segment/session.h>
 #include <arki/query/fwd.h>
+#include <arki/core/time.h>
 #include <arki/summary.h>
 
 namespace arki {
@@ -171,6 +172,11 @@ public:
         time_t segment_mtime = 0;
     };
 
+    struct MarkRemovedResult
+    {
+        arki::core::Interval data_timespan;
+    };
+
     Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock);
     Fixer(const Fixer&) = delete;
     Fixer(Fixer&&) = delete;
@@ -190,7 +196,7 @@ public:
      * If the segment has an index, the data segment remains unchanged until
      * the next repack
      */
-    virtual void mark_removed(const std::set<uint64_t>& offsets) = 0;
+    virtual MarkRemovedResult mark_removed(const std::set<uint64_t>& offsets) = 0;
 
     /**
      * Rewrite the segment so that the data has the same order as `mds`.

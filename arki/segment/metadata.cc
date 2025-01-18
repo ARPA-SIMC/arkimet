@@ -156,8 +156,10 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
     return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
 }
 
-void Fixer::mark_removed(const std::set<uint64_t>& offsets)
+Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 {
+    MarkRemovedResult res;
+
     // Load current metadata
     auto mds = checker().scan();
 
@@ -175,7 +177,8 @@ void Fixer::mark_removed(const std::set<uint64_t>& offsets)
     mds.writeAtomically(path_metadata);
     sum.writeAtomically(path_summary);
 
-    // TODO: return timespan to reindex
+    res.data_timespan = sum.get_reference_time();
+    return res;
 }
 
 Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config)
