@@ -31,29 +31,6 @@ namespace arki {
 namespace dataset {
 namespace iseg {
 
-namespace {
-
-/// Create unique strings from metadata
-struct IDMaker
-{
-    std::set<types::Code> components;
-
-    explicit IDMaker(const std::set<types::Code>& components) : components(components) {}
-
-    vector<uint8_t> make_string(const Metadata& md) const
-    {
-        vector<uint8_t> res;
-        core::BinaryEncoder enc(res);
-        for (set<types::Code>::const_iterator i = components.begin(); i != components.end(); ++i)
-            if (const Type* t = md.get(*i))
-                t->encodeBinary(enc);
-        return res;
-    }
-};
-
-}
-
-
 class CheckerSegment : public segmented::CheckerSegment
 {
 public:
@@ -202,65 +179,21 @@ public:
 
     void rescan(dataset::Reporter& reporter) override
     {
+        auto unique_codes = idx().unique_codes();
+
         metadata::Collection mds;
         segment_data_checker->rescan_data(
                 [&](const std::string& msg) { reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), msg); },
                 lock, mds.inserter_func());
 
+        // Filter out duplicates
+        mds = mds.without_duplicates(unique_codes);
+
         // Lock away writes and reads
         auto write_lock = lock->write_lock();
         Pending p = idx().begin_transaction();
-
-        // Remove from the index all data about the file
-        idx().reset();
-
-        // Scan the list of metadata, looking for duplicates and marking all
-        // the duplicates except the last one as deleted
-        IDMaker id_maker(idx().unique_codes());
-
-        map<vector<uint8_t>, const Metadata*> finddupes;
-        for (const auto& md: mds)
-        {
-            vector<uint8_t> id = id_maker.make_string(*md);
-            if (id.empty())
-                continue;
-            auto dup = finddupes.find(id);
-            if (dup == finddupes.end())
-                finddupes.insert(make_pair(id, md.get()));
-            else
-                dup->second = md.get();
-        }
-
-        // Send the remaining metadata to the reindexer
-        auto basename = segment_data_checker->segment().relpath().filename();
-        for (const auto& i: finddupes)
-        {
-            const Metadata& md = *i.second;
-            const source::Blob& blob = md.sourceBlob();
-            try {
-                if (blob.filename.filename() != basename)
-                    throw std::runtime_error("cannot rescan " + segment_data_checker->segment().relpath().native() + ": metadata points to the wrong file: " + blob.filename.native());
-                if (std::unique_ptr<types::source::Blob> old = idx().index(md, blob.offset))
-                {
-                    stringstream ss;
-                    ss << "cannot reindex " << basename << ": data item at offset " << blob.offset << " has a duplicate at offset " << old->offset << ": manual fix is required";
-                    throw runtime_error(ss.str());
-                }
-            } catch (std::exception& e) {
-                stringstream ss;
-                ss << "cannot reindex " << basename << ": failed to reindex data item at offset " << blob.offset << ": " << e.what();
-                throw runtime_error(ss.str());
-                // sqlite will take care of transaction consistency
-            }
-        }
-
-        // TODO: if scan fails, remove all info from the index and rename the
-        // file to something like .broken
-
-        // Commit the changes on the database
+        idx().reindex(mds);
         p.commit();
-
-        // TODO: remove relevant summary
     }
 
     arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
