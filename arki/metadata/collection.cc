@@ -441,6 +441,18 @@ Collection Collection::without_duplicates(const std::set<types::Code>& unique_co
     return res;
 }
 
+void Collection::dump(FILE* out, const std::set<types::Code>& extra_items) const
+{
+    for (size_t i = 0; i < size(); ++i)
+    {
+        auto md = get(i);
+        fprintf(out, "%zu: %s\n", i, md->has_source() ? md->source().to_string().c_str() : "<no source>");
+        fprintf(out, "    reftime: %s\n", md->get(TYPE_REFTIME)->to_string().c_str());
+        for (const auto& code: extra_items)
+            fprintf(out, "    %s: %s\n", formatCode(code).c_str(), md->get(code)->to_string().c_str());
+    }
+}
+
 
 TestCollection::TestCollection(const std::filesystem::path& path, bool with_data)
 {

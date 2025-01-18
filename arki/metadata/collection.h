@@ -176,6 +176,11 @@ public:
      * the same will be removed from the result, except for the last one.
      */
     Collection without_duplicates(const std::set<types::Code>& unique_components) const;
+
+    /**
+     * Print the contents of the collection
+     */
+    void dump(FILE* out, const std::set<types::Code>& extra_items = std::set<types::Code>()) const;
 };
 
 struct TestCollection : public Collection
