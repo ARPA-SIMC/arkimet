@@ -191,7 +191,11 @@ class Formatter;
 class Metadata
 {
 protected:
-    /// Buffer pointing to the encoded version of this metadata, to reuse for items
+    /**
+     * Buffer pointing to the encoded version of this metadata, to reuse for items
+     *
+     * This holds the storage for types::Encoded items
+     */
     const uint8_t* m_encoded = nullptr;
 
     /// Size of the m_encoded buffer
