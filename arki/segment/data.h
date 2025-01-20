@@ -22,6 +22,28 @@
 
 namespace arki::segment {
 
+namespace data {
+struct RepackConfig
+{
+    /**
+     * When repacking gzidx segments, how many data items are compressed together.
+     */
+    unsigned gz_group_size = 512;
+
+    /**
+     * Turn on perturbating repack behaviour during tests
+     */
+    unsigned test_flags = 0;
+
+    /// During repack, move all data to a different location than it was before
+    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
+
+    RepackConfig();
+    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
+};
+}
+
+
 /**
  * Interface for managing a segment.
  *
@@ -78,6 +100,14 @@ public:
      * Instantiate a checker for this segment
      */
     virtual std::shared_ptr<segment::data::Checker> checker(bool mock_data) const = 0;
+
+    /**
+     * Create a new segment with the given data.
+     *
+     * Replace metadata sources with pointers to the data in the newly created
+     * segment
+     */
+    virtual void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) = 0;
 };
 
 
@@ -166,26 +196,6 @@ public:
      * commit.
      */
     virtual const types::source::Blob& append(Metadata& md) = 0;
-};
-
-
-struct RepackConfig
-{
-    /**
-     * When repacking gzidx segments, how many data items are compressed together.
-     */
-    unsigned gz_group_size = 512;
-
-    /**
-     * Turn on perturbating repack behaviour during tests
-     */
-    unsigned test_flags = 0;
-
-    /// During repack, move all data to a different location than it was before
-    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
-
-    RepackConfig();
-    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
 };
 
 

@@ -47,6 +47,22 @@ struct ActualSegment : public arki::utils::tests::Actual<std::shared_ptr<const S
 inline arki::tests::ActualSegment actual(std::shared_ptr<const Segment> actual) { return arki::tests::ActualSegment(actual); }
 inline arki::tests::ActualSegment actual(const Segment& actual) { return arki::tests::ActualSegment(actual.shared_from_this()); }
 
+
+struct SegmentTest : public Fixture
+{
+protected:
+    std::shared_ptr<segment::Session> m_session;
+
+    virtual std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) = 0;
+
+public:
+    SegmentTest() = default;
+
+    void test_setup();
+
+    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment");
+};
+
 }
 
 #endif

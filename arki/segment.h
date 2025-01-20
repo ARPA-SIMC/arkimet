@@ -243,6 +243,13 @@ public:
      */
     virtual size_t remove(bool with_data) = 0;
 
+    /**
+     * Replace the segment index with the metadata in the given collection.
+     *
+     * Sources in mds are assumed to already point inside the segment.
+     */
+    virtual void reindex(arki::metadata::Collection& mds) = 0;
+
     virtual void test_corrupt_data(unsigned data_idx);
     virtual void test_truncate_data(unsigned data_idx);
 };

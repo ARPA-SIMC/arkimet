@@ -54,6 +54,7 @@ public:
     ConvertResult tar() override;
     ConvertResult zip() override;
     ConvertResult compress(unsigned groupsize) override;
+    void reindex(arki::metadata::Collection& mds) override;
 };
 
 }

@@ -44,4 +44,16 @@ std::shared_ptr<CIndex> Session::check_index(std::shared_ptr<const arki::Segment
     return std::make_shared<CIndex>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
 }
 
+
+void Session::create_iseg(std::shared_ptr<arki::Segment> segment, arki::metadata::Collection& mds) const
+{
+    auto data = segment->detect_data();
+    data->create_segment(mds);
+    // TODO: implement data->read_lock() and data->check_lock()
+    auto lock = std::make_shared<core::lock::NullCheckLock>();
+    auto checker = segment->checker(lock);
+    auto fixer = checker->fixer();
+    fixer->reindex(mds);
+}
+
 }

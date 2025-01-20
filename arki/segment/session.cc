@@ -8,6 +8,7 @@
 #include "metadata.h"
 #include "scan.h"
 #include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -151,6 +152,28 @@ std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::share
 {
     auto data = segment->detect_data();
     return data->checker(false);
+}
+
+void Session::create_scan(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
+{
+    auto data = segment->detect_data();
+    data->create_segment(mds);
+}
+
+void Session::create_metadata(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
+{
+    auto data = segment->detect_data();
+    data->create_segment(mds);
+    // TODO: implement data->read_lock() and data->check_lock()
+    auto lock = std::make_shared<core::lock::NullCheckLock>();
+    auto checker = segment->checker(lock);
+    auto fixer = checker->fixer();
+    fixer->reindex(mds);
+}
+
+void Session::create_iseg(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
+{
+    throw std::runtime_error("normal sessions cannot create iseg segments");
 }
 
 }

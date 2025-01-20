@@ -371,4 +371,13 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     return res;
 }
 
+void Fixer::reindex(arki::metadata::Collection& mds)
+{
+    Summary sum;
+    mds.add_to_summary(sum);
+    mds.prepare_for_segment_metadata();
+    mds.writeAtomically(segment().abspath_metadata());
+    sum.writeAtomically(segment().abspath_summary());
+}
+
 }

@@ -264,4 +264,12 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     return res;
 }
 
+void Fixer::reindex(arki::metadata::Collection& mds)
+{
+    auto& index = checker().index();
+    auto pending_index = index.begin_transaction();
+    index.reindex(mds);
+    pending_index.commit();
+}
+
 }

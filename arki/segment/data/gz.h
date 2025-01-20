@@ -74,6 +74,7 @@ public:
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
     static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg);
     static const unsigned padding = 0;
@@ -106,6 +107,7 @@ struct Data : public gz::Data
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
     static std::shared_ptr<Checker> make_checker(const std::string& format, const std::filesystem::path& rootdir, const std::filesystem::path& relpath, const std::filesystem::path& abspath);
     static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg);

@@ -22,6 +22,7 @@ public:
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
     std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
     static bool can_store(DataFormat format);
     static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
