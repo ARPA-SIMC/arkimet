@@ -62,6 +62,7 @@ public:
     Data td;
 
     SegmentTestFixture() = default;
+    virtual ~SegmentTestFixture() {}
 
     void test_setup();
 
