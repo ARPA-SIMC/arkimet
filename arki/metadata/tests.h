@@ -11,7 +11,7 @@ struct TestData
 {
     DataFormat format;
     metadata::TestCollection mds;
-    TestData(DataFormat format);
+    explicit TestData(DataFormat format);
 };
 
 struct GRIBData : TestData

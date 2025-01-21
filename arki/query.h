@@ -11,8 +11,9 @@ namespace query {
 
 class Progress;
 
-struct Data
+class Data
 {
+public:
     /// Matcher used to select data
     Matcher matcher;
 
@@ -43,8 +44,9 @@ struct Data
     Data& operator=(Data&&) = default;
 };
 
-struct Bytes : public Data
+class Bytes : public Data
 {
+public:
     enum Type {
         BQ_DATA = 0,
         BQ_POSTPROCESS = 1,

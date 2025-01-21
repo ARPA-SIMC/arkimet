@@ -166,7 +166,7 @@ void Session::create_metadata(std::shared_ptr<Segment> segment, arki::metadata::
     data->create_segment(mds);
     // TODO: implement data->read_lock() and data->check_lock()
     auto lock = std::make_shared<core::lock::NullCheckLock>();
-    auto checker = segment->checker(lock);
+    auto checker = std::make_shared<segment::metadata::Checker>(segment, lock);
     auto fixer = checker->fixer();
     fixer->reindex(mds);
 }
