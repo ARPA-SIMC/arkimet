@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.54
 
 * Refactoring of segment and dataset implementations:
 

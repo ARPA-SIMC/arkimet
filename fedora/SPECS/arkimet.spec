@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.53
+Version: 1.54
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -175,6 +175,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Jan 21 2025 Daniele Branchini <dbranchini@arpae.it> - 1.54-1
+- Refactoring of segment and dataset implementations
+- `arki-check --delete` is now supported also for `simple` datasets
+- it is now possible to open a subdataset inside .archives and query and delete data from it (#344)
+
 * Mon Dec 16 2024 Daniele Branchini <dbranchini@arpae.it> - 1.53-1
 - Prepend prefix to POSTPROC_DIR to make it absolute (#341)
 
