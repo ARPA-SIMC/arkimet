@@ -17,6 +17,30 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
+class Checker : public segment::Checker
+{
+public:
+    using segment::Checker::Checker;
+
+    arki::metadata::Collection scan() override;
+
+    std::shared_ptr<segment::Fixer> fixer() override;
+};
+
+class Fixer : public segment::Fixer
+{
+public:
+    using segment::Fixer::Fixer;
+
+    MarkRemovedResult mark_removed(const std::set<uint64_t>& offsets) override;
+    ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) override;
+    size_t remove(bool with_data) override;
+    ConvertResult tar() override;
+    ConvertResult zip() override;
+    ConvertResult compress(unsigned groupsize) override;
+    void reindex(arki::metadata::Collection& mds) override;
+};
+
 }
 
 #endif

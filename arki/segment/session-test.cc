@@ -4,6 +4,7 @@
 #include "session.h"
 #include "metadata.h"
 #include "scan.h"
+#include <filesystem>
 
 using namespace std;
 using namespace arki;
@@ -16,44 +17,60 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
 
+    std::shared_ptr<segment::Session> session;
+
     void register_tests() override;
 
     void test_setup() override
     {
         sys::rmtree_ifexists("test");
         std::filesystem::create_directories("test");
+        session = std::make_shared<segment::Session>("test");
     }
 } test("arki_segment_session");
 
-std::shared_ptr<Segment> make_segment(TestData& td, const char* name="test/test")
-{
-    auto session = std::make_shared<segment::Session>(".");
-    return session->segment_from_relpath(sys::with_suffix(name, "." + format_name(td.format)));
-
-}
-
 void Tests::register_tests() {
 
-add_method("detect_metadata_reader", [] {
+add_method("detect_metadata", [&] {
     GRIBData td;
-    auto segment = make_segment(td);
-    fill_metadata_segment(segment, td.mds);
-    wassert(actual_file("test/test.grib").exists());
-    wassert(actual_file("test/test.grib.metadata").exists());
+    auto segment = session->segment_from_relpath_and_format("test." + format_name(td.format), td.format);
+    session->create_metadata(segment, td.mds);
+    wassert(actual_file(segment->abspath()).exists());
+    wassert(actual_file(segment->abspath_metadata()).exists());
+    wassert(actual_file(segment->abspath_iseg_index()).not_exists());
 
     auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
     wassert_true(dynamic_cast<segment::metadata::Reader*>(reader.get()));
 
-    auto e = wassert_throws(std::runtime_error, segment->checker(std::make_shared<core::lock::NullCheckLock>()));
-    wassert(actual(e.what()).contains("misses a policy"));
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    wassert_true(dynamic_cast<segment::metadata::Checker*>(checker.get()));
+
+    // If there is only a .metadata file, we still get a metadata checker
+    std::filesystem::remove(segment->abspath());
+    checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    wassert_true(dynamic_cast<segment::metadata::Checker*>(checker.get()));
 });
 
-add_method("detect_scan_reader", [] {
+add_method("detect_scan", [&] {
     GRIBData td;
-    auto segment = make_segment(td);
-    fill_scan_segment(segment, td.mds);
-    wassert(actual_file("test/test.grib").exists());
-    wassert(actual_file("test/test.grib.metadata").not_exists());
+    auto segment = session->segment_from_relpath_and_format("test." + format_name(td.format), td.format);
+    session->create_scan(segment, td.mds);
+    wassert(actual_file(segment->abspath()).exists());
+    wassert(actual_file(segment->abspath_metadata()).not_exists());
+    wassert(actual_file(segment->abspath_iseg_index()).not_exists());
+
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    wassert_true(dynamic_cast<segment::scan::Reader*>(reader.get()));
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    wassert_true(dynamic_cast<segment::scan::Checker*>(checker.get()));
+});
+
+add_method("detect_new", [&] {
+    auto segment = session->segment_from_relpath("test.grib");
+    wassert(actual_file(segment->abspath()).not_exists());
+    wassert(actual_file(segment->abspath_metadata()).not_exists());
+    wassert(actual_file(segment->abspath_iseg_index()).not_exists());
 
     auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
     wassert_true(dynamic_cast<segment::scan::Reader*>(reader.get()));

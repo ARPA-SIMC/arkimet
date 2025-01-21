@@ -81,6 +81,28 @@ add_method("reader", [](Fixture& f) {
     wassert(actual(summary.get_reference_time()) == core::Interval(core::Time(2007, 7, 7), core::Time(2007, 7, 7, 0, 0, 1)));
 });
 
+add_method("checker", [](Fixture& f) {
+    auto segment = f.create(f.td.mds);
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    auto mds = checker->scan();
+
+    wassert(actual(mds.size()) == f.td.mds.size());
+    {
+        ARKI_UTILS_TEST_INFO(subtest);
+
+        for (size_t i = 0; i < mds.size(); ++i)
+        {
+            subtest() << "Metadata #" << i << "/" << mds.size();
+            wassert(actual(mds[i]).is_similar(f.td.mds[i]));
+        }
+    }
+
+    // TODO: Checker::update_data
+});
+
+
+
+
 }
 
 }

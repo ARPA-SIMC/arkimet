@@ -99,14 +99,13 @@ std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::fil
 
 std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
 {
-    auto data = segment->detect_data();
-
     // stat the metadata file, if it exists
-    auto md_abspath = sys::with_suffix(segment->abspath(), ".metadata");
+    auto md_abspath = segment->abspath_metadata();
     auto st_md = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get())
     {
+        auto data = segment->detect_data();
         auto ts = data->timestamp();
         if (!ts)
         {
@@ -126,7 +125,19 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const S
 
 std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
 {
-    throw std::runtime_error("this session misses a policy to determine how to create checkers");
+    // stat the metadata file, if it exists
+    auto md_abspath = segment->abspath_metadata();
+    auto st_md = sys::stat(md_abspath);
+    // If it exists and it looks new enough, use it
+    if (st_md.get())
+        return std::make_shared<segment::metadata::Checker>(segment, lock);
+
+    auto data = segment->detect_data();
+    auto ts = data->timestamp();
+    if (ts)
+        return std::make_shared<segment::scan::Checker>(segment, lock);
+    else
+        throw std::runtime_error("this session misses a policy to determine how to create checkers for segments to be created");
 }
 
 std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
