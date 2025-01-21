@@ -419,7 +419,7 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    auto mtime = segment->detect_data()->timestamp();
+    auto mtime = segment->data()->timestamp();
     if (!mtime)
         throw std::runtime_error(relpath.native() + ": cannot get timestamp in test_delete_from_index");
 

@@ -163,7 +163,7 @@ add_method("tar", [](Fixture& f) {
         auto res = fixer->tar();
         // TODO: wassert(actual(res.segment_mtime) > 1234000);
     }
-    auto data = segment->detect_data();
+    auto data = segment->data();
     wassert_true(dynamic_pointer_cast<segment::data::tar::Data>(data));
 });
 
@@ -176,7 +176,7 @@ add_method("zip", [](Fixture& f) {
         auto res = fixer->zip();
         // TODO: wassert(actual(res.segment_mtime) > 1234000);
     }
-    auto data = segment->detect_data();
+    auto data = segment->data();
     wassert_true(dynamic_pointer_cast<segment::data::zip::Data>(data));
 });
 
@@ -190,7 +190,7 @@ add_method("compress", [](Fixture& f) {
         // TODO: wassert(actual(res.segment_mtime) > 1234000);
         wassert(actual(res.size_pre) > res.size_post);
     }
-    auto data = segment->detect_data();
+    auto data = segment->data();
     wassert_true(dynamic_pointer_cast<segment::data::gz::Data>(data));
 });
 

@@ -13,7 +13,7 @@ namespace arki::tests {
 void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds)
 {
     segment::data::WriterConfig wconf{true, true};
-    auto data_writer = segment->detect_data()->writer(wconf, false);
+    auto data_writer = segment->data()->writer(wconf, false);
     for (auto i: mds)
         data_writer->append(*i);
     data_writer->commit();
@@ -22,7 +22,7 @@ void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::C
 void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds)
 {
     segment::data::WriterConfig wconf{true, true};
-    auto data_writer = segment->detect_data()->writer(wconf, false);
+    auto data_writer = segment->data()->writer(wconf, false);
     for (auto i: mds)
         data_writer->append(*i);
     data_writer->commit();
@@ -31,12 +31,12 @@ void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadat
 
 void ActualSegment::has_data()
 {
-    wassert_true((bool)_actual->detect_data()->timestamp());
+    wassert_true((bool)_actual->data()->timestamp());
 }
 
 void ActualSegment::not_has_data()
 {
-    wassert_false((bool)_actual->detect_data()->timestamp());
+    wassert_false((bool)_actual->data()->timestamp());
 }
 
 void ActualSegment::has_metadata()

@@ -56,7 +56,7 @@ std::shared_ptr<segment::Checker> Segment::checker(std::shared_ptr<core::CheckLo
     return session().segment_checker(shared_from_this(), lock);
 }
 
-std::shared_ptr<segment::Data> Segment::detect_data() const
+std::shared_ptr<segment::Data> Segment::data() const
 {
     std::unique_ptr<struct stat> st = sys::stat(abspath());
     if (st.get())
@@ -169,12 +169,12 @@ std::shared_ptr<segment::Data> Segment::detect_data() const
 
 std::shared_ptr<segment::data::Reader> Segment::detect_data_reader(std::shared_ptr<const core::ReadLock> lock) const
 {
-    return detect_data()->reader(lock);
+    return data()->reader(lock);
 }
 
 std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment::data::WriterConfig& config) const
 {
-    return detect_data()->writer(config, session().mock_data);
+    return data()->writer(config, session().mock_data);
 }
 
 std::shared_ptr<segment::data::Checker> Segment::data_checker() const
@@ -229,7 +229,7 @@ void EmptyReader::query_summary(const Matcher& matcher, Summary& summary)
 
 
 Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
-    : lock(lock), m_segment(segment), m_data(segment->detect_data())
+    : lock(lock), m_segment(segment), m_data(segment->data())
 {
 }
 
@@ -239,7 +239,7 @@ Checker::~Checker()
 
 void Checker::update_data()
 {
-    m_data = m_segment->detect_data();
+    m_data = m_segment->data();
 }
 
 Fixer::Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock)

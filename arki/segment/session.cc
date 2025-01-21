@@ -105,7 +105,7 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const S
     // If it exists and it looks new enough, use it
     if (st_md.get())
     {
-        auto data = segment->detect_data();
+        auto data = segment->data();
         auto ts = data->timestamp();
         if (!ts)
         {
@@ -132,7 +132,7 @@ std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const
     if (st_md.get())
         return std::make_shared<segment::metadata::Checker>(segment, lock);
 
-    auto data = segment->detect_data();
+    auto data = segment->data();
     auto ts = data->timestamp();
     if (ts)
         return std::make_shared<segment::scan::Checker>(segment, lock);
@@ -155,25 +155,25 @@ std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_
 std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::data::WriterConfig& config) const
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
-    auto data = segment->detect_data();
+    auto data = segment->data();
     return data->writer(config, false);
 }
 
 std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
 {
-    auto data = segment->detect_data();
+    auto data = segment->data();
     return data->checker(false);
 }
 
 void Session::create_scan(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
 {
-    auto data = segment->detect_data();
+    auto data = segment->data();
     data->create_segment(mds);
 }
 
 void Session::create_metadata(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
 {
-    auto data = segment->detect_data();
+    auto data = segment->data();
     data->create_segment(mds);
     // TODO: implement data->read_lock() and data->check_lock()
     auto lock = std::make_shared<core::lock::NullCheckLock>();

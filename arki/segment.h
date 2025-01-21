@@ -39,7 +39,7 @@ public:
     std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;
 
     /// Instantiate the right Data for this segment
-    std::shared_ptr<segment::Data> detect_data() const;
+    std::shared_ptr<segment::Data> data() const;
 
     /// Instantiate the right Reader implementation for a segment that already exists
     std::shared_ptr<segment::data::Reader> detect_data_reader(std::shared_ptr<const core::ReadLock> lock) const;

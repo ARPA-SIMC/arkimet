@@ -14,7 +14,7 @@ std::shared_ptr<arki::Segment> Session::segment_from_relpath_and_format(const st
 
 std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
 {
-    auto data = segment->detect_data();
+    auto data = segment->data();
     if (!data->timestamp())
     {
         nag::warning("%s: segment data is not available", segment->abspath().c_str());
@@ -47,7 +47,7 @@ std::shared_ptr<CIndex> Session::check_index(std::shared_ptr<const arki::Segment
 
 void Session::create_iseg(std::shared_ptr<arki::Segment> segment, arki::metadata::Collection& mds) const
 {
-    auto data = segment->detect_data();
+    auto data = segment->data();
     data->create_segment(mds);
     // TODO: implement data->read_lock() and data->check_lock()
     auto lock = std::make_shared<core::lock::NullCheckLock>();

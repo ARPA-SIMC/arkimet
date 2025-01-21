@@ -41,7 +41,7 @@ std::shared_ptr<data::Checker> BaseChecker<Data>::move(std::shared_ptr<const seg
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath(), ".metadata"), target_metadata);
     sys::rename_ifexists(sys::with_suffix(this->segment().abspath(), ".summary"), target_summary);
 
-    auto data = new_segment->detect_data();
+    auto data = new_segment->data();
     // TODO: what is really needed as a return value?
     return data->checker(false);
 }

@@ -18,7 +18,7 @@ std::shared_ptr<segment::Reader> SegmentSession::segment_reader(std::shared_ptr<
     auto md_abspath = sys::with_suffix(segment->abspath(), ".metadata");
     if (auto st_md = sys::stat(md_abspath))
     {
-        auto data = segment->detect_data();
+        auto data = segment->data();
         if (auto ts = data->timestamp())
         {
             if (st_md->st_mtime < ts.value())
