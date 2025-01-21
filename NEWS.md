@@ -1,6 +1,14 @@
+# New in version UNRELEASED
+
+* Refactoring of segment and dataset implementations:
+
+    * `arki-check --delete` is now supported also for `simple` datasets
+    * it is now possible to open a subdataset inside .archives and query and
+      delete data from it (#344)
+
 # New in version 1.53
 
-* Prepend prefix to POSTPROC_DIR to make it absolute (#341)
+* Prepend prefix to `POSTPROC_DIR` to make it absolute (#341)
 
 # New in version 1.52
 
