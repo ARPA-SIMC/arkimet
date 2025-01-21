@@ -1,9 +1,10 @@
 #include "arki/dataset/file.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/progress.h"
+#include "arki/dataset/session.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/metadata.h"
-#include "arki/segment.h"
-#include "arki/core/file.h"
+#include "arki/segment/data.h"
+#include "arki/core/lock.h"
 #include "arki/core/time.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata/sort.h"
@@ -11,6 +12,7 @@
 #include "arki/scan.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include "arki/utils/string.h"
 #include <fcntl.h>
 #include <sstream>
 
@@ -23,9 +25,7 @@ namespace dataset {
 namespace file {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Dataset(session, cfg),
-      pathname(cfg.value("path")),
-      format(cfg.value("format"))
+    : dataset::Dataset(session, cfg)
 {
 }
 
@@ -41,13 +41,12 @@ std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, 
         return std::make_shared<ArkimetFile>(session, cfg);
     if (format == "yaml")
         return std::make_shared<YamlFile>(session, cfg);
-    return std::make_shared<RawFile>(session, cfg);
+    return std::make_shared<SegmentDataset>(session, cfg);
 }
 
-
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
     return track.done(dataset().scan(q, dest));
 }
@@ -57,60 +56,108 @@ core::Interval Reader::get_stored_time_interval()
     throw std::runtime_error("file::Reader::get_stored_time_interval not yet implemented");
 }
 
-std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& fname)
+/**
+ * Normalise a file format string using the most widely used version
+ *
+ * This currently normalises:
+ *  - grib1 and grib2 to grib
+ *  - all of h5, hdf5, odim and odimh5 to odimh5
+ *
+ * If the format is unsupported, it throws an exception.
+ */
+static std::optional<std::string> normalise_format_name(const std::string& name)
 {
-    auto section = std::make_shared<core::cfg::Section>();
+    std::string f = str::lower(name);
 
-    section->set("type", "file");
-    if (std::filesystem::exists(fname))
+    if (f == "grib") return "grib";
+    if (f == "grib1") return "grib";
+    if (f == "grib2") return "grib";
+
+    if (f == "bufr") return "bufr";
+    if (f == "vm2") return "vm2";
+
+    if (f == "h5")     return "odimh5";
+    if (f == "hdf5")   return "odimh5";
+    if (f == "odim")   return "odimh5";
+    if (f == "odimh5") return "odimh5";
+
+    if (f == "nc") return "netcdf";
+    if (f == "netcdf") return "netcdf";
+
+    if (f == "jpg") return "jpeg";
+    if (f == "jpeg") return "jpeg";
+
+    if (f == "arkimet") return "arkimet";
+    if (f == "metadata") return "arkimet";
+
+    if (f == "yaml") return "yaml";
+
+    return std::optional<std::string>();
+}
+
+std::shared_ptr<core::cfg::Section> read_config(const std::string& prefix, const std::filesystem::path& path)
+{
+    if (!std::filesystem::exists(path))
     {
-        section->set("path", std::filesystem::canonical(fname));
-        section->set("format", scan::Scanner::format_from_filename(fname));
-        section->set("name", fname);
-    } else {
-        size_t fpos = fname.native().find(':');
-        if (fpos == string::npos)
-        {
-            stringstream ss;
-            ss << "file " << fname << " does not exist";
-            throw runtime_error(ss.str());
-        }
-        section->set("format", scan::Scanner::normalise_format(fname.native().substr(0, fpos)));
-
-        std::filesystem::path fname1 = fname.native().substr(fpos+1);
-        if (!std::filesystem::exists(fname1))
-        {
-            stringstream ss;
-            ss << "file " << fname1 << " does not exist";
-            throw runtime_error(ss.str());
-        }
-        section->set("path", std::filesystem::canonical(fname1));
-        section->set("name", fname1);
+        std::stringstream ss;
+        ss << prefix << " file " << path << " does not exist";
+        throw runtime_error(ss.str());
     }
+    auto format_name = normalise_format_name(prefix);
+    if (!format_name)
+        throw std::runtime_error("unsupported format '" + prefix + "'");
 
+    auto section = std::make_shared<core::cfg::Section>();
+    section->set("type", "file");
+    section->set("format", format_name.value());
+    section->set("path", std::filesystem::canonical(path));
+    section->set("name", path);
+    return section;
+}
+
+std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path)
+{
+    if (!std::filesystem::exists(path))
+    {
+        std::stringstream ss;
+        ss << "file " << path << " does not exist";
+        throw runtime_error(ss.str());
+    }
+    auto ext = path.extension();
+    if (ext.empty())
+        return std::shared_ptr<core::cfg::Section>();
+
+    auto format_name = normalise_format_name(ext.native().substr(1));
+    if (!format_name)
+        return std::shared_ptr<core::cfg::Section>();
+
+    auto section = std::make_shared<core::cfg::Section>();
+    section->set("type", "file");
+    section->set("path", std::filesystem::canonical(path));
+    section->set("name", path);
+    section->set("format", format_name.value());
     return section;
 }
 
 std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& fname)
 {
     auto sec = read_config(fname);
+    if (!sec)
+        return std::shared_ptr<core::cfg::Sections>();
     auto res = std::make_shared<core::cfg::Sections>();
     res->emplace(sec->value("name"), sec);
     return res;
 }
 
-
-FdFile::FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : Dataset(session, cfg), fd(pathname, O_RDONLY)
+std::shared_ptr<core::cfg::Sections> read_configs(const std::string& prefix, const std::filesystem::path& fname)
 {
+    auto sec = read_config(prefix, fname);
+    auto res = std::make_shared<core::cfg::Sections>();
+    res->emplace(sec->value("name"), sec);
+    return res;
 }
 
-FdFile::~FdFile()
-{
-}
-
-
-static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const dataset::DataQuery& q, metadata_dest_func& dest)
+static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const query::Data& q, metadata_dest_func& dest)
 {
     // Wrap with a stream sorter if we need sorting
     shared_ptr<metadata::sort::Stream> sorter;
@@ -130,10 +177,42 @@ static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const dataset::Da
 }
 
 
+SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : Dataset(session, cfg)
+{
+    std::filesystem::path basedir;
+    std::filesystem::path relpath;
+    utils::files::resolve_path(cfg.value("path"), basedir, relpath);
+    segment_session = std::make_shared<segment::Session>(basedir);
+    segment = segment_session->segment_from_relpath_and_format(relpath, format_from_string(cfg.value("format")));
+}
+
+bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
+{
+    auto sorter = wrap_with_query(q, dest);
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    if (!reader->read_all(dest))
+        return false;
+    if (sorter) return sorter->flush();
+    return true;
+}
+
+
+FdFile::FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+    : Dataset(session, cfg), fd(cfg.value("path"), O_RDONLY), path(cfg.value("path"))
+{
+}
+
+FdFile::~FdFile()
+{
+}
+
+
 ArkimetFile::~ArkimetFile() {}
 
-bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
 {
+    // TODO: rewrite using Segment's reader query capabilities
     auto sorter = wrap_with_query(q, dest);
     if (!q.with_data)
     {
@@ -144,9 +223,9 @@ bool ArkimetFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
                     if (md->has_source_blob())
                     {
                         const auto& blob = md->sourceBlob();
-                        auto reader = Segment::detect_reader(
-                                blob.format, blob.basedir, blob.filename, blob.absolutePathname(),
-                                std::make_shared<core::lock::Null>());
+                        auto segment_session = std::make_shared<segment::Session>(blob.basedir);
+                        auto segment = segment_session->segment_from_relpath_and_format(blob.filename, blob.format);
+                        auto reader = segment->detect_data_reader(std::make_shared<core::lock::NullReadLock>());
                         md->sourceBlob().lock(reader);
                     }
                     return dest(md);
@@ -164,7 +243,7 @@ YamlFile::YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& c
 
 YamlFile::~YamlFile() { delete reader; }
 
-bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
+bool YamlFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     auto sorter = wrap_with_query(q, dest);
 
@@ -175,25 +254,12 @@ bool YamlFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
             break;
         if (!q.matcher(*md))
             continue;
-        if (!dest(move(md)))
+        if (!dest(std::move(md)))
             return false;
     }
 
     if (sorter) return sorter->flush();
 
-    return true;
-}
-
-
-bool RawFile::scan(const dataset::DataQuery& q, metadata_dest_func dest)
-{
-    std::filesystem::path basedir, relpath;
-    files::resolve_path(pathname, basedir, relpath);
-    auto sorter = wrap_with_query(q, dest);
-    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
-    if (!reader->scan(dest))
-        return false;
-    if (sorter) return sorter->flush();
     return true;
 }
 

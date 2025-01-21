@@ -35,14 +35,14 @@ struct Fixture : public arki::utils::tests::Fixture
         md1->test_set(Product::createGRIB1(1, 2, 3));
         md1->test_set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
         md1->test_set(Reftime::createPosition(Time(2007, 1, 2, 3, 4, 5)));
-        md1->set_source(Source::createInline("grib1", 10));
+        md1->set_source(Source::createInline(DataFormat::GRIB, 10));
 
         md2 = std::make_shared<Metadata>();
         md2->test_set(Origin::createGRIB1(3, 4, 5));
         md2->test_set(Product::createGRIB1(2, 3, 4));
         md2->test_set(Timerange::createGRIB1(1, timerange::SECOND, 0, 0));
         md2->test_set(Reftime::createPosition(Time(2006, 5, 4, 3, 2, 1)));
-        md2->set_source(Source::createInline("grib1", 20));
+        md2->set_source(Source::createInline(DataFormat::GRIB, 20));
 
         summary.clear();
         summary.add(*md1);

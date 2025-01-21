@@ -301,7 +301,8 @@ TestResultStats::TestResultStats(const std::vector<TestCaseResult>& results_)
         }
     }
 
-    success = methods_ok && !test_cases_failed && !methods_failed;
+    success = !test_cases_failed and !methods_failed;
+    skipped = methods_ok == 0 and !test_cases_failed and !methods_failed;
 }
 
 void TestResultStats::print_results(arki::utils::term::Terminal& out)

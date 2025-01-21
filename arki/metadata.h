@@ -191,7 +191,11 @@ class Formatter;
 class Metadata
 {
 protected:
-    /// Buffer pointing to the encoded version of this metadata, to reuse for items
+    /**
+     * Buffer pointing to the encoded version of this metadata, to reuse for items
+     *
+     * This holds the storage for types::Encoded items
+     */
     const uint8_t* m_encoded = nullptr;
 
     /// Size of the m_encoded buffer
@@ -279,13 +283,15 @@ public:
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source> s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(const std::string& format, std::shared_ptr<metadata::Data> data);
+    void set_source_inline(DataFormat format, std::shared_ptr<metadata::Data> data);
     /// Unsets the source
     void unset_source();
     /// Read the data and inline them in the metadata
     void makeInline();
     /// Make all source blobs absolute
     void make_absolute();
+    /// Preprocess to be efficiently stored as segment metadata alongside the data
+    void prepare_for_segment_metadata();
 
     /*
      * Notes access and manipulation

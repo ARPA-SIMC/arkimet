@@ -285,6 +285,7 @@ struct TestResultStats
     unsigned test_cases_ok = 0;
     unsigned test_cases_failed = 0;
     bool success = false;
+    bool skipped = false;
 
     TestResultStats(const std::vector<TestCaseResult>& results);
 

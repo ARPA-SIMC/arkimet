@@ -19,7 +19,7 @@ namespace dataset {
 namespace outbound {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, cfg)
+    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg)
 {
 }
 
@@ -40,15 +40,6 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "outbound"; }
 
-void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::filesystem::path& reldest)
-{
-    // Write using segment::Writer
-    core::Time time = md.get<types::reftime::Position>()->get_Position();
-    auto relpath = sys::with_suffix(dataset().step()(time), "."s + md.source().format);
-    auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
-    w->append(md);
-}
-
 WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
@@ -56,17 +47,16 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     if (age_check.first) return age_check.second;
 
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    string reldest = dataset().step()(time);
-    auto dest = dataset().path / reldest;
+    auto segment = dataset().segment_session->segment_from_relpath_and_format(dataset().step()(time), md.source().format);
+    std::filesystem::create_directories(segment->abspath().parent_path());
 
-    std::filesystem::create_directories(dest.parent_path());
-
-    segment::WriterConfig writer_config;
+    segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 
     try {
-        storeBlob(writer_config, md, reldest);
+        auto w = dataset().segment_session->segment_data_writer(segment, writer_config);
+        w->append(md);
         return ACQ_OK;
     } catch (std::exception& e) {
         md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
@@ -108,7 +98,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
 
         core::Time time = e->md.get<types::reftime::Position>()->get_Position();
         auto tf = Step::create(cfg.value("step"));
-        auto dest = std::filesystem::path(cfg.value("path")) / sys::with_suffix((*tf)(time), "."s + e->md.source().format);
+        auto dest = std::filesystem::path(cfg.value("path")) / sys::with_suffix((*tf)(time), "."s + format_name(e->md.source().format));
         nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());
         e->result = ACQ_OK;
         e->dataset_name = config->name();

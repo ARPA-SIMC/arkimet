@@ -41,7 +41,6 @@ class Tests : public FixtureTestCase<Fixture>
 };
 
 Tests test_plain("arki_dataset_simple_reader_plain");
-Tests test_sqlite("arki_dataset_simple_reader_sqlite", "index_type=sqlite");
 
 void Tests::register_tests() {
 

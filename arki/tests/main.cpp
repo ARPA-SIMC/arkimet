@@ -1,6 +1,6 @@
 #include "arki/utils/testrunner.h"
 #include "arki/utils/term.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/runtime.h"
 #include <signal.h>
 #include <cstdlib>
@@ -69,7 +69,7 @@ struct ArkiRunner
         return false;
     }
 
-    bool run()
+    auto run()
     {
         using namespace arki::utils::tests;
         auto& tests = arki::utils::tests::TestRegistry::get();
@@ -79,7 +79,7 @@ struct ArkiRunner
         if (stats)
             rstats.print_stats(output);
         rstats.print_summary(output);
-        return rstats.success;
+        return rstats;
     }
 };
 
@@ -97,7 +97,10 @@ int main(int argc, const char* argv[])
     if (arki_runner.setup())
         return 0;
 
-    bool success = arki_runner.run();
-
-    return success ? 0 : 1;
+    auto result = arki_runner.run();
+    if (result.skipped)
+        // Signal skipped tests rather than failed
+        return 77;
+    else
+        return result.success ? 0 : 1;
 }

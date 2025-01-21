@@ -22,34 +22,34 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-TestData::TestData(const std::string& format)
+TestData::TestData(DataFormat format)
     : format(format)
 {
 }
 
 GRIBData::GRIBData()
-    : TestData("grib")
+    : TestData(DataFormat::GRIB)
 {
     skip_unless_grib();
     mds.scan_from_file("inbound/fixture.grib1", format, true);
 }
 
 BUFRData::BUFRData()
-    : TestData("bufr")
+    : TestData(DataFormat::BUFR)
 {
     skip_unless_bufr();
     mds.scan_from_file("inbound/fixture.bufr", format, true);
 }
 
 VM2Data::VM2Data()
-    : TestData("vm2")
+    : TestData(DataFormat::VM2)
 {
     skip_unless_vm2();
     mds.scan_from_file("inbound/fixture.vm2", format, true);
 }
 
 ODIMData::ODIMData()
-    : TestData("odimh5")
+    : TestData(DataFormat::ODIMH5)
 {
     mds.scan_from_file("inbound/fixture.odimh5/00.odimh5", format, true);
     mds.scan_from_file("inbound/fixture.odimh5/01.odimh5", format, true);
@@ -57,7 +57,7 @@ ODIMData::ODIMData()
 }
 
 NCData::NCData()
-    : TestData("nc")
+    : TestData(DataFormat::NETCDF)
 {
     mds.scan_from_file("inbound/fixture.nc/00.nc", format, true);
     mds.scan_from_file("inbound/fixture.nc/01.nc", format, true);
@@ -65,7 +65,7 @@ NCData::NCData()
 }
 
 JPEGData::JPEGData()
-    : TestData("jpeg")
+    : TestData(DataFormat::JPEG)
 {
     mds.scan_from_file("inbound/fixture.jpeg/00.jpg", format, true);
     mds.scan_from_file("inbound/fixture.jpeg/01.jpg", format, true);
@@ -73,7 +73,7 @@ JPEGData::JPEGData()
 }
 
 
-std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour)
+std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size, unsigned month, unsigned day, unsigned hour)
 {
     auto md = std::make_shared<Metadata>();
     md->set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(size)));

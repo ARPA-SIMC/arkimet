@@ -1,13 +1,13 @@
 #include "collection.h"
 #include "arki/exceptions.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/metadata.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
 #include "arki/core/binary.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include "arki/stream.h"
@@ -16,6 +16,7 @@
 #include "arki/dataset.h"
 #include <algorithm>
 #include <memory>
+#include <unordered_set>
 #include <fcntl.h>
 
 using namespace std;
@@ -116,7 +117,7 @@ static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf, Stre
         return out.send_buffer(buf.data(), buf.size());
 }
 
-Collection::Collection(dataset::Dataset& ds, const dataset::DataQuery& q)
+Collection::Collection(dataset::Dataset& ds, const query::Data& q)
 {
     add(ds, q);
 }
@@ -126,7 +127,7 @@ Collection::Collection(dataset::Dataset& ds, const std::string& q)
     add(ds, q);
 }
 
-Collection::Collection(dataset::Reader& ds, const dataset::DataQuery& q)
+Collection::Collection(dataset::Reader& ds, const query::Data& q)
 {
     add(ds, q);
 }
@@ -172,7 +173,7 @@ metadata_dest_func Collection::inserter_func()
     return [=](std::shared_ptr<Metadata> md) { acquire(md); return true; };
 }
 
-void Collection::add(dataset::Dataset& ds, const dataset::DataQuery& q)
+void Collection::add(dataset::Dataset& ds, const query::Data& q)
 {
     ds.create_reader()->query_data(q, inserter_func());
 }
@@ -182,7 +183,7 @@ void Collection::add(dataset::Dataset& ds, const std::string& q)
     ds.create_reader()->query_data(q, inserter_func());
 }
 
-void Collection::add(dataset::Reader& reader, const dataset::DataQuery& q)
+void Collection::add(dataset::Reader& reader, const query::Data& q)
 {
     reader.query_data(q, inserter_func());
 }
@@ -337,13 +338,10 @@ bool Collection::move_to(metadata_dest_func dest)
     return success;
 }
 
-void Collection::strip_source_paths()
+void Collection::prepare_for_segment_metadata()
 {
-    for (auto i = vals.begin(); i != vals.end(); ++i)
-    {
-        const source::Blob& source = (*i)->sourceBlob();
-        (*i)->set_source(upcast<Source>(source.fileOnly()));
-    }
+    for (auto& i: vals)
+        i->prepare_for_segment_metadata();
 }
 
 void Collection::sort(const sort::Compare& cmp)
@@ -378,30 +376,124 @@ void Collection::drop_cached_data()
     for (auto& md: *this) md->drop_cached_data();
 }
 
-TestCollection::TestCollection(const std::filesystem::path& pathname, bool with_data)
+namespace {
+
+/// Create unique strings from metadata
+struct IDMaker
 {
-    scan_from_file(pathname, with_data);
+    std::set<types::Code> components;
+
+    explicit IDMaker(const std::set<types::Code>& components) : components(components) {}
+
+    std::vector<uint8_t> make_string(const Metadata& md) const
+    {
+        std::vector<uint8_t> res;
+        core::BinaryEncoder enc(res);
+        for (const auto& i: components)
+            if (const Type* t = md.get(i))
+                t->encodeBinary(enc);
+        return res;
+    }
+};
+
 }
 
-void TestCollection::scan_from_file(const std::filesystem::path& pathname, bool with_data)
+Collection Collection::without_duplicates(const std::set<types::Code>& unique_components) const
 {
-    string format = scan::Scanner::format_from_filename(pathname);
+    if (unique_components.empty())
+        return *this;
+
+    // unordered_map may be more efficient, but we would ned to implement hash for vector<uint8_t>
+    std::map<std::vector<uint8_t>, std::shared_ptr<Metadata>> last_seen;
+    std::unordered_set<const Metadata*> duplicates;
+    IDMaker id_maker(unique_components);
+    for (const auto& md: vals)
+    {
+        auto id = id_maker.make_string(*md);
+        if (id.empty())
+        {
+            duplicates.emplace(md.get());
+            continue;
+        }
+
+        auto old = last_seen.find(id);
+        if (old == last_seen.end())
+            last_seen.emplace(id, md);
+        else
+        {
+            duplicates.emplace(old->second.get());
+            old->second = md;
+        }
+    }
+
+    if (duplicates.empty())
+        return *this;
+
+    // duplicates is now a subset of this collection with the same order, and
+    // we can use to iterate efficiently
+    Collection res;
+    for (const auto& md: vals)
+    {
+        if (duplicates.find(md.get()) != duplicates.end())
+            continue; // Duplicate found: skip
+        res.acquire(md);
+    }
+    return res;
+}
+
+Collection Collection::without_data(const std::set<uint64_t>& offsets) const
+{
+    Collection res;
+    for (const auto& md: vals)
+    {
+        if (offsets.find(md->sourceBlob().offset) != offsets.end())
+            continue; // Data to remove: skip
+        res.acquire(md);
+    }
+    return res;
+}
+
+void Collection::dump(FILE* out, const std::set<types::Code>& extra_items) const
+{
+    for (size_t i = 0; i < size(); ++i)
+    {
+        auto md = get(i);
+        fprintf(out, "%zu: %s\n", i, md->has_source() ? md->source().to_string().c_str() : "<no source>");
+        fprintf(out, "    reftime: %s\n", md->get(TYPE_REFTIME)->to_string().c_str());
+        for (const auto& code: extra_items)
+            fprintf(out, "    %s: %s\n", formatCode(code).c_str(), md->get(code)->to_string().c_str());
+    }
+}
+
+
+TestCollection::TestCollection(const std::filesystem::path& path, bool with_data)
+{
+    scan_from_file(path, with_data);
+}
+
+void TestCollection::scan_from_file(const std::filesystem::path& path, bool with_data)
+{
     std::filesystem::path basedir;
     std::filesystem::path relpath;
-    utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
-    reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
+    utils::files::resolve_path(path, basedir, relpath);
+    session = std::make_shared<segment::Session>(basedir);
+
+    auto segment = session->segment_from_relpath(relpath);
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    reader->read_all([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
 }
 
-void TestCollection::scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data)
 {
     std::filesystem::path basedir;
     std::filesystem::path relpath;
-    utils::files::resolve_path(pathname, basedir, relpath);
-    auto reader = Segment::detect_reader(format, basedir, relpath, pathname, std::make_shared<core::lock::Null>());
-    reader->scan([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
-}
+    utils::files::resolve_path(path, basedir, relpath);
+    session = std::make_shared<segment::Session>(basedir);
 
+    auto segment = session->segment_from_relpath_and_format(relpath, format);
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    reader->read_all([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
+}
 
 }
 }

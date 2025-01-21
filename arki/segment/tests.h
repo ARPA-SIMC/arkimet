@@ -3,103 +3,117 @@
 
 #include <arki/metadata/tests.h>
 #include <arki/segment.h>
-#include <arki/metadata.h>
 #include <arki/metadata/collection.h>
-#include <string>
 
-namespace arki {
-namespace tests {
+namespace arki::tests {
 
-template<class Segment, class Data>
-struct SegmentFixture : public Fixture
+/**
+ * Create a bare data segment.
+ *
+ * mds metadata sources are updated to point inside the segment
+ */
+void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds);
+
+/**
+ * Create a segment with attached metadata.
+ *
+ * mds metadata sources are updated to point inside the segment
+ */
+void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds);
+
+struct ActualSegment : public arki::utils::tests::Actual<std::shared_ptr<const Segment>>
 {
+    explicit ActualSegment(std::shared_ptr<const Segment> s) : Actual<std::shared_ptr<const Segment>>(s) {}
+
+    /// The segment has its data part
+    void has_data();
+
+    /// The segment does not have its data part
+    void not_has_data();
+
+    /// The segment has its data part
+    void has_metadata();
+
+    /// The segment does not have its data part
+    void not_has_metadata();
+
+    /// The segment has its data part
+    void has_summary();
+
+    /// The segment does not have its data part
+    void not_has_summary();
+};
+
+inline arki::tests::ActualSegment actual(std::shared_ptr<const Segment> actual) { return arki::tests::ActualSegment(actual); }
+inline arki::tests::ActualSegment actual(const Segment& actual) { return arki::tests::ActualSegment(actual.shared_from_this()); }
+
+
+template<class Data>
+class SegmentTestFixture : public Fixture
+{
+protected:
+    std::shared_ptr<segment::Session> m_session;
+
+    virtual std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) = 0;
+
+    std::shared_ptr<Segment> create_segment(const char* name);
+
+public:
     Data td;
-    segment::RepackConfig repack_config;
-    metadata::Collection seg_mds;
-    std::filesystem::path root;
-    std::filesystem::path relpath;
-    std::filesystem::path abspath;
 
-    std::shared_ptr<segment::Checker> create();
-    std::shared_ptr<segment::Checker> create(metadata::Collection mds);
-    std::shared_ptr<segment::Checker> create(const segment::RepackConfig& cfg);
-
-    SegmentFixture(const segment::RepackConfig& cfg=segment::RepackConfig())
-        : repack_config(cfg) {}
+    SegmentTestFixture() = default;
 
     void test_setup();
+
+    std::shared_ptr<Segment> create(const char* name = "segment");
+    virtual std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") = 0;
 };
 
-template<class Segment, class Data>
-struct SegmentTests : public FixtureTestCase<SegmentFixture<Segment, Data>>
+template<class Data>
+class ScanSegmentFixture: public SegmentTestFixture<Data>
 {
-    typedef SegmentFixture<Segment, Data> Fixture;
-    using FixtureTestCase<Fixture>::FixtureTestCase;
+protected:
+    using SegmentTestFixture<Data>::m_session;
+    using SegmentTestFixture<Data>::create_segment;
 
-    void register_tests() override;
+    std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
+
+public:
+    using SegmentTestFixture<Data>::td;
+
+    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 };
 
-struct SegmentTest
+template<class Data>
+class MetadataSegmentFixture: public SegmentTestFixture<Data>
 {
-    std::string format;
-    std::string root;
-    std::string relpath;
-    std::string abspath;
-    metadata::TestCollection mdc;
+protected:
+    using SegmentTestFixture<Data>::m_session;
+    using SegmentTestFixture<Data>::create_segment;
 
-    SegmentTest();
-    virtual ~SegmentTest();
+    std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
 
-    /// Instantiate the segment to use for testing
-    virtual std::shared_ptr<segment::Writer> make_writer() = 0;
-    virtual std::shared_ptr<segment::Checker> make_checker() = 0;
+public:
+    using SegmentTestFixture<Data>::td;
 
-    virtual void run() = 0;
-
-    /// Create a segment with no data on disk
-    std::shared_ptr<segment::Writer> make_empty_writer();
-    std::shared_ptr<segment::Checker> make_empty_checker();
-
-    /// Create a segment importing all mdc into it
-    std::shared_ptr<segment::Writer> make_full_writer();
-    virtual std::shared_ptr<segment::Checker> make_full_checker();
-
-    void append_all();
+    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 };
 
-/**
- * Test Segment::check function
- */
-struct SegmentCheckTest : public SegmentTest
+template<class Data>
+class IsegSegmentFixture: public SegmentTestFixture<Data>
 {
-    void run() override;
+protected:
+    using SegmentTestFixture<Data>::m_session;
+    using SegmentTestFixture<Data>::create_segment;
+
+    std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
+
+public:
+    using SegmentTestFixture<Data>::td;
+
+    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 };
-
-/**
- * Test Segment::remove function
- */
-struct SegmentRemoveTest : public SegmentTest
-{
-    void run() override;
-};
-
-// TODO: virtual void truncate(const std::string& abspath, size_t offset) = 0;
-// TODO: virtual Pending repack(const std::string& rootdir, const std::string& relpath, metadata::Collection& mds) = 0;
-
-void test_append_transaction_ok(segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
-void test_append_transaction_rollback(segment::Writer* dw, Metadata& md, int append_amount_adjust=0);
-
-struct ActualSegment: public arki::utils::tests::Actual<std::string>
-{
-    using Actual<std::string>::Actual;
-
-    void exists();
-    void exists(const std::vector<std::string>& extensions);
-    void not_exists();
-};
-
-inline ActualSegment actual_segment(const std::string& path) { return ActualSegment(path); }
 
 }
-}
+
 #endif

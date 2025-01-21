@@ -1,9 +1,9 @@
 #include "session.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
-#include "arki/segment.h"
-#include "arki/segment/fd.h"
-#include "arki/segment/dir.h"
+#include "arki/segment/data.h"
+#include "arki/segment/data/fd.h"
+#include "arki/segment/data/dir.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -30,7 +30,6 @@ namespace arki {
 namespace dataset {
 
 Session::Session(bool load_aliases)
-    : reader_pool()
 {
     if (load_aliases)
         matcher_parser.load_system_aliases();
@@ -40,94 +39,30 @@ Session::~Session()
 {
 }
 
-std::shared_ptr<segment::Reader> Session::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
-{
-    auto abspath = std::filesystem::weakly_canonical(root / relpath);
-    auto res = reader_pool.find(abspath);
-    if (res == reader_pool.end() || res->second.expired())
-    {
-        auto seg = Segment::detect_reader(format, root, relpath, abspath, lock);
-        reader_pool[abspath] = seg;
-        return seg;
-    }
-    return res->second.lock();
-}
-
-std::shared_ptr<segment::Writer> Session::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-{
-    // Ensure that the directory containing the segment exists
-    auto abspath = root / relpath;
-    std::filesystem::create_directories(abspath.parent_path());
-
-    auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
-    if (res) return res;
-
-    if (format == "grib" || format == "grib1" || format == "grib2")
-    {
-        res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
-    } else if (format == "bufr") {
-        res.reset(new segment::concat::Writer(config, format, root, relpath, abspath));
-    } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc" || format == "jpeg") {
-        res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
-    } else if (format == "vm2") {
-        res.reset(new segment::lines::Writer(config, format, root, relpath, abspath));
-    } else {
-        throw std::runtime_error(
-                "cannot create writer for " + format + " file " + relpath.native() +
-                ": format not supported");
-    }
-    return res;
-}
-
-std::shared_ptr<segment::Checker> Session::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-{
-    std::string abspath = root / relpath;
-
-    auto res(Segment::detect_checker(format, root, relpath, abspath, false));
-    if (res) return res;
-
-    if (format == "grib" || format == "grib1" || format == "grib2")
-    {
-        res.reset(new segment::concat::Checker(format, root, relpath, abspath));
-    } else if (format == "bufr") {
-        res.reset(new segment::concat::Checker(format, root, relpath, abspath));
-    } else if (format == "odimh5" || format == "h5" || format == "odim" || format == "nc" || format == "jpeg") {
-        res.reset(new segment::dir::Checker(format, root, relpath, abspath));
-    } else if (format == "vm2") {
-        res.reset(new segment::lines::Checker(format, root, relpath, abspath));
-    } else {
-        throw std::runtime_error(
-                "getting writer for " + format + " file " + relpath.native() +
-                ": format not supported");
-    }
-    return res;
-}
-
-
 std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
 {
     std::string type = str::lower(cfg.value("type"));
 
     if (type == "iseg")
-        return std::make_shared<iseg::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<iseg::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "ondisk2")
-        return std::make_shared<ondisk2::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<ondisk2::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return std::make_shared<simple::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<simple::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
 #ifdef HAVE_LIBCURL
     if (type == "remote")
-        return std::make_shared<http::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<http::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
 #endif
     if (type == "outbound")
-        return std::make_shared<outbound::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<outbound::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "discard")
-        return std::make_shared<empty::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<empty::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "file")
-        return file::Dataset::from_config(shared_from_this(), cfg);
+        return file::Dataset::from_config(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "fromfunction")
-        return std::make_shared<fromfunction::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<fromfunction::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "testlarge")
-        return std::make_shared<testlarge::Dataset>(shared_from_this(), cfg);
+        return std::make_shared<testlarge::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
 
     throw std::runtime_error("cannot use configuration for \"" + cfg.value("name") + "\": unknown dataset type \""+type+"\"");
 }
@@ -164,21 +99,23 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::
             throw std::runtime_error(ss.str());
         }
 
-#ifdef HAVE_LIBCURL
         std::string prefix = path.native().substr(0, pos);
+#ifdef HAVE_LIBCURL
         if (prefix == "http" or prefix == "https")
             return dataset::http::Reader::load_cfg_section(path);
         else
 #endif
-            return dataset::file::read_config(path);
+            return dataset::file::read_config(prefix, path.native().substr(pos+1));
     }
 
     if (S_ISDIR(st->st_mode))
         return dataset::local::Reader::read_config(path);
     else if (path.filename() == "config")
         return dataset::local::Reader::read_config(path.parent_path());
+    else if (auto res = dataset::file::read_config(path))
+        return res;
     else
-        return dataset::file::read_config(path);
+        throw std::runtime_error("unsupported input file " + path.native());
 }
 
 std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem::path& path)
@@ -202,13 +139,13 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem
             throw std::runtime_error(ss.str());
         }
 
-#ifdef HAVE_LIBCURL
         std::string prefix = path.native().substr(0, pos);
+#ifdef HAVE_LIBCURL
         if (prefix == "http" or prefix == "https")
             return dataset::http::Reader::load_cfg_sections(path);
         else
 #endif
-            return dataset::file::read_configs(path);
+            return dataset::file::read_configs(prefix, path.native().substr(pos+1));
     }
 
     if (S_ISDIR(st->st_mode))
@@ -219,9 +156,8 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem
     else
     {
         // A file, check for known extensions
-        std::string format = scan::Scanner::format_from_filename(path, "");
-        if (!format.empty())
-            return dataset::file::read_configs(path);
+        if (auto res = dataset::file::read_configs(path))
+            return res;
 
         // Read the contents as configuration
         sys::File in(path, O_RDONLY);
@@ -296,42 +232,6 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
     return query;
 }
 
-std::shared_ptr<segment::Reader> DirSegmentsSession::segment_reader(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock)
-{
-    auto abspath = std::filesystem::weakly_canonical(root / relpath);
-    auto res = reader_pool.find(abspath);
-    if (res == reader_pool.end() || res->second.expired())
-    {
-        auto seg = Segment::detect_reader(format, root, relpath, root / relpath, lock);
-        reader_pool[abspath] = seg;
-        return seg;
-    }
-    return res->second.lock();
-}
-
-std::shared_ptr<segment::Writer> DirSegmentsSession::segment_writer(const segment::WriterConfig& config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-{
-    // Ensure that the directory containing the segment exists
-    auto abspath = root / relpath;
-    std::filesystem::create_directories(abspath.parent_path());
-
-    auto res(Segment::detect_writer(config, format, root, relpath, abspath, false));
-    if (res) return res;
-
-    res.reset(new segment::dir::Writer(config, format, root, relpath, abspath));
-    return res;
-}
-
-std::shared_ptr<segment::Checker> DirSegmentsSession::segment_checker(const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath)
-{
-    auto abspath = root / relpath;
-
-    auto res(Segment::detect_checker(format, root, relpath, abspath, false));
-    if (res) return res;
-
-    res.reset(new segment::dir::Checker(format, root, relpath, abspath));
-    return res;
-}
 
 }
 }

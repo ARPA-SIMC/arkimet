@@ -6,9 +6,11 @@ libconfig = configure_file(output: 'libconfig.h', configuration: conf_data)
 
 libarkimet_sources = [
     libconfig,
+    'defs.cc',
     'core/time.cc',
     'core/fuzzytime.cc',
     'core/file.cc',
+    'core/lock.cc',
     'core/cfg.cc',
     'core/binary.cc',
     'core/transaction.cc',
@@ -100,14 +102,25 @@ libarkimet_sources = [
     'summary/short.cc',
     'summary.cc',
     'segment.cc',
-    'segment/common.cc',
-    'segment/missing.cc',
-    'segment/fd.cc',
-    'segment/dir.cc',
-    'segment/tar.cc',
-    'segment/zip.cc',
-    'segment/gz.cc',
-    'segment/seqfile.cc',
+    'segment/defs.cc',
+    'segment/session.cc',
+    'segment/scan.cc',
+    'segment/metadata.cc',
+    'segment/data.cc',
+    'segment/data/common.cc',
+    'segment/data/missing.cc',
+    'segment/data/fd.cc',
+    'segment/data/dir.cc',
+    'segment/data/tar.cc',
+    'segment/data/zip.cc',
+    'segment/data/gz.cc',
+    'segment/data/seqfile.cc',
+    'segment/iseg.cc',
+    'segment/iseg/index/base.cc',
+    'segment/iseg/index/attr.cc',
+    'segment/iseg/index/aggregate.cc',
+    'segment/iseg/index.cc',
+    'segment/iseg/session.cc',
     'formatter.cc',
     'scan.cc',
     'scan/validator.cc',
@@ -116,20 +129,15 @@ libarkimet_sources = [
     'scan/netcdf.cc',
     'scan/jpeg.cc',
     'metadata/xargs.cc',
+    'query.cc',
+    'query/progress.cc',
     'dataset.cc',
     'dataset/lock.cc',
-    'dataset/query.cc',
     'dataset/reporter.cc',
-    'dataset/progress.cc',
     'dataset/time.cc',
     'dataset/session.cc',
     'dataset/maintenance.cc',
     'dataset/memory.cc',
-    'dataset/index.cc',
-    'dataset/index/base.cc',
-    'dataset/index/attr.cc',
-    'dataset/index/manifest.cc',
-    'dataset/index/aggregate.cc',
     'dataset/index/summarycache.cc',
     'dataset/step.cc',
     'dataset/local.cc',
@@ -137,11 +145,11 @@ libarkimet_sources = [
     'dataset/file.cc',
     'dataset/archive.cc',
     'dataset/simple.cc',
+    'dataset/simple/manifest.cc',
     'dataset/simple/reader.cc',
     'dataset/simple/writer.cc',
     'dataset/simple/checker.cc',
     'dataset/iseg.cc',
-    'dataset/iseg/index.cc',
     'dataset/iseg/reader.cc',
     'dataset/iseg/writer.cc',
     'dataset/iseg/checker.cc',
@@ -204,18 +212,27 @@ libarkimet = both_libraries('arkimet',
 # Unit testing
 #
 
-test_arkimet_sources = [
+testlib = static_library('testlib', [
+    'utils/tests.cc',
+    'utils/testrunner.cc',
     'tests/main.cpp',
-    'tests/daemon.cc',
     'tests/tests.cc',
     'core/tests.cc',
     'types/tests.cc',
-    'utils/tests.cc',
-    'utils/testrunner.cc',
+    'stream/tests.cc',
+    'metadata/tests.cc',
+    'matcher/tests.cc',
+    'segment/tests.cc',
+    'segment/data/tests.cc',
+    'dataset/tests.cc',
+], include_directories: toplevel_inc)
+
+test_core_sources = [
     'tests/tests-test.cc',
     'core/time-test.cc',
     'core/fuzzytime-test.cc',
     'core/file-test.cc',
+    'core/lock-test.cc',
     'core/cfg-test.cc',
     'core/binary-test.cc',
     'core/transaction-test.cc',
@@ -227,7 +244,6 @@ test_arkimet_sources = [
     'stream/concrete-test.cc',
     'stream/discard-test.cc',
     'stream/buffer-test.cc',
-    'stream/tests.cc',
     'utils/accounting-test.cc',
     'utils/gzip-test.cc',
     'utils/yaml-test.cc',
@@ -236,6 +252,8 @@ test_arkimet_sources = [
     'utils/files-test.cc',
     'utils/regexp-test.cc',
     'utils/geos-test.cc',
+    'utils/compress-test.cc',
+    'utils/sqlite-test.cc',
     'structured/memory-test.cc',
     'structured/json-test.cc',
     'types-test.cc',
@@ -261,10 +279,6 @@ test_arkimet_sources = [
     'types/typevector-test.cc',
     'types/typeset-test.cc',
     'types/itemset-test.cc',
-    'metadata/tests.cc',
-    'matcher/tests.cc',
-    'utils/compress-test.cc',
-    'utils/sqlite-test.cc',
     'formatter-test.cc',
     'bbox-test.cc',
     'metadata-test.cc',
@@ -303,49 +317,61 @@ test_arkimet_sources = [
     'scan/odimh5-test.cc',
     'scan/netcdf-test.cc',
     'scan/jpeg-test.cc',
-    'segment-test.cc',
-    'segment/common-test.cc',
-    'segment/missing-test.cc',
-    'segment/fd-test.cc',
-    'segment/seqfile-test.cc',
-    'segment/dir-test.cc',
-    'segment/tar-test.cc',
-    'segment/zip-test.cc',
-    'segment/gz-test.cc',
-    'segment/tests.cc',
     'metadata/xargs-test.cc',
     'metadata/postprocess-test.cc',
-    'dataset/tests.cc',
+    'query-test.cc',
+    'query/progress-test.cc',
+    'runtime-test.cc',
+    'iotrace-test.cc',
+]
+
+if eccodes_dep.found()
+    test_core_sources += ['scan/grib-test.cc']
+endif
+
+if dballe_dep.found()
+    test_core_sources += ['scan/bufr-test.cc']
+endif
+
+if meteo_vm2_dep.found()
+    test_core_sources += ['utils/vm2-test.cc', 'scan/vm2-test.cc']
+endif
+
+test_segment_sources = [
+    'segment/defs-test.cc',
+    'segment/data-test.cc',
+    'segment/data/common-test.cc',
+    'segment/data/missing-test.cc',
+    'segment/data/fd-test.cc',
+    'segment/data/seqfile-test.cc',
+    'segment/data/dir-test.cc',
+    'segment/data/tar-test.cc',
+    'segment/data/zip-test.cc',
+    'segment/data/gz-test.cc',
+    'segment/scan-test.cc',
+    'segment/metadata-test.cc',
+    'segment/iseg/index/base-test.cc',
+    'segment/iseg/index/attr-test.cc',
+    'segment/iseg/index/aggregate-test.cc',
+    'segment/iseg/index-test.cc',
+    'segment/iseg-test.cc',
+    'segment/iseg/session-test.cc',
+    'segment/session-test.cc',
+    'segment-test.cc',
+]
+
+test_ds_core_sources = [
     'dataset/lock-test.cc',
-    'dataset/query-test.cc',
     'dataset/reporter-test.cc',
-    'dataset/progress-test.cc',
     'dataset/time-test.cc',
     'dataset/session-test.cc',
-    'dataset/maintenance-test.cc',
     'dataset/memory-test.cc',
-    'dataset/index-test.cc',
-    'dataset/index/base-test.cc',
-    'dataset/index/attr-test.cc',
-    'dataset/index/manifest-test.cc',
-    'dataset/index/aggregate-test.cc',
     'dataset/index/summarycache-test.cc',
     'dataset/step-test.cc',
     'dataset/local-test.cc',
     'dataset/segmented-test.cc',
     'dataset/file-test.cc',
     'dataset/archive-test.cc',
-    'dataset/simple-test.cc',
-    'dataset/simple/reader-test.cc',
-    'dataset/simple/writer-test.cc',
-    'dataset/simple/checker-test.cc',
-    'dataset/simple/maintenance-test.cc',
-    'dataset/iseg-test.cc',
-    'dataset/iseg/index-test.cc',
-    'dataset/iseg/reader-test.cc',
-    'dataset/iseg/writer-test.cc',
-    'dataset/iseg/checker-test.cc',
-    'dataset/iseg/maintenance-test.cc',
     'dataset/ondisk2-test.cc',
     'dataset/outbound-test.cc',
     'dataset/offline-test.cc',
@@ -356,46 +382,71 @@ test_arkimet_sources = [
     'dataset/querymacro-test.cc',
     'dataset/pool-test.cc',
     'dataset-test.cc',
-    'dataset-reader-test.cc',
-    'dataset-writer-test.cc',
-    'dataset-checker-test.cc',
-    'dataset-concurrency-test.cc',
     'dispatcher-test.cc',
-    'runtime-test.cc',
-    'iotrace-test.cc',
 ]
 
-if eccodes_dep.found()
-    test_arkimet_sources += ['scan/grib-test.cc']
-endif
-
-if dballe_dep.found()
-    test_arkimet_sources += ['scan/bufr-test.cc']
-endif
-
-if meteo_vm2_dep.found()
-    test_arkimet_sources += ['utils/vm2-test.cc', 'scan/vm2-test.cc']
-endif
-
 if libcurl_dep.found()
-    test_arkimet_sources += ['dataset/http-test.cc']
+    test_ds_core_sources += [
+      'tests/daemon.cc',
+      'dataset/http-test.cc'
+    ]
 endif
 
-test_arkimet = executable('test-arkimet', test_arkimet_sources,
-    include_directories: toplevel_inc,
-    link_with: [
-        libarkimet,
-    ],
-    cpp_pch: 'pch/arkimet_pch.h',
-    dependencies: [
-        sqlite3_dep,
-        eccodes_dep,
-        dballe_dep,
-        meteo_vm2_dep,
-        libcurl_dep,
-    ]
-)
+test_ds_simple_sources = [
+    'dataset/simple-test.cc',
+    'dataset/simple/manifest-test.cc',
+    'dataset/simple/reader-test.cc',
+    'dataset/simple/writer-test.cc',
+    'dataset/simple/checker-test.cc',
+    'dataset/simple/maintenance-test.cc',
+    'dataset/maintenance-test.cc',
+]
+
+test_ds_iseg_sources = [
+    'dataset/iseg-test.cc',
+    'dataset/iseg/reader-test.cc',
+    'dataset/iseg/writer-test.cc',
+    'dataset/iseg/checker-test.cc',
+    'dataset/iseg/maintenance-test.cc',
+    'dataset/maintenance-test.cc',
+]
+
+test_ds_read_sources = ['dataset-reader-test.cc']
+test_ds_write_sources = ['dataset-writer-test.cc']
+test_ds_check_sources = ['dataset-checker-test.cc']
+test_ds_concurrent_sources = ['dataset-concurrency-test.cc']
 
 runtest = find_program('runtest')
 
-test('arki', runtest, args: [test_arkimet], timeout: 600)
+foreach test_info: [
+    ['core', test_core_sources],
+    ['segment', test_segment_sources],
+    ['dscore', test_ds_core_sources],
+    ['dssimple', test_ds_simple_sources],
+    ['dsiseg', test_ds_iseg_sources],
+    ['dsread', test_ds_read_sources],
+    ['dswrite', test_ds_write_sources],
+    ['dscheck', test_ds_check_sources],
+    ['dsconcurrent', test_ds_concurrent_sources],
+  ]
+  name = test_info[0]
+  sources = test_info[1]
+
+  test_executable = executable('test-' + name, sources,
+      include_directories: toplevel_inc,
+      link_with: [
+          testlib,
+          libarkimet,
+      ],
+      cpp_pch: 'pch/arkimet_pch.h',
+      dependencies: [
+          sqlite3_dep,
+          eccodes_dep,
+          dballe_dep,
+          meteo_vm2_dep,
+          libcurl_dep,
+      ]
+  )
+
+  test('arki' + name, runtest, args: [test_executable], timeout: 600)
+endforeach

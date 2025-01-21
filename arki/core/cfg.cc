@@ -187,6 +187,11 @@ void Section::set(const std::string& key, int value)
     set(key, std::to_string(value));
 }
 
+void Section::unset(const std::string& key)
+{
+    erase(key);
+}
+
 void Section::write(std::ostream& out) const
 {
     for (const auto& i: *this)

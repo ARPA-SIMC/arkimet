@@ -1,9 +1,9 @@
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/outbound.h"
 #include "arki/dataset/empty.h"
+#include "arki/query.h"
 #include "arki/metadata.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/metadata/data.h"
@@ -48,21 +48,21 @@ std::shared_ptr<Checker> Dataset::create_checker() { throw std::runtime_error("c
 
 void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
-    query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
+    query_data(query::Data(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     switch (q.type)
     {
-        case dataset::ByteQuery::BQ_DATA: {
+        case query::Bytes::BQ_DATA: {
             query_data(q, [&](std::shared_ptr<Metadata> md) {
                 auto res = md->stream_data(out);
                 return !(res.flags & stream::SendResult::SEND_PIPE_EOF_DEST);
             });
             break;
         }
-        case dataset::ByteQuery::BQ_POSTPROCESS: {
+        case query::Bytes::BQ_POSTPROCESS: {
             std::vector<std::string> args = metadata::Postprocess::validate_command(q.postprocessor, *dataset().config);
             out.start_filter(args);
             try {
@@ -88,7 +88,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
 
 bool Reader::query_data(const std::string& q, metadata_dest_func dest)
 {
-    dataset::DataQuery dq(dataset().session->matcher(q));
+    query::Data dq(dataset().session->matcher(q));
     return impl_query_data(dq, dest);
 }
 

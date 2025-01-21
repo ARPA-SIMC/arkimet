@@ -3,7 +3,6 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/simple.h"
 #include "arki/dataset/simple/writer.h"
-#include "arki/dataset/index.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
@@ -28,7 +27,7 @@ class CheckTests : public CheckTest<TestFixture>
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
-    bool can_delete_data() const override { return false; }
+    bool can_delete_data() const override { return true; }
 };
 
 template<typename TestFixture>
@@ -39,7 +38,7 @@ class FixTests : public FixTest<TestFixture>
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
-    bool can_delete_data() const override { return false; }
+    bool can_delete_data() const override { return true; }
 };
 
 template<typename TestFixture>
@@ -52,7 +51,7 @@ class RepackTests : public RepackTest<TestFixture>
 
     bool can_detect_overlap() const override { return true; }
     bool can_detect_segments_out_of_step() const override { return true; }
-    bool can_delete_data() const override { return false; }
+    bool can_delete_data() const override { return true; }
 };
 
 template<typename Fixture>
@@ -61,11 +60,11 @@ void CheckTests<Fixture>::register_tests()
     CheckTest<Fixture>::register_tests();
 
     this->add_method("check_empty_metadata", R"(
-    - `.metadata` file must not be empty [unaligned]
+    - an empty `.metadata` file marks a deleted segment [deleted]
     )", [](Fixture& f) {
         sys::File mdf("testds" / sys::with_suffix(f.test_relpath, ".metadata"), O_RDWR);
         mdf.ftruncate(0);
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_DELETED));
     });
 
     this->add_method("check_metadata_timestamp", R"(
@@ -161,73 +160,40 @@ void RepackTests<Fixture>::register_tests()
     });
 }
 
-CheckTests<FixtureConcat> test_simple_check_grib_plain("arki_dataset_simple_check_grib_plain", "grib", "type=simple\nindex_type=plain\n");
-CheckTests<FixtureConcat> test_simple_check_grib_sqlite("arki_dataset_simple_check_grib_sqlite", "grib", "type=simple\nindex_type=sqlite");
-CheckTests<FixtureDir> test_simple_check_grib_plain_dir("arki_dataset_simple_check_grib_plain_dirs", "grib", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureDir> test_simple_check_grib_sqlite_dir("arki_dataset_simple_check_grib_sqlite_dirs", "grib", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureZip> test_simple_check_grib_plain_zip("arki_dataset_simple_check_grib_plain_zip", "grib", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureZip> test_simple_check_grib_sqlite_zip("arki_dataset_simple_check_grib_sqlite_zip", "grib", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureConcat> test_simple_check_bufr_plain("arki_dataset_simple_check_bufr_plain", "bufr", "type=simple\nindex_type=plain\n");
-CheckTests<FixtureConcat> test_simple_check_bufr_sqlite("arki_dataset_simple_check_bufr_sqlite", "bufr", "type=simple\nindex_type=sqlite");
-CheckTests<FixtureDir> test_simple_check_bufr_plain_dir("arki_dataset_simple_check_bufr_plain_dirs", "bufr", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureDir> test_simple_check_bufr_sqlite_dir("arki_dataset_simple_check_bufr_sqlite_dirs", "bufr", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureZip> test_simple_check_bufr_plain_zip("arki_dataset_simple_check_bufr_plain_zip", "bufr", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureZip> test_simple_check_bufr_sqlite_zip("arki_dataset_simple_check_bufr_sqlite_zip", "bufr", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureConcat> test_simple_check_vm2_plain("arki_dataset_simple_check_vm2_plain", "vm2", "type=simple\nindex_type=plain\n");
-CheckTests<FixtureConcat> test_simple_check_vm2_sqlite("arki_dataset_simple_check_vm2_sqlite", "vm2", "type=simple\nindex_type=sqlite");
-CheckTests<FixtureDir> test_simple_check_vm2_plain_dir("arki_dataset_simple_check_vm2_plain_dirs", "vm2", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureDir> test_simple_check_vm2_sqlite_dir("arki_dataset_simple_check_vm2_sqlite_dirs", "vm2", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureZip> test_simple_check_vm2_plain_zip("arki_dataset_simple_check_vm2_plain_zip", "vm2", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureZip> test_simple_check_vm2_sqlite_zip("arki_dataset_simple_check_vm2_sqlite_zip", "vm2", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-CheckTests<FixtureDir> test_simple_check_odimh5_plain_dir("arki_dataset_simple_check_odimh5_plain", "odimh5", "type=simple\nindex_type=plain\n");
-CheckTests<FixtureDir> test_simple_check_odimh5_sqlite_dir("arki_dataset_simple_check_odimh5_sqlite", "odimh5", "type=simple\nindex_type=sqlite\n");
-CheckTests<FixtureZip> test_simple_check_odimh5_plain_zip("arki_dataset_simple_check_odimh5_plain_zip", "odimh5", "type=simple\nindex_type=plain\n");
-CheckTests<FixtureZip> test_simple_check_odimh5_sqlite_zip("arki_dataset_simple_check_odimh5_sqlite_zip", "odimh5", "type=simple\nindex_type=sqlite\n");
+CheckTests<FixtureConcat> test_simple_check_grib("arki_dataset_simple_check_grib", "grib", "type=simple");
+CheckTests<FixtureDir> test_simple_check_grib_dir("arki_dataset_simple_check_grib_dirs", "grib", "type=simple", DatasetTest::TEST_FORCE_DIR);
+CheckTests<FixtureZip> test_simple_check_grib_zip("arki_dataset_simple_check_grib_zip", "grib", "type=simple", DatasetTest::TEST_FORCE_DIR);
+CheckTests<FixtureConcat> test_simple_check_bufr("arki_dataset_simple_check_bufr", "bufr", "type=simple");
+CheckTests<FixtureDir> test_simple_check_bufr_dir("arki_dataset_simple_check_bufr_dirs", "bufr", "type=simple", DatasetTest::TEST_FORCE_DIR);
+CheckTests<FixtureZip> test_simple_check_bufr_zip("arki_dataset_simple_check_bufr_zip", "bufr", "type=simple", DatasetTest::TEST_FORCE_DIR);
+CheckTests<FixtureConcat> test_simple_check_vm2("arki_dataset_simple_check_vm2", "vm2", "type=simple");
+CheckTests<FixtureDir> test_simple_check_vm2_dir("arki_dataset_simple_check_vm2_dirs", "vm2", "type=simple", DatasetTest::TEST_FORCE_DIR);
+CheckTests<FixtureZip> test_simple_check_vm2_zip("arki_dataset_simple_check_vm2_zip", "vm2", "type=simple", DatasetTest::TEST_FORCE_DIR);
+CheckTests<FixtureDir> test_simple_check_odimh5_dir("arki_dataset_simple_check_odimh5", "odimh5", "type=simple");
+CheckTests<FixtureZip> test_simple_check_odimh5_zip("arki_dataset_simple_check_odimh5_zip", "odimh5", "type=simple");
 
-FixTests<FixtureConcat> test_simple_fix_grib_plain("arki_dataset_simple_fix_grib_plain", "grib", "type=simple\nindex_type=plain\n");
-FixTests<FixtureConcat> test_simple_fix_grib_sqlite("arki_dataset_simple_fix_grib_sqlite", "grib", "type=simple\nindex_type=sqlite");
-FixTests<FixtureDir> test_simple_fix_grib_plain_dir("arki_dataset_simple_fix_grib_plain_dirs", "grib", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureDir> test_simple_fix_grib_sqlite_dir("arki_dataset_simple_fix_grib_sqlite_dirs", "grib", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureZip> test_simple_fix_grib_plain_zip("arki_dataset_simple_fix_grib_plain_zip", "grib", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureZip> test_simple_fix_grib_sqlite_zip("arki_dataset_simple_fix_grib_sqlite_zip", "grib", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureConcat> test_simple_fix_bufr_plain("arki_dataset_simple_fix_bufr_plain", "bufr", "type=simple\nindex_type=plain\n");
-FixTests<FixtureConcat> test_simple_fix_bufr_sqlite("arki_dataset_simple_fix_bufr_sqlite", "bufr", "type=simple\nindex_type=sqlite");
-FixTests<FixtureDir> test_simple_fix_bufr_plain_dir("arki_dataset_simple_fix_bufr_plain_dirs", "bufr", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureDir> test_simple_fix_bufr_sqlite_dir("arki_dataset_simple_fix_bufr_sqlite_dirs", "bufr", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureZip> test_simple_fix_bufr_plain_zip("arki_dataset_simple_fix_bufr_plain_zip", "bufr", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureZip> test_simple_fix_bufr_sqlite_zip("arki_dataset_simple_fix_bufr_sqlite_zip", "bufr", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureConcat> test_simple_fix_vm2_plain("arki_dataset_simple_fix_vm2_plain", "vm2", "type=simple\nindex_type=plain\n");
-FixTests<FixtureConcat> test_simple_fix_vm2_sqlite("arki_dataset_simple_fix_vm2_sqlite", "vm2", "type=simple\nindex_type=sqlite");
-FixTests<FixtureDir> test_simple_fix_vm2_plain_dir("arki_dataset_simple_fix_vm2_plain_dirs", "vm2", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureDir> test_simple_fix_vm2_sqlite_dir("arki_dataset_simple_fix_vm2_sqlite_dirs", "vm2", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureZip> test_simple_fix_vm2_plain_zip("arki_dataset_simple_fix_vm2_plain_zip", "vm2", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureZip> test_simple_fix_vm2_sqlite_zip("arki_dataset_simple_fix_vm2_sqlite_zip", "vm2", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-FixTests<FixtureDir> test_simple_fix_odimh5_plain_dir("arki_dataset_simple_fix_odimh5_plain", "odimh5", "type=simple\nindex_type=plain\n");
-FixTests<FixtureDir> test_simple_fix_odimh5_sqlite_dir("arki_dataset_simple_fix_odimh5_sqlite", "odimh5", "type=simple\nindex_type=sqlite\n");
-FixTests<FixtureZip> test_simple_fix_odimh5_plain_zip("arki_dataset_simple_fix_odimh5_plain_zip", "odimh5", "type=simple\nindex_type=plain\n");
-FixTests<FixtureZip> test_simple_fix_odimh5_sqlite_zip("arki_dataset_simple_fix_odimh5_sqlite_zip", "odimh5", "type=simple\nindex_type=sqlite\n");
+FixTests<FixtureConcat> test_simple_fix_grib("arki_dataset_simple_fix_grib", "grib", "type=simple");
+FixTests<FixtureDir> test_simple_fix_grib_dir("arki_dataset_simple_fix_grib_dirs", "grib", "type=simple", DatasetTest::TEST_FORCE_DIR);
+FixTests<FixtureZip> test_simple_fix_grib_zip("arki_dataset_simple_fix_grib_zip", "grib", "type=simple", DatasetTest::TEST_FORCE_DIR);
+FixTests<FixtureConcat> test_simple_fix_bufr("arki_dataset_simple_fix_bufr", "bufr", "type=simple");
+FixTests<FixtureDir> test_simple_fix_bufr_dir("arki_dataset_simple_fix_bufr_dirs", "bufr", "type=simple", DatasetTest::TEST_FORCE_DIR);
+FixTests<FixtureZip> test_simple_fix_bufr_zip("arki_dataset_simple_fix_bufr_zip", "bufr", "type=simple", DatasetTest::TEST_FORCE_DIR);
+FixTests<FixtureConcat> test_simple_fix_vm2("arki_dataset_simple_fix_vm2", "vm2", "type=simple");
+FixTests<FixtureDir> test_simple_fix_vm2_dir("arki_dataset_simple_fix_vm2_dirs", "vm2", "type=simple", DatasetTest::TEST_FORCE_DIR);
+FixTests<FixtureZip> test_simple_fix_vm2_zip("arki_dataset_simple_fix_vm2_zip", "vm2", "type=simple", DatasetTest::TEST_FORCE_DIR);
+FixTests<FixtureDir> test_simple_fix_odimh5_dir("arki_dataset_simple_fix_odimh5", "odimh5", "type=simple");
+FixTests<FixtureZip> test_simple_fix_odimh5_zip("arki_dataset_simple_fix_odimh5_zip", "odimh5", "type=simple");
 
-RepackTests<FixtureConcat> test_simple_repack_grib_plain("arki_dataset_simple_repack_grib_plain", "grib", "type=simple\nindex_type=plain\n");
-RepackTests<FixtureConcat> test_simple_repack_grib_sqlite("arki_dataset_simple_repack_grib_sqlite", "grib", "type=simple\nindex_type=sqlite");
-RepackTests<FixtureDir> test_simple_repack_grib_plain_dir("arki_dataset_simple_repack_grib_plain_dirs", "grib", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureDir> test_simple_repack_grib_sqlite_dir("arki_dataset_simple_repack_grib_sqlite_dirs", "grib", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureZip> test_simple_repack_grib_plain_zip("arki_dataset_simple_repack_grib_plain_zip", "grib", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureZip> test_simple_repack_grib_sqlite_zip("arki_dataset_simple_repack_grib_sqlite_zip", "grib", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureConcat> test_simple_repack_bufr_plain("arki_dataset_simple_repack_bufr_plain", "bufr", "type=simple\nindex_type=plain\n");
-RepackTests<FixtureConcat> test_simple_repack_bufr_sqlite("arki_dataset_simple_repack_bufr_sqlite", "bufr", "type=simple\nindex_type=sqlite");
-RepackTests<FixtureDir> test_simple_repack_bufr_plain_dir("arki_dataset_simple_repack_bufr_plain_dirs", "bufr", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureDir> test_simple_repack_bufr_sqlite_dir("arki_dataset_simple_repack_bufr_sqlite_dirs", "bufr", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureZip> test_simple_repack_bufr_plain_zip("arki_dataset_simple_repack_bufr_plain_zip", "bufr", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureZip> test_simple_repack_bufr_sqlite_zip("arki_dataset_simple_repack_bufr_sqlite_zip", "bufr", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureConcat> test_simple_repack_vm2_plain("arki_dataset_simple_repack_vm2_plain", "vm2", "type=simple\nindex_type=plain\n");
-RepackTests<FixtureConcat> test_simple_repack_vm2_sqlite("arki_dataset_simple_repack_vm2_sqlite", "vm2", "type=simple\nindex_type=sqlite");
-RepackTests<FixtureDir> test_simple_repack_vm2_plain_dir("arki_dataset_simple_repack_vm2_plain_dirs", "vm2", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureDir> test_simple_repack_vm2_sqlite_dir("arki_dataset_simple_repack_vm2_sqlite_dirs", "vm2", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureZip> test_simple_repack_vm2_plain_zip("arki_dataset_simple_repack_vm2_plain_zip", "vm2", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureZip> test_simple_repack_vm2_sqlite_zip("arki_dataset_simple_repack_vm2_sqlite_zip", "vm2", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
-RepackTests<FixtureDir> test_simple_repack_odimh5_plain_dir("arki_dataset_simple_repack_odimh5_plain", "odimh5", "type=simple\nindex_type=plain\n");
-RepackTests<FixtureDir> test_simple_repack_odimh5_sqlite_dir("arki_dataset_simple_repack_odimh5_sqlite", "odimh5", "type=simple\nindex_type=sqlite\n");
-RepackTests<FixtureZip> test_simple_repack_odimh5_plain_zip("arki_dataset_simple_repack_odimh5_plain_zip", "odimh5", "type=simple\nindex_type=plain\n");
-RepackTests<FixtureZip> test_simple_repack_odimh5_sqlite_zip("arki_dataset_simple_repack_odimh5_sqlite_zip", "odimh5", "type=simple\nindex_type=sqlite\n");
+RepackTests<FixtureConcat> test_simple_repack_grib("arki_dataset_simple_repack_grib", "grib", "type=simple");
+RepackTests<FixtureDir> test_simple_repack_grib_dir("arki_dataset_simple_repack_grib_dirs", "grib", "type=simple", DatasetTest::TEST_FORCE_DIR);
+RepackTests<FixtureZip> test_simple_repack_grib_zip("arki_dataset_simple_repack_grib_zip", "grib", "type=simple", DatasetTest::TEST_FORCE_DIR);
+RepackTests<FixtureConcat> test_simple_repack_bufr("arki_dataset_simple_repack_bufr", "bufr", "type=simple");
+RepackTests<FixtureDir> test_simple_repack_bufr_dir("arki_dataset_simple_repack_bufr_dirs", "bufr", "type=simple", DatasetTest::TEST_FORCE_DIR);
+RepackTests<FixtureZip> test_simple_repack_bufr_zip("arki_dataset_simple_repack_bufr_zip", "bufr", "type=simple", DatasetTest::TEST_FORCE_DIR);
+RepackTests<FixtureConcat> test_simple_repack_vm2("arki_dataset_simple_repack_vm2", "vm2", "type=simple");
+RepackTests<FixtureDir> test_simple_repack_vm2_dir("arki_dataset_simple_repack_vm2_dirs", "vm2", "type=simple", DatasetTest::TEST_FORCE_DIR);
+RepackTests<FixtureZip> test_simple_repack_vm2_zip("arki_dataset_simple_repack_vm2_zip", "vm2", "type=simple", DatasetTest::TEST_FORCE_DIR);
+RepackTests<FixtureDir> test_simple_repack_odimh5_dir("arki_dataset_simple_repack_odimh5", "odimh5", "type=simple");
+RepackTests<FixtureZip> test_simple_repack_odimh5_zip("arki_dataset_simple_repack_odimh5_zip", "odimh5", "type=simple");
 
 }

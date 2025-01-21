@@ -32,7 +32,7 @@ struct TestGenericType
     void check() const;
 
     /// Decode item from encoded, running single-item checks and passing ownership back the caller
-    void check_item(const std::string& encoded, std::unique_ptr<types::Type>& item) const;
+    std::unique_ptr<types::Type> check_item(const std::string& encoded) const;
 };
 
 
@@ -70,18 +70,18 @@ public:
 
     /// Check all components of a source::Blob item
     void is_source_blob(
-        const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& fname,
+        DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& fname,
         uint64_t ofs, uint64_t size);
 
     /// Check only the file name components of a source::Blob item
     void is_source_blob(
-        const std::string& format, const std::filesystem::path& basedir, const std::filesystem::path& fname);
+        DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& fname);
 
     /// Check all components of a source::URL item
-    void is_source_url(const std::string& format, const std::string& url);
+    void is_source_url(DataFormat format, const std::string& url);
 
     /// Check all components of a source::Inline item
-    void is_source_inline(const std::string& format, uint64_t size);
+    void is_source_inline(DataFormat format, uint64_t size);
 
     /// Check all components of a reftime::Position item
     void is_reftime_position(const core::Time&);

@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "arki/matcher.h"
+#include "arki/nag.h"
 
 namespace {
 using namespace std;
@@ -31,6 +31,16 @@ class Tests : public FixtureTestCase<Fixture>
 Tests test("arki_dataset_simple");
 
 void Tests::register_tests() {
+
+add_method("warn_index_type_sqlite", [](Fixture& f) {
+    f.cfg->set("index_type", "sqlite");
+    nag::CollectHandler nag_messages;
+    nag_messages.install();
+    f.config();
+    wassert(actual(nag_messages.collected.size()) == 1u);
+    wassert(actual(nag_messages.collected[0]).matches("W:testds: dataset has index_type=sqlite. It is now ignored, and automatically converted to plain MANIFEST"));
+    nag_messages.clear();
+});
 
 #if 0
 // Test accessing the data

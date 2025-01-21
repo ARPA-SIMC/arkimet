@@ -90,14 +90,14 @@ void Tests::register_tests() {
 add_method("stream", [] {
     // Create test metadata
     auto md1 = std::make_shared<Metadata>();
-    md1->set_source(types::Source::createURL("grib", "http://www.example.org"));
+    md1->set_source(types::Source::createURL(DataFormat::GRIB, "http://www.example.org"));
     fill(*md1);
 
     std::shared_ptr<Metadata> md2(md1->clone());
     md2->test_set(types::Origin::createBUFR(1, 2));
 
     const char* teststr = "this is a test";
-    md1->set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
+    md1->set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, vector<uint8_t>(teststr, teststr + 14)));
 
     // Encode everything in a buffer
     size_t end1, end2;
@@ -161,7 +161,7 @@ add_method("stream", [] {
 add_method("split", [] {
     // Create test metadata
     Metadata md;
-    md.set_source(types::Source::createURL("grib", "http://www.example.org"));
+    md.set_source(types::Source::createURL(DataFormat::GRIB, "http://www.example.org"));
     fill(md);
 
     // Encode it in a buffer 3 times

@@ -73,6 +73,9 @@ public:
     /// Set a value converting an integer value to a string
     void set(const std::string& key, int value);
 
+    /// Remove a key if it exists
+    void unset(const std::string& key);
+
     /// Serialize to a string
     std::string to_string() const;
 

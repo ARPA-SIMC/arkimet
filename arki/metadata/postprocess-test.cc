@@ -1,8 +1,8 @@
 #include "arki/tests/tests.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/metadata/data.h"
 #include "arki/types/source/blob.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/core/cfg.h"
 #include "arki/core/binary.h"
 #include "arki/stream.h"
@@ -34,8 +34,8 @@ bool process(const std::string source, const std::string& command, const core::c
     try {
         for (unsigned i = 0; i < repeat; ++i)
             if (!Metadata::read_file(source, [&](std::shared_ptr<Metadata> md) {
-                        md->set_source_inline("bufr",
-                                data_manager.to_data("bufr",
+                        md->set_source_inline(DataFormat::BUFR,
+                                data_manager.to_data(DataFormat::BUFR,
                                     std::vector<uint8_t>(md->sourceBlob().size)));
                         return metadata::Postprocess::send(md, out);
                     }))
@@ -97,13 +97,15 @@ add_method("countbytes", [] {
 });
 
 add_method("cat", [] {
-    auto reader = Segment::detect_reader("grib", ".", "inbound/test.grib1", "inbound/test.grib1", std::make_shared<core::lock::Null>());
+    auto session = std::make_shared<segment::Session>("inbound");
+    auto segment = session->segment_from_relpath_and_format("test.grib1", DataFormat::GRIB);
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
 
     // Get the normal data
     vector<uint8_t> plain;
     {
         core::BinaryEncoder enc(plain);
-        reader->scan([&](std::shared_ptr<Metadata> md) {
+        reader->read_all([&](std::shared_ptr<Metadata> md) {
             md->makeInline();
             md->encodeBinary(enc);
             const auto& data = md->get_data().read();

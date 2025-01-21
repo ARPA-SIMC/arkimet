@@ -18,6 +18,7 @@ warning_control = [
   '-Werror=noexcept',
   '-Werror=c++23-extensions',
   '-Werror=dangling-else',
+  '-Werror=switch',
   # '-Werror=suggest-attribute=format',
   # '-Werror=deprecated-declarations',
 
@@ -27,8 +28,6 @@ warning_control = [
   '-Wno-missing-include-dirs',
   '-Wno-multiple-inheritance',
   '-Wno-sign-promo',
-  '-Wswitch',
-  '-Wno-switch-enum',
   '-Wno-effc++',
 
   # TODO: remove the following ones over time

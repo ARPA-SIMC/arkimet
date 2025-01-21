@@ -18,7 +18,7 @@ protected:
     index::SummaryCache scache;
 
     /// List all existing segments matched by the reftime part of matcher
-    bool list_segments(const Matcher& matcher, std::function<bool(const std::filesystem::path& relpath)> dest);
+    bool list_segments(const Matcher& matcher, std::function<bool(std::shared_ptr<arki::Segment> segment)> dest);
 
     /**
      * Compute the summary for the given month, and output it to \a
@@ -39,7 +39,7 @@ protected:
 
     void summary_from_indices(const Matcher& matcher, Summary& summary);
 
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:

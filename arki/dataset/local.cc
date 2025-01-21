@@ -59,7 +59,7 @@ std::shared_ptr<archive::Dataset> Dataset::archive()
 {
     if (!m_archive)
     {
-        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path));
+        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path / ".archive"));
         m_archive->set_parent(this);
     }
     return m_archive;
@@ -70,17 +70,17 @@ bool Dataset::hasArchive() const
     return std::filesystem::exists(path / ".archive");
 }
 
-std::shared_ptr<dataset::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
+std::shared_ptr<core::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentReadLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
+std::shared_ptr<core::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentAppendLock>(*this, relpath);
 }
 
-std::shared_ptr<dataset::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
+std::shared_ptr<core::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
 {
     return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
@@ -97,7 +97,7 @@ std::shared_ptr<dataset::Reader> Reader::archive()
     return m_archive;
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
     if (!dataset().hasArchive()) return true;
     return archive()->query_data(q, dest);
@@ -115,15 +115,43 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::p
     auto name = path.filename();
     auto file = path / "config";
 
-    File in(file, O_RDONLY);
-    // Parse the config file into a new section
-    auto res = core::cfg::Section::parse(in);
-    // Fill in missing bits
-    res->set("name", name);
+    if (std::filesystem::exists(file))
+    {
+        File in(file, O_RDONLY);
+        // Parse the config file into a new section
+        auto res = core::cfg::Section::parse(in);
+        // Fill in missing bits
+        res->set("name", name);
 
-    if (res->value("type") != "remote")
-        res->set("path", std::filesystem::weakly_canonical(path));
-    return res;
+        if (res->value("type") != "remote")
+            res->set("path", std::filesystem::weakly_canonical(path));
+        return res;
+    } else {
+        auto abspath = std::filesystem::canonical(path);
+        if (abspath.parent_path().filename() == ".archive")
+        {
+            auto containing_path = abspath.parent_path().parent_path();
+            file = containing_path / "config";
+            if (std::filesystem::exists(file))
+            {
+                File in(file, O_RDONLY);
+                // Parse the config file into a new section
+                auto res = core::cfg::Section::parse(in);
+                // Fill in missing bits
+                res->set("name", name);
+                res->set("type", "simple");
+                res->set("path", abspath);
+                res->unset("archive age");
+                res->unset("delete age");
+                return res;
+            } else {
+                throw std::runtime_error(path.native() + ": path looks like an archive component but containing configuration not found at " + file.native());
+            }
+        } else {
+            throw std::runtime_error(path.native() + ": path is a directory but dataset configuration not found");
+        }
+    }
+
 }
 
 std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::filesystem::path& path)

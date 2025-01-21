@@ -28,7 +28,7 @@ namespace tests {
 
 TestGenericType::TestGenericType(const std::string& tag, const std::string& sample) : tag(tag), sample(sample) {}
 
-void TestGenericType::check_item(const std::string& encoded, std::unique_ptr<types::Type>& item) const
+std::unique_ptr<types::Type> TestGenericType::check_item(const std::string& encoded) const
 {
     ARKI_UTILS_TEST_INFO(tinfo);
     tinfo() << "current: " << encoded;
@@ -36,7 +36,7 @@ void TestGenericType::check_item(const std::string& encoded, std::unique_ptr<typ
     Code code = parseCodeName(tag);
 
     // Decode
-    item = wcallchecked(types::decodeString(code, encoded));
+    auto item = wcallchecked(types::decodeString(code, encoded));
 
     // Test equality to another decoded self
     wassert(actual(item) == encoded);
@@ -48,6 +48,8 @@ void TestGenericType::check_item(const std::string& encoded, std::unique_ptr<typ
     // Test equality to a clone
     unique_ptr<Type> clone(item->cloneType());
     wassert(actual(item) == clone);
+
+    return item;
 }
 
 void TestGenericType::check() const
@@ -57,27 +59,22 @@ void TestGenericType::check() const
     tinfo() << "current: " << sample;
 
     // Decode and run all single-item tests
-    unique_ptr<Type> item;
-    wassert(check_item(sample, item));
+    unique_ptr<Type> item = wcallchecked(check_item(sample));
 
-    for (vector<string>::const_iterator i = alternates.begin();
-            i != alternates.end(); ++i)
+    for (const auto& i: alternates)
     {
-        tinfo() << "current: " << *i << " == " << sample;
-        unique_ptr<Type> aitem;
-        wassert(check_item(*i, aitem));
+        tinfo() << "current: " << i << " == " << sample;
+        unique_ptr<Type> aitem = wcallchecked(check_item(i));
         wassert(actual(item) == aitem);
     }
 
     // Test equality and comparisons
-    for (std::vector<std::string>::const_iterator i = lower.begin();
-            i != lower.end(); ++i)
+    for (const auto& i: lower)
     {
-        tinfo() << "current (lo): " << *i << " < " << sample;
+        tinfo() << "current (lo): " << i << " < " << sample;
 
         // Decode and run all single-item tests
-        unique_ptr<Type> lower_item;
-        wassert(check_item(*i, lower_item));
+        unique_ptr<Type> lower_item = wcallchecked(check_item(i));
 
         // Check equality with different items
         wassert(actual(item) != lower_item);
@@ -86,14 +83,12 @@ void TestGenericType::check() const
         wassert(actual(lower_item).compares(*item));
     }
 
-    for (std::vector<std::string>::const_iterator i = higher.begin();
-            i != higher.end(); ++i)
+    for (const auto& i: higher)
     {
-        tinfo() << "current (hi): " << sample << " < " << *i;
+        tinfo() << "current (hi): " << sample << " < " << i;
 
         // Decode and run all single-item tests
-        unique_ptr<Type> higher_item;
-        wassert(check_item(*i, higher_item));
+        unique_ptr<Type> higher_item = wcallchecked(check_item(i));
 
         // Check equality with different items
         wassert(actual(item) != higher_item);
@@ -267,7 +262,7 @@ static const T* get_specific_type(const types::Type* actual)
 }
 
 void ActualType::is_source_blob(
-    const std::string& format,
+    DataFormat format,
     const std::filesystem::path& basedir,
     const std::filesystem::path& fname,
     uint64_t ofs,
@@ -291,7 +286,7 @@ void ActualType::is_source_blob(
 }
 
 void ActualType::is_source_blob(
-    const std::string& format,
+    DataFormat format,
     const std::filesystem::path& basedir,
     const std::filesystem::path& fname)
 {
@@ -310,14 +305,14 @@ void ActualType::is_source_blob(
     }
 }
 
-void ActualType::is_source_url(const std::string& format, const std::string& url)
+void ActualType::is_source_url(DataFormat format, const std::string& url)
 {
     const source::URL* item = get_specific_type<source::URL>(_actual);
     wassert(actual(item->format) == format);
     wassert(actual(item->url) == url);
 }
 
-void ActualType::is_source_inline(const std::string& format, uint64_t size)
+void ActualType::is_source_inline(DataFormat format, uint64_t size)
 {
     const source::Inline* item = get_specific_type<source::Inline>(_actual);
     wassert(actual(item->format) == format);

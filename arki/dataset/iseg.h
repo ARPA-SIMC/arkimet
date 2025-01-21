@@ -2,6 +2,7 @@
 #define ARKI_DATASET_ISEG_H
 
 #include <arki/dataset/segmented.h>
+#include <arki/segment/iseg/fwd.h>
 #include <arki/types/fwd.h>
 #include <set>
 
@@ -11,12 +12,8 @@ namespace iseg {
 
 struct Dataset : public segmented::Dataset
 {
-    std::string format;
-    std::string index_type;
-    std::set<types::Code> index;
-    std::set<types::Code> unique;
+    std::shared_ptr<arki::segment::iseg::Session> iseg_segment_session;
     std::filesystem::path summary_cache_pathname;
-    bool trace_sql;
 
     Dataset(const Dataset&) = default;
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
@@ -24,8 +21,6 @@ struct Dataset : public segmented::Dataset
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Writer> create_writer() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
-
-    std::shared_ptr<segment::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock) override;
 };
 
 }

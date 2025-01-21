@@ -2,7 +2,7 @@
 #include "archive.h"
 #include "reporter.h"
 #include "simple/writer.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -51,7 +51,7 @@ struct Fixture : public arki::utils::tests::Fixture
         cfg.set("unique", "origin, reftime");
         cfg.set("archive age", "7");
 
-        config = std::make_shared<archive::Dataset>(session, "testds");
+        config = std::make_shared<archive::Dataset>(session, "testds/.archive");
 
         iotrace::init();
     }
@@ -76,7 +76,7 @@ add_method("acquire_last", [](Fixture& f) {
         wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.metadata").exists());
         wassert(actual_file("testds/.archive/last/test-sorted.grib1.summary").exists());
-        wassert(actual_file("testds/.archive/last/" + manifest_idx_fname()).exists());
+        wassert(actual_file("testds/.archive/last/MANIFEST").exists());
 
         metadata::Collection mdc;
         Metadata::read_file("testds/.archive/last/test-sorted.grib1.metadata", mdc.inserter_func());
@@ -104,7 +104,7 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
     // Query now has empty results
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 0u);
 
         // Maintenance should show one file to index
@@ -131,7 +131,7 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
     // Query now has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
     }
 });
@@ -156,7 +156,7 @@ add_method("reader_empty_last", [](Fixture& f) {
     // Query has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
     }
 });
@@ -181,7 +181,7 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
     // Query has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
 
         wassert(actual(reader.test_count_archives()) == 1u);
@@ -199,7 +199,7 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
     // Query still has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
 
         wassert(actual(reader.test_count_archives()) == 1u);
@@ -213,7 +213,7 @@ add_method("reader_offline", [](Fixture& f) {
     // Query has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 0u);
     }
 });

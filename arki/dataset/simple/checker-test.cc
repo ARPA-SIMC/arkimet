@@ -1,6 +1,6 @@
 #include "arki/dataset/tests.h"
 #include "arki/core/file.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/simple/checker.h"
 #include "arki/dataset/simple/writer.h"
 #include "arki/dataset/simple/reader.h"
@@ -51,7 +51,7 @@ class Tests : public FixtureTestCase<Fixture>
 
 void Tests::register_tests() {
 
-// Add here only simple-specific tests that are not convered by tests in dataset-writer-test.cc
+// Add here only simple-specific tests that are not convered by tests in dataset-checker-test.cc
 
 // Test maintenance scan on missing summary
 add_method("scan_missing_summary", [](Fixture& f) {
@@ -67,7 +67,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
 
     f.clean_and_import();
     setup();
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
     // Query is ok
     {
@@ -78,7 +78,7 @@ add_method("scan_missing_summary", [](Fixture& f) {
     // Maintenance should show one file to rescan
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_UNALIGNED);
         wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
         wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 1u);
         wassert(actual(state.size()) == 3u);
@@ -102,14 +102,14 @@ add_method("scan_missing_summary", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
 
     // Restart again
     f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
     // Repack here should act as if the dataset were empty
     wassert(actual(*f.makeSimpleChecker()).repack_clean(true));
@@ -123,14 +123,15 @@ add_method("scan_missing_summary", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 });
 
 // Test maintenance scan on compressed archives
 add_method("scan_compressed", [](Fixture& f) {
     auto setup = [&] {
         auto checker = f.makeSegmentedChecker();
-        checker->segment("2007/07-08.grib")->compress(512);
+        auto segment = checker->dataset().segment_session->segment_from_relpath("2007/07-08.grib");
+        checker->segment(segment)->compress(512);
     };
 
     auto removemd = []{
@@ -148,7 +149,7 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
     // Query is ok
     wassert(f.ensure_localds_clean(3, 3));
@@ -160,14 +161,14 @@ add_method("scan_compressed", [](Fixture& f) {
     {
         metadata::Collection mdc;
         auto reader = f.makeSimpleReader();
-        mdc.add(*reader, Matcher());
+        wassert(mdc.add(*reader, Matcher()));
         wassert(actual(mdc.size()) == 2u);
     }
 
     // Maintenance should show one file to rescan
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_UNALIGNED));
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_UNALIGNED);
         wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
         wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 1u);
         wassert(actual(state.size()) == 3u);
@@ -194,14 +195,14 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 
 
     // Restart again
     f.clean_and_import();
     setup();
     files::removeDontpackFlagfile("testds");
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
     removemd();
 
     // Repack here should act as if the dataset were empty
@@ -224,7 +225,7 @@ add_method("scan_compressed", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.gz.idx").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
 });
 
 }

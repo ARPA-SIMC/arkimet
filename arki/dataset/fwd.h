@@ -2,14 +2,13 @@
 #define ARKI_DATASET_FWD_H
 
 #include <arki/defs.h>
+#include <arki/query/fwd.h>
 
 namespace arki {
 namespace dataset {
 
 class Session;
 class Pool;
-struct DataQuery;
-struct ByteQuery;
 class Dataset;
 class Reader;
 class Writer;
@@ -17,7 +16,6 @@ struct WriterBatchElement;
 class WriterBatch;
 class Checker;
 class Reporter;
-class QueryProgress;
 struct SessionTime;
 struct SessionTimeOverride;
 

@@ -247,7 +247,10 @@ struct unarchive : public checker_base<unarchive, arkipy_ArkiCheck>
             {
                 foreach_checker(self->pool, [&](std::shared_ptr<arki::dataset::Checker> checker) {
                     if (auto c = std::dynamic_pointer_cast<arki::dataset::segmented::Checker>(checker))
-                        c->segment(pathname)->unarchive();
+                    {
+                        auto segment = c->dataset().segment_session->segment_from_relpath(pathname);
+                        c->segment(segment)->unarchive();
+                    }
                 });
             }
             Py_RETURN_NONE;

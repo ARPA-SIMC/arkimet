@@ -1,7 +1,7 @@
 #include "arki/dataset/merged.h"
 #include "arki/dataset/pool.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/exceptions.h"
 #include "arki/metadata/sort.h"
 #include "arki/matcher.h"
@@ -141,7 +141,7 @@ class MetadataReader : public ReaderThread
 {
 public:
     std::shared_ptr<dataset::Reader> dataset;
-    DataQuery query;
+    query::Data query;
     string errorbuf;
     SyncBuffer mdbuf;
 
@@ -161,7 +161,7 @@ public:
         }
     }
 
-    void start(std::shared_ptr<dataset::Reader> dataset, const DataQuery& query)
+    void start(std::shared_ptr<dataset::Reader> dataset, const query::Data& query)
     {
         this->dataset = dataset;
         this->query = query;
@@ -218,10 +218,10 @@ class MetadataReaderPool
     std::shared_ptr<metadata::sort::Compare> sorter;
 
 public:
-    MetadataReaderPool(std::vector<std::shared_ptr<dataset::Reader>>& datasets, const dataset::DataQuery& query)
+    MetadataReaderPool(std::vector<std::shared_ptr<dataset::Reader>>& datasets, const query::Data& query)
         : readers(datasets.size()), sorter(query.sorter)
     {
-        dataset::DataQuery subquery = query;
+        query::Data subquery = query;
         // Disable progress reporting on the query that we give to each component
         // dataset, to avoid reporting data production twice
         subquery.progress = nullptr;
@@ -312,9 +312,9 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "merged"; }
 
-bool Reader::impl_query_data(const dataset::DataQuery& query, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& query, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(query.progress);
+    query::TrackProgress track(query.progress);
     dest = track.wrap(dest);
 
     auto& datasets = dataset().datasets;
@@ -385,12 +385,12 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
 namespace {
 
-class QueryBytesProgress : public QueryProgress
+class QueryBytesProgress : public query::Progress
 {
-    std::shared_ptr<QueryProgress> wrapped;
+    std::shared_ptr<query::Progress> wrapped;
 
 public:
-    QueryBytesProgress(std::shared_ptr<QueryProgress> wrapped)
+    QueryBytesProgress(std::shared_ptr<query::Progress> wrapped)
         : wrapped(wrapped)
     {
         if (wrapped) wrapped->start();
@@ -413,7 +413,7 @@ public:
 
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     // Here we must serialize, as we do not know how to merge raw data streams
     //
@@ -424,7 +424,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
     // TODO: we might be able to do something smarter, like if we're merging
     // many datasets from the same server we can run it all there; if we're
     // merging all local datasets, wrap queryData; and so on.
-    dataset::ByteQuery localq(q);
+    query::Bytes localq(q);
     auto wrapped_progress = std::make_shared<QueryBytesProgress>(q.progress);
     localq.progress = wrapped_progress;
 

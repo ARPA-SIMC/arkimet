@@ -73,7 +73,7 @@ add_method("acquire", [](Fixture& f) {
     #endif
     wassert(actual(dsname(md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again finds the duplicate
     wassert(actual(writer->acquire(md)) == ACQ_ERROR_DUPLICATE);
@@ -84,7 +84,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.index").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/" + f.idxfname()).not_exists());
+    wassert(actual_file("testds/MANIFEST").not_exists());
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
     wassert_false(files::hasDontpackFlagfile("testds"));
 

@@ -5,12 +5,15 @@
 
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/stream/fwd.h>
 #include <vector>
 #include <filesystem>
 #include <string>
+#include <set>
 
 namespace arki {
 class Summary;
@@ -31,9 +34,9 @@ public:
     Collection(const Collection& o) = default;
     Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
-    Collection(dataset::Dataset& ds, const dataset::DataQuery& q);
+    Collection(dataset::Dataset& ds, const query::Data& q);
     Collection(dataset::Dataset& ds, const std::string& q);
-    Collection(dataset::Reader& ds, const dataset::DataQuery& q);
+    Collection(dataset::Reader& ds, const query::Data& q);
     Collection(dataset::Reader& ds, const std::string& q);
     ~Collection();
 
@@ -82,13 +85,13 @@ public:
     metadata_dest_func inserter_func();
 
     /// Append results from a query_data
-    void add(dataset::Dataset& ds, const dataset::DataQuery& q);
+    void add(dataset::Dataset& ds, const query::Data& q);
 
     /// Append results from a query_data
     void add(dataset::Dataset& ds, const std::string& q);
 
     /// Append results from a query_data
-    void add(dataset::Reader& reader, const dataset::DataQuery& q);
+    void add(dataset::Reader& reader, const query::Data& q);
 
     /// Append results from a query_data
     void add(dataset::Reader& reader, const std::string& q);
@@ -134,7 +137,7 @@ public:
      * This is useful to prepare a Metadata bundle for being written next to
      * the file(s) that it describes.
      */
-    void strip_source_paths();
+    void prepare_for_segment_metadata();
 
     /**
      * Ensure that all metadata point to data in the same file and that
@@ -163,25 +166,47 @@ public:
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();
+
+    /**
+     * Return a copy of this collection without duplicates.
+     *
+     * @param unique_components metadata to consider in searching for duplicates
+     *
+     * All data for which the metadata items listed in \a unique_components are
+     * the same will be removed from the result, except for the last one.
+     */
+    Collection without_duplicates(const std::set<types::Code>& unique_components) const;
+
+    /**
+     * Return a copy of this collection without the data at the given offsets.
+     */
+    Collection without_data(const std::set<uint64_t>& offsets) const;
+
+    /**
+     * Print the contents of the collection
+     */
+    void dump(FILE* out, const std::set<types::Code>& extra_items = std::set<types::Code>()) const;
 };
 
 struct TestCollection : public Collection
 {
     using Collection::Collection;
 
+    std::shared_ptr<segment::Session> session;
+
     TestCollection() = default;
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    TestCollection(const std::filesystem::path& pathname, bool with_data=false);
+    TestCollection(const std::filesystem::path& path, bool with_data=false);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::filesystem::path& pathname, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, bool with_data);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::filesystem::path& pathname, const std::string& format, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data);
 };
 
 }

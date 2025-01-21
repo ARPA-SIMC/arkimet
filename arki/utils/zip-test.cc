@@ -3,7 +3,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/archive.h"
 #include "arki/metadata/collection.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/utils/sys.h"
 #include "zip.h"
 
@@ -35,7 +35,7 @@ add_method("read", [] {
     }
 
     sys::File infd("test.zip", O_RDONLY);
-    ZipReader reader("grib", std::move(infd));
+    ZipReader reader(DataFormat::GRIB, std::move(infd));
 
     auto contents = reader.list_data();
     wassert(actual(contents.size()) == 3u);

@@ -414,7 +414,7 @@ void Metadata::set_source(std::unique_ptr<types::Source> s)
     m_index.set_source(std::move(s));
 }
 
-void Metadata::set_source_inline(const std::string& format, std::shared_ptr<metadata::Data> data)
+void Metadata::set_source_inline(DataFormat format, std::shared_ptr<metadata::Data> data)
 {
     m_data = data;
     set_source(Source::createInline(format, m_data->size()));
@@ -614,7 +614,7 @@ void Metadata::read_inline_data(NamedFileDescriptor& fd)
     // Read the inline data
     if (!fd.read_all_or_retry(buf.data(), si->size))
         fd.throw_runtime_error("inline data not found after arkimet metadata");
-    m_data = metadata::DataManager::get().to_data(s.format, move(buf));
+    m_data = metadata::DataManager::get().to_data(s.format, std::move(buf));
 }
 
 void Metadata::read_inline_data(core::AbstractInputFile& fd)
@@ -630,7 +630,7 @@ void Metadata::read_inline_data(core::AbstractInputFile& fd)
 
     // Read the inline data
     fd.read(buf.data(), si->size);
-    m_data = metadata::DataManager::get().to_data(s.format, move(buf));
+    m_data = metadata::DataManager::get().to_data(s.format, std::move(buf));
 }
 
 void Metadata::readInlineData(core::BinaryDecoder& dec, const std::filesystem::path& filename)
@@ -973,10 +973,16 @@ void Metadata::makeInline()
 
 void Metadata::make_absolute()
 {
-    const source::Blob* blob = has_source_blob();
-    if (!blob)
-        return;
-    set_source(blob->makeAbsolute());
+    if (const source::Blob* blob = has_source_blob())
+        set_source(blob->makeAbsolute());
+}
+
+void Metadata::prepare_for_segment_metadata()
+{
+    if (const source::Blob* blob = has_source_blob())
+        set_source(blob->for_segment_metadata());
+    else
+        throw std::runtime_error("metadata intended for segment metadata does not have a blob source");
 }
 
 size_t Metadata::data_size() const
@@ -1113,7 +1119,7 @@ bool Metadata::read_file(int in, const metadata::ReadContext& file, metadata_des
 
 bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
 {
-    return read_file(fd, fd.path(), mdc);
+    return read_file(fd, metadata::ReadContext(fd.path()), mdc);
 }
 
 bool Metadata::read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest)

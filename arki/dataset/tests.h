@@ -20,10 +20,6 @@ namespace tests {
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
 
-// Return the file name of the Manifest index
-std::string manifest_idx_fname();
-
-
 /**
  * State of all segments in the dataset
  */
@@ -121,12 +117,10 @@ public:
     void set_session(std::shared_ptr<dataset::Session> session);
 
     std::shared_ptr<dataset::Session> session();
+    std::shared_ptr<segment::Session> segment_session();
     dataset::Dataset& config();
     std::shared_ptr<dataset::Dataset> dataset_config();
     std::shared_ptr<dataset::local::Dataset> local_config();
-
-    // Return the file name of the index of the current dataset
-    std::string idxfname(const core::cfg::Section* wcfg = 0) const;
 
     /**
      * Return the segment pathname in the current dataset where md is expected
@@ -183,7 +177,7 @@ public:
     // Recreate the dataset importing data into it
     void clean_and_import(const std::filesystem::path& testfile="inbound/test.grib1");
 
-    metadata::Collection query(const dataset::DataQuery& q);
+    metadata::Collection query(const query::Data& q);
     metadata::Collection query(const std::string& q);
 
     void ensure_localds_clean(size_t filecount, size_t resultcount, bool quick=true);
@@ -203,7 +197,7 @@ public:
      * the metadata elements in import_results corresponding to the given
      * sequence of indices
      */
-    void query_results(const dataset::DataQuery& q, const std::vector<int>& expected);
+    void query_results(const query::Data& q, const std::vector<int>& expected);
 
     /**
      * Check if the segment exists online on this dataset, with the given
@@ -217,6 +211,11 @@ public:
      * extensions. ".metadata" and ".summary" are added automatically.
      */
     void archived_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
+
+    /**
+     * Dump spans of each data in each segment to stderr
+     */
+    void dump_data_spans();
 
     /**
      * Raise TestSkipped if the current dataset has type 'simple'

@@ -15,7 +15,7 @@
 #include "arki/stream.h"
 #include "arki/metadata/sort.h"
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/session.h"
 #include "progress.h"
 #include <ctime>
@@ -70,7 +70,7 @@ struct query_data : public MethKwargs<query_data, arkipy_DatasetReader>
             return nullptr;
 
         try {
-            arki::dataset::DataQuery query(matcher_from_python(self->ptr->dataset().session, arg_matcher));
+            arki::query::Data query(matcher_from_python(self->ptr->dataset().session, arg_matcher));
             if (arg_with_data != Py_None)
                 query.with_data = from_python<bool>(arg_with_data);
             string sort;
@@ -223,7 +223,7 @@ struct query_bytes : public MethKwargs<query_bytes, arkipy_DatasetReader>
                 return nullptr;
             }
 
-            arki::dataset::ByteQuery query;
+            arki::query::Bytes query;
             query.with_data = with_data;
             if (!postprocess.empty())
                 query.setPostprocess(matcher, postprocess);

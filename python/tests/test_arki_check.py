@@ -296,7 +296,6 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
                     r"(testds: repack: running VACUUM ANALYZE on the dataset index(, if applicable)?\n)?"
                     r"(testds: repack: rebuilding the summary cache\n)?"
                     r"testds: repack 0 files ok, 3 files archived\n"
-                    r"testds.archives.last: repack: running VACUUM ANALYZE on the dataset index, if applicable\n"
                     r"testds.archives.last: repack 3 files ok\n"
             )
 
@@ -705,15 +704,7 @@ class TestArkiCheckIseg(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unitte
         return kw
 
 
-class TestArkiCheckSimplePlain(ArkiCheckTestsBase, unittest.TestCase):
+class TestArkiCheckSimple(ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "simple"
-        kw["index_type"] = "plain"
-        return kw
-
-
-class TestArkiCheckSimpleSqlite(ArkiCheckTestsBase, unittest.TestCase):
-    def dataset_config(self, **kw):
-        kw["type"] = "simple"
-        kw["index_type"] = "sqlite"
         return kw

@@ -41,6 +41,14 @@ add_method("parse_section", [] {
     wassert(actual(conf->value("t r e")) == "3");
     conf->set("due", "DUE");
     wassert(actual(conf->value("due")) == "DUE");
+
+    wassert_true(conf->has("due"));
+    wassert(conf->unset("due"));
+    wassert_false(conf->has("due"));
+
+    wassert_false(conf->has("does-not-exist"));
+    wassert(conf->unset("does-not-exist"));
+    wassert_false(conf->has("does-not-exist"));
 });
 
 add_method("parse_sections", [] {

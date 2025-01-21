@@ -1,13 +1,13 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/maintenance-test.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/segment/seqfile.h"
+#include "arki/segment/data/seqfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/exceptions.h"
@@ -74,14 +74,14 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance, Dat
     }
 }
 
-void Fixture::state_is(unsigned segment_count, unsigned test_relpath_state)
+void Fixture::state_is(unsigned segment_count, const segment::State& test_relpath_state)
 {
     auto state = scan_state();
     wassert(actual(state.size()) == segment_count);
     wassert(actual(state.get("testds:" + test_relpath.native()).state) == test_relpath_state);
 }
 
-void Fixture::accurate_state_is(unsigned segment_count, unsigned test_relpath_state)
+void Fixture::accurate_state_is(unsigned segment_count, const segment::State& test_relpath_state)
 {
     auto state = scan_state(false);
     wassert(actual(state.size()) == segment_count);
@@ -253,8 +253,12 @@ void CheckTest<Fixture>::register_tests_concat()
         std::filesystem::create_directories("testds" / f.test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("does not exist in directory segment"));
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        wassert(f.query_results({0, 2}));
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-07\\.\\w+: segment data is not available"));
+        nag_messages.clear();
     });
 
     this->add_method("check_hugefile", [&](Fixture& f) {
@@ -351,8 +355,12 @@ void CheckTest<TestFixture>::register_tests()
         f.remove_segment();
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("the segment has disappeared"));
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        wassert(f.query_results({0, 2}));
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-07\\.\\w+: segment data is not available"));
+        nag_messages.clear();
     });
 
     this->add_method("check_unknown_empty", R"(
@@ -405,7 +413,7 @@ void CheckTest<TestFixture>::register_tests()
             - segments that only contain data that has been removed are
               identified as fully deleted [deleted]
         )", [&](Fixture& f) {
-            f.delete_all_in_segment();
+            wassert(f.delete_all_in_segment());
             wassert(f.state_is(3, segment::SEGMENT_DELETED));
             wassert(f.query_results({0, 2}));
         });
@@ -809,7 +817,9 @@ void RepackTest<Fixture>::register_tests_concat()
             sys::touch("testds" / f.test_relpath, 199926000);
 
             NullReporter reporter;
-            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan(reporter);
+            auto checker = f.makeSegmentedChecker();
+            auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
+            checker->segment(segment)->rescan(reporter);
         }
 
         // Ensure that the archive is still clean
@@ -818,7 +828,8 @@ void RepackTest<Fixture>::register_tests_concat()
         // Do a repack, it should change the timestamp
         {
             auto checker(f.makeSegmentedChecker());
-            wassert(actual(checker->segment(f.test_relpath)->repack()) == 0u);
+            auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
+            wassert(actual(checker->segment(segment)->repack()) == 0u);
         }
 
         // Ensure that the archive is still clean
@@ -996,7 +1007,7 @@ void RepackTest<TestFixture>::register_tests()
         // State knows of a segment both to repack and to delete
         {
             auto state = f.scan_state();
-            wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::State(segment::SEGMENT_DIRTY | segment::SEGMENT_DELETE_AGE));
+            wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::SEGMENT_DIRTY + segment::SEGMENT_DELETE_AGE);
             wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
             wassert(actual(state.size()) == 3u);
         }
@@ -1026,7 +1037,7 @@ void RepackTest<TestFixture>::register_tests()
         // State knows of a segment both to repack and to delete
         {
             auto state = f.scan_state();
-            wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::State(segment::SEGMENT_DIRTY | segment::SEGMENT_ARCHIVE_AGE));
+            wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::SEGMENT_DIRTY + segment::SEGMENT_ARCHIVE_AGE);
             wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
             wassert(actual(state.size()) == 3u);
         }

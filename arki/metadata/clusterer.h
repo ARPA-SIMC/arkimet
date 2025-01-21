@@ -12,8 +12,10 @@ namespace metadata {
 class Clusterer
 {
 protected:
+    /// True when the current cluster is empty
+    bool empty = true;
     /// Format of all the items in the current batch
-    std::string format;
+    DataFormat format;
     /// Number of items in the current batch
     size_t count;
     /// Size of the current batch
@@ -36,7 +38,7 @@ protected:
      *
      * Child classes can hook here for processing the beginning of a batch
      */
-    virtual void start_batch(const std::string& new_format);
+    virtual void start_batch(DataFormat new_format);
 
     /**
      * Add an item to the current cluster.

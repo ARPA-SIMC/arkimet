@@ -25,8 +25,8 @@ void URL::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 std::ostream& URL::writeToOstream(std::ostream& o) const
 {
     return o << formatStyle(style()) << "("
-			 << format << "," << url
-			 << ")";
+        << format_name(format) << "," << url
+        << ")";
 }
 void URL::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
 {
@@ -37,7 +37,7 @@ void URL::serialise_local(structured::Emitter& e, const structured::Keys& keys, 
 std::unique_ptr<URL> URL::decode_structure(const structured::Keys& keys, const structured::Reader& reader)
 {
     return URL::create(
-            reader.as_string(keys.source_format, "source format"),
+            format_from_string(reader.as_string(keys.source_format, "source format")),
             reader.as_string(keys.source_url, "source url"));
 }
 
@@ -67,7 +67,7 @@ URL* URL::clone() const
     return new URL(*this);
 }
 
-std::unique_ptr<URL> URL::create(const std::string& format, const std::string& url)
+std::unique_ptr<URL> URL::create(DataFormat format, const std::string& url)
 {
     URL* res = new URL;
     res->format = format;

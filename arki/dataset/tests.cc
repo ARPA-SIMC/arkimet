@@ -1,8 +1,8 @@
 #include "tests.h"
-#include "arki/segment/tests.h"
+#include "arki/segment/data/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
@@ -10,7 +10,6 @@
 #include "arki/dataset/iseg/reader.h"
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/checker.h"
-#include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/scan/grib.h"
@@ -22,7 +21,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/segment/dir.h"
+#include "arki/segment/data/dir.h"
 #include "arki/nag.h"
 #include <algorithm>
 #include <cstring>
@@ -137,18 +136,17 @@ void DatasetTest::set_session(std::shared_ptr<dataset::Session> session)
 std::shared_ptr<dataset::Session> DatasetTest::session()
 {
     if (!m_session.get())
-    {
-        switch (variant)
-        {
-            case TEST_NORMAL:
-                m_session = std::make_shared<dataset::Session>();
-                break;
-            case TEST_FORCE_DIR:
-                m_session = std::make_shared<DirSegmentsSession>();
-                break;
-        }
-    }
+        m_session = std::make_shared<dataset::Session>();
     return m_session;
+}
+
+std::shared_ptr<segment::Session> DatasetTest::segment_session()
+{
+    config();
+    auto dataset = std::dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
+    if (!dataset)
+        throw std::runtime_error("Test dataset is not a segmented dataset");
+    return dataset->segment_session;
 }
 
 Dataset& DatasetTest::config()
@@ -160,6 +158,20 @@ Dataset& DatasetTest::config()
         auto s = cfg->to_string();
         out.write_all_or_retry(s.data(), s.size());
         m_dataset = session()->dataset(*cfg);
+
+        switch (variant)
+        {
+            case TEST_NORMAL:
+                break;
+            case TEST_FORCE_DIR:
+            {
+                auto dataset = std::dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
+                if (!dataset)
+                    throw std::runtime_error("TEST_FORCE_DIR used on a non-segmented dataset");
+                dataset->segment_session->default_file_segment = segment::DefaultFileSegment::SEGMENT_DIR;
+                break;
+            }
+        }
     }
     return *m_dataset;
 }
@@ -176,26 +188,15 @@ std::shared_ptr<dataset::local::Dataset> DatasetTest::local_config()
     return dynamic_pointer_cast<dataset::local::Dataset>(m_dataset);
 }
 
-std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
-{
-    // TODO: is this still needed after ondisk2 dismissal?
-    if (!wcfg) wcfg = cfg.get();
-
-    if (wcfg->value("index_type") == "sqlite")
-        return "index.sqlite";
-    else
-        return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-}
-
 std::string DatasetTest::destfile(const Metadata& md) const
 {
     const auto* rt = md.get<types::reftime::Position>();
     auto time = rt->get_Position();
     char buf[32];
     if (cfg->value("shard").empty())
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     else
-        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     return buf;
 }
 
@@ -204,7 +205,7 @@ std::string DatasetTest::archive_destfile(const Metadata& md) const
     const auto* rt = md.get<types::reftime::Position>();
     auto time = rt->get_Position();
     char buf[64];
-    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     return buf;
 }
 
@@ -221,11 +222,6 @@ unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
     return destfiles(mds).size();
 }
 
-std::string manifest_idx_fname()
-{
-    return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-}
-
 State DatasetTest::scan_state(bool quick)
 {
     CheckerConfig opts;
@@ -236,6 +232,22 @@ State DatasetTest::scan_state(bool quick)
         res.insert(make_pair(checker.name() + ":" + segment.path_relative().native(), segment.scan(*opts.reporter, quick)));
     });
     return res;
+}
+
+void DatasetTest::dump_data_spans()
+{
+    auto checker = makeSegmentedChecker();
+    State res;
+    CheckerConfig opts;
+    checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
+        metadata::Collection mds = segment.segment_checker->scan();
+        fprintf(stderr, " * %s:\n", segment.segment->relpath().c_str());
+        for (const auto& md: mds)
+        {
+            const auto& blob = md->sourceBlob();
+            fprintf(stderr, "   %s %zu+%zu=%zu\n", md->get(TYPE_REFTIME)->to_string().c_str(), (size_t)blob.offset, (size_t)blob.size, (size_t)(blob.offset + blob.size));
+        }
+    });
 }
 
 State DatasetTest::scan_state(const Matcher& matcher, bool quick)
@@ -360,7 +372,7 @@ void DatasetTest::clean_and_import(const std::filesystem::path& testfile)
     import(testfile);
 }
 
-metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
+metadata::Collection DatasetTest::query(const query::Data& q)
 {
     return metadata::Collection(*config().create_reader(), q);
 }
@@ -383,7 +395,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
     wassert(actual(mdc.size()) == resultcount);
 
     if (filecount > 0 && reader->type() != "iseg")
-        wassert(actual_file(reader->dataset().path / idxfname()).exists());
+        wassert(actual_file(reader->dataset().path / "MANIFEST").exists());
     tc.clear();
 }
 
@@ -433,10 +445,10 @@ void DatasetTest::repack()
 
 void DatasetTest::query_results(const std::vector<int>& expected)
 {
-    query_results(DataQuery(Matcher(), true), expected);
+    query_results(query::Data(Matcher(), true), expected);
 }
 
-void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
+void DatasetTest::query_results(const query::Data& q, const std::vector<int>& expected)
 {
     vector<int> found;
 

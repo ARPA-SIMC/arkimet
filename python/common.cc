@@ -96,6 +96,16 @@ std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o)
     return std::unique_ptr<core::LineReader>(new PythonLineReader(o));
 }
 
+DataFormat dataformat_from_python(PyObject* o)
+{
+    return format_from_string(string_from_python(o));
+}
+
+PyObject* dataformat_to_python(DataFormat val)
+{
+    return string_to_python(format_name(val));
+}
+
 
 int common_init()
 {

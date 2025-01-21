@@ -31,22 +31,22 @@ index = origin, reftime
 void Tests::register_tests() {
 
 add_method("read_config", [] {
-    auto cfg = dataset::Session::read_config("inbound/test.grib1");
+    auto cfg = wcallchecked(dataset::Session::read_config("inbound/test.grib1"));
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
     wassert(actual(cfg->value("path")) == std::filesystem::canonical("inbound/test.grib1"));
 
-    cfg = dataset::Session::read_config("grib:inbound/test.grib1");
+    cfg = wcallchecked(dataset::Session::read_config("grib:inbound/test.grib1"));
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
     wassert(actual(cfg->value("path")) == std::filesystem::canonical("inbound/test.grib1"));
 
     write_test_config();
     std::string expected_path = std::filesystem::canonical("testds");
 
-    cfg = dataset::Session::read_config("testds");
+    cfg = wcallchecked(dataset::Session::read_config("testds"));
     wassert(actual(cfg->value("name")) == "testds");
     wassert(actual(cfg->value("path")) == expected_path);
 
-    cfg = dataset::Session::read_config("testds/config");
+    cfg = wcallchecked(dataset::Session::read_config("testds/config"));
     wassert(actual(cfg->value("name")) == "testds");
     wassert(actual(cfg->value("path")) == expected_path);
 

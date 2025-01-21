@@ -6,7 +6,7 @@
  * @brief Utility functions for the unit tests
  *
  * Copyright (C) 2006--2007  Peter Rockai (mornfall) <me@mornfall.net>
- * Copyright (C) 2003--2017  Enrico Zini <enrico@debian.org>
+ * Copyright (C) 2003--2025  Enrico Zini <enrico@debian.org>
  */
 
 #include <string>
@@ -581,14 +581,24 @@ struct TestCase
     virtual void teardown() {}
 
     /**
+     * Set up before each test method is run.
+     */
+    virtual void test_setup() {}
+
+    /**
+     * Clean up after each test method is run.
+     */
+    virtual void test_teardown() {}
+
+    /**
      * Set up before the test method is run
      */
-    virtual void method_setup(TestMethodResult&) {}
+    virtual void method_setup(TestMethodResult&) { test_setup(); }
 
     /**
      * Clean up after the test method is run
      */
-    virtual void method_teardown(TestMethodResult&) {}
+    virtual void method_teardown(TestMethodResult&) { test_teardown(); }
 
     /**
      * Call setup(), run all the tests that have been registered, then

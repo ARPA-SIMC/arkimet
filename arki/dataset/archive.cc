@@ -1,5 +1,5 @@
 #include "archive.h"
-#include "index/manifest.h"
+#include "simple/manifest.h"
 #include "simple.h"
 #include "offline.h"
 #include "arki/matcher.h"
@@ -23,7 +23,7 @@ namespace archive {
 
 bool is_archive(const std::filesystem::path& dir)
 {
-    return index::Manifest::exists(dir);
+    return simple::manifest::exists(dir);
 }
 
 
@@ -50,7 +50,7 @@ struct ArchivesRoot
     std::shared_ptr<Archive> last;
 
     ArchivesRoot(const std::filesystem::path& dataset_root, std::shared_ptr<dataset::Dataset> parent)
-        : dataset_root(dataset_root), archive_root(dataset_root / ".archive"), parent(parent)
+        : dataset_root(dataset_root), archive_root(dataset_root), parent(parent)
           // m_scache_root(str::joinpath(root, ".summaries"))
     {
         // Create the directory if it does not exist
@@ -160,7 +160,7 @@ struct ArchivesRoot
         std::shared_ptr<dataset::Dataset> ds;
         if (std::filesystem::exists(sys::with_suffix(pathname, ".summary")))
         {
-            if (index::Manifest::exists(pathname))
+            if (simple::manifest::exists(pathname))
                 ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
             else
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);
@@ -225,7 +225,7 @@ public:
 };
 
 Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root)
-    : dataset::Dataset(session, "archives"), root(root)
+    : dataset::Dataset(session, "archives"), root(root), segment_session(std::make_shared<segment::Session>(root))
 {
 }
 
@@ -253,14 +253,14 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "archives"; }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
     return archives->iter([&](dataset::Reader& r) {
         return r.query_data(q, dest);
     });
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
@@ -460,7 +460,10 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->index(move(mds));
+        {
+            auto segment = sc->dataset().segment_session->segment_from_relpath(path);
+            sc->segment(segment)->index(std::move(mds));
+        }
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }
@@ -469,8 +472,9 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
     archives->invalidate_summary_cache();
 }
 
-void Checker::release_segment(const std::filesystem::path& relpath, const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath)
+arki::metadata::Collection Checker::release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
 {
+    arki::metadata::Collection res;
     auto path = std::filesystem::weakly_canonical(relpath);
     string name = poppath(path);
     if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath.native() + ": segment is not in last/ archive");
@@ -478,13 +482,17 @@ void Checker::release_segment(const std::filesystem::path& relpath, const std::f
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->release(new_root, new_relpath, new_abspath);
+        {
+            auto segment = sc->dataset().segment_session->segment_from_relpath(path);
+            res = sc->segment(segment)->release(segment_session, new_relpath);
+        }
         else
             throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }
     else
         throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " does not exist in " + archives->archive_root.native());
     archives->invalidate_summary_cache();
+    return res;
 }
 
 unsigned Checker::test_count_archives() const

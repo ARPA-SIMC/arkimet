@@ -2,7 +2,7 @@
 #define ARKI_DATASET_SEGMENTED_H
 
 #include <arki/dataset/local.h>
-#include <arki/segment.h>
+#include <arki/segment/data.h>
 #include <arki/core/time.h>
 
 namespace arki {
@@ -20,6 +20,9 @@ protected:
     Dataset(const Dataset& cfg) = default;
 
 public:
+    /// Segment session used to instantiate segment accessors
+    std::shared_ptr<segment::Session> segment_session;
+
     /// Name of the dataset::Step used to dispatch data into segments
     std::string step_name;
 
@@ -52,14 +55,12 @@ public:
     bool eatmydata = false;
 
 
-    Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+    Dataset(std::shared_ptr<Session> session, std::shared_ptr<segment::Session> segment_session, const core::cfg::Section& cfg);
     ~Dataset();
 
     virtual bool relpath_timespan(const std::filesystem::path& path, core::Interval& interval) const;
 
     const Step& step() const { return *m_step; }
-
-    virtual std::shared_ptr<segment::Reader> segment_reader(const std::filesystem::path& relpath, std::shared_ptr<core::Lock> lock);
 };
 
 /**
@@ -119,22 +120,19 @@ struct SegmentState
 class CheckerSegment
 {
 public:
-    std::shared_ptr<dataset::CheckLock> lock;
-    std::shared_ptr<segment::Checker> segment;
+    std::shared_ptr<core::CheckLock> lock;
+    std::shared_ptr<const Segment> segment;
+    std::shared_ptr<segment::Checker> segment_checker;
+    std::shared_ptr<segment::data::Checker> segment_data_checker;
 
-    CheckerSegment(std::shared_ptr<dataset::CheckLock> lock);
+    CheckerSegment(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
     virtual ~CheckerSegment();
 
-    /**
-     * Get the metadata for the contents of this segment known to the dataset
-     */
-    virtual void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) = 0;
-
     /// Convert the segment into a tar segment
-    virtual void tar() = 0;
+    virtual segment::Fixer::ConvertResult tar();
 
     /// Convert the segment into a zip segment
-    virtual void zip() = 0;
+    virtual segment::Fixer::ConvertResult zip();
 
     /**
      * Compress the segment
@@ -142,7 +140,7 @@ public:
      * Returns the size difference between the original size and the compressed
      * size
      */
-    virtual size_t compress(unsigned groupsize) = 0;
+    virtual segment::Fixer::ConvertResult compress(unsigned groupsize);
 
     virtual std::filesystem::path path_relative() const = 0;
     virtual const segmented::Dataset& dataset() const = 0;
@@ -157,7 +155,7 @@ public:
      * Return the total size of data deleted. The space may not be freed right
      * away, and may need to be reclaimed by a repack operation
      */
-    virtual void remove_data(const std::vector<uint64_t>& offsets);
+    virtual void remove_data(const std::set<uint64_t>& offsets);
 
     /**
      * Optimise the contents of a data file
@@ -170,19 +168,9 @@ public:
     virtual size_t repack(unsigned test_flags=0) = 0;
 
     /**
-     * Rewrite the segment so that the data has the same order as `mds`.
-     *
-     * In the resulting file, there are no holes between data.
-     *
-     * @returns The size difference between the initial segment size and the
-     * final segment size.
-     */
-    virtual size_t reorder(metadata::Collection& mds, unsigned test_flags=0) = 0;
-
-    /**
      * Remove the segment
      */
-    virtual size_t remove(bool with_data=false) = 0;
+    virtual size_t remove(bool with_data=false);
 
     /**
      * Add information about a file to the index
@@ -200,7 +188,7 @@ public:
      *
      * Destpath must be on the same filesystem as the segment.
      */
-    virtual void release(const std::filesystem::path& new_root, const std::filesystem::path& new_relpath, const std::filesystem::path& new_abspath) = 0;
+    virtual arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Move the file to archive
@@ -232,12 +220,14 @@ public:
 
     void check(CheckerConfig& opts) override;
     void repack(CheckerConfig& opts, unsigned test_flags=0) override;
+    void remove(const metadata::Collection& mds) override;
+
 
     /// Instantiate a CheckerSegment
-    virtual std::unique_ptr<CheckerSegment> segment(const std::filesystem::path& relpath) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment(std::shared_ptr<const Segment> segment) = 0;
 
     /// Instantiate a CheckerSegment using an existing lock
-    virtual std::unique_ptr<CheckerSegment> segment_prelocked(const std::filesystem::path& relpath, std::shared_ptr<dataset::CheckLock> lock) = 0;
+    virtual std::unique_ptr<CheckerSegment> segment_prelocked(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) = 0;
 
     /**
      * List all segments known to this dataset
@@ -313,14 +303,14 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx=0) = 0;
+    virtual void test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx=0);
 
     /**
      * Truncate the segment at position `data_idx`.
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx=0) = 0;
+    virtual void test_truncate_data(const std::filesystem::path& relpath, unsigned data_idx=0);
 
     /**
      * Swap the data in the segment at position `d1_idx` with the one at
@@ -328,7 +318,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx) = 0;
+    virtual void test_swap_data(const std::filesystem::path& relpath, unsigned d1_idx, unsigned d2_idx);
 
     /**
      * Rename the segment, leaving its contents unchanged.
@@ -368,7 +358,7 @@ public:
      * Scan a dataset for data files, returning a set of pathnames relative to
      * root.
      */
-    static void scan_dir(const std::filesystem::path& root, std::function<void(const std::filesystem::path& relpath)> dest);
+    void scan_dir(std::function<void(std::shared_ptr<const Segment> segment)> dest);
 
 };
 

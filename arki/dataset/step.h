@@ -23,14 +23,14 @@ class Files;
 struct SegmentQuery
 {
     std::filesystem::path root;
-    std::string format;
+    DataFormat format;
     std::string extension_re = "(\\.zip|\\.gz|\\.tar|)$";
     Matcher matcher;
 
     SegmentQuery();
-    SegmentQuery(const std::filesystem::path& root, const std::string& format);
-    SegmentQuery(const std::filesystem::path& root, const std::string& format, const Matcher& matcher);
-    SegmentQuery(const std::filesystem::path& root, const std::string& format, const std::string& extension_re, const Matcher& matcher);
+    SegmentQuery(const std::filesystem::path& root, DataFormat format);
+    SegmentQuery(const std::filesystem::path& root, DataFormat format, const Matcher& matcher);
+    SegmentQuery(const std::filesystem::path& root, DataFormat format, const std::string& extension_re, const Matcher& matcher);
 };
 
 /**

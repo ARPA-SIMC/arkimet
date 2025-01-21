@@ -661,13 +661,12 @@ struct get_scanner : public ClassMethKwargs<get_scanner>
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "format", nullptr };
-        const char* py_format = nullptr;
-        Py_ssize_t py_format_len;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "z#", pass_kwlist(kwlist), &py_format, &py_format_len))
-            return nullptr;
+        PyObject* arg_format = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist), &arg_format))
+            return nullptr ;
 
         try {
-            auto scanner = arki::scan::Scanner::get_scanner(std::string(py_format, py_format_len));
+            auto scanner = arki::scan::Scanner::get_scanner(dataformat_from_python(arg_format));
             return (PyObject*)arki::python::scan::scanner_create(scanner);
         } ARKI_CATCH_RETURN_PYO
     }
@@ -728,13 +727,13 @@ Scanner for binary data.
 
     static PyObject* _str(Impl* self)
     {
-        std::string str = "scanner:" + self->scanner->name();
+        std::string str = "scanner:" + format_name(self->scanner->name());
         return PyUnicode_FromStringAndSize(str.data(), str.size());
     }
 
     static PyObject* _repr(Impl* self)
     {
-        std::string str = "scanner:" + self->scanner->name();
+        std::string str = "scanner:" + format_name(self->scanner->name());
         return PyUnicode_FromStringAndSize(str.data(), str.size());
     }
 
@@ -924,21 +923,21 @@ void register_scan(PyObject* m)
 namespace scan {
 void init()
 {
-    arki::scan::Scanner::register_factory("grib", [] {
+    arki::scan::Scanner::register_factory(DataFormat::GRIB, [] {
         return std::make_shared<PythonGribScanner>();
     });
 #ifdef HAVE_DBALLE
-    arki::scan::Scanner::register_factory("bufr", [] {
+    arki::scan::Scanner::register_factory(DataFormat::BUFR, [] {
         return std::make_shared<PythonBufrScanner>();
     });
 #endif
-    arki::scan::Scanner::register_factory("odimh5", [] {
+    arki::scan::Scanner::register_factory(DataFormat::ODIMH5, [] {
         return std::make_shared<PythonOdimh5Scanner>();
     });
-    arki::scan::Scanner::register_factory("nc", [] {
+    arki::scan::Scanner::register_factory(DataFormat::NETCDF, [] {
         return std::make_shared<PythonNetCDFScanner>();
     });
-    arki::scan::Scanner::register_factory("jpeg", [] {
+    arki::scan::Scanner::register_factory(DataFormat::JPEG, [] {
         return std::make_shared<PythonJPEGScanner>();
     });
 }

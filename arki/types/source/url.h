@@ -34,7 +34,7 @@ query time, with data returned inline after the metadata.
     bool equals(const Type& o) const override;
     URL* clone() const override;
 
-    static std::unique_ptr<URL> create(const std::string& format, const std::string& url);
+    static std::unique_ptr<URL> create(DataFormat format, const std::string& url);
     static std::unique_ptr<URL> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
 };
 

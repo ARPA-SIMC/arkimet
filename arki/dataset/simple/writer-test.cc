@@ -136,23 +136,23 @@ add_method("acquire", [](Fixture& f) {
     #endif
     wassert(actual(dsname(md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
+    wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again works fine
     wassert(actual(*writer).import(md));
     wassert(actual(dsname(md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob("grib", std::filesystem::canonical("./testds"), "2007/07-08.grib", 7218, 7218));
+    wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("./testds"), "2007/07-08.grib", 7218, 7218));
 
     // Flush the changes and check that everything is allright
     writer->flush();
     wassert(actual_file("testds/2007/07-08.grib").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.metadata"));
     wassert(actual(sys::timestamp("testds/2007/07-08.grib.metadata")) <= sys::timestamp("testds/2007/07-08.grib.summary"));
-    wassert(actual(sys::timestamp("testds/2007/07-08.grib.summary")) <= sys::timestamp("testds/" + f.idxfname()));
+    wassert(actual(sys::timestamp("testds/2007/07-08.grib.summary")) <= sys::timestamp("testds/MANIFEST"));
     wassert_true(files::hasDontpackFlagfile("testds"));
 
     wassert(f.ensure_localds_clean(1, 2));
@@ -175,16 +175,16 @@ add_method("append", [](Fixture& f) {
         auto writer = f.makeSimpleWriter();
         wassert(actual(*writer).import(mdc[1]));
         wassert(actual(dsname(mdc[1])) == "testds");
-        wassert(actual_type(mdc[1].source()).is_source_blob("grib", std::filesystem::canonical("testds"), "20/2007.grib", 34960, 7218));
+        wassert(actual_type(mdc[1].source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("testds"), "20/2007.grib", 34960, 7218));
     }
 
     wassert(actual_file("testds/20/2007.grib").exists());
     wassert(actual_file("testds/20/2007.grib.metadata").exists());
     wassert(actual_file("testds/20/2007.grib.summary").exists());
-    wassert(actual_file("testds/" + f.idxfname()).exists());
+    wassert(actual_file("testds/MANIFEST").exists());
     wassert(actual(sys::timestamp("testds/20/2007.grib")) <= sys::timestamp("testds/20/2007.grib.metadata"));
     wassert(actual(sys::timestamp("testds/20/2007.grib.metadata")) <= sys::timestamp("testds/20/2007.grib.summary"));
-    wassert(actual(sys::timestamp("testds/20/2007.grib.summary")) <= sys::timestamp("testds/" + f.idxfname()));
+    wassert(actual(sys::timestamp("testds/20/2007.grib.summary")) <= sys::timestamp("testds/MANIFEST"));
 
     // Dataset is fine and clean
     wassert(f.ensure_localds_clean(1, 2));

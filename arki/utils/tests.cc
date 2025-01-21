@@ -3,7 +3,7 @@
  * @brief Utility functions for the unit tests
  *
  * Copyright (C) 2006--2007  Peter Rockai (mornfall) <me@mornfall.net>
- * Copyright (C) 2003--2017  Enrico Zini <enrico@debian.org>
+ * Copyright (C) 2003--2025  Enrico Zini <enrico@debian.org>
  */
 
 #include "tests.h"

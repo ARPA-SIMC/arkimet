@@ -1,7 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/session.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -15,7 +15,7 @@
 #include "arki/utils/sys.h"
 #include "arki/stream.h"
 #include "arki/exceptions.h"
-#include "arki/segment/dir.h"
+#include "arki/segment/data/dir.h"
 #include <sys/fcntl.h>
 
 using namespace std;
@@ -25,16 +25,6 @@ using namespace arki::tests;
 using namespace arki::core;
 
 namespace {
-
-struct ForceDirMockDataSession : public arki::dataset::Session
-{
-public:
-    std::shared_ptr<arki::segment::Writer> segment_writer(const segment::WriterConfig& writer_config, const std::string& format, const std::filesystem::path& root, const std::filesystem::path& relpath) override
-    {
-        auto abspath = root / relpath;
-        return std::shared_ptr<arki::segment::Writer>(new arki::segment::dir::HoleWriter(writer_config, format, root, relpath, abspath));
-    }
-};
 
 template<class Data>
 struct FixtureWriter : public DatasetTest
@@ -53,7 +43,7 @@ struct FixtureWriter : public DatasetTest
 
     bool smallfiles() const
     {
-        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == DataFormat::VM2 && cfg->value("type") == "simple");
     }
 };
 
@@ -64,8 +54,7 @@ class Tests : public FixtureTestCase<DatasetTest>
     void register_tests() override;
 };
 
-Tests test_writer_simple_plain("arki_dataset_writer_simple_plain", "type=simple\nindex_type=plain\n");
-Tests test_writer_simple_sqlite("arki_dataset_writer_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests test_writer_simple("arki_dataset_writer_simple", "type=simple");
 Tests test_writer_iseg("arki_dataset_writer_iseg", "type=iseg\nformat=grib");
 
 template<class Data>
@@ -76,23 +65,17 @@ class TestsWriter : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-TestsWriter<GRIBData> test_writer_grib_simple_plain("arki_dataset_writer_grib_simple_plain", "type=simple\nindex_type=plain\nformat=grib\n");
-TestsWriter<GRIBData> test_writer_grib_simple_sqlite("arki_dataset_writer_grib_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=grib\n");
+TestsWriter<GRIBData> test_writer_grib_simple("arki_dataset_writer_grib_simple", "type=simple\nformat=grib\n");
 TestsWriter<GRIBData> test_writer_grib_iseg("arki_dataset_writer_grib_iseg", "type=iseg\nformat=grib\n");
-TestsWriter<BUFRData> test_writer_bufr_simple_plain("arki_dataset_writer_bufr_simple_plain", "type=simple\nindex_type=plain\nformat=bufr\n");
-TestsWriter<BUFRData> test_writer_bufr_simple_sqlite("arki_dataset_writer_bufr_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=bufr\n");
+TestsWriter<BUFRData> test_writer_bufr_simple("arki_dataset_writer_bufr_simple", "type=simple\nformat=bufr\n");
 TestsWriter<BUFRData> test_writer_bufr_iseg("arki_dataset_writer_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsWriter<VM2Data> test_writer_vm2_simple_plain("arki_dataset_writer_vm2_simple_plain", "type=simple\nindex_type=plain\nformat=vm2\n");
-TestsWriter<VM2Data> test_writer_vm2_simple_sqlite("arki_dataset_writer_vm2_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=vm2\n");
+TestsWriter<VM2Data> test_writer_vm2_simple("arki_dataset_writer_vm2_simple", "type=simple\nformat=vm2\n");
 TestsWriter<VM2Data> test_writer_vm2_iseg("arki_dataset_writer_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsWriter<ODIMData> test_writer_odim_simple_plain("arki_dataset_writer_odim_simple_plain", "type=simple\nindex_type=plain\nformat=odimh5\n");
-TestsWriter<ODIMData> test_writer_odim_simple_sqlite("arki_dataset_writer_odim_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=odimh5\n");
+TestsWriter<ODIMData> test_writer_odim_simple("arki_dataset_writer_odim_simple", "type=simple\nformat=odimh5\n");
 TestsWriter<ODIMData> test_writer_odim_iseg("arki_dataset_writer_odim_iseg", "type=iseg\nformat=odimh5\n");
-TestsWriter<NCData> test_writer_nc_simple_plain("arki_dataset_writer_nc_simple_plain", "type=simple\nindex_type=plain\nformat=nc\n");
-TestsWriter<NCData> test_writer_nc_simple_sqlite("arki_dataset_writer_nc_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=nc\n");
+TestsWriter<NCData> test_writer_nc_simple("arki_dataset_writer_nc_simple", "type=simple\nformat=nc\n");
 TestsWriter<NCData> test_writer_nc_iseg("arki_dataset_writer_nc_iseg", "type=iseg\nformat=nc\n");
-TestsWriter<JPEGData> test_writer_jpeg_simple_plain("arki_dataset_writer_jpeg_simple_plain", "type=simple\nindex_type=plain\nformat=nc\n");
-TestsWriter<JPEGData> test_writer_jpeg_simple_sqlite("arki_dataset_writer_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite\nformat=nc\n");
+TestsWriter<JPEGData> test_writer_jpeg_simple("arki_dataset_writer_jpeg_simple", "type=simple\nformat=nc\n");
 TestsWriter<JPEGData> test_writer_jpeg_iseg("arki_dataset_writer_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 void Tests::register_tests() {
@@ -102,7 +85,8 @@ add_method("import_largefile", [](Fixture& f) {
     skip_unless_filesystem_has_holes(".");
     // A dataset with hole files
     f.cfg->set("step", "daily");
-    f.set_session(std::make_shared<ForceDirMockDataSession>());
+    f.segment_session()->default_file_segment = segment::DefaultFileSegment::SEGMENT_DIR;
+    f.segment_session()->mock_data = true;
 
 
     {
@@ -112,7 +96,7 @@ add_method("import_largefile", [](Fixture& f) {
         {
             for (unsigned hour = 0; hour < 24; ++hour)
             {
-                auto md = make_large_mock("grib", 10*1024*1024, 12, day, hour);
+                auto md = make_large_mock(DataFormat::GRIB, 10*1024*1024, 12, day, hour);
                 wassert(actual(*writer).import(*md));
             }
         }
@@ -129,7 +113,7 @@ add_method("import_largefile", [](Fixture& f) {
 
     // Query it, streaming its data to /dev/null
     auto out = StreamOutput::create_discard();
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(Matcher());
     wassert(reader->query_bytes(bq, *out));
 });
@@ -148,7 +132,7 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
     wassert(actual(batch[0]->result) == dataset::ACQ_OK);
     wassert(actual(batch[0]->dataset_name) == "testds");
     wassert(actual_file(f.ds_root / "2009/12-04.bufr").exists());
-    wassert(actual_type(mdc[0].source()).is_source_blob("bufr", f.ds_root, "2009/12-04.bufr"));
+    wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::BUFR, f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
@@ -182,20 +166,20 @@ add_method("issue237", [](Fixture& f) {
     f.cfg->set("step", "daily");
     f.cfg->set("smallfiles", "yes");
     metadata::TestCollection mdc("inbound/issue237.vm2", true);
-    wassert(actual_type(mdc[0].source()).is_source_blob("vm2", std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
+    wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::VM2, std::filesystem::current_path(), "inbound/issue237.vm2", 0, 36));
 
     // Acquire value
     {
         auto ds = f.config().create_writer();
         wassert(actual(ds->acquire(mdc[0], dataset::REPLACE_NEVER)) == dataset::ACQ_OK);
-        wassert(actual_type(mdc[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 36));
+        wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
     }
 
     // Read it back
     {
         metadata::Collection mdc1(*f.config().create_reader(), Matcher());
         wassert(actual(mdc1.size()) == 1u);
-        wassert(actual_type(mdc1[0].source()).is_source_blob("vm2", f.ds_root, "2020/10-31.vm2", 0, 36));
+        wassert(actual_type(mdc1[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
         auto data = mdc1[0].get_data().read();
         wassert(actual(std::string((const char*)data.data(), data.size())) == "202010312300,12865,158,9.409990,,,");
     }
@@ -228,7 +212,7 @@ this->add_method("import", [](Fixture& f) {
 });
 
 this->add_method("import_error", [](Fixture& f) {
-    std::string format = f.cfg->value("format");
+    auto format = format_from_string(f.cfg->value("format"));
     Metadata md;
     fill(md);
     md.test_set("reftime", "2018-01-01T00:00:00");
@@ -239,7 +223,7 @@ this->add_method("import_error", [](Fixture& f) {
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(actual(state.get("testds:2018/01-01." + format_name(format)).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 });
 
@@ -379,7 +363,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
-    std::string format = f.cfg->value("format");
+    auto format = format_from_string(f.cfg->value("format"));
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
@@ -402,7 +386,7 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == segment::SEGMENT_DELETED);
+    wassert(actual(state.get("testds:2018/01-01." + format_name(format)).state) == segment::SEGMENT_DELETED);
     wassert(f.query_results({}));
 };
 
@@ -428,7 +412,7 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
-    std::string format = f.cfg->value("format");
+    auto format = format_from_string(f.cfg->value("format"));
 
     // Make a batch that ends up all in the same segment
     metadata::Collection mds;
@@ -452,11 +436,11 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 3u);
-    wassert(actual(state.get("testds:2018/01-01." + format).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
-    wassert(actual(state.get("testds:2018/02-01." + format).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
-    wassert(actual(state.get("testds:2018/03-01." + format).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/01-01." + format_name(format)).state) == (fail_idx == 0 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/02-01." + format_name(format)).state) == (fail_idx == 1 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
+    wassert(actual(state.get("testds:2018/03-01." + format_name(format)).state) == (fail_idx == 2 ? segment::SEGMENT_DELETED : segment::SEGMENT_OK));
 
-    metadata::Collection res = f.query(dataset::DataQuery());
+    metadata::Collection res = f.query(query::Data());
     wassert(actual(res.size()) == 2u);
 };
 

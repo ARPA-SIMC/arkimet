@@ -23,17 +23,17 @@ SegmentQuery::SegmentQuery()
 {
 }
 
-SegmentQuery::SegmentQuery(const std::filesystem::path& root, const std::string& format)
+SegmentQuery::SegmentQuery(const std::filesystem::path& root, DataFormat format)
     : root(root), format(format)
 {
 }
 
-SegmentQuery::SegmentQuery(const std::filesystem::path& root, const std::string& format, const Matcher& matcher)
+SegmentQuery::SegmentQuery(const std::filesystem::path& root, DataFormat format, const Matcher& matcher)
     : root(root), format(format), matcher(matcher)
 {
 }
 
-SegmentQuery::SegmentQuery(const std::filesystem::path& root, const std::string& format, const std::string& extension_re, const Matcher& matcher)
+SegmentQuery::SegmentQuery(const std::filesystem::path& root, DataFormat format, const std::string& extension_re, const Matcher& matcher)
     : root(root), format(format), extension_re(extension_re), matcher(matcher)
 {
 }
@@ -50,7 +50,7 @@ struct BaseFiles : public Files
     virtual std::unique_ptr<utils::Regexp> make_regexp() const = 0;
     virtual core::Interval to_period(const utils::Regexp& re) const = 0;
     virtual std::filesystem::path to_relpath(const Regexp& re) const = 0;
-    virtual std::string to_format(const utils::Regexp& re) const = 0;
+    virtual DataFormat to_format(const utils::Regexp& re) const = 0;
 
     void list(std::function<void(std::filesystem::path&& relpath)> dest) const override
     {
@@ -132,7 +132,7 @@ struct SingleFiles : public Files
     {
         string relpath = "all";
         relpath += ".";
-        relpath += dirs.query.format;
+        relpath += format_name(dirs.query.format);
         if (!std::filesystem::exists(dirs.query.root / relpath)) return;
         dest(move(relpath));
     }
@@ -170,7 +170,7 @@ struct YearFiles : public BaseFiles
                 core::Time::create_lowerbound(year + 1));
     }
 
-    std::string to_format(const Regexp& re) const override { return re[3]; }
+    DataFormat to_format(const Regexp& re) const override { return format_from_string(re[3]); }
     std::filesystem::path to_relpath(const Regexp& re) const override { return re[1]; }
 };
 
@@ -191,7 +191,7 @@ struct MonthFiles : public BaseFiles
         return core::Interval(begin, begin.start_of_next_month());
     }
 
-    std::string to_format(const Regexp& re) const override { return re[3]; }
+    DataFormat to_format(const Regexp& re) const override { return format_from_string(re[3]); }
     std::filesystem::path to_relpath(const Regexp& re) const override { return re[1]; }
 };
 
@@ -216,7 +216,7 @@ struct MonthDayFiles : public BaseFiles
         return core::Interval(begin, end);
     }
 
-    std::string to_format(const Regexp& re) const override { return re[4]; }
+    DataFormat to_format(const Regexp& re) const override { return format_from_string(re[4]); }
     std::filesystem::path to_relpath(const Regexp& re) const override { return re[1]; }
 };
 
@@ -302,13 +302,13 @@ struct SingleDirs : public Dirs
 
     void list(std::function<void(std::unique_ptr<Files>)> dest) const override
     {
-        if (!std::filesystem::exists(query.root / ("all."s + query.format))) return;
+        if (!std::filesystem::exists(query.root / ("all."s + format_name(query.format)))) return;
         dest(std::unique_ptr<Files>(new SingleFiles(*this, "", 0)));
     }
 
     void extremes(core::Interval& first, core::Interval& last) const override
     {
-        if (!std::filesystem::exists(query.root / ("all." + query.format)))
+        if (!std::filesystem::exists(query.root / ("all." + format_name(query.format))))
         {
             first = core::Interval();
             last = core::Interval();

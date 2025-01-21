@@ -1,14 +1,14 @@
 #ifndef ARKI_PYTHON_DATASET_PROGRESS_H
 #define ARKI_PYTHON_DATASET_PROGRESS_H
 
-#include "arki/dataset/progress.h"
+#include "arki/query/progress.h"
 #include "python/utils/core.h"
 
 namespace arki {
 namespace python {
 namespace dataset {
 
-class PythonProgress: public arki::dataset::QueryProgress
+class PythonProgress: public arki::query::Progress
 {
 protected:
     struct timespec last_call = { 0, 0 };
