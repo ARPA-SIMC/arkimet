@@ -1,6 +1,7 @@
 #include "iseg.h"
 #include "iseg/session.h"
 #include "iseg/index.h"
+#include "reporter.h"
 #include "data.h"
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
@@ -70,6 +71,69 @@ arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;
     index().scan(res.inserter_func(), "offset");
+    return res;
+}
+
+Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
+{
+    Checker::FsckResult res;
+
+    auto data_checker = m_data->checker(false);
+    auto ts_data = m_data->timestamp();
+    if (!ts_data)
+    {
+        reporter.info(segment(), "segment data not found on disk");
+        res.state = SEGMENT_MISSING;
+        return res;
+    }
+    res.mtime = ts_data.value();
+
+    if (!std::filesystem::exists(segment().abspath_iseg_index()))
+    {
+        if (data_checker->is_empty())
+        {
+            reporter.info(segment(), "empty segment found on disk with no associated index");
+            res.state = SEGMENT_DELETED;
+        } else {
+            reporter.info(segment(), "segment found on disk with no associated index");
+            res.state = SEGMENT_UNALIGNED;
+        }
+        return res;
+    }
+
+#if 0
+    /**
+     * Although iseg could detect if the data of a segment is newer than its
+     * index, the timestamp of the index is updated by various kinds of sqlite
+     * operations, making the test rather useless, because it's likely that the
+     * index timestamp would get updated before the mismatch is detected.
+     */
+    string abspath = str::joinpath(dataset().path, relpath);
+    if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
+    {
+        segments_state.insert(make_pair(relpath, segmented::SegmentState(segment::SEGMENT_UNALIGNED)));
+        return;
+    }
+#endif
+
+    auto mds = scan();
+
+    if (mds.empty())
+    {
+        reporter.info(segment(), "index reports that the segment is fully deleted");
+        res.state += SEGMENT_DELETED;
+    } else {
+        // Compute the span of reftimes inside the segment
+        mds.sort("reftime, offset");
+        if (!mds.expand_date_range(res.interval))
+        {
+            reporter.info(segment(), "index contains data for this segment but no reference time information");
+            res.state += SEGMENT_CORRUPTED;
+        } else {
+            res.state += data_checker->check([&](const std::string& msg) { reporter.info(segment(), msg); }, mds, quick);
+        }
+    }
+
     return res;
 }
 

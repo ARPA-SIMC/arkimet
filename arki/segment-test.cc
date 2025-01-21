@@ -1,4 +1,5 @@
 #include "arki/segment/tests.h"
+#include "arki/segment/reporter.h"
 #include "arki/segment/data.h"
 #include "arki/segment/data/tar.h"
 #include "arki/segment/data/zip.h"
@@ -233,6 +234,29 @@ add_method("reindex", [](Fixture& f) {
         // TODO: wassert(actual(res.segment_mtime) == 1234000);
     }
     // TODO: check that index has been recreated (for those that support it)
+});
+
+add_method("fsck_no_data", [](Fixture& f) {
+    auto segment = f.create_segment();
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    segment::NullReporter reporter;
+    auto res = checker->fsck(reporter);
+    wassert(actual(res.size) == 0u);
+    wassert(actual(res.mtime) == 0u);
+    wassert(actual(res.interval) == core::Interval());
+    wassert(actual(res.state) == segment::SEGMENT_MISSING);
+});
+
+add_method("fsck_deleted", [](Fixture& f) {
+    metadata::Collection mds;
+    auto segment = f.create(mds);
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    segment::NullReporter reporter;
+    auto res = checker->fsck(reporter);
+    wassert(actual(res.size) == 0u);
+    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.interval) == core::Interval());
+    wassert(actual(res.state) == segment::SEGMENT_DELETED);
 });
 
 }

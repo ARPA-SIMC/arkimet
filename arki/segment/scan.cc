@@ -1,5 +1,6 @@
 #include "scan.h"
 #include "data.h"
+#include "reporter.h"
 #include "arki/core/lock.h"
 #include "arki/query.h"
 #include "arki/metadata.h"
@@ -57,6 +58,41 @@ arki::metadata::Collection Checker::scan()
     auto data_reader = m_data->reader(lock);
     arki::metadata::Collection res;
     data_reader->scan_data(res.inserter_func());
+    return res;
+}
+
+Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
+{
+    Checker::FsckResult res;
+
+    auto data_checker = m_data->checker(false);
+    auto ts_data = m_data->timestamp();
+    if (!ts_data)
+    {
+        reporter.info(segment(), "segment data not found on disk");
+        res.state = SEGMENT_MISSING;
+        return res;
+    }
+    res.mtime = ts_data.value();
+
+    auto mds = scan();
+
+    if (mds.empty())
+    {
+        reporter.info(segment(), "the segment is fully deleted");
+        res.state += SEGMENT_DELETED;
+    } else {
+        // Compute the span of reftimes inside the segment
+        mds.sort("reftime, offset");
+        if (!mds.expand_date_range(res.interval))
+        {
+            reporter.info(segment(), "segment contains data without reference time information");
+            res.state += SEGMENT_CORRUPTED;
+        } else {
+            res.state += data_checker->check([&](const std::string& msg) { reporter.info(segment(), msg); }, mds, quick);
+        }
+    }
+
     return res;
 }
 

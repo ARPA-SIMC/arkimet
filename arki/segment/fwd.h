@@ -9,6 +9,7 @@ namespace arki {
 class Segment;
 
 namespace segment {
+class Reporter;
 class Session;
 class Reader;
 class Checker;

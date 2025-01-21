@@ -104,6 +104,7 @@ libarkimet_sources = [
     'segment.cc',
     'segment/defs.cc',
     'segment/session.cc',
+    'segment/reporter.cc',
     'segment/scan.cc',
     'segment/metadata.cc',
     'segment/data.cc',

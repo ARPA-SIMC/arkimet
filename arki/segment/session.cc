@@ -187,4 +187,24 @@ void Session::create_iseg(std::shared_ptr<Segment> segment, arki::metadata::Coll
     throw std::runtime_error("normal sessions cannot create iseg segments");
 }
 
+std::shared_ptr<segment::Reader> ScanSession::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+{
+    return std::make_shared<segment::scan::Reader>(segment, lock);
+}
+
+std::shared_ptr<segment::Checker> ScanSession::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::scan::Checker>(segment, lock);
+}
+
+std::shared_ptr<segment::Reader> MetadataSession::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+{
+    return std::make_shared<segment::metadata::Reader>(segment, lock);
+}
+
+std::shared_ptr<segment::Checker> MetadataSession::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::metadata::Checker>(segment, lock);
+}
+
 }

@@ -114,6 +114,14 @@ protected:
     std::shared_ptr<segment::Data> m_data;
 
 public:
+    struct FsckResult
+    {
+        size_t size = 0;
+        time_t mtime = 0;
+        core::Interval interval;
+        segment::State state = SEGMENT_OK;
+    };
+
     Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
     Checker(const Checker&) = delete;
     Checker(Checker&&) = delete;
@@ -137,6 +145,11 @@ public:
      * Return the metadata for the contents of the whole segment
      */
     virtual arki::metadata::Collection scan() = 0;
+
+    /**
+     * Run consistency checks on the segment
+     */
+    virtual FsckResult fsck(segment::Reporter& reporter, bool quick=true) = 0;
 
     /**
      * Lock for writing and return a Fixer for this segment

@@ -47,5 +47,29 @@ public:
     virtual void create_iseg(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const;
 };
 
+/**
+ * Session that only uses scan segments
+ */
+class ScanSession : public Session
+{
+public:
+    using Session::Session;
+
+    std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
+    std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
+};
+
+/**
+ * Session that only uses scan segments
+ */
+class MetadataSession : public Session
+{
+public:
+    using Session::Session;
+
+    std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
+    std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
+};
+
 }
 #endif

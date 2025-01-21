@@ -56,8 +56,6 @@ protected:
 
     virtual std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) = 0;
 
-    std::shared_ptr<Segment> create_segment(const char* name);
-
 public:
     Data td;
 
@@ -66,6 +64,7 @@ public:
 
     void test_setup();
 
+    std::shared_ptr<Segment> create_segment(const char* name = "segment");
     std::shared_ptr<Segment> create(const char* name = "segment");
     virtual std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") = 0;
 };
@@ -75,12 +74,12 @@ class ScanSegmentFixture: public SegmentTestFixture<Data>
 {
 protected:
     using SegmentTestFixture<Data>::m_session;
-    using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
 
 public:
     using SegmentTestFixture<Data>::td;
+    using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 };
@@ -90,12 +89,12 @@ class MetadataSegmentFixture: public SegmentTestFixture<Data>
 {
 protected:
     using SegmentTestFixture<Data>::m_session;
-    using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
 
 public:
     using SegmentTestFixture<Data>::td;
+    using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 };
@@ -105,12 +104,12 @@ class IsegSegmentFixture: public SegmentTestFixture<Data>
 {
 protected:
     using SegmentTestFixture<Data>::m_session;
-    using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
 
 public:
     using SegmentTestFixture<Data>::td;
+    using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 };

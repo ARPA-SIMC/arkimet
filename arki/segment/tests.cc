@@ -83,7 +83,7 @@ std::shared_ptr<Segment> SegmentTestFixture<Data>::create(const char* name)
 template<typename Data>
 std::shared_ptr<segment::Session> ScanSegmentFixture<Data>::make_session(const std::filesystem::path& root)
 {
-    return std::make_shared<segment::Session>(root);
+    return std::make_shared<segment::ScanSession>(root);
 }
 
 template<typename Data>
@@ -98,7 +98,7 @@ std::shared_ptr<Segment> ScanSegmentFixture<Data>::create(const metadata::Collec
 template<typename Data>
 std::shared_ptr<segment::Session> MetadataSegmentFixture<Data>::make_session(const std::filesystem::path& root)
 {
-    return std::make_shared<segment::Session>(root);
+    return std::make_shared<segment::MetadataSession>(root);
 }
 
 template<typename Data>

@@ -1,5 +1,6 @@
 #include "metadata.h"
 #include "data.h"
+#include "reporter.h"
 #include "arki/query.h"
 #include "arki/core/lock.h"
 #include "arki/utils/sys.h"
@@ -146,6 +147,70 @@ arki::metadata::Collection Checker::scan()
             res.acquire(md);
             return true;
         });
+    }
+
+    return res;
+}
+
+Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
+{
+    Checker::FsckResult res;
+
+    auto data_checker = m_data->checker(false);
+    auto ts_data = m_data->timestamp();
+    if (!ts_data)
+    {
+        reporter.info(segment(), "segment data not found on disk");
+        res.state = SEGMENT_MISSING;
+        return res;
+    }
+    res.mtime = ts_data.value();
+
+    time_t ts_md = sys::timestamp(segment().abspath_metadata(), 0);
+    if (!ts_md)
+    {
+        // Data not found on disk
+        if (data_checker->is_empty())
+        {
+            reporter.info(segment(), "empty segment found on disk with no associated metadata");
+            res.state = SEGMENT_DELETED;
+        } else {
+            reporter.info(segment(), "segment found on disk with no associated metadata");
+            res.state = SEGMENT_UNALIGNED;
+        }
+        return res;
+    }
+
+    if (ts_md < ts_data.value())
+    {
+        reporter.info(segment(), "data is newer than metadata");
+        res.state = segment::SEGMENT_UNALIGNED;
+        return res;
+    }
+
+    time_t ts_sum = sys::timestamp(segment().abspath_summary(), 0);
+    if (ts_sum < ts_md)
+    {
+        reporter.info(segment(), "metadata is newer than summary");
+        res.state += segment::SEGMENT_UNOPTIMIZED;
+    }
+
+    auto mds = scan();
+
+    if (mds.empty())
+    {
+        reporter.info(segment(), "metadata reports that the segment is fully deleted");
+        res.state += SEGMENT_DELETED;
+    } else {
+        // Compute the span of reftimes inside the segment
+        mds.sort("reftime, offset");
+        if (!mds.expand_date_range(res.interval))
+        {
+            reporter.info(segment(), "index contains data for this segment but no reference time information");
+            res.state += SEGMENT_CORRUPTED;
+        } else {
+            res.state += data_checker->check([&](const std::string& msg) { reporter.info(segment(), msg); }, mds, quick);
+        }
     }
 
     return res;
