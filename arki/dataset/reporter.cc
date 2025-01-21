@@ -47,7 +47,7 @@ void OstreamReporter::segment_archive(const std::string& ds, const std::filesyst
     out << ds << ":" << relpath.native() << ": " << message << endl;
 }
 
-void OstreamReporter::segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message)
+void OstreamReporter::segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message)
 {
     out << ds << ":" << relpath.native() << ": " << message << endl;
 }

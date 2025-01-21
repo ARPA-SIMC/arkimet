@@ -766,9 +766,9 @@ struct CollectReporter : public dataset::Reporter
         recorder.segment_archive(ds, relpath, message);
         seg_results.emplace_back("archived", ds, relpath, message);
     }
-    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
+    void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
-        recorder.segment_delete(ds, relpath, message);
+        recorder.segment_remove(ds, relpath, message);
         seg_results.emplace_back("deleted", ds, relpath, message);
     }
     void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override

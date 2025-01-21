@@ -92,11 +92,11 @@ public:
                     relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
     }
-    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
+    void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         AcquireGIL gil;
         throw_ifnull(PyObject_CallMethod(
-                    o, "segment_delete", "s#s#s#",
+                    o, "segment_remove", "s#s#s#",
                     ds.data(), ds.size(),
                     relpath.native().data(), relpath.native().size(),
                     message.data(), message.size()));
@@ -226,7 +226,7 @@ public:
         out << ds << ":" << relpath.native() << ": " << message << std::endl;
         write(out.str());
     }
-    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
+    void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         std::stringstream out;
         out << ds << ":" << relpath.native() << ": " << message << std::endl;

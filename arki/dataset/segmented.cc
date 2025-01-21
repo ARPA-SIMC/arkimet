@@ -292,11 +292,11 @@ void Checker::remove_old(CheckerConfig& opts)
         auto state = segment.scan(*opts.reporter, !opts.accurate);
         if (!state.state.has(segment::SEGMENT_DELETE_AGE)) return;
         if (opts.readonly)
-            opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
+            opts.reporter->segment_remove(name(), segment.path_relative(), "should be deleted");
         else
         {
             auto freed = segment.remove(true);
-            opts.reporter->segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+            opts.reporter->segment_remove(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
         }
     });
 
@@ -307,11 +307,11 @@ void Checker::remove_all(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
         if (opts.readonly)
-            opts.reporter->segment_delete(name(), segment.path_relative(), "should be deleted");
+            opts.reporter->segment_remove(name(), segment.path_relative(), "should be deleted");
         else
         {
             auto freed = segment.remove(true);
-            opts.reporter->segment_delete(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
+            opts.reporter->segment_remove(name(), segment.path_relative(), "deleted (" + std::to_string(freed) + " freed)");
         }
     });
 

@@ -24,7 +24,7 @@ public:
     virtual void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_repack(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_archive(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
-    virtual void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
+    virtual void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_rescan(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_tar(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
@@ -43,7 +43,7 @@ public:
     void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
     void segment_repack(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
     void segment_archive(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
-    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
+    void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
     void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
     void segment_rescan(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
     void segment_tar(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override {}
@@ -66,7 +66,7 @@ public:
     void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
     void segment_repack(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
     void segment_archive(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
-    void segment_delete(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
+    void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
     void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
     void segment_rescan(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
     void segment_tar(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
