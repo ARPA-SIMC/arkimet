@@ -330,7 +330,10 @@ void Checker::remove_all(CheckerConfig& opts)
 void Checker::remove(const metadata::Collection& mds)
 {
     // Group mds by segment
-    std::unordered_map<std::filesystem::path, std::set<uint64_t>> by_segment;
+    // TODO: this is needed for rocky8 and ubuntu jammy. Use
+    // std::filesystem::path when we can rely on newer GCC
+    std::unordered_map<std::string, std::set<uint64_t>> by_segment;
+    // std::unordered_map<std::filesystem::path, std::set<uint64_t>> by_segment;
 
     // Build a todo-list of entries to delete for each segment
     for (const auto& md: mds)
