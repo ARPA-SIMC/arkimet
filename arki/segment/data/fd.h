@@ -31,6 +31,7 @@ public:
     using arki::segment::Data::Data;
 
     std::optional<time_t> timestamp() const override;
+    utils::files::PreserveFileTimes preserve_mtime() override;
     static bool can_store(DataFormat format);
 
     static std::shared_ptr<segment::Data> detect_data(std::shared_ptr<const Segment> segment);

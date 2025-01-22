@@ -15,6 +15,7 @@ class Data : public arki::segment::Data
 public:
     using arki::segment::Data::Data;
     std::optional<time_t> timestamp() const override;
+    utils::files::PreserveFileTimes preserve_mtime() override;
     static bool can_store(DataFormat format);
 };
 

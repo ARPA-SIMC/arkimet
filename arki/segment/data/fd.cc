@@ -135,6 +135,10 @@ std::optional<time_t> Data::timestamp() const
     return std::optional<time_t>();
 }
 
+utils::files::PreserveFileTimes Data::preserve_mtime()
+{
+    return utils::files::PreserveFileTimes(segment().abspath());
+}
 
 template<typename Data>
 Reader<Data>::Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)

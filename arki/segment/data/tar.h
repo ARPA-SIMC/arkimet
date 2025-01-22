@@ -18,6 +18,7 @@ public:
     const char* type() const override;
     bool single_file() const override;
     std::optional<time_t> timestamp() const override;
+    utils::files::PreserveFileTimes preserve_mtime() override;
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;

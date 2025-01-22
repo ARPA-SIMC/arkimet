@@ -75,6 +75,7 @@ public:
             //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
             res.state += segment::SEGMENT_UNOPTIMIZED;
         } else if (segment_info->mtime != segment_fsck.mtime) {
+            fprintf(stderr, "ZAAAAA %lu %lu\n", segment_info->mtime, segment_fsck.mtime);
             //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
             reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment mtime does not match MANIFEST information");
             //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
@@ -496,8 +497,9 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
 {
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
     auto segment_data_checker = dataset().segment_session->segment_data_checker(segment);
-    manifest.rename(relpath, new_relpath);
     segment_data_checker->move(dataset().segment_session, new_relpath);
+    manifest.rename(relpath, new_relpath);
+    manifest.flush();
 }
 
 }

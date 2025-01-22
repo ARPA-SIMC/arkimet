@@ -532,6 +532,7 @@ void Checker::test_truncate_data(const std::filesystem::path& relpath, unsigned 
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
     auto csegment = this->segment(segment);
     auto fixer = csegment->segment_checker->fixer();
+    auto pft = segment->data()->preserve_mtime();
     fixer->test_truncate_data(data_idx);
 }
 
@@ -542,7 +543,7 @@ void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_i
     arki::metadata::Collection mds = csegment->segment_checker->scan();
     mds.swap(d1_idx, d2_idx);
 
-    // TODO: preserve segment mtime
+    auto pft = segment->data()->preserve_mtime();
 
     segment::data::RepackConfig repack_config;
     repack_config.gz_group_size = dataset().gz_group_size;

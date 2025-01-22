@@ -13,6 +13,7 @@
 #include <arki/segment/defs.h>
 #include <arki/segment.h>
 #include <arki/core/transaction.h>
+#include <arki/utils/files.h>
 #include <filesystem>
 #include <string>
 #include <memory>
@@ -108,6 +109,11 @@ public:
      * segment
      */
     virtual void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) = 0;
+
+    /**
+     * Preserve segment mtime
+     */
+    virtual utils::files::PreserveFileTimes preserve_mtime() = 0;
 };
 
 

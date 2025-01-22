@@ -109,6 +109,10 @@ std::optional<time_t> Data::timestamp() const
         return std::optional<time_t>(st->st_mtime);
     return std::optional<time_t>();
 }
+utils::files::PreserveFileTimes Data::preserve_mtime()
+{
+    return utils::files::PreserveFileTimes(sys::with_suffix(segment().abspath(), ".tar"));
+}
 
 std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
