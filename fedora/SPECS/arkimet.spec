@@ -126,7 +126,7 @@ echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 
-%meson_test
+%meson_test --num-processes 1
 
 
 %clean
