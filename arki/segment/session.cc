@@ -162,7 +162,7 @@ std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_
 std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
 {
     auto data = segment->data();
-    return data->checker(false);
+    return data->checker(mock_data);
 }
 
 void Session::create_scan(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
