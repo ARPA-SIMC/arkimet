@@ -55,77 +55,34 @@ public:
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
-        if (!segment_data_checker->exists_on_disk())
-            return segmented::SegmentState(segment::SEGMENT_MISSING);
+        segmented::SegmentState res;
 
-        if (!sys::stat(dataset_checker.dataset().path / sys::with_suffix(segment_data_checker->segment().relpath(), ".index")))
+        // Get the allowed time interval from the segment name
+        if (!dataset().step().path_timespan(segment->relpath(), res.interval))
         {
-            if (segment_data_checker->is_empty())
-            {
-                reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "empty segment found on disk with no associated index data");
-                return segmented::SegmentState(segment::SEGMENT_DELETED);
-            } else {
-                //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
-                reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment found on disk with no associated index data");
-                //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
-            }
+            reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment name does not fit the step of this dataset");
+            res.state += segment::SEGMENT_CORRUPTED;
+            return res;
         }
 
-#if 0
-        /**
-         * Although iseg could detect if the data of a segment is newer than its
-         * index, the timestamp of the index is updated by various kinds of sqlite
-         * operations, making the test rather useless, because it's likely that the
-         * index timestamp would get updated before the mismatch is detected.
-         */
-        string abspath = str::joinpath(dataset().path, relpath);
-        if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
-        {
-            segments_state.insert(make_pair(relpath, segmented::SegmentState(segment::SEGMENT_UNALIGNED)));
-            return;
-        }
-#endif
+        // Run segment-specific scan
+        auto segment_reporter = reporter.segment_reporter(dataset_checker.name());
+        auto segment_fsck = segment_checker->fsck(*segment_reporter, quick);
+        res.state += segment_fsck.state;
+        if (res.state.has_any(segment::SEGMENT_MISSING + segment::SEGMENT_DELETED + segment::SEGMENT_UNALIGNED))
+            return res;
 
-        metadata::Collection mds;
-        idx().scan(mds.inserter_func(), "reftime, offset");
-        segment::State state(segment::SEGMENT_OK);
+        // At this point we know the segment is consistent and contains data
 
-        // Compute the span of reftimes inside the segment
-        core::Interval segment_interval;
-        if (mds.empty())
+        if (!res.interval.contains(segment_fsck.interval))
         {
-            reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "index knows of this segment but contains no data for it");
-            state = segment::SEGMENT_DELETED;
-        } else {
-            if (!mds.expand_date_range(segment_interval))
-            {
-                reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "index data for this segment has no reference time information");
-                state = segment::SEGMENT_CORRUPTED;
-            } else {
-                // Ensure that the reftime span fits inside the segment step
-                core::Interval interval;
-                if (dataset_checker.dataset().step().path_timespan(segment_data_checker->segment().relpath(), interval))
-                {
-                    if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
-                    {
-                        reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment contents do not fit inside the step of this dataset");
-                        state = segment::SEGMENT_CORRUPTED;
-                    }
-                    // Expand segment timespan to the full possible segment timespan
-                    segment_interval = interval;
-                } else {
-                    reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment name does not fit the step of this dataset");
-                    state = segment::SEGMENT_CORRUPTED;
-                }
-            }
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment contents do not fit inside the step of this dataset");
+            res.state += segment::SEGMENT_CORRUPTED;
+            return res;
         }
 
-        if (state.is_ok())
-            state = segment_data_checker->check([&](const std::string& msg) { reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), msg); }, mds, quick);
+        res.check_age(segment_data_checker->segment().relpath(), dataset(), reporter);
 
-        auto res = segmented::SegmentState(state, segment_interval);
-        res.check_age(segment_data_checker->segment().relpath(), dataset_checker.dataset(), reporter);
         return res;
     }
 
@@ -138,7 +95,7 @@ public:
     size_t repack(unsigned test_flags=0) override
     {
         metadata::Collection mds = segment_checker->scan();
-        mds.sort();
+        mds.sort_segment();
 
         segment::data::RepackConfig repack_config;
         repack_config.gz_group_size = dataset().gz_group_size;

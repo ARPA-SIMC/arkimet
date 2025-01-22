@@ -75,12 +75,14 @@ add_method("scan_missing_summary", [](Fixture& f) {
         wassert(actual(mdc.size()) == 3u);
     }
 
+    wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+
     // Maintenance should show one file to rescan
     {
         auto state = f.scan_state();
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_UNALIGNED);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_UNOPTIMIZED);
         wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
-        wassert(actual(state.count(segment::SEGMENT_UNALIGNED)) == 1u);
+        wassert(actual(state.count(segment::SEGMENT_UNOPTIMIZED)) == 1u);
         wassert(actual(state.size()) == 3u);
     }
 

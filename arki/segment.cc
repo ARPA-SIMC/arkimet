@@ -11,6 +11,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/summary.h"
 #include "arki/query.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/utils/string.h"
@@ -284,7 +285,8 @@ void Fixer::test_corrupt_data(unsigned data_idx)
 void Fixer::test_truncate_data(unsigned data_idx)
 {
     arki::metadata::Collection mds = m_checker->scan();
-    data().checker(false)->test_truncate_by_data(mds, data_idx);
+    const auto& s = mds[data_idx].sourceBlob();
+    data().checker(false)->test_truncate(s.offset);
 }
 
 

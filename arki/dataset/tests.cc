@@ -24,6 +24,7 @@
 #include "arki/segment/data/dir.h"
 #include "arki/nag.h"
 #include <algorithm>
+#include <iostream>
 #include <cstring>
 #include <limits.h>
 #include <sys/time.h>
@@ -225,7 +226,7 @@ unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
 State DatasetTest::scan_state(bool quick)
 {
     CheckerConfig opts;
-    //opts.reporter = make_shared<OstreamReporter>(cerr);
+    //opts.reporter = std::make_shared<OstreamReporter>(cerr);
     auto checker = makeSegmentedChecker();
     State res;
     checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {

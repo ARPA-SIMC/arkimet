@@ -57,12 +57,7 @@ std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) co
 
 std::shared_ptr<archive::Dataset> Dataset::archive()
 {
-    if (!m_archive)
-    {
-        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path / ".archive"));
-        m_archive->set_parent(this);
-    }
-    return m_archive;
+    throw std::runtime_error("dataset does not support archives");
 }
 
 bool Dataset::hasArchive() const

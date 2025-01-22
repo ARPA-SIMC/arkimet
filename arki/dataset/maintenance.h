@@ -99,6 +99,7 @@ struct MockFixer : public Agent
     size_t m_count_packed = 0;
     size_t m_count_rescanned = 0;
     size_t m_count_deindexed = 0;
+    size_t m_count_manual_intervention = 0;
 
     void operator()(segmented::CheckerSegment& relpath, segment::State state) override;
     void end() override;

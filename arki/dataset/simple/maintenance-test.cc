@@ -3,9 +3,12 @@
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/simple.h"
 #include "arki/dataset/simple/writer.h"
+#include "arki/dataset/simple/manifest.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
+#include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include <csignal>
 
 using namespace arki;
 using namespace arki::tests;
@@ -78,7 +81,7 @@ void CheckTests<Fixture>::register_tests()
     - `.summary` file must not be older than the `.metadata` file [unaligned]
     )", [&](Fixture& f) {
         sys::touch("testds" / sys::with_suffix(f.test_relpath, ".summary"), 1496167200);
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNOPTIMIZED));
     });
 
     this->add_method("check_manifest_timestamp", R"(
@@ -92,7 +95,7 @@ void CheckTests<Fixture>::register_tests()
 
         sys::touch("testds" / sys::with_suffix(f.test_relpath, ".metadata"), manifest_ts + 1);
 
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNOPTIMIZED));
     });
 
     this->add_method("check_missing_index", R"(
@@ -108,7 +111,7 @@ void CheckTests<Fixture>::register_tests()
 
         wassert(f.query_results({}));
 
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNOPTIMIZED));
     });
 
     this->add_method("check_missing_index_spurious_files", R"(
@@ -121,18 +124,32 @@ void CheckTests<Fixture>::register_tests()
 
         wassert(f.query_results({}));
 
-        wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+        wassert(f.state_is(3, segment::SEGMENT_UNOPTIMIZED));
     });
 
     this->add_method("check_metadata_must_contain_reftimes", R"(
     - metadata in the `.metadata` file must contain reference time elements [corrupted]
     )", [&](Fixture& f) {
+        auto mdpath = "testds" / sys::with_suffix(f.test_relpath, ".metadata");
         metadata::Collection mds;
-        mds.read_from_file("testds" / sys::with_suffix(f.test_relpath, ".metadata"));
+        mds.read_from_file(mdpath);
         wassert(actual(mds.size()) == 2u);
         for (auto& md: mds)
             md->unset(TYPE_REFTIME);
-        mds.writeAtomically("testds/" / sys::with_suffix(f.test_relpath, ".metadata"));
+
+        {
+            utils::files::PreserveFileTimes pfmd(mdpath);
+            utils::files::PreserveFileTimes pfma("testds/MANIFEST");
+            mds.writeAtomically(mdpath);
+
+            simple::manifest::Writer writer("testds", false);
+            writer.reread();
+            if (const auto* seg = writer.segment(f.test_relpath))
+            {
+                writer.set(f.test_relpath, seg->mtime, core::Interval());
+                writer.flush();
+            }
+        }
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
     });

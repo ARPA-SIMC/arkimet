@@ -67,6 +67,10 @@ public:
     std::shared_ptr<Segment> create_segment(const char* name = "segment");
     std::shared_ptr<Segment> create(const char* name = "segment");
     virtual std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") = 0;
+
+    virtual void skip_unless_scan() const { throw TestSkipped("test is only valid for scan segments"); }
+    virtual void skip_unless_metadata() const { throw TestSkipped("test is only valid for metadata segments"); }
+    virtual void skip_unless_iseg() const { throw TestSkipped("test is only valid for iseg segments"); }
 };
 
 template<class Data>
@@ -82,6 +86,8 @@ public:
     using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
+
+    void skip_unless_scan() const override {}
 };
 
 template<class Data>
@@ -97,6 +103,8 @@ public:
     using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
+
+    void skip_unless_metadata() const override {}
 };
 
 template<class Data>
@@ -112,6 +120,8 @@ public:
     using SegmentTestFixture<Data>::create_segment;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
+
+    void skip_unless_iseg() const override {}
 };
 
 }

@@ -95,6 +95,15 @@ bool Dataset::relpath_timespan(const std::filesystem::path& path, core::Interval
     return step().path_timespan(path, interval);
 }
 
+std::shared_ptr<archive::Dataset> Dataset::archive()
+{
+    if (!m_archive)
+    {
+        m_archive = std::shared_ptr<archive::Dataset>(new archive::Dataset(session, path / ".archive", step_name));
+        m_archive->set_parent(this);
+    }
+    return m_archive;
+}
 
 Reader::~Reader()
 {
@@ -411,7 +420,7 @@ void Checker::state(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
         auto state = segment.scan(*opts.reporter, !opts.accurate);
-        opts.reporter->segment_tar(name(), segment.path_relative(),
+        opts.reporter->segment_info(name(), segment.path_relative(),
                 state.state.to_string() + " " + state.interval.begin.to_iso8601(' ') + " to " + state.interval.end.to_iso8601(' '));
     });
 

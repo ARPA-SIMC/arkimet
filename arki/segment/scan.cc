@@ -74,6 +74,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
+    res.size = data_checker->size();
 
     auto mds = scan();
 
@@ -83,7 +84,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         res.state += SEGMENT_DELETED;
     } else {
         // Compute the span of reftimes inside the segment
-        mds.sort("reftime, offset");
+        mds.sort_segment();
         if (!mds.expand_date_range(res.interval))
         {
             reporter.info(segment(), "segment contains data without reference time information");
@@ -162,7 +163,7 @@ Fixer::ConvertResult Fixer::tar()
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
-    mds.sort();
+    mds.sort_segment();
 
     // Create the .tar segment
     auto new_data_checker = data_checker->tar(mds);
@@ -195,7 +196,7 @@ Fixer::ConvertResult Fixer::zip()
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
-    mds.sort();
+    mds.sort_segment();
 
     // Create the .zip segment
     auto new_data_checker = data_checker->zip(mds);
@@ -229,7 +230,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
-    mds.sort();
+    mds.sort_segment();
 
     // Create the .zip segment
     auto new_data_checker = data_checker->compress(mds, groupsize);

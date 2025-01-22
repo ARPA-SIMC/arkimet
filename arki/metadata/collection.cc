@@ -33,6 +33,24 @@ std::filesystem::path path_tmp(const std::filesystem::path& path)
     return res;
 }
 
+struct RepackSort : public arki::metadata::sort::Compare
+{
+    int compare(const arki::Metadata& a, const arki::Metadata& b) const override
+    {
+        const auto* rta = a.get(arki::TYPE_REFTIME);
+        const auto* rtb = b.get(arki::TYPE_REFTIME);
+        if (rta && !rtb) return 1;
+        if (!rta && rtb) return -1;
+        if (rta && rtb)
+            if (int res = rta->compare(*rtb)) return res;
+        if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
+        if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
+        return 0;
+    }
+
+    std::string toString() const override { return "reftime,offset"; }
+};
+
 }
 
 
@@ -358,6 +376,11 @@ void Collection::sort(const std::string& cmp)
 void Collection::sort()
 {
     sort("");
+}
+
+void Collection::sort_segment()
+{
+    sort(RepackSort());
 }
 
 bool Collection::expand_date_range(core::Interval& interval) const

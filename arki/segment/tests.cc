@@ -71,7 +71,9 @@ void SegmentTestFixture<Data>::test_setup()
 template<typename Data>
 std::shared_ptr<Segment> SegmentTestFixture<Data>::create_segment(const char* name)
 {
-    return m_session->segment_from_relpath(sys::with_suffix(name, "." + format_name(td.format)));
+    auto segment = m_session->segment_from_relpath(sys::with_suffix(name, "." + format_name(td.format)));
+    std::filesystem::create_directories(segment->abspath().parent_path());
+    return segment;
 }
 
 template<typename Data>

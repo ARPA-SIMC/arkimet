@@ -58,6 +58,8 @@ public:
     Dataset(std::shared_ptr<Session> session, std::shared_ptr<segment::Session> segment_session, const core::cfg::Section& cfg);
     ~Dataset();
 
+    std::shared_ptr<archive::Dataset> archive() override;
+
     virtual bool relpath_timespan(const std::filesystem::path& path, core::Interval& interval) const;
 
     const Step& step() const { return *m_step; }
@@ -100,11 +102,12 @@ public:
  */
 struct SegmentState
 {
-    // Segment state
+    /// Segment state
     arki::segment::State state;
-    // Time interval that can fit in the segment
+    /// Allowed time interval for data in the segment
     core::Interval interval;
 
+    SegmentState() : state(segment::SEGMENT_OK) {}
     explicit SegmentState(arki::segment::State state)
         : state(state) {}
     SegmentState(arki::segment::State state, const core::Interval& interval)

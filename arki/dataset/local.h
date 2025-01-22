@@ -46,7 +46,7 @@ public:
     std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
 
     /// Return the Archives for this dataset
-    std::shared_ptr<archive::Dataset> archive();
+    virtual std::shared_ptr<archive::Dataset> archive();
 
     /// Check if the dataset has archived data
     bool hasArchive() const;

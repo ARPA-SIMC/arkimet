@@ -3,7 +3,9 @@
 #include "simple.h"
 #include "offline.h"
 #include "arki/matcher.h"
+#include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/types.h"
 #include "arki/summary.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -27,12 +29,12 @@ bool is_archive(const std::filesystem::path& dir)
 }
 
 
-static core::cfg::Section make_config(const std::filesystem::path& dir)
+static core::cfg::Section make_config(const std::filesystem::path& dir, const std::string& step_name)
 {
     core::cfg::Section cfg;
     cfg.set("name", dir.filename());
     cfg.set("path", dir);
-    cfg.set("step", "monthly");
+    cfg.set("step", step_name);
     cfg.set("offline", "true");
     cfg.set("smallfiles", "true");
     return cfg;
@@ -44,12 +46,12 @@ struct ArchivesRoot
 {
     std::filesystem::path dataset_root;
     std::filesystem::path archive_root;
-    std::shared_ptr<dataset::Dataset> parent;
+    std::shared_ptr<archive::Dataset> parent;
 
     std::map<std::string, std::shared_ptr<Archive>> archives;
     std::shared_ptr<Archive> last;
 
-    ArchivesRoot(const std::filesystem::path& dataset_root, std::shared_ptr<dataset::Dataset> parent)
+    ArchivesRoot(const std::filesystem::path& dataset_root, std::shared_ptr<archive::Dataset> parent)
         : dataset_root(dataset_root), archive_root(dataset_root), parent(parent)
           // m_scache_root(str::joinpath(root, ".summaries"))
     {
@@ -161,11 +163,11 @@ struct ArchivesRoot
         if (std::filesystem::exists(sys::with_suffix(pathname, ".summary")))
         {
             if (simple::manifest::exists(pathname))
-                ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+                ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname, parent->step_name));
             else
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);
         } else
-            ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+            ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname, parent->step_name));
         ds->set_parent(parent.get());
         return ds->create_reader();
     }
@@ -218,14 +220,14 @@ public:
         if (std::filesystem::exists(sys::with_suffix(pathname, ".summary")))
             return std::shared_ptr<dataset::Checker>();
 
-        auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+        auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname, parent->step_name));
         ds->set_parent(parent.get());
         return ds->create_checker();
     }
 };
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root)
-    : dataset::Dataset(session, "archives"), root(root), segment_session(std::make_shared<segment::Session>(root))
+Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root, const std::string& step_name)
+    : dataset::Dataset(session, "archives"), root(root), segment_session(std::make_shared<segment::Session>(root)), step_name(step_name)
 {
 }
 
@@ -456,7 +458,7 @@ static std::string poppath(std::filesystem::path& path)
 void Checker::index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds)
 {
     auto path = relpath;
-    string name = poppath(path);
+    auto name = poppath(path);
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))

@@ -31,29 +31,6 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-namespace {
-
-struct RepackSort : public metadata::sort::Compare
-{
-    int compare(const Metadata& a, const Metadata& b) const override
-    {
-        const types::Type* rta = a.get(TYPE_REFTIME);
-        const types::Type* rtb = b.get(TYPE_REFTIME);
-        if (rta && !rtb) return 1;
-        if (!rta && rtb) return -1;
-        if (rta && rtb)
-            if (int res = rta->compare(*rtb)) return res;
-        if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
-        if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
-        return 0;
-    }
-
-    std::string toString() const override { return "reftime,offset"; }
-};
-
-}
-
-
 class CheckerSegment : public segmented::CheckerSegment
 {
 public:
@@ -71,116 +48,51 @@ public:
 
     segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
     {
-        if (!segment_data_checker->exists_on_disk())
+        segmented::SegmentState res;
+
+        // Get the allowed time interval from the segment name
+        if (!dataset().step().path_timespan(segment->relpath(), res.interval))
         {
-            reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment found in index but not on disk");
-            return segmented::SegmentState(segment::SEGMENT_MISSING);
+            reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment name does not fit the step of this dataset");
+            res.state += segment::SEGMENT_CORRUPTED;
+            return res;
         }
 
-        const auto* segment_info = dataset_checker.manifest.segment(segment_data_checker->segment().relpath());
+        // Run segment-specific scan
+        auto segment_reporter = reporter.segment_reporter(dataset_checker.name());
+        auto segment_fsck = segment_checker->fsck(*segment_reporter, quick);
+        res.state += segment_fsck.state;
+        if (res.state.has_any(segment::SEGMENT_MISSING + segment::SEGMENT_DELETED + segment::SEGMENT_UNALIGNED))
+            return res;
+
+        // At this point we know the segment is consistent and contains data
+
+        const auto* segment_info = dataset_checker.manifest.segment(segment->relpath());
         if (!segment_info)
         {
-            if (segment_data_checker->is_empty())
-            {
-                reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "empty segment found on disk with no associated index data");
-                return segmented::SegmentState(segment::SEGMENT_DELETED);
-            } else {
-                //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
-                reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment found on disk with no associated index data");
-                //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
-            }
+            //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment found on disk with no associated MANIFEST data");
+            //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
+            res.state += segment::SEGMENT_UNOPTIMIZED;
+        } else if (segment_info->mtime != segment_fsck.mtime) {
+            //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment mtime does not match MANIFEST information");
+            //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
+            res.state += segment::SEGMENT_UNOPTIMIZED;
+        } else if (segment_info->time != segment_fsck.interval) {
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment data interval does not match MANIFEST information");
+            res.state += segment::SEGMENT_UNOPTIMIZED;
         }
 
-        auto path_metadata = sys::with_suffix(segment_data_checker->segment().abspath(), ".metadata");
-        // TODO: replace with a method of Segment
-        time_t ts_data = segment_data_checker->data().timestamp().value();
-        time_t ts_md = sys::timestamp(path_metadata, 0);
-        time_t ts_sum = sys::timestamp(sys::with_suffix(segment_data_checker->segment().abspath(), ".summary"), 0);
-        time_t ts_idx = segment_info->mtime;
-
-        segment::State state = segment::SEGMENT_OK;
-
-        // Check timestamp consistency
-        if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
+        if (!res.interval.contains(segment_fsck.interval))
         {
-            if (ts_idx != ts_data)
-                nag::verbose("%s: %s has a timestamp (%ld) different than the one in the index (%ld)",
-                        dataset_checker.dataset().path.c_str(), segment_data_checker->segment().relpath().c_str(), (long int)ts_data, (long int)ts_idx);
-            if (ts_md < ts_data)
-                nag::verbose("%s: %s has a timestamp (%ld) newer that its metadata (%ld)",
-                        dataset_checker.dataset().path.c_str(), segment_data_checker->segment().relpath().c_str(), (long int)ts_data, (long int)ts_md);
-            if (ts_md < ts_data)
-                nag::verbose("%s: %s metadata has a timestamp (%ld) newer that its summary (%ld)",
-                        dataset_checker.dataset().path.c_str(), segment_data_checker->segment().relpath().c_str(), (long int)ts_md, (long int)ts_sum);
-            state = segment::SEGMENT_UNALIGNED;
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment contents do not fit inside the step of this dataset");
+            res.state += segment::SEGMENT_CORRUPTED;
+            return res;
         }
 
-        // Read metadata of segment contents
+        res.check_age(segment_data_checker->segment().relpath(), dataset(), reporter);
 
-        //scan_file(m_path, i.file, state, v);
-        //void scan_file(const std::string& root, const std::string& relpath, segment::State state, segment::contents_func dest)
-
-        // TODO: turn this into a Segment::exists/Segment::scan
-        metadata::Collection contents;
-        bool metadata_file_exists = std::filesystem::exists(path_metadata);
-        if (metadata_file_exists)
-        {
-            Metadata::read_file(metadata::ReadContext(path_metadata, dataset_checker.dataset().path), [&](std::shared_ptr<Metadata> md) {
-                // Tweak Blob sources replacing the file name with segment->relpath
-                if (const source::Blob* s = md->has_source_blob())
-                    md->set_source(Source::createBlobUnlocked(s->format, dataset_checker.dataset().path, segment_data_checker->segment().relpath(), s->offset, s->size));
-                contents.acquire(md);
-                return true;
-            });
-        }
-        else
-            // The index knows about the file, so instead of saying segment::SEGMENT_DELETED
-            // because we have data without metadata, we say segment::SEGMENT_UNALIGNED
-            // because the metadata needs to be regenerated
-            state += segment::SEGMENT_UNALIGNED;
-
-        RepackSort cmp;
-        contents.sort(cmp); // Sort by reftime and by offset
-
-        // Compute the span of reftimes inside the segment
-        core::Interval segment_interval;
-        if (contents.empty())
-        {
-            reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "index knows of this segment but contains no data for it");
-            if (metadata_file_exists)
-                state = segment::SEGMENT_DELETED;
-            else
-                state = segment::SEGMENT_UNALIGNED;
-        } else {
-            if (!contents.expand_date_range(segment_interval))
-            {
-                reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "index data for this segment has no reference time information");
-                state = segment::SEGMENT_CORRUPTED;
-            } else {
-                // Ensure that the reftime span fits inside the segment step
-                core::Interval interval;
-                if (dataset_checker.dataset().step().path_timespan(segment_data_checker->segment().relpath(), interval))
-                {
-                    if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
-                    {
-                        reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment contents do not fit inside the step of this dataset");
-                        state = segment::SEGMENT_CORRUPTED;
-                    }
-                    // Expand segment timespan to the full possible segment timespan
-                    segment_interval = interval;
-                } else {
-                    reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment name does not fit the step of this dataset");
-                    state = segment::SEGMENT_CORRUPTED;
-                }
-            }
-        }
-
-        if (state.is_ok())
-            state = segment_data_checker->check([&](const std::string& msg) { reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), msg); }, contents, quick);
-
-        auto res = segmented::SegmentState(state, segment_interval);
-        res.check_age(segment_data_checker->segment().relpath(), dataset_checker.dataset(), reporter);
         return res;
     }
 
@@ -198,10 +110,7 @@ public:
     {
         // Read the metadata
         metadata::Collection mds = segment_checker->scan();
-
-        // Sort by reference time and offset
-        RepackSort cmp;
-        mds.sort(cmp);
+        mds.sort_segment();
 
         segment::data::RepackConfig repack_config;
         repack_config.gz_group_size = dataset().gz_group_size;
@@ -274,7 +183,7 @@ public:
         sum.writeAtomically(segment->abspath_summary());
 
         // Add to manifest
-        dataset_checker.manifest.set(segment_data_checker->segment().relpath(), mtime, sum.get_reference_time());
+        dataset_checker.manifest.set(segment->relpath(), mtime, sum.get_reference_time());
         dataset_checker.manifest.flush();
     }
 
@@ -424,6 +333,7 @@ void Checker::test_delete_from_index(const std::filesystem::path& relpath)
         throw std::runtime_error(relpath.native() + ": cannot get timestamp in test_delete_from_index");
 
     manifest.set(relpath, mtime.value(), core::Interval());
+    utils::files::PreserveFileTimes pf(segment->abspath_metadata());
     metadata::Collection().writeAtomically(segment->abspath_metadata());
     std::filesystem::remove(segment->abspath_summary());
     manifest.flush();
@@ -443,7 +353,12 @@ std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::p
     mds.read_from_file(md_pathname);
     md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
     mds.replace(data_idx, md);
+    utils::files::PreserveFileTimes pf(md_pathname);
     mds.writeAtomically(md_pathname);
+    core::Interval interval;
+    mds.expand_date_range(interval);
+    if (const auto* mseg = manifest.segment(relpath))
+        manifest.set(relpath, mseg->mtime, interval);
     return md;
 }
 

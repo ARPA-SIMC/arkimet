@@ -444,12 +444,12 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
                     out,
                     "testds:2007/07-08.odimh5: OK 2007-07-08 00:00:00Z to 2007-07-09 00:00:00Z\n"
                     "testds:2007/10-09.odimh5: OK 2007-10-09 00:00:00Z to 2007-10-10 00:00:00Z\n"
-                    "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-08-01 00:00:00Z\n",
+                    "testds.archives.last:2007/07-07.odimh5: OK 2007-07-07 00:00:00Z to 2007-07-08 00:00:00Z\n",
                 )
 
                 out = self.call_output_success("testenv/testds", "--state", "--offline")
                 self.assertEqual(
-                    out, "testds.archives.last:2007/07-07.odimh5: OK 2007-07-01 00:00:00Z to 2007-08-01 00:00:00Z\n"
+                    out, "testds.archives.last:2007/07-07.odimh5: OK 2007-07-07 00:00:00Z to 2007-07-08 00:00:00Z\n"
                 )
 
                 out = self.call_output_success("testenv/testds", "--state", "--online")
@@ -530,7 +530,7 @@ class ArkiCheckNonSimpleTestsMixin:
             out = self.call_output_success("testenv/testds", "--fix")
             self.assertEqual(
                 out,
-                "testds:2016/10-05.vm2: segment found on disk with no associated index data\n"
+                "testds:2016/10-05.vm2: segment found on disk with no associated index\n"
                 "testds:2016/10-05.vm2: rescanned\n"
                 "testds: check 0 files ok, 1 file rescanned\n",
             )

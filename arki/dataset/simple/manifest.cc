@@ -81,8 +81,11 @@ std::vector<SegmentInfo> read_plain(const std::filesystem::path& path)
 
         // Times are saved with extremes included
         core::Time interval_end = core::Time::create_sql(line.substr(end+1));
-        interval_end.se += 1;
-        interval_end.normalise();
+        if (interval_end != core::Time())
+        {
+            interval_end.se += 1;
+            interval_end.normalise();
+        }
         res.emplace_back(SegmentInfo{file, mtime, core::Interval(core::Time::create_sql(line.substr(beg, end-beg)), interval_end)});
     }
 
@@ -263,8 +266,11 @@ void Writer::write(const SegmentInfo& info, core::NamedFileDescriptor& out) cons
 {
     // Time is stored with the right extreme included
     core::Time end = info.time.end;
-    end.se -= 1;
-    end.normalise();
+    if (end != core::Time())
+    {
+        end.se -= 1;
+        end.normalise();
+    }
     std::stringstream ss;
     ss << info.relpath.native() << ";" << info.mtime << ";" << info.time.begin.to_sql() << ";" << end.to_sql() << std::endl;
     out.write_all_or_throw(ss.str());

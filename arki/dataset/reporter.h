@@ -1,12 +1,12 @@
 #ifndef ARKI_DATASET_REPORTER_H
 #define ARKI_DATASET_REPORTER_H
 
+#include <arki/segment/reporter.h>
 #include <filesystem>
 #include <string>
 #include <iosfwd>
 
-namespace arki {
-namespace dataset {
+namespace arki::dataset {
 
 /**
  * Interface for notifying the progress and results of check and repack
@@ -31,6 +31,11 @@ public:
     virtual void segment_compress(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_issue51(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
     virtual void segment_manual_intervention(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) = 0;
+
+    /**
+     * Create a segment reporter that proxies to this reporter
+     */
+    std::unique_ptr<segment::Reporter> segment_reporter(const std::string& ds);
 };
 
 class NullReporter : public Reporter
@@ -75,6 +80,5 @@ public:
     void segment_manual_intervention(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override;
 };
 
-}
 }
 #endif

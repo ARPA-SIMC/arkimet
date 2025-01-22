@@ -113,6 +113,11 @@ void MockFixer::operator()(segmented::CheckerSegment& segment, segment::State st
         reporter.segment_repack(w.name(), segment.path_relative(), "should be packed");
         ++m_count_packed;
     }
+    if (state.has(segment::SEGMENT_CORRUPTED))
+    {
+        reporter.segment_manual_intervention(w.name(), segment.path_relative(), "segment is CORRUPTED and requires fixing manually");
+        ++m_count_manual_intervention;
+    }
     if (state.has(segment::SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w.name(), segment.path_relative(), "should be rescanned");

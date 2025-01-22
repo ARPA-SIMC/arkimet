@@ -131,7 +131,10 @@ arki::metadata::Collection Checker::scan()
             auto data_reader = m_data->reader(lock);
             std::filesystem::path root(m_segment->abspath().parent_path());
             arki::Metadata::read_file(arki::metadata::ReadContext(md_abspath, root), [&](std::shared_ptr<Metadata> md) {
-                md->sourceBlob().lock(data_reader);
+                const auto& source = md->sourceBlob();
+                md->set_source(types::Source::createBlob(
+                        segment().format(), segment().root(), segment().relpath(),
+                        source.offset, source.size, data_reader));
                 res.acquire(md);
                 return true;
             });
@@ -165,6 +168,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
+    res.size = data_checker->size();
 
     time_t ts_md = sys::timestamp(segment().abspath_metadata(), 0);
     if (!ts_md)
@@ -188,13 +192,6 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
 
-    time_t ts_sum = sys::timestamp(segment().abspath_summary(), 0);
-    if (ts_sum < ts_md)
-    {
-        reporter.info(segment(), "metadata is newer than summary");
-        res.state += segment::SEGMENT_UNOPTIMIZED;
-    }
-
     auto mds = scan();
 
     if (mds.empty())
@@ -203,13 +200,20 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         res.state += SEGMENT_DELETED;
     } else {
         // Compute the span of reftimes inside the segment
-        mds.sort("reftime, offset");
+        mds.sort_segment();
         if (!mds.expand_date_range(res.interval))
         {
-            reporter.info(segment(), "index contains data for this segment but no reference time information");
+            reporter.info(segment(), "metadata contains data for this segment but no reference time information");
             res.state += SEGMENT_CORRUPTED;
         } else {
             res.state += data_checker->check([&](const std::string& msg) { reporter.info(segment(), msg); }, mds, quick);
+        }
+
+        time_t ts_sum = sys::timestamp(segment().abspath_summary(), 0);
+        if (ts_sum < ts_md)
+        {
+            reporter.info(segment(), "metadata is newer than summary");
+            res.state += segment::SEGMENT_UNOPTIMIZED;
         }
     }
 
@@ -324,7 +328,7 @@ Fixer::ConvertResult Fixer::tar()
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
-    mds.sort();
+    mds.sort_segment();
 
     std::filesystem::remove(path_metadata);
 
@@ -369,7 +373,7 @@ Fixer::ConvertResult Fixer::zip()
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
-    mds.sort();
+    mds.sort_segment();
 
     std::filesystem::remove(path_metadata);
 
@@ -415,7 +419,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
-    mds.sort();
+    mds.sort_segment();
 
     std::filesystem::remove(path_metadata);
 

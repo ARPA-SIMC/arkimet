@@ -116,11 +116,5 @@ std::shared_ptr<segment::data::Checker> Checker::compress(Collection& mds, unsig
     return res;
 }
 
-void Checker::test_truncate_by_data(const Collection& mds, unsigned data_idx)
-{
-    const auto& s = mds[data_idx].sourceBlob();
-    test_truncate(s.offset);
-}
-
 }
 }

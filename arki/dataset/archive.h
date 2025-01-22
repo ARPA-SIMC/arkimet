@@ -14,8 +14,6 @@
 #include <string>
 
 namespace arki {
-class Summary;
-
 namespace dataset {
 
 namespace segmented {
@@ -35,8 +33,9 @@ class Dataset : public dataset::Dataset
 public:
     std::filesystem::path root;
     std::shared_ptr<segment::Session> segment_session;
+    std::string step_name;
 
-    Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root);
+    Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root, const std::string& step_name);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Checker> create_checker() override;

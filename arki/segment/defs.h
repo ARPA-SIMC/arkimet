@@ -21,6 +21,11 @@ struct State
 
     bool has(const State& state) const
     {
+        return (value & state.value) == state.value;
+    }
+
+    bool has_any(const State& state) const
+    {
         return value & state.value;
     }
 
@@ -65,7 +70,9 @@ static const State SEGMENT_DELETED(1 << 3); /// Segment contents have been entir
 static const State SEGMENT_CORRUPTED(1 << 4); /// File is broken in a way that needs manual intervention
 static const State SEGMENT_ARCHIVE_AGE(1 << 5); /// File is old enough to be archived
 static const State SEGMENT_DELETE_AGE(1 << 6); /// File is old enough to be deleted
-static const State SEGMENT_UNOPTIMIZED(1 << 7); /// Segment metadata may be consistent but needs optimizing
+// TODO: this is the same as DIRTY for compatibility with old check code.
+// TODO: make a distinct value when old code can be refactored to support optimizing instead of rescanning
+static const State SEGMENT_UNOPTIMIZED(1 << 1); /// Segment metadata may be consistent but needs optimizing
 
 
 /// Print to ostream

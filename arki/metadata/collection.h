@@ -151,6 +151,7 @@ public:
     void sort(const sort::Compare& cmp);
     void sort(const std::string& cmp);
     void sort(); // Sort by reftime
+    void sort_segment(); // Sort by reftime and offset
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes

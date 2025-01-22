@@ -87,6 +87,24 @@ add_method("reader", [](Fixture& f) {
     wassert(actual(summary.get_reference_time()) == core::Interval(core::Time(2007, 7, 7), core::Time(2007, 7, 7, 0, 0, 1)));
 });
 
+add_method("read_relpath", [](Fixture& f) {
+    matcher::Parser parser;
+    auto segment = f.create(f.td.mds, "20/2007");
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+
+    metadata::Collection mds;
+    wassert_true(reader->read_all(mds.inserter_func()));
+    wassert(actual_type(mds[0].source()).is_source_blob(f.td.format, segment->root(), segment->relpath()));
+
+    mds.clear();
+    wassert_true(reader->query_data(parser.parse("reftime:=2007-07-07"), mds.inserter_func()));
+    wassert(actual_type(mds[0].source()).is_source_blob(f.td.format, segment->root(), segment->relpath()));
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    mds = checker->scan();
+    wassert(actual_type(mds[0].source()).is_source_blob(f.td.format, segment->root(), segment->relpath()));
+});
+
 add_method("checker", [](Fixture& f) {
     auto segment = f.create(f.td.mds);
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
@@ -245,6 +263,49 @@ add_method("fsck_no_data", [](Fixture& f) {
     wassert(actual(res.mtime) == 0u);
     wassert(actual(res.interval) == core::Interval());
     wassert(actual(res.state) == segment::SEGMENT_MISSING);
+});
+
+add_method("fsck_no_metadata", [](Fixture& f) {
+    f.skip_unless_metadata();
+    auto segment = f.create(f.td.mds);
+    std::filesystem::remove(segment->abspath_metadata());
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    segment::NullReporter reporter;
+    auto res = checker->fsck(reporter);
+    wassert(actual(res.size) > 0u);
+    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.interval) == core::Interval());
+    wassert(actual(res.state) == segment::SEGMENT_UNALIGNED);
+});
+
+add_method("fsck_no_summary", [](Fixture& f) {
+    f.skip_unless_metadata();
+    auto mds = f.td.mds;
+    mds.sort_segment();
+    auto segment = f.create(mds);
+    std::filesystem::remove(segment->abspath_summary());
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    segment::NullReporter reporter;
+    auto res = checker->fsck(reporter);
+    wassert(actual(res.size) > 0u);
+    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.interval) != core::Interval());
+    wassert(actual(res.state) == segment::SEGMENT_UNOPTIMIZED);
+});
+
+add_method("fsck_no_iseg_index", [](Fixture& f) {
+    f.skip_unless_iseg();
+    auto mds = f.td.mds;
+    mds.sort_segment();
+    auto segment = f.create(mds);
+    std::filesystem::remove(segment->abspath_iseg_index());
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    segment::NullReporter reporter;
+    auto res = checker->fsck(reporter);
+    wassert(actual(res.size) > 0u);
+    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.interval) == core::Interval());
+    wassert(actual(res.state) == segment::SEGMENT_UNALIGNED);
 });
 
 add_method("fsck_deleted", [](Fixture& f) {

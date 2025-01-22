@@ -242,8 +242,7 @@ add_method("add_remove", [] {
     wassert(actual(segs[2].relpath) == "2007/10-09.grib");
 });
 
-add_method("add_remove", [] {
-    // Test adding and removing files
+add_method("set_mtime", [] {
     manifest::Writer writer("testds", false);
     fill1(writer);
 
@@ -254,6 +253,20 @@ add_method("add_remove", [] {
 
     auto e = wassert_throws(std::runtime_error, writer.set_mtime("missing.grib", 1234));
     wassert(actual(e.what()).contains("segment is not in index"));
+});
+
+add_method("empty_interval", [] {
+    manifest::Writer writer("testds", false);
+    writer.set("test", 1234, core::Interval());
+    writer.flush();
+
+    manifest::Reader reader("testds");
+    reader.reread();
+    const auto* seg = reader.segment("test");
+    wassert_true(seg);
+    wassert(actual(seg->relpath) == "test");
+    wassert(actual(seg->mtime) == 1234);
+    wassert(actual(seg->time) == core::Interval());
 });
 
 add_method("read_legacy_sqlite", [] {

@@ -5,6 +5,8 @@
     * `arki-check --delete` is now supported also for `simple` datasets
     * it is now possible to open a subdataset inside .archives and query and
       delete data from it (#344)
+    * archived segments are now enforced to have the same step as the
+      containing dataset
 
 # New in version 1.53
 
