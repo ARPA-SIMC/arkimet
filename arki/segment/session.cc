@@ -156,7 +156,7 @@ std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
     auto data = segment->data();
-    return data->writer(config, false);
+    return data->writer(config, mock_data);
 }
 
 std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
