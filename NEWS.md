@@ -1,3 +1,8 @@
+# New in version 1.55
+
+* Implemented segment-specific checking
+* Fixed builds (#345)
+
 # New in version 1.54
 
 * Refactoring of segment and dataset implementations:
