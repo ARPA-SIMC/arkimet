@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <utime.h>
 #include <algorithm>
+#include <csignal>
 
 using namespace std::literals;
 
@@ -1352,6 +1353,12 @@ void OverrideRlimit::set(rlim_t rlim)
     rlimit newval(orig);
     newval.rlim_cur = rlim;
     setrlimit(resource, newval);
+}
+
+
+void breakpoint()
+{
+    raise(SIGTRAP);
 }
 
 }
