@@ -14,7 +14,9 @@ class Session: public std::enable_shared_from_this<Session>
 {
 protected:
     /// Map segment absolute paths to possibly reusable reader instances
-    mutable std::unordered_map<std::filesystem::path, std::weak_ptr<segment::data::Reader>> reader_pool;
+    // TODO: this is needed for rocky8 and ubuntu jammy. Use
+    // std::filesystem::path when we can rely on newer GCC
+    mutable std::unordered_map<std::string, std::weak_ptr<segment::data::Reader>> reader_pool;
 
 public:
     DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
