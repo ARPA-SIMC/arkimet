@@ -181,6 +181,7 @@ class Checker : public fd::Checker<Data, File>
 {
 public:
     using fd::Checker<Data, File>::Checker;
+    core::Pending repack(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override;
 };
 
 class HoleWriter : public fd::Writer<Data, HoleFile>

@@ -27,6 +27,13 @@ foreach script: scripts
                   install_dir: get_option('mandir') / 'man1')
 endforeach
 
+reverse_segment = executable('reverse-segment', 'reverse-segment.cc',
+    include_directories: toplevel_inc,
+    link_with: [
+        libarkimet,
+    ],
+)
+
 if get_option('profiling') != 'none'
     perf_deps = [
         sqlite3_dep,
