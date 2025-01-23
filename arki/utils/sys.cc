@@ -1204,6 +1204,18 @@ void touch(const std::filesystem::path& pathname, time_t ts)
         throw std::system_error(errno, std::system_category(), "cannot set mtime/atime of "s + pathname.native());
 }
 
+bool touch_ifexists(const std::filesystem::path& pathname, time_t ts)
+{
+    utimbuf t = { ts, ts };
+    if (::utime(pathname.c_str(), &t) != 0)
+    {
+        if (errno != ENOENT)
+            throw std::system_error(errno, std::system_category(), "cannot set mtime/atime of "s + pathname.native());
+        return false;
+    }
+    return true;
+}
+
 bool mkdir_ifmissing(const std::filesystem::path& path)
 {
     return std::filesystem::create_directory(path);

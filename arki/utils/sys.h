@@ -746,9 +746,18 @@ bool rmtree_ifexists(const char* pathname);
 [[deprecated("use std::filesystem::rename")]] void rename(const std::string& src_pathname, const std::string& dst_pathname);
 
 /**
- * Set mtime and atime for the file
+ * Set mtime and atime for the file.
+ *
+ * Throws an error if the file does not exist.
  */
 void touch(const std::filesystem::path& pathname, time_t ts);
+
+/**
+ * Set mtime and atime for the file.
+ *
+ * Returns false if the file does not exist.
+ */
+bool touch_ifexists(const std::filesystem::path& pathname, time_t ts);
 
 /**
  * Call clock_gettime, raising an exception if it fails
