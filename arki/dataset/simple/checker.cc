@@ -343,7 +343,6 @@ void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
     manifest.remove(relpath);
-    sys::touch(sys::with_suffix(dataset().path / relpath, ".metadata"), 1496167200);
     manifest.flush();
 }
 
@@ -484,13 +483,16 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     dataset().segment_session->segment_data_checker(segment)->test_make_hole(mds, hole_size, data_idx);
 
     // TODO: delegate to segment checker
-    auto pathname = dataset().path / sys::with_suffix(relpath, ".metadata");
+    auto pathname = segment->abspath_metadata();
     utils::files::PreserveFileTimes pf(pathname);
-    sys::File fd(pathname, O_RDWR);
-    fd.lseek(0);
-    mds.prepare_for_segment_metadata();
-    mds.write_to(fd);
-    fd.ftruncate(fd.lseek(0, SEEK_CUR));
+    {
+        sys::File fd(pathname, O_RDWR);
+        fd.lseek(0);
+        mds.prepare_for_segment_metadata();
+        mds.write_to(fd);
+        fd.ftruncate(fd.lseek(0, SEEK_CUR));
+        fd.close();
+    }
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
