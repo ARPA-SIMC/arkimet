@@ -2,6 +2,7 @@
 
 * Implemented segment-specific checking
 * Fixed builds (#345)
+* Optimized repack operations on file segments
 
 # New in version 1.54
 
