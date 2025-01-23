@@ -43,7 +43,7 @@ std::shared_ptr<data::Checker> BaseChecker<Data>::move(std::shared_ptr<const seg
 
     auto data = new_segment->data();
     // TODO: what is really needed as a return value?
-    return data->checker(false);
+    return data->checker();
 }
 
 }

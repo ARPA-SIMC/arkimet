@@ -97,6 +97,8 @@ void Fixture::test_setup()
 
     for (const auto& pathname : import_files)
         import(pathname);
+
+    makeSegmentedChecker()->test_touch_contents(time(NULL) - 1);
 }
 
 void Fixture::make_hole_start()
@@ -1036,10 +1038,11 @@ void RepackTest<TestFixture>::register_tests()
 
         // State knows of a segment both to repack and to delete
         {
-            auto state = f.scan_state();
+            auto state = f.scan_state(true, true);
             wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::SEGMENT_DIRTY + segment::SEGMENT_ARCHIVE_AGE);
             wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
             wassert(actual(state.size()) == 3u);
+            state.all_ok();
         }
 
         // Perform packing and check that things are still ok afterwards

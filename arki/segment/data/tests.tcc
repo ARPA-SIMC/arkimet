@@ -216,6 +216,16 @@ this->add_method("issue244", [](Fixture& f) {
     }
 });
 
+this->add_method("test_touch_contents", [](Fixture& f) {
+    auto checker = f.create();
+    checker->test_touch_contents(1234);
+
+    auto ts = checker->data().timestamp();
+    wassert_true((bool)ts);
+
+    wassert(actual(ts.value()) == 1234);
+});
+
 }
 
 }

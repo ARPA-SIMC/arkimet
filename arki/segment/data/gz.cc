@@ -301,6 +301,13 @@ void Checker<Data>::test_corrupt(const Collection& mds, unsigned data_idx)
     fd.write_all_or_throw("\0", 1);
 }
 
+template<typename Data>
+void Checker<Data>::test_touch_contents(time_t timestamp)
+{
+    sys::touch_ifexists(gzabspath, timestamp);
+    sys::touch_ifexists(gzidxabspath, timestamp);
+}
+
 }
 
 namespace gzconcat {
@@ -311,11 +318,11 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
 {
     return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
     throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
@@ -344,11 +351,11 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
 {
     return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
     throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }

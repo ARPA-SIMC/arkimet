@@ -27,12 +27,25 @@ struct State : public std::map<std::string, dataset::segmented::SegmentState>
 {
     using std::map<std::string, dataset::segmented::SegmentState>::map;
 
+    bool report_on_exit;
+    std::stringstream report;
+
+    explicit State(bool report_on_exit=false);
+    State(const State&) = delete;
+    State(State&&);
+    State& operator=(const State&) = delete;
+    State& operator=(State&&) = delete;
+    ~State();
+
     bool has(const std::filesystem::path& relpath) const;
 
     const dataset::segmented::SegmentState& get(const std::filesystem::path& seg) const;
 
     /// Count how many segments have this state
     unsigned count(segment::State state) const;
+
+    /// Cancel report on exit
+    void all_ok();
 
     void dump(FILE* out) const;
 };
@@ -147,10 +160,10 @@ public:
     unsigned count_dataset_files(const metadata::Collection& f) const;
 
     /// Scan the dataset and return its state
-    State scan_state(bool quick=true);
+    State scan_state(bool quick=true, bool report_on_exit=false);
 
     /// Scan the dataset and return its state
-    State scan_state(const Matcher& matcher, bool quick=true);
+    State scan_state(const Matcher& matcher, bool quick=true, bool report_on_exit=false);
 
     std::shared_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::shared_ptr<dataset::segmented::Writer> makeSegmentedWriter();

@@ -30,7 +30,7 @@ this->add_method("append", [](Fixture& f) {
     wassert(actual_file(segment->abspath()).not_exists());
     {
         segment::data::WriterConfig writer_config;
-        auto w = segment->detect_data_writer(writer_config);
+        auto w = segment->data_writer(writer_config);
 
         // It should exist but be empty
         //wassert(actual(fname).fileexists());
@@ -71,7 +71,7 @@ this->add_method("large", [](Fixture& f) {
 
     {
         segment::data::WriterConfig writer_config;
-        auto dw = segment->detect_data_writer(writer_config);
+        auto dw = segment->data_writer(writer_config);
 
         // Try a successful transaction
         wassert(test_append_transaction_ok(dw.get(), f.td.mds[0], Data::padding));

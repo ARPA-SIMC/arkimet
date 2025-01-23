@@ -502,6 +502,18 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
     manifest.flush();
 }
 
+void Checker::test_touch_contents(time_t timestamp)
+{
+    segmented::Checker::test_touch_contents(timestamp);
+
+    const auto& files = manifest.file_list();
+    for (const auto& f: files)
+        manifest.set_mtime(f.relpath, timestamp);
+    manifest.flush();
+
+    sys::touch(manifest.root() / "MANIFEST", timestamp);
+}
+
 }
 }
 }

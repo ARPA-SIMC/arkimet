@@ -168,14 +168,14 @@ std::shared_ptr<segment::Data> Segment::data() const
     }
 }
 
-std::shared_ptr<segment::data::Reader> Segment::detect_data_reader(std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::data::Reader> Segment::data_reader(std::shared_ptr<const core::ReadLock> lock) const
 {
-    return data()->reader(lock);
+    return m_session->segment_data_reader(shared_from_this(), lock);
 }
 
-std::shared_ptr<segment::data::Writer> Segment::detect_data_writer(const segment::data::WriterConfig& config) const
+std::shared_ptr<segment::data::Writer> Segment::data_writer(const segment::data::WriterConfig& config) const
 {
-    return data()->writer(config, session().mock_data);
+    return m_session->segment_data_writer(shared_from_this(), config);
 }
 
 std::shared_ptr<segment::data::Checker> Segment::data_checker() const
@@ -279,16 +279,20 @@ size_t Fixer::remove_ifexists(const std::filesystem::path& path)
 void Fixer::test_corrupt_data(unsigned data_idx)
 {
     arki::metadata::Collection mds = m_checker->scan();
-    data().checker(false)->test_corrupt(mds, data_idx);
+    data().checker()->test_corrupt(mds, data_idx);
 }
 
 void Fixer::test_truncate_data(unsigned data_idx)
 {
     arki::metadata::Collection mds = m_checker->scan();
     const auto& s = mds[data_idx].sourceBlob();
-    data().checker(false)->test_truncate(s.offset);
+    data().checker()->test_truncate(s.offset);
 }
 
+void Fixer::test_touch_contents(time_t timestamp)
+{
+    data().checker()->test_touch_contents(timestamp);
+}
 
 }
 

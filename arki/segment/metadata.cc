@@ -159,7 +159,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = m_data->checker(false);
+    auto data_checker = m_data->checker();
     auto ts_data = m_data->timestamp();
     if (!ts_data)
     {
@@ -265,7 +265,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     auto path_summary = segment().abspath_summary();
 
     // Write out the data with the new order
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     auto p_repack = data_checker->repack(mds, repack_config);
 
     // Remove existing cached metadata, since we scramble their order
@@ -286,8 +286,8 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     // Sync timestamps. We need it for the summary since it is now older than
     // the other files, and since we read the segment data timestamp we can
     // sync it to all extra files
-    sys::touch(path_metadata, res.segment_mtime);
-    sys::touch(path_summary, res.segment_mtime);
+    sys::touch_ifexists(path_metadata, res.segment_mtime);
+    sys::touch_ifexists(path_summary, res.segment_mtime);
 
     return res;
 }
@@ -300,7 +300,7 @@ size_t Fixer::remove(bool with_data)
     if (!with_data)
         return res;
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     return res + data_checker->remove();
 }
 
@@ -323,7 +323,7 @@ Fixer::ConvertResult Fixer::tar()
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
@@ -368,7 +368,7 @@ Fixer::ConvertResult Fixer::zip()
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
@@ -414,7 +414,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
@@ -447,6 +447,13 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(segment().abspath_metadata());
     sum.writeAtomically(segment().abspath_summary());
+}
+
+void Fixer::test_touch_contents(time_t timestamp)
+{
+    segment::Fixer::test_touch_contents(timestamp);
+    sys::touch(segment().abspath_metadata(), timestamp);
+    sys::touch(segment().abspath_summary(), timestamp);
 }
 
 }

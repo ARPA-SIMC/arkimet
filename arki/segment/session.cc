@@ -145,7 +145,7 @@ std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_
     auto res = reader_pool.find(segment->abspath());
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto reader = segment->detect_data_reader(lock);
+        auto reader = segment->data()->reader(lock);
         reader_pool[segment->abspath()] = reader;
         return reader;
     }
@@ -156,13 +156,13 @@ std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
     auto data = segment->data();
-    return data->writer(config, mock_data);
+    return data->writer(config);
 }
 
 std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
 {
     auto data = segment->data();
-    return data->checker(mock_data);
+    return data->checker();
 }
 
 void Session::create_scan(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const

@@ -66,6 +66,8 @@ public:
 
     /// Access the underlying segment
     const Segment& segment() const { return *m_segment; }
+    /// Access the underlying segment session
+    const segment::Session& session() const { return m_segment->session(); }
 
     /**
      * Return a name identifying the type of segment backend
@@ -95,12 +97,12 @@ public:
     /**
      * Instantiate a writer for this segment
      */
-    virtual std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const = 0;
+    virtual std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const = 0;
 
     /**
      * Instantiate a checker for this segment
      */
-    virtual std::shared_ptr<segment::data::Checker> checker(bool mock_data) const = 0;
+    virtual std::shared_ptr<segment::data::Checker> checker() const = 0;
 
     /**
      * Create a new segment with the given data.
@@ -295,6 +297,11 @@ public:
      * with the value 0.
      */
     virtual void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) = 0;
+
+    /**
+     * Set the modification time of everything in the segment
+     */
+    virtual void test_touch_contents(time_t timestamp) = 0;
 };
 
 }

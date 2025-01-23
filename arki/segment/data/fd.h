@@ -98,6 +98,7 @@ public:
     void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
+    void test_touch_contents(time_t timestamp) override;
 };
 
 }
@@ -112,8 +113,8 @@ public:
     const char* type() const override;
     bool single_file() const override;
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
-    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { throw std::runtime_error("segment::data::single::create_segment not yet implemented"); }
 
     static const unsigned padding = 0;
@@ -154,8 +155,8 @@ public:
     const char* type() const override;
     bool single_file() const override;
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
-    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
     static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
@@ -215,8 +216,8 @@ public:
     const char* type() const override;
     bool single_file() const override;
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
-    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
     static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());

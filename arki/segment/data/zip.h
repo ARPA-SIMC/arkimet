@@ -24,8 +24,8 @@ struct Data : public arki::segment::Data
     utils::files::PreserveFileTimes preserve_mtime() override;
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config, bool mock_data) const override;
-    std::shared_ptr<segment::data::Checker> checker(bool mock_data) const override;
+    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
     static bool can_store(DataFormat format);
@@ -81,6 +81,7 @@ public:
     void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
     void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
     void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
+    void test_touch_contents(time_t timestamp) override;
 };
 
 }

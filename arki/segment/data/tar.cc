@@ -118,12 +118,12 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
 {
     return std::make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
     throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
     // return std::make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
     return std::make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }
@@ -302,6 +302,10 @@ void Checker::test_corrupt(const Collection& mds, unsigned data_idx)
     fd.write_all_or_throw("\0", 1);
 }
 
+void Checker::test_touch_contents(time_t timestamp)
+{
+    sys::touch_ifexists(tarabspath, timestamp);
+}
 
 }
 #include "base.tcc"

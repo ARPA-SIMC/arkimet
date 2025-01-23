@@ -413,6 +413,11 @@ void Checker<Data, File>::test_corrupt(const Collection& mds, unsigned data_idx)
     fd.write_all_or_throw("\0", 1);
 }
 
+template<typename Data, typename File>
+void Checker<Data, File>::test_touch_contents(time_t timestamp)
+{
+    sys::touch_ifexists(this->segment().abspath(), timestamp);
+}
 
 bool Data::can_store(DataFormat format)
 {
@@ -444,11 +449,11 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
     throw std::runtime_error("cannot store " + format_name(segment().format()) + " using fd::single writer");
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
     throw std::runtime_error("cannot store " + format_name(segment().format()) + " using fd::single writer");
 }
@@ -500,16 +505,16 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
-    if (mock_data)
+    if (session().mock_data)
         return make_shared<HoleWriter>(config, static_pointer_cast<const Data>(shared_from_this()));
     else
         return make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
-    if (mock_data)
+    if (session().mock_data)
         return make_shared<HoleChecker>(static_pointer_cast<const Data>(shared_from_this()));
     else
         return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
@@ -565,11 +570,11 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
     return make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
     return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
 }

@@ -52,6 +52,7 @@ public:
     void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1) override;
     void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0) override;
     void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) override;
+    void test_touch_contents(time_t timestamp) override;
 
     friend class CheckerSegment;
 };

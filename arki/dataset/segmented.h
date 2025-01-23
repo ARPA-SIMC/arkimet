@@ -283,6 +283,11 @@ public:
     virtual size_t vacuum(dataset::Reporter& reporter) = 0;
 
     /**
+     * Set the modification time for all contents of the dataset
+     */
+    virtual void test_touch_contents(time_t timestamp);
+
+    /**
      * All data in the segment except the `data_idx`-one are shifted backwards
      * by `overlap_size`, so that one in position `data_idx-1` overlaps with
      * the one in position `data_idx`.

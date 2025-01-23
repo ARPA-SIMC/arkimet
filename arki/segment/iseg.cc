@@ -78,7 +78,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = m_data->checker(false);
+    auto data_checker = m_data->checker();
     auto ts_data = m_data->timestamp();
     if (!ts_data)
     {
@@ -168,7 +168,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
 
     // Make a copy of the file with the data in it ordered as mds is ordered,
     // and update the offsets in the index
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     auto pending_repack = data_checker->repack(mds, repack_config);
 
     // Reindex mds
@@ -201,7 +201,7 @@ size_t Fixer::remove(bool with_data)
     if (!with_data)
         return res;
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     return res + data_checker->remove();
 }
 
@@ -222,7 +222,7 @@ Fixer::ConvertResult Fixer::tar()
     }
 
     auto& index = checker().index();
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     auto pending_index = index.begin_transaction();
@@ -263,7 +263,7 @@ Fixer::ConvertResult Fixer::zip()
     }
 
     auto& index = checker().index();
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     auto pending_index = index.begin_transaction();
@@ -305,7 +305,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     }
 
     auto& index = checker().index();
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     auto pending_index = index.begin_transaction();
@@ -335,6 +335,12 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     auto pending_index = index.begin_transaction();
     index.reindex(mds);
     pending_index.commit();
+}
+
+void Fixer::test_touch_contents(time_t timestamp)
+{
+    segment::Fixer::test_touch_contents(timestamp);
+    sys::touch_ifexists(segment().abspath_iseg_index(), timestamp);
 }
 
 }

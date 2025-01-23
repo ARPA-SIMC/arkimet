@@ -193,7 +193,7 @@ segment::Fixer::ConvertResult CheckerSegment::tar()
 {
     auto fixer = segment_checker->fixer();
     auto res = fixer->tar();
-    segment_data_checker = fixer->data().checker(false);
+    segment_data_checker = fixer->segment().data_checker();
     return res;
 }
 
@@ -201,7 +201,7 @@ segment::Fixer::ConvertResult CheckerSegment::zip()
 {
     auto fixer = segment_checker->fixer();
     auto res = fixer->zip();
-    segment_data_checker = fixer->data().checker(false);
+    segment_data_checker = fixer->segment().data_checker();
     return res;
 }
 
@@ -209,7 +209,7 @@ segment::Fixer::ConvertResult CheckerSegment::compress(unsigned groupsize)
 {
     auto fixer = segment_checker->fixer();
     auto res = fixer->compress(groupsize);
-    segment_data_checker = fixer->data().checker(false);
+    segment_data_checker = fixer->segment().data_checker();
     return res;
 }
 
@@ -517,6 +517,14 @@ void Checker::scan_dir(std::function<void(std::shared_ptr<const Segment> segment
     };
 
     walker.walk();
+}
+
+void Checker::test_touch_contents(time_t timestamp)
+{
+    segments_tracked([&](CheckerSegment& segment) {
+        auto fixer = segment.segment_checker->fixer();
+        fixer->test_touch_contents(timestamp);
+    });
 }
 
 void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)

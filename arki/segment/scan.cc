@@ -65,7 +65,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = m_data->checker(false);
+    auto data_checker = m_data->checker();
     auto ts_data = m_data->timestamp();
     if (!ts_data)
     {
@@ -124,7 +124,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
 {
     ReorderResult res;
     // Write out the data with the new order
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     auto p_repack = data_checker->repack(mds, repack_config);
     res.size_pre = data_checker->size();
     p_repack.commit();
@@ -138,7 +138,7 @@ size_t Fixer::remove(bool with_data)
     size_t res = 0;
     if (!with_data)
         return res;
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     return res + data_checker->remove();
 }
 
@@ -158,7 +158,7 @@ Fixer::ConvertResult Fixer::tar()
         return res;
     }
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
@@ -191,7 +191,7 @@ Fixer::ConvertResult Fixer::zip()
         return res;
     }
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
@@ -225,7 +225,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         return res;
     }
 
-    auto data_checker = data().checker(false);
+    auto data_checker = data().checker();
     res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking

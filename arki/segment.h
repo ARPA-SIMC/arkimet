@@ -42,10 +42,10 @@ public:
     std::shared_ptr<segment::Data> data() const;
 
     /// Instantiate the right Reader implementation for a segment that already exists
-    std::shared_ptr<segment::data::Reader> detect_data_reader(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<segment::data::Reader> data_reader(std::shared_ptr<const core::ReadLock> lock) const;
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    std::shared_ptr<segment::data::Writer> detect_data_writer(const segment::data::WriterConfig& config) const;
+    std::shared_ptr<segment::data::Writer> data_writer(const segment::data::WriterConfig& config) const;
 
     /// Instantiate the right Checker implementation for a segment that already exists
     std::shared_ptr<segment::data::Checker> data_checker() const;
@@ -265,6 +265,11 @@ public:
 
     virtual void test_corrupt_data(unsigned data_idx);
     virtual void test_truncate_data(unsigned data_idx);
+
+    /**
+     * Set the modification time of everything in the segment
+     */
+    virtual void test_touch_contents(time_t timestamp);
 };
 
 /**

@@ -52,6 +52,25 @@ int days_since(int year, int month, int day)
 }
 
 
+State::State(bool report_on_exit)
+    : report_on_exit(report_on_exit)
+{
+}
+
+State::State(State&& o)
+    : std::map<std::string, dataset::segmented::SegmentState>(std::move(o)),
+      report_on_exit(o.report_on_exit),
+      report(std::move(o.report))
+{
+    o.report_on_exit = false;
+}
+
+State::~State()
+{
+    if (report_on_exit)
+        dump(stderr);
+}
+
 bool State::has(const std::filesystem::path& relpath) const
 {
     return find(relpath) != end();
@@ -74,6 +93,11 @@ unsigned State::count(segment::State state) const
     return res;
 }
 
+void State::all_ok()
+{
+    report_on_exit = false;
+}
+
 void State::dump(FILE* out) const
 {
     for (const auto& i: *this)
@@ -82,6 +106,8 @@ void State::dump(FILE* out) const
                 i.second.state.to_string().c_str(),
                 i.second.interval.begin.to_iso8601(' ').c_str(),
                 i.second.interval.end.to_iso8601(' ').c_str());
+    fprintf(out, "Check report:\n");
+    fprintf(out, "%s\n", report.str().c_str());
 }
 
 
@@ -223,12 +249,12 @@ unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
     return destfiles(mds).size();
 }
 
-State DatasetTest::scan_state(bool quick)
+State DatasetTest::scan_state(bool quick, bool report_on_exit)
 {
+    State res(report_on_exit);
     CheckerConfig opts;
-    //opts.reporter = std::make_shared<OstreamReporter>(cerr);
+    opts.reporter = std::make_shared<OstreamReporter>(res.report);
     auto checker = makeSegmentedChecker();
-    State res;
     checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
         res.insert(make_pair(checker.name() + ":" + segment.path_relative().native(), segment.scan(*opts.reporter, quick)));
     });
@@ -251,12 +277,13 @@ void DatasetTest::dump_data_spans()
     });
 }
 
-State DatasetTest::scan_state(const Matcher& matcher, bool quick)
+State DatasetTest::scan_state(const Matcher& matcher, bool quick, bool report_on_exit)
 {
+    State res(report_on_exit);
     CheckerConfig opts;
+    opts.reporter = std::make_shared<OstreamReporter>(res.report);
     opts.segment_filter = matcher;
     auto checker = makeSegmentedChecker();
-    State res;
     checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
     return res;
 }

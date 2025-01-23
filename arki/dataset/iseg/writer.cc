@@ -96,7 +96,7 @@ public:
                     return ACQ_ERROR_DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segment->detect_data_reader(append_lock);
+                auto reader = segment->data_reader(append_lock);
                 old->lock(reader);
                 int old_usn;
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
@@ -211,7 +211,7 @@ public:
                     }
 
                     // Read the update sequence number of the old BUFR
-                    auto reader = segment->detect_data_reader(append_lock);
+                    auto reader = segment->data_reader(append_lock);
                     old->lock(reader);
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))

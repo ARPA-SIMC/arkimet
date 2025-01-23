@@ -64,7 +64,7 @@ add_method("scanner", [] {
     wassert(actual(scanner.on_disk.size()) == 3u);
     wassert(actual(scanner.max_sequence) == 2u);
 
-    auto reader = segment->detect_data_reader(make_shared<core::lock::NullReadLock>());
+    auto reader = segment->data_reader(make_shared<core::lock::NullReadLock>());
 
     metadata::Collection mds;
     scanner.scan(reader, mds.inserter_func());

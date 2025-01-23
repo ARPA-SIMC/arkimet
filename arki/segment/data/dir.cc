@@ -244,16 +244,16 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config, bool mock_data) const
+std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
 {
-    if (mock_data)
+    if (session().mock_data)
         return make_shared<HoleWriter>(config, static_pointer_cast<const Data>(shared_from_this()));
     else
         return make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::checker(bool mock_data) const
+std::shared_ptr<data::Checker> Data::checker() const
 {
-    if (mock_data)
+    if (session().mock_data)
         return make_shared<HoleChecker>(static_pointer_cast<const Data>(shared_from_this()));
     else
         return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
@@ -744,6 +744,13 @@ void BaseChecker<Data>::test_corrupt(const Collection& mds, unsigned data_idx)
     const auto& s = mds[data_idx].sourceBlob();
     File fd(s.absolutePathname() / SequenceFile::data_fname(s.offset, s.format), O_WRONLY);
     fd.write_all_or_throw("\0", 1);
+}
+
+template<typename Data>
+void BaseChecker<Data>::test_touch_contents(time_t timestamp)
+{
+    SequenceFile seqfile(this->segment().abspath());
+    sys::touch_ifexists(seqfile.path(), timestamp);
 }
 
 
