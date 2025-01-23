@@ -532,6 +532,7 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& 
 
 core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
 {
+#if 1
     // Build the rearrange plan
     rearrange::Plan plan;
     size_t dst_offset = 0;
@@ -557,6 +558,9 @@ core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
         md->sourceBlob().unlock();
 
     return p;
+#else
+    return fd::Checker<Data, File>::repack(mds, cfg);
+#endif
 }
 
 core::Pending HoleChecker::repack(Collection& mds, const RepackConfig& cfg)
