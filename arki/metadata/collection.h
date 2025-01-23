@@ -62,8 +62,11 @@ public:
 
     // TODO: make an iterator adapter that iterates on Metadata references, to make the interface consistent
     typedef std::vector<std::shared_ptr<Metadata>>::const_iterator const_iterator;
+    typedef std::vector<std::shared_ptr<Metadata>>::iterator iterator;
     const_iterator begin() const { return vals.begin(); }
     const_iterator end() const { return vals.end(); }
+    iterator begin() { return vals.begin(); }
+    iterator end() { return vals.end(); }
 
     const Metadata& operator[](unsigned idx) const { return *vals[idx]; }
     Metadata& operator[](unsigned idx) { return *vals[idx]; }
