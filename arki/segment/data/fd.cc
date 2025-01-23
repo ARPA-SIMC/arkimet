@@ -13,6 +13,7 @@
 #include "arki/utils/sys.h"
 #include "arki/nag.h"
 #include "arki/utils/accounting.h"
+#include "arki/utils/rearrange.h"
 #include "arki/iotrace.h"
 #include <system_error>
 #include <sys/stat.h>
@@ -339,6 +340,7 @@ core::Pending Checker<Data, File>::repack(Collection& mds, const RepackConfig& c
     return p;
 }
 
+
 template<typename Data, typename File>
 void Checker<Data, File>::test_truncate(size_t offset)
 {
@@ -528,6 +530,34 @@ std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& 
     return make_shared<Checker>(data);
 }
 
+core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
+{
+    // Build the rearrange plan
+    rearrange::Plan plan;
+    size_t dst_offset = 0;
+    for (auto& md: mds)
+    {
+        auto& blob = md->sourceBlob();
+        plan.add(blob.offset, dst_offset, blob.size);
+        blob.offset = dst_offset;
+        dst_offset += blob.size;
+    }
+
+    auto tmpabspath = sys::with_suffix(this->segment().abspath(), ".repack");
+    core::Pending p(new files::RenameTransaction(tmpabspath, this->segment().abspath()));
+
+    {
+        core::File in(this->segment().abspath(), O_RDONLY);
+        core::File out(tmpabspath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        plan.execute(in, out);
+    }
+
+    // Release locks on the source segment, which is about to go away
+    for (auto& md: mds)
+        md->sourceBlob().unlock();
+
+    return p;
+}
 
 core::Pending HoleChecker::repack(Collection& mds, const RepackConfig& cfg)
 {
