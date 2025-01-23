@@ -75,7 +75,6 @@ public:
             //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
             res.state += segment::SEGMENT_UNOPTIMIZED;
         } else if (segment_info->mtime != segment_fsck.mtime) {
-            fprintf(stderr, "ZAAAAA %lu %lu\n", segment_info->mtime, segment_fsck.mtime);
             //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
             reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment mtime does not match MANIFEST information");
             //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
