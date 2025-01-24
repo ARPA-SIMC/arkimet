@@ -194,6 +194,7 @@ segment::Fixer::ConvertResult CheckerSegment::tar()
     auto fixer = segment_checker->fixer();
     auto res = fixer->tar();
     segment_data_checker = fixer->segment().data_checker();
+    post_convert(fixer, res);
     return res;
 }
 
@@ -202,6 +203,7 @@ segment::Fixer::ConvertResult CheckerSegment::zip()
     auto fixer = segment_checker->fixer();
     auto res = fixer->zip();
     segment_data_checker = fixer->segment().data_checker();
+    post_convert(fixer, res);
     return res;
 }
 
@@ -210,6 +212,7 @@ segment::Fixer::ConvertResult CheckerSegment::compress(unsigned groupsize)
     auto fixer = segment_checker->fixer();
     auto res = fixer->compress(groupsize);
     segment_data_checker = fixer->segment().data_checker();
+    post_convert(fixer, res);
     return res;
 }
 
@@ -223,12 +226,15 @@ segment::Fixer::ReorderResult CheckerSegment::repack(unsigned test_flags)
     repack_config.test_flags = test_flags;
 
     auto fixer = segment_checker->fixer();
-    return fixer->reorder(mds, repack_config);
+    auto res = fixer->reorder(mds, repack_config);
+    post_repack(fixer, res);
+    return res;
 }
 
 size_t CheckerSegment::remove(bool with_data)
 {
     auto fixer = segment_checker->fixer();
+    pre_remove(fixer);
     return fixer->remove(with_data);
 }
 
@@ -272,7 +278,9 @@ void CheckerSegment::unarchive()
 segment::Fixer::MarkRemovedResult CheckerSegment::remove_data(const std::set<uint64_t>& offsets)
 {
     auto fixer = segment_checker->fixer();
-    return fixer->mark_removed(offsets);
+    auto res = fixer->mark_removed(offsets);
+    post_remove_data(fixer, res);
+    return res;
 }
 
 

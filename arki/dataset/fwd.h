@@ -18,6 +18,7 @@ class Checker;
 class Reporter;
 struct SessionTime;
 struct SessionTimeOverride;
+struct Step;
 
 namespace local {
 class Dataset;

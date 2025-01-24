@@ -115,6 +115,7 @@ public:
     arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
         metadata::Collection mds = segment_checker->scan();
+        // TODO: get a fixer lock
         segment_data_checker->move(new_segment_session, new_relpath);
         std::filesystem::remove(segment->abspath_iseg_index());
         return mds;

@@ -5,11 +5,7 @@
 #include <arki/segment/data.h>
 #include <arki/core/time.h>
 
-namespace arki {
-namespace dataset {
-class Step;
-
-namespace segmented {
+namespace arki::dataset::segmented {
 
 struct Dataset : public local::Dataset
 {
@@ -122,6 +118,13 @@ struct SegmentState
 
 class CheckerSegment
 {
+protected:
+    // Allow subclasses to hook processing while the Fixer lock is still held
+    virtual void post_repack(std::shared_ptr<segment::Fixer>, segment::Fixer::ReorderResult&) {}
+    virtual void post_remove_data(std::shared_ptr<segment::Fixer>, segment::Fixer::MarkRemovedResult&) {}
+    virtual void pre_remove(std::shared_ptr<segment::Fixer>) {}
+    virtual void post_convert(std::shared_ptr<segment::Fixer>, segment::Fixer::ConvertResult&) {}
+
 public:
     std::shared_ptr<core::CheckLock> lock;
     std::shared_ptr<const Segment> segment;
@@ -376,10 +379,7 @@ public:
      * root.
      */
     void scan_dir(std::function<void(std::shared_ptr<const Segment> segment)> dest);
-
 };
 
-}
-}
 }
 #endif

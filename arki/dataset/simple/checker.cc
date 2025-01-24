@@ -96,66 +96,31 @@ public:
         return res;
     }
 
-    segment::Fixer::MarkRemovedResult remove_data(const std::set<uint64_t>& offsets) override
+    void post_remove_data(std::shared_ptr<segment::Fixer>, segment::Fixer::MarkRemovedResult& res) override
     {
-        auto res = segmented::CheckerSegment::remove_data(offsets);
-
         // Reindex with the new file information
         dataset_checker.manifest.set(segment->relpath(), res.segment_mtime, res.data_timespan);
         dataset_checker.manifest.flush();
-
-        return res;
     }
 
-    segment::Fixer::ReorderResult repack(unsigned test_flags) override
+    void post_repack(std::shared_ptr<segment::Fixer>, segment::Fixer::ReorderResult& res) override
     {
-        auto res = segmented::CheckerSegment::repack(test_flags);
-
         // Reindex with the new file information
         dataset_checker.manifest.set_mtime(segment->relpath(), res.segment_mtime);
         dataset_checker.manifest.flush();
-
-        return res;
     }
 
-    size_t remove(bool with_data) override
+    void pre_remove(std::shared_ptr<segment::Fixer>) override
     {
         dataset_checker.manifest.remove(segment->relpath());
         dataset_checker.manifest.flush();
-        return segmented::CheckerSegment::remove(with_data);
     }
 
-    segment::Fixer::ConvertResult tar() override
+    void post_convert(std::shared_ptr<segment::Fixer>, segment::Fixer::ConvertResult& res) override
     {
-        auto res = segmented::CheckerSegment::tar();
-
         // Reindex with the new file information
         dataset_checker.manifest.set_mtime(segment_data_checker->segment().relpath(), res.segment_mtime);
         dataset_checker.manifest.flush();
-
-        return res;
-    }
-
-    segment::Fixer::ConvertResult zip() override
-    {
-        auto res = segmented::CheckerSegment::zip();
-
-        // Reindex with the new file information
-        dataset_checker.manifest.set_mtime(segment_data_checker->segment().relpath(), res.segment_mtime);
-        dataset_checker.manifest.flush();
-
-        return res;
-    }
-
-    segment::Fixer::ConvertResult compress(unsigned groupsize) override
-    {
-        auto res = segmented::CheckerSegment::compress(groupsize);
-
-        // Reindex with the new file information
-        dataset_checker.manifest.set_mtime(segment_data_checker->segment().relpath(), res.segment_mtime);
-        dataset_checker.manifest.flush();
-
-        return res;
     }
 
     void index(metadata::Collection&& mds) override
@@ -198,6 +163,7 @@ public:
 
     arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
+        // TODO: get a fixer lock
         metadata::Collection mds = segment_checker->scan();
         segment_data_checker->move(new_segment_session, new_relpath);
         dataset_checker.manifest.remove(segment_data_checker->segment().relpath());
