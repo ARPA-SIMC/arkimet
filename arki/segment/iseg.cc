@@ -179,7 +179,6 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
         if (index.index(*md, source.offset))
             throw std::runtime_error("duplicate detected while reordering segment");
     }
-
     res.size_pre = data().size();
 
     // Commit the changes in the file system
@@ -187,6 +186,8 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
 
     // Commit the changes in the database
     pending_index.commit();
+
+    index.vacuum();
 
     res.segment_mtime = get_data_mtime_after_fix("reorder");
     res.size_post = data().size();
@@ -333,6 +334,7 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     auto pending_index = index.begin_transaction();
     index.reindex(mds);
     pending_index.commit();
+    index.vacuum();
 }
 
 void Fixer::move(std::shared_ptr<arki::Segment> dest)

@@ -213,6 +213,19 @@ segment::Fixer::ConvertResult CheckerSegment::compress(unsigned groupsize)
     return res;
 }
 
+segment::Fixer::ReorderResult CheckerSegment::repack(unsigned test_flags)
+{
+    metadata::Collection mds = segment_checker->scan();
+    mds.sort_segment();
+
+    segment::data::RepackConfig repack_config;
+    repack_config.gz_group_size = dataset().gz_group_size;
+    repack_config.test_flags = test_flags;
+
+    auto fixer = segment_checker->fixer();
+    return fixer->reorder(mds, repack_config);
+}
+
 size_t CheckerSegment::remove(bool with_data)
 {
     auto fixer = segment_checker->fixer();
@@ -256,9 +269,10 @@ void CheckerSegment::unarchive()
     index(std::move(mdc));
 }
 
-void CheckerSegment::remove_data(const std::set<uint64_t>&)
+segment::Fixer::MarkRemovedResult CheckerSegment::remove_data(const std::set<uint64_t>& offsets)
 {
-    throw std::runtime_error(dataset().name() + ": dataset segment does not support removing items");
+    auto fixer = segment_checker->fixer();
+    return fixer->mark_removed(offsets);
 }
 
 

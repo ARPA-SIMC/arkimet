@@ -159,7 +159,7 @@ public:
      * Return the total size of data deleted. The space may not be freed right
      * away, and may need to be reclaimed by a repack operation
      */
-    virtual void remove_data(const std::set<uint64_t>& offsets);
+    virtual segment::Fixer::MarkRemovedResult remove_data(const std::set<uint64_t>& offsets);
 
     /**
      * Optimise the contents of a data file
@@ -169,7 +169,7 @@ public:
      *
      * @returns The number of bytes freed on disk with this operation
      */
-    virtual size_t repack(unsigned test_flags=0) = 0;
+    virtual segment::Fixer::ReorderResult repack(unsigned test_flags=0);
 
     /**
      * Remove the segment

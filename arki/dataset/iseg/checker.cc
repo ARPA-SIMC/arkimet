@@ -86,30 +86,6 @@ public:
         return res;
     }
 
-    void remove_data(const std::set<uint64_t>& offsets) override
-    {
-        auto fixer = segment_checker->fixer();
-        fixer->mark_removed(offsets);
-    }
-
-    size_t repack(unsigned test_flags=0) override
-    {
-        metadata::Collection mds = segment_checker->scan();
-        mds.sort_segment();
-
-        segment::data::RepackConfig repack_config;
-        repack_config.gz_group_size = dataset().gz_group_size;
-        repack_config.test_flags = test_flags;
-
-        auto fixer = segment_checker->fixer();
-        auto res = fixer->reorder(mds, repack_config);
-
-        //reporter.operation_progress(dataset_checker.name(), "repack", "running VACUUM ANALYZE on segment " + segment->relpath);
-        idx().vacuum();
-
-        return res.size_pre - res.size_post;
-    }
-
     void index(metadata::Collection&& mds) override
     {
         // Add to index

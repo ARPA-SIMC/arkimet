@@ -831,7 +831,8 @@ void RepackTest<Fixture>::register_tests_concat()
         {
             auto checker(f.makeSegmentedChecker());
             auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
-            wassert(actual(checker->segment(segment)->repack()) == 0u);
+            auto repack_result = wcallchecked(checker->segment(segment)->repack());
+            wassert(actual(repack_result.size_pre) == repack_result.size_post);
         }
 
         // Ensure that the archive is still clean

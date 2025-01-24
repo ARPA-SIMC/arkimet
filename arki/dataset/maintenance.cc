@@ -150,7 +150,8 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     if (state.has(segment::SEGMENT_DIRTY) && !state.has(segment::SEGMENT_DELETE_AGE))
     {
         // Repack the file
-        size_t saved = segment.repack(test_flags);
+        auto repack_result = segment.repack(test_flags);
+        size_t saved = repack_result.size_pre - repack_result.size_post;
         reporter.segment_repack(w.name(), segment.path_relative(), "repacked (" + std::to_string(saved) + " freed)");
         ++m_count_packed;
         m_count_freed += saved;

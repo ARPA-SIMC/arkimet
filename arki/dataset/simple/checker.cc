@@ -96,36 +96,26 @@ public:
         return res;
     }
 
-    void remove_data(const std::set<uint64_t>& offsets) override
+    segment::Fixer::MarkRemovedResult remove_data(const std::set<uint64_t>& offsets) override
     {
-        auto fixer = segment_checker->fixer();
-        auto res = fixer->mark_removed(offsets);
+        auto res = segmented::CheckerSegment::remove_data(offsets);
 
         // Reindex with the new file information
         dataset_checker.manifest.set(segment->relpath(), res.segment_mtime, res.data_timespan);
         dataset_checker.manifest.flush();
+
+        return res;
     }
 
-    size_t repack(unsigned test_flags) override
+    segment::Fixer::ReorderResult repack(unsigned test_flags) override
     {
-        // Read the metadata
-        metadata::Collection mds = segment_checker->scan();
-        mds.sort_segment();
-
-        segment::data::RepackConfig repack_config;
-        repack_config.gz_group_size = dataset().gz_group_size;
-        repack_config.test_flags = test_flags;
-
-        auto fixer = segment_checker->fixer();
-
-        // Write out the data with the new order
-        auto res = fixer->reorder(mds, repack_config);
+        auto res = segmented::CheckerSegment::repack(test_flags);
 
         // Reindex with the new file information
         dataset_checker.manifest.set_mtime(segment->relpath(), res.segment_mtime);
         dataset_checker.manifest.flush();
 
-        return res.size_pre - res.size_post;
+        return res;
     }
 
     size_t remove(bool with_data) override
