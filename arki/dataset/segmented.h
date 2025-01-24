@@ -126,6 +126,7 @@ public:
     std::shared_ptr<core::CheckLock> lock;
     std::shared_ptr<const Segment> segment;
     std::shared_ptr<segment::Checker> segment_checker;
+    std::shared_ptr<segment::Data> segment_data;
     std::shared_ptr<segment::data::Checker> segment_data_checker;
 
     CheckerSegment(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
@@ -351,7 +352,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual std::shared_ptr<Metadata> test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx=0) = 0;
+    virtual metadata::Collection test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx=0);
 
     /**
      * Remove all index data for the given segment, leaving the index valid. It

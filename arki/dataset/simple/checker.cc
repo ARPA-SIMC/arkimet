@@ -330,20 +330,17 @@ void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
     manifest.flush();
 }
 
-std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
+metadata::Collection Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
-    auto md_pathname = sys::with_suffix(dataset().path / relpath, ".metadata");
-    metadata::Collection mds;
-    mds.read_from_file(md_pathname);
-    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    mds.replace(data_idx, md);
-    utils::files::PreserveFileTimes pf(md_pathname);
-    mds.writeAtomically(md_pathname);
+    auto mds = segmented::Checker::test_change_metadata(relpath, md, data_idx);
     core::Interval interval;
     mds.expand_date_range(interval);
+
+    utils::files::PreserveFileTimes pft(manifest.root() / "MANIFEST");
     if (const auto* mseg = manifest.segment(relpath))
         manifest.set(relpath, mseg->mtime, interval);
-    return md;
+
+    return mds;
 }
 
 

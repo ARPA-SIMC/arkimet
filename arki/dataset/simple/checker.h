@@ -40,7 +40,7 @@ public:
     size_t vacuum(dataset::Reporter& reporter) override;
     void test_delete_from_index(const std::filesystem::path& relpath) override;
     void test_invalidate_in_index(const std::filesystem::path& relpath) override;
-    std::shared_ptr<Metadata> test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx) override;
+    metadata::Collection test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx) override;
 
     void check_issue51(CheckerConfig& opts) override;
 

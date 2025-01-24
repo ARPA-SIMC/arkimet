@@ -181,7 +181,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
 }
 
 CheckerSegment::CheckerSegment(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
-    : lock(lock), segment(segment), segment_checker(segment->checker(lock)), segment_data_checker(segment->data_checker())
+    : lock(lock), segment(segment), segment_checker(segment->checker(lock)), segment_data(segment->data()), segment_data_checker(segment_data->checker())
 {
 }
 
@@ -571,6 +571,21 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
     auto csegment = segment_from_relpath(relpath);
     auto fixer = csegment->segment_checker->fixer();
     fixer->move(dest);
+}
+
+metadata::Collection Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
+{
+    auto csegment = segment_from_relpath(relpath);
+    auto pmt = csegment->segment_data->preserve_mtime();
+
+    metadata::Collection mds = csegment->segment_checker->scan();
+    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md->sourceBlob().unlock();
+    mds.replace(data_idx, md);
+
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->reindex(mds);
+    return mds;
 }
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)

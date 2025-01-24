@@ -369,30 +369,6 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     idx->test_make_hole(hole_size, data_idx);
 }
 
-std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
-{
-    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
-    auto lock = dataset().check_lock_segment(relpath);
-    auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
-    metadata::Collection mds;
-    idx->query_segment(mds.inserter_func());
-    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    md->sourceBlob().unlock();
-    mds.replace(data_idx, md);
-
-    // Reindex mds
-    idx->reset();
-    for (auto& m: mds)
-    {
-        const source::Blob& source = m->sourceBlob();
-        if (idx->index(*m, source.offset))
-            throw std::runtime_error("duplicate detected in test_change_metadata");
-    }
-
-    return mds.get(data_idx);
-}
-
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
     std::filesystem::remove(dataset().path / sys::with_suffix(relpath, ".index"));
