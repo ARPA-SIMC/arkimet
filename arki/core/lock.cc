@@ -60,12 +60,12 @@ bool FLock::ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal)
                 case SEEK_END: msg << "end:"; break;
             }
             msg << l.l_start << " len: " << l.l_len;
-            throw std::runtime_error(msg.str());
+            throw lock::locked_error(msg.str());
         }
 
         // Then try and actually obtain it, raising an exception if it fails
         if (!fd.ofd_setlk(*this))
-            throw std::runtime_error("file already locked");
+            throw lock::locked_error("file already locked");
 
         return true;
     }

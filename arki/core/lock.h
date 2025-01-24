@@ -67,6 +67,12 @@ struct FLock : public ::flock
 
 namespace lock {
 
+class locked_error: public std::runtime_error
+{
+public:
+    using std::runtime_error::runtime_error;
+};
+
 class NullReadLock : public ReadLock
 {
 public:

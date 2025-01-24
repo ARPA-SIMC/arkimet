@@ -73,7 +73,7 @@ add_method("reader_checkrw", [] {
         auto lock2 = make_check();
         try {
             lock2->write_lock();
-        } catch (std::runtime_error& e) {
+        } catch (lock::locked_error& e) {
             wassert(actual(e.what()).contains("already held"));
         }
     }
@@ -83,7 +83,7 @@ add_method("reader_checkrw", [] {
         auto lock1a = lock1->write_lock();
         try {
             make_read();
-        } catch (std::runtime_error& e) {
+        } catch (lock::locked_error& e) {
             wassert(actual(e.what()).contains("already held"));
         }
     }
@@ -94,7 +94,7 @@ add_method("append_append", [] {
     auto lock = make_append();
     try {
         make_append();
-    } catch (std::runtime_error& e) {
+    } catch (lock::locked_error& e) {
         wassert(actual(e.what()).contains("already held"));
     }
 });
@@ -105,7 +105,7 @@ add_method("append_checkro", [] {
         auto lock = make_append();
         try {
             make_check();
-        } catch (std::runtime_error& e) {
+        } catch (lock::locked_error& e) {
             wassert(actual(e.what()).contains("already held"));
         }
     }
@@ -114,7 +114,7 @@ add_method("append_checkro", [] {
         auto lock = make_check();
         try {
             make_append();
-        } catch (std::runtime_error& e) {
+        } catch (lock::locked_error& e) {
             wassert(actual(e.what()).contains("already held"));
         }
     }
@@ -126,7 +126,7 @@ add_method("append_checkrw", [] {
     auto lock1a = lock->write_lock();
     try {
         make_append();
-    } catch (std::runtime_error& e) {
+    } catch (lock::locked_error& e) {
         wassert(actual(e.what()).contains("already held"));
     }
 });
@@ -136,7 +136,7 @@ add_method("checkro_checkro", [] {
     auto lock = make_check();
     try {
         make_check();
-    } catch (std::runtime_error& e) {
+    } catch (lock::locked_error& e) {
         wassert(actual(e.what()).contains("already held"));
     }
 });
@@ -147,7 +147,7 @@ add_method("checkro_checkrw", [] {
     auto lock1a = lock->write_lock();
     try {
         make_check();
-    } catch (std::runtime_error& e) {
+    } catch (lock::locked_error& e) {
         wassert(actual(e.what()).contains("already held"));
     }
 });
