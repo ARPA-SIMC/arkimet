@@ -257,6 +257,15 @@ public:
     virtual size_t remove(bool with_data) = 0;
 
     /**
+     * Move the segment and all its associated files to a new location.
+     *
+     * Existing files in the destination are overwritten.
+     *
+     * No locking is performed on the destination.
+     */
+    virtual void move(std::shared_ptr<arki::Segment> dest);
+
+    /**
      * Replace the segment index with the metadata in the given collection.
      *
      * Sources in mds are assumed to already point inside the segment.

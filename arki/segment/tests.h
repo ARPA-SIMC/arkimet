@@ -42,8 +42,15 @@ struct ActualSegment : public arki::utils::tests::Actual<std::shared_ptr<const S
 
     /// The segment does not have its data part
     void not_has_summary();
+
+    /// The segment data mtime is exactly value
+    void data_mtime_equal(time_t value);
+
+    /// The segment data mtime is newer than value
+    void data_mtime_newer_than(time_t value);
 };
 
+inline arki::tests::ActualSegment actual(std::shared_ptr<Segment> actual) { return arki::tests::ActualSegment(actual); }
 inline arki::tests::ActualSegment actual(std::shared_ptr<const Segment> actual) { return arki::tests::ActualSegment(actual); }
 inline arki::tests::ActualSegment actual(const Segment& actual) { return arki::tests::ActualSegment(actual.shared_from_this()); }
 
@@ -58,6 +65,7 @@ protected:
 
 public:
     Data td;
+    time_t initial_mtime = 1234000;
 
     SegmentTestFixture() = default;
     virtual ~SegmentTestFixture() {}
@@ -71,6 +79,8 @@ public:
     virtual void skip_unless_scan() const { throw TestSkipped("test is only valid for scan segments"); }
     virtual void skip_unless_metadata() const { throw TestSkipped("test is only valid for metadata segments"); }
     virtual void skip_unless_iseg() const { throw TestSkipped("test is only valid for iseg segments"); }
+
+    virtual bool has_index() const { return false; }
 };
 
 template<class Data>
@@ -84,6 +94,7 @@ protected:
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
+    using SegmentTestFixture<Data>::initial_mtime;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 
@@ -101,10 +112,12 @@ protected:
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
+    using SegmentTestFixture<Data>::initial_mtime;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 
     void skip_unless_metadata() const override {}
+    bool has_index() const override { return true; }
 };
 
 template<class Data>
@@ -118,10 +131,12 @@ protected:
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
+    using SegmentTestFixture<Data>::initial_mtime;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 
     void skip_unless_iseg() const override {}
+    bool has_index() const override { return true; }
 };
 
 }

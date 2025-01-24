@@ -337,6 +337,12 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     pending_index.commit();
 }
 
+void Fixer::move(std::shared_ptr<arki::Segment> dest)
+{
+    segment::Fixer::move(dest);
+    sys::rename_ifexists(segment().abspath_iseg_index(), dest->abspath_iseg_index());
+}
+
 void Fixer::test_touch_contents(time_t timestamp)
 {
     segment::Fixer::test_touch_contents(timestamp);

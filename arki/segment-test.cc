@@ -134,11 +134,13 @@ add_method("mark_removed", [](Fixture& f) {
     to_delete.emplace(mds[1].sourceBlob().offset);
 
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->mark_removed(to_delete);
-
-        // TODO: wassert(actual(res.segment_mtime) > 1234000);
+        // Without an index the data is immediately removed
+        if (f.has_index())
+            wassert(actual(res.segment_mtime) == f.initial_mtime);
+        else
+            wassert(actual(res.segment_mtime) > f.initial_mtime);
         wassert(actual(res.data_timespan) == core::Interval(core::Time(2007, 7, 8, 13), core::Time(2007, 10, 9, 0, 0, 1)));
     }
 
@@ -162,11 +164,9 @@ add_method("reorder", [](Fixture& f) {
     reversed.acquire(mds.get(0));
 
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->reorder(reversed, segment::data::RepackConfig());
-
-        // TODO: wassert(actual(res.segment_mtime) > 1234000);
+        wassert(actual(res.segment_mtime) > f.initial_mtime);
         // TODO: test size changes (requires holes)
         // TODO: res.size_pre = 0;
         // TODO: res.size_post = 0;
@@ -177,10 +177,9 @@ add_method("tar", [](Fixture& f) {
     auto segment = f.create(f.td.mds);
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->tar();
-        // TODO: wassert(actual(res.segment_mtime) > 1234000);
+        wassert(actual(res.segment_mtime) > f.initial_mtime);
     }
     auto data = segment->data();
     wassert_true(dynamic_pointer_cast<segment::data::tar::Data>(data));
@@ -190,10 +189,9 @@ add_method("zip", [](Fixture& f) {
     auto segment = f.create(f.td.mds);
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->zip();
-        // TODO: wassert(actual(res.segment_mtime) > 1234000);
+        wassert(actual(res.segment_mtime) > f.initial_mtime);
     }
     auto data = segment->data();
     wassert_true(dynamic_pointer_cast<segment::data::zip::Data>(data));
@@ -203,10 +201,9 @@ add_method("compress", [](Fixture& f) {
     auto segment = f.create(f.td.mds);
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->compress(3);
-        // TODO: wassert(actual(res.segment_mtime) > 1234000);
+        wassert(actual(res.segment_mtime) > f.initial_mtime);
         wassert(actual(res.size_pre) > res.size_post);
     }
     auto data = segment->data();
@@ -217,11 +214,11 @@ add_method("remove", [](Fixture& f) {
     auto segment = f.create(f.td.mds);
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->remove(false);
-        // TODO: wassert(actual(res.segment_mtime) == 1234000);
+        // TODO: check that res is the previous size of the indices
     }
+    wassert(actual(segment).data_mtime_equal(f.initial_mtime));
     // TODO: check that index is gone
 });
 
@@ -229,13 +226,24 @@ add_method("remove_with_data", [](Fixture& f) {
     auto segment = f.create(f.td.mds);
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         auto res = fixer->remove(true);
-        // TODO: wassert(actual(res.segment_mtime) == 1234000);
+        // TODO: check that res is the previous size of the indices plus size of data
     }
     // TODO: check that index is gone
     // TODO: check that segment is gone
+});
+
+add_method("move", [](Fixture& f) {
+    auto segment = f.create(f.td.mds);
+    auto dest = segment->session().segment_from_relpath("test-moved."s + format_name(f.td.format));
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    {
+        auto fixer = checker->fixer();
+        fixer->move(dest);
+    }
+    wassert(actual(dest).data_mtime_equal(f.initial_mtime));
+    // TODO: check that index is moved
 });
 
 add_method("reindex", [](Fixture& f) {
@@ -243,14 +251,13 @@ add_method("reindex", [](Fixture& f) {
     auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
     auto mds = checker->scan();
     {
-        // TODO: touch segment 1234000
         auto fixer = checker->fixer();
         // Remove the index
         fixer->remove(false);
         // TODO: check that the index is gone
         fixer->reindex(mds);
-        // TODO: wassert(actual(res.segment_mtime) == 1234000);
     }
+    wassert(actual(segment).data_mtime_equal(f.initial_mtime));
     // TODO: check that index has been recreated (for those that support it)
 });
 

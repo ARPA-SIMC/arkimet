@@ -449,6 +449,13 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     sum.writeAtomically(segment().abspath_summary());
 }
 
+void Fixer::move(std::shared_ptr<arki::Segment> dest)
+{
+    segment::Fixer::move(dest);
+    sys::rename_ifexists(segment().abspath_metadata(), dest->abspath_metadata());
+    sys::rename_ifexists(segment().abspath_summary(), dest->abspath_summary());
+}
+
 void Fixer::test_touch_contents(time_t timestamp)
 {
     segment::Fixer::test_touch_contents(timestamp);

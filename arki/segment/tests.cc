@@ -59,6 +59,42 @@ void ActualSegment::not_has_summary()
     wassert(actual_file(_actual->abspath_summary()).not_exists());
 }
 
+void ActualSegment::data_mtime_equal(time_t value)
+{
+    auto ts = _actual->data()->timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << "data of " << _actual->relpath() << " should have mtime " << value << " but it does not exist";
+        throw TestFailed(buf.str());
+    }
+
+    if (ts.value() != value)
+    {
+        std::stringstream buf;
+        buf << "data of " << _actual->relpath() << " has mtime " << ts.value() << " instead of " << value;
+        throw TestFailed(buf.str());
+    }
+}
+
+void ActualSegment::data_mtime_newer_than(time_t value)
+{
+    auto ts = _actual->data()->timestamp();
+    if (!ts)
+    {
+        std::stringstream ss;
+        ss << "data of " << _actual->relpath() << " should have mtime newer than " << value << " but it does not exist";
+        throw TestFailed(ss.str());
+    }
+
+    if (ts.value() <= value)
+    {
+        std::stringstream ss;
+        ss << "data of " << _actual->relpath() << " has mtime " << ts.value() << " which is not newer than " << value;
+        throw TestFailed(ss.str());
+    }
+}
+
 
 template<typename Data>
 void SegmentTestFixture<Data>::test_setup()
@@ -94,6 +130,10 @@ std::shared_ptr<Segment> ScanSegmentFixture<Data>::create(const metadata::Collec
     auto segment = create_segment(name);
     auto mds1 = mds.clone();
     m_session->create_scan(segment, mds1);
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    checker->fixer()->test_touch_contents(initial_mtime);
+
     return segment;
 }
 
@@ -109,6 +149,10 @@ std::shared_ptr<Segment> MetadataSegmentFixture<Data>::create(const metadata::Co
     auto segment = create_segment(name);
     auto mds1 = mds.clone();
     m_session->create_metadata(segment, mds1);
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    checker->fixer()->test_touch_contents(initial_mtime);
+
     return segment;
 }
 
@@ -133,6 +177,10 @@ std::shared_ptr<Segment> IsegSegmentFixture<Data>::create(const metadata::Collec
     auto segment = create_segment(name);
     auto mds1 = mds.clone();
     m_session->create_iseg(segment, mds1);
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    checker->fixer()->test_touch_contents(initial_mtime);
+
     return segment;
 }
 

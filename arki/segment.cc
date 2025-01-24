@@ -276,6 +276,12 @@ size_t Fixer::remove_ifexists(const std::filesystem::path& path)
     return res;
 }
 
+void Fixer::move(std::shared_ptr<arki::Segment> dest)
+{
+    auto data_checker = data().checker();
+    data_checker->move(dest->session().shared_from_this(), dest->relpath());
+}
+
 void Fixer::test_corrupt_data(unsigned data_idx)
 {
     arki::metadata::Collection mds = m_checker->scan();
