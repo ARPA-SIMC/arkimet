@@ -487,9 +487,9 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
 
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    auto segment_data_checker = dataset().segment_session->segment_data_checker(segment);
-    segment_data_checker->move(dataset().segment_session, new_relpath);
+    segmented::Checker::test_rename(relpath, new_relpath);
+
+    utils::files::PreserveFileTimes pft(manifest.root() / "MANIFEST");
     manifest.rename(relpath, new_relpath);
     manifest.flush();
 }

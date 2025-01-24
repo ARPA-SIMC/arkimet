@@ -369,22 +369,6 @@ void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole
     idx->test_make_hole(hole_size, data_idx);
 }
 
-void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
-{
-    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
-    auto lock = dataset().check_lock_segment(relpath);
-    auto wrlock = lock->write_lock();
-
-    auto new_abspath = dataset().path / new_relpath;
-
-    auto segment_data_checker = dataset().segment_session->segment_data_checker(segment);
-    segment_data_checker->move(dataset().segment_session, new_relpath);
-
-    std::filesystem::rename(
-            segment->abspath_iseg_index(),
-            sys::with_suffix(new_abspath, ".index"));
-}
-
 std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);

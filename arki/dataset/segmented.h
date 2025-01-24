@@ -341,7 +341,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath) = 0;
+    virtual void test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath);
 
     /**
      * Replace the metadata for the data in the segment at position `data_idx`.

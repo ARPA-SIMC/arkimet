@@ -565,6 +565,14 @@ void Checker::test_swap_data(const std::filesystem::path& relpath, unsigned d1_i
     fixer->reorder(mds, repack_config);
 }
 
+void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
+{
+    auto dest = dataset().segment_session->segment_from_relpath(new_relpath);
+    auto csegment = segment_from_relpath(relpath);
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->move(dest);
+}
+
 }
 }
 }
