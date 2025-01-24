@@ -318,15 +318,9 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    auto mtime = segment->data()->timestamp();
-    if (!mtime)
-        throw std::runtime_error(relpath.native() + ": cannot get timestamp in test_delete_from_index");
-
-    manifest.set(relpath, mtime.value(), core::Interval());
-    utils::files::PreserveFileTimes pf(segment->abspath_metadata());
-    metadata::Collection().writeAtomically(segment->abspath_metadata());
-    std::filesystem::remove(segment->abspath_summary());
+    segmented::Checker::test_delete_from_index(relpath);
+    utils::files::PreserveFileTimes pft(manifest.root() / "MANIFEST");
+    manifest.remove(relpath);
     manifest.flush();
 }
 

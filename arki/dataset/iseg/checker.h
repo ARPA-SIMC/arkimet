@@ -36,7 +36,6 @@ public:
     void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1) override;
     void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0) override;
     std::shared_ptr<Metadata> test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx) override;
-    void test_delete_from_index(const std::filesystem::path& relpath) override;
     void test_invalidate_in_index(const std::filesystem::path& relpath) override;
 
     friend class CheckerSegment;

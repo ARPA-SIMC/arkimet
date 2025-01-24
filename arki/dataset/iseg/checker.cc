@@ -393,15 +393,6 @@ std::shared_ptr<Metadata> Checker::test_change_metadata(const std::filesystem::p
     return mds.get(data_idx);
 }
 
-void Checker::test_delete_from_index(const std::filesystem::path& relpath)
-{
-    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
-    auto lock = dataset().check_lock_segment(relpath);
-    auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
-    idx->reset();
-}
-
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
     std::filesystem::remove(dataset().path / sys::with_suffix(relpath, ".index"));

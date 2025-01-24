@@ -359,7 +359,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_delete_from_index(const std::filesystem::path& relpath) = 0;
+    virtual void test_delete_from_index(const std::filesystem::path& relpath);
 
     /**
      * Remove all index data for the given segment, but make it look as if the

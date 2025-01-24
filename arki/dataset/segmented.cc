@@ -573,6 +573,13 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
     fixer->move(dest);
 }
 
+void Checker::test_delete_from_index(const std::filesystem::path& relpath)
+{
+    auto csegment = segment_from_relpath(relpath);
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->test_mark_all_removed();
+}
+
 }
 }
 }
