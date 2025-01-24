@@ -90,6 +90,22 @@ public:
     virtual std::optional<time_t> timestamp() const = 0;
 
     /**
+     * Return the size of the data portion of the segment
+     */
+    virtual size_t size() const = 0;
+
+    /// Check if the segment data exist on disk
+    virtual bool exists_on_disk() const = 0;
+
+    /**
+     * Return true if the segment does not contain any data.
+     *
+     * Return false if the segment contains data, or if the segment does not
+     * exist or is not a valid segment.
+     */
+    virtual bool is_empty() const = 0;
+
+    /**
      * Instantiate a reader for this segment
      */
     virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const = 0;
@@ -219,18 +235,6 @@ public:
     virtual const Data& data() const = 0;
     virtual segment::State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) = 0;
     virtual size_t remove() = 0;
-    virtual size_t size() = 0;
-
-    /// Check if the segment exists on disk
-    virtual bool exists_on_disk() = 0;
-
-    /**
-     * Return true if the segment does not contain any data.
-     *
-     * Return false if the segment contains data, or if the segment does not
-     * exist or is not a valid segment.
-     */
-    virtual bool is_empty() = 0;
 
     /**
      * Rescan the segment, possibly fixing fixable issues found during the rescan

@@ -15,6 +15,9 @@ class Data : public arki::segment::Data
 public:
     using arki::segment::Data::Data;
     std::optional<time_t> timestamp() const override;
+    bool exists_on_disk() const override;
+    size_t size() const override;
+    bool is_empty() const override;
     utils::files::PreserveFileTimes preserve_mtime() override;
     static bool can_store(DataFormat format);
 };
@@ -44,10 +47,6 @@ protected:
 
 public:
     explicit Checker(std::shared_ptr<const Data> data);
-
-    bool exists_on_disk() override;
-    size_t size() override;
-    bool is_empty() override;
 
     bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
     State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;

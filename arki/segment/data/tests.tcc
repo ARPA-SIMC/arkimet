@@ -50,7 +50,7 @@ using namespace arki::utils;
 this->add_method("create", [](Fixture& f) {
     wassert_true(Data::can_store(f.td.format));
     std::shared_ptr<segment::data::Checker> checker = f.create();
-    wassert_true(checker->exists_on_disk());
+    wassert_true(checker->data().exists_on_disk());
 });
 
 this->add_method("read", [](Fixture& f) {
@@ -168,18 +168,18 @@ this->add_method("check", [](Fixture& f) {
 
 this->add_method("remove", [](Fixture& f) {
     auto checker = f.create();
-    size_t size = wcallchecked(checker->size());
+    size_t size = wcallchecked(checker->data().size());
 
-    wassert(actual(checker->exists_on_disk()).istrue());
+    wassert(actual(checker->data().exists_on_disk()).istrue());
     wassert(actual(checker->remove()) == size);
-    wassert(actual(checker->exists_on_disk()).isfalse());
+    wassert(actual(checker->data().exists_on_disk()).isfalse());
 });
 
 this->add_method("is_empty", [](Fixture& f) {
     auto checker = f.create();
-    wassert(actual(checker->is_empty()).isfalse());
+    wassert(actual(checker->data().is_empty()).isfalse());
     checker->test_truncate(f.seg_mds[0].sourceBlob().offset);
-    wassert(actual(checker->is_empty()).istrue());
+    wassert(actual(checker->data().is_empty()).istrue());
 });
 
 this->add_method("issue244", [](Fixture& f) {

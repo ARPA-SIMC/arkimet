@@ -87,11 +87,11 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
-    res.size = data_checker->size();
+    res.size = data().size();
 
     if (!std::filesystem::exists(segment().abspath_iseg_index()))
     {
-        if (data_checker->is_empty())
+        if (data().is_empty())
         {
             reporter.info(segment(), "empty segment found on disk with no associated index");
             res.state = SEGMENT_DELETED;
@@ -180,7 +180,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
             throw std::runtime_error("duplicate detected while reordering segment");
     }
 
-    res.size_pre = data_checker->size();
+    res.size_pre = data().size();
 
     // Commit the changes in the file system
     pending_repack.commit();
@@ -188,8 +188,8 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     // Commit the changes in the database
     pending_index.commit();
 
-    res.size_post = data_checker->size();
     res.segment_mtime = get_data_mtime_after_fix("reorder");
+    res.size_post = data().size();
     return res;
 }
 
@@ -220,11 +220,10 @@ Fixer::ConvertResult Fixer::tar()
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto& index = checker().index();
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
-
     auto pending_index = index.begin_transaction();
 
     // Rescan file and sort for repacking
@@ -233,7 +232,7 @@ Fixer::ConvertResult Fixer::tar()
 
     // Create the .tar segment
     auto new_data_checker = data_checker->tar(mds);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     // Reindex the new metadata
     index.reindex(mds);
@@ -261,11 +260,10 @@ Fixer::ConvertResult Fixer::zip()
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto& index = checker().index();
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
-
     auto pending_index = index.begin_transaction();
 
     // Rescan file and sort for repacking
@@ -274,7 +272,7 @@ Fixer::ConvertResult Fixer::zip()
 
     // Create the .zip segment
     auto new_data_checker = data_checker->zip(mds);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     // Reindex the new metadata
     index.reindex(mds);
@@ -304,10 +302,10 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         return res;
     }
 
+    res.size_pre = data().size();
+
     auto& index = checker().index();
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
-
     auto pending_index = index.begin_transaction();
 
     // Rescan file and sort for repacking
@@ -316,7 +314,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 
     // Create the .zip segment
     auto new_data_checker = data_checker->compress(mds, groupsize);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     // Reindex the new metadata
     index.reindex(mds);
@@ -347,6 +345,12 @@ void Fixer::test_touch_contents(time_t timestamp)
 {
     segment::Fixer::test_touch_contents(timestamp);
     sys::touch_ifexists(segment().abspath_iseg_index(), timestamp);
+}
+
+void Fixer::test_mark_all_removed()
+{
+    auto& index = checker().index();
+    index.reset();
 }
 
 }

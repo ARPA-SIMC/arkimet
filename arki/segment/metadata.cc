@@ -159,7 +159,6 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = m_data->checker();
     auto ts_data = m_data->timestamp();
     if (!ts_data)
     {
@@ -168,13 +167,13 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
-    res.size = data_checker->size();
+    res.size = data().size();
 
     time_t ts_md = sys::timestamp(segment().abspath_metadata(), 0);
     if (!ts_md)
     {
         // Data not found on disk
-        if (data_checker->is_empty())
+        if (data().is_empty())
         {
             reporter.info(segment(), "empty segment found on disk with no associated metadata");
             res.state = SEGMENT_DELETED;
@@ -206,6 +205,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
             reporter.info(segment(), "metadata contains data for this segment but no reference time information");
             res.state += SEGMENT_CORRUPTED;
         } else {
+            auto data_checker = m_data->checker();
             res.state += data_checker->check([&](const std::string& msg) { reporter.info(segment(), msg); }, mds, quick);
         }
 
@@ -263,6 +263,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     ReorderResult res;
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
+    res.size_pre = data().size();
 
     // Write out the data with the new order
     auto data_checker = data().checker();
@@ -271,11 +272,9 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segme
     // Remove existing cached metadata, since we scramble their order
     std::filesystem::remove(path_metadata);
 
-    res.size_pre = data_checker->size();
-
     p_repack.commit();
 
-    res.size_post = data_checker->size();
+    res.size_post = data().size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
@@ -319,12 +318,11 @@ Fixer::ConvertResult Fixer::tar()
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
-
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -334,7 +332,7 @@ Fixer::ConvertResult Fixer::tar()
 
     // Create the .tar segment
     auto new_data_checker = data_checker->tar(mds);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
@@ -364,12 +362,11 @@ Fixer::ConvertResult Fixer::zip()
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
-
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -379,7 +376,7 @@ Fixer::ConvertResult Fixer::zip()
 
     // Create the .zip segment
     auto new_data_checker = data_checker->zip(mds);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
@@ -410,12 +407,11 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto path_metadata = segment().abspath_metadata();
     auto path_summary = segment().abspath_summary();
-
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -425,7 +421,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 
     // Create the .zip segment
     auto new_data_checker = data_checker->compress(mds, groupsize);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
@@ -461,6 +457,13 @@ void Fixer::test_touch_contents(time_t timestamp)
     segment::Fixer::test_touch_contents(timestamp);
     sys::touch(segment().abspath_metadata(), timestamp);
     sys::touch(segment().abspath_summary(), timestamp);
+}
+
+void Fixer::test_mark_all_removed()
+{
+    utils::files::PreserveFileTimes pf(segment().abspath_metadata());
+    arki::metadata::Collection().writeAtomically(segment().abspath_metadata());
+    std::filesystem::remove(segment().abspath_summary());
 }
 
 }

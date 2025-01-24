@@ -272,6 +272,13 @@ public:
      */
     virtual void reindex(arki::metadata::Collection& mds) = 0;
 
+    /**
+     * Mark everything as removed in the index, scheduling the segment for removal.
+     *
+     * If the segment has no index, it does nothing.
+     */
+    virtual void test_mark_all_removed() = 0;
+
     virtual void test_corrupt_data(unsigned data_idx);
     virtual void test_truncate_data(unsigned data_idx);
 

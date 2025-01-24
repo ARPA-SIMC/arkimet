@@ -109,6 +109,24 @@ std::optional<time_t> Data::timestamp() const
         return std::optional<time_t>(st->st_mtime);
     return std::optional<time_t>();
 }
+bool Data::exists_on_disk() const
+{
+    return std::filesystem::exists(sys::with_suffix(segment().abspath(), ".tar"));
+}
+
+bool Data::is_empty() const
+{
+    struct stat st;
+    sys::stat(sys::with_suffix(segment().abspath(), ".tar"), st);
+    if (S_ISDIR(st.st_mode)) return false;
+    return st.st_size <= 1024;
+}
+
+size_t Data::size() const
+{
+    return sys::size(sys::with_suffix(segment().abspath(), ".tar"));
+}
+
 utils::files::PreserveFileTimes Data::preserve_mtime()
 {
     return utils::files::PreserveFileTimes(sys::with_suffix(segment().abspath(), ".tar"));
@@ -186,24 +204,6 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 Checker::Checker(std::shared_ptr<const Data> data)
     : data::BaseChecker<Data>(data), tarabspath(sys::with_suffix(segment().abspath(), ".tar"))
 {
-}
-
-bool Checker::exists_on_disk()
-{
-    return std::filesystem::exists(tarabspath);
-}
-
-bool Checker::is_empty()
-{
-    struct stat st;
-    sys::stat(tarabspath, st);
-    if (S_ISDIR(st.st_mode)) return false;
-    return st.st_size <= 1024;
-}
-
-size_t Checker::size()
-{
-    return sys::size(tarabspath);
 }
 
 void Checker::move_data(std::shared_ptr<const Segment> new_segment)

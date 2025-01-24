@@ -40,6 +40,7 @@ public:
     ConvertResult zip() override;
     ConvertResult compress(unsigned groupsize) override;
     void reindex(arki::metadata::Collection& mds) override;
+    void test_mark_all_removed() override;
 };
 
 }

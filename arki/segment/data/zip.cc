@@ -226,6 +226,20 @@ std::optional<time_t> Data::timestamp() const
         return std::optional<time_t>(st->st_mtime);
     return std::optional<time_t>();
 }
+bool Data::exists_on_disk() const
+{
+    return std::filesystem::exists(sys::with_suffix(segment().abspath(), ".zip"));
+}
+bool Data::is_empty() const
+{
+    utils::ZipReader zip(segment().format(), core::File(sys::with_suffix(segment().abspath(), ".zip"), O_RDONLY | O_CLOEXEC));
+    return zip.list_data().empty();
+}
+size_t Data::size() const
+{
+    return sys::size(sys::with_suffix(segment().abspath(), ".zip"));
+}
+
 utils::files::PreserveFileTimes Data::preserve_mtime()
 {
     return utils::files::PreserveFileTimes(sys::with_suffix(segment().abspath(), ".zip"));
@@ -301,22 +315,6 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 Checker::Checker(std::shared_ptr<const Data> data)
     : BaseChecker<Data>(data), zipabspath(sys::with_suffix(segment().abspath(), ".zip"))
 {
-}
-
-bool Checker::exists_on_disk()
-{
-    return std::filesystem::exists(zipabspath);
-}
-
-bool Checker::is_empty()
-{
-    utils::ZipReader zip(segment().format(), core::File(zipabspath, O_RDONLY | O_CLOEXEC));
-    return zip.list_data().empty();
-}
-
-size_t Checker::size()
-{
-    return sys::size(zipabspath);
 }
 
 void Checker::move_data(std::shared_ptr<const Segment> new_segment)

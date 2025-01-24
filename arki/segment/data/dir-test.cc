@@ -95,9 +95,9 @@ add_method("empty_dir", [] {
         auto session = std::make_shared<segment::Session>(std::filesystem::current_path());
         auto segment = session->segment_from_relpath_and_format(relpath, DataFormat::GRIB);
         auto checker = segment->data_checker();
-        wassert(actual(checker->size()) == 0u);
-        wassert_false(checker->exists_on_disk());
-        wassert_false(checker->is_empty());
+        wassert(actual(checker->data().size()) == 0u);
+        wassert_false(checker->data().exists_on_disk());
+        wassert_false(checker->data().is_empty());
     }
 });
 

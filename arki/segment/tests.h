@@ -79,6 +79,7 @@ public:
     virtual void skip_unless_scan() const { throw TestSkipped("test is only valid for scan segments"); }
     virtual void skip_unless_metadata() const { throw TestSkipped("test is only valid for metadata segments"); }
     virtual void skip_unless_iseg() const { throw TestSkipped("test is only valid for iseg segments"); }
+    virtual void skip_unless_has_index() const { throw TestSkipped("test is only valid for segments with indices"); }
 
     virtual bool has_index() const { return false; }
 };
@@ -117,6 +118,7 @@ public:
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 
     void skip_unless_metadata() const override {}
+    void skip_unless_has_index() const override {}
     bool has_index() const override { return true; }
 };
 
@@ -136,6 +138,7 @@ public:
     std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
 
     void skip_unless_iseg() const override {}
+    void skip_unless_has_index() const override {}
     bool has_index() const override { return true; }
 };
 

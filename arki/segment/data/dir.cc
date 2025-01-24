@@ -228,6 +228,57 @@ std::optional<time_t> Data::timestamp() const
         return std::optional<time_t>(st->st_mtime);
     return std::optional<time_t>();
 }
+bool Data::exists_on_disk() const
+{
+    /**
+     * To consider the segment an existing dir segment, it needs to be a
+     * directory that contains a .sequence file.
+     *
+     * Just an empty directory is considered not enough, to leave space for
+     * implementing different formats of directory-based segments
+     */
+    if (!std::filesystem::is_directory(segment().abspath())) return false;
+    return std::filesystem::exists(segment().abspath() / ".sequence");
+}
+
+bool Data::is_empty() const
+{
+    if (!std::filesystem::is_directory(segment().abspath())) return false;
+    sys::Path dir(segment().abspath());
+
+    // If we just have an empty directory, do not consider it as a valid
+    // segment
+    bool has_sequence = false;
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (strcmp(i->d_name, ".") == 0) continue;
+        if (strcmp(i->d_name, "..") == 0) continue;
+        if (strcmp(i->d_name, ".sequence") == 0)
+        {
+            has_sequence = true;
+            continue;
+        }
+        return false;
+    }
+    return has_sequence;
+}
+
+size_t Data::size() const
+{
+    std::string ext = "."s + format_name(segment().format());
+    size_t res = 0;
+    sys::Path dir(segment().abspath());
+    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
+    {
+        if (!i.isreg()) continue;
+        if (!str::endswith(i->d_name, ext)) continue;
+        struct stat st;
+        i.path->fstatat(i->d_name, st);
+        res += st.st_size;
+    }
+    return res;
+}
+
 utils::files::PreserveFileTimes Data::preserve_mtime()
 {
     return utils::files::PreserveFileTimes(segment().abspath() / ".sequence");
@@ -443,61 +494,6 @@ void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
         fd.throw_error("cannot set file size");
 }
 
-
-template<typename Data>
-bool BaseChecker<Data>::exists_on_disk()
-{
-    /**
-     * To consider the segment an existing dir segment, it needs to be a
-     * directory that contains a .sequence file.
-     *
-     * Just an empty directory is considered not enough, to leave space for
-     * implementing different formats of directory-based segments
-     */
-    if (!std::filesystem::is_directory(this->segment().abspath())) return false;
-    return std::filesystem::exists(this->segment().abspath() / ".sequence");
-}
-
-template<typename Data>
-bool BaseChecker<Data>::is_empty()
-{
-    if (!std::filesystem::is_directory(this->segment().abspath())) return false;
-    sys::Path dir(this->segment().abspath());
-
-    // If we just have an empty directory, do not consider it as a valid
-    // segment
-    bool has_sequence = false;
-    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (strcmp(i->d_name, ".") == 0) continue;
-        if (strcmp(i->d_name, "..") == 0) continue;
-        if (strcmp(i->d_name, ".sequence") == 0)
-        {
-            has_sequence = true;
-            continue;
-        }
-        return false;
-    }
-    return has_sequence;
-}
-
-template<typename Data>
-size_t BaseChecker<Data>::size()
-{
-    std::string ext(".");
-    ext += format_name(this->segment().format());
-    size_t res = 0;
-    sys::Path dir(this->segment().abspath());
-    for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
-    {
-        if (!i.isreg()) continue;
-        if (!str::endswith(i->d_name, ext)) continue;
-        struct stat st;
-        i.path->fstatat(i->d_name, st);
-        res += st.st_size;
-    }
-    return res;
-}
 
 template<typename Data>
 void BaseChecker<Data>::move_data(std::shared_ptr<const Segment> new_segment)

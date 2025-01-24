@@ -59,6 +59,7 @@ public:
     void reindex(arki::metadata::Collection& mds) override;
     void move(std::shared_ptr<arki::Segment> dest) override;
     void test_touch_contents(time_t timestamp) override;
+    void test_mark_all_removed() override;
 };
 
 }

@@ -136,6 +136,29 @@ std::optional<time_t> Data::timestamp() const
     return std::optional<time_t>();
 }
 
+bool Data::exists_on_disk() const
+{
+    std::unique_ptr<struct stat> st = sys::stat(segment().abspath());
+    if (!st) return false;
+    if (S_ISDIR(st->st_mode)) return false;
+    return true;
+}
+
+bool Data::is_empty() const
+{
+    struct stat st;
+    sys::stat(segment().abspath(), st);
+    if (S_ISDIR(st.st_mode)) return false;
+    return st.st_size == 0;
+}
+
+size_t Data::size() const
+{
+    struct stat st;
+    sys::stat(segment().abspath(), st);
+    return st.st_size;
+}
+
 utils::files::PreserveFileTimes Data::preserve_mtime()
 {
     return utils::files::PreserveFileTimes(segment().abspath());
@@ -265,32 +288,6 @@ template<typename Data, typename File>
 Checker<Data, File>::Checker(std::shared_ptr<const Data> data)
     : BaseChecker<Data>(data)
 {
-}
-
-template<typename Data, typename File>
-bool Checker<Data, File>::exists_on_disk()
-{
-    std::unique_ptr<struct stat> st = sys::stat(this->segment().abspath());
-    if (!st) return false;
-    if (S_ISDIR(st->st_mode)) return false;
-    return true;
-}
-
-template<typename Data, typename File>
-bool Checker<Data, File>::is_empty()
-{
-    struct stat st;
-    sys::stat(this->segment().abspath(), st);
-    if (S_ISDIR(st.st_mode)) return false;
-    return st.st_size == 0;
-}
-
-template<typename Data, typename File>
-size_t Checker<Data, File>::size()
-{
-    struct stat st;
-    sys::stat(this->segment().abspath(), st);
-    return st.st_size;
 }
 
 template<typename Data, typename File>

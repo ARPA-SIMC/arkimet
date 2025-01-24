@@ -116,6 +116,24 @@ std::optional<time_t> Data::timestamp() const
         return std::optional<time_t>(st->st_mtime);
     return std::optional<time_t>();
 }
+bool Data::exists_on_disk() const
+{
+    return std::filesystem::exists(sys::with_suffix(segment().abspath(), ".gz"));
+}
+bool Data::is_empty() const
+{
+    auto gzabspath(sys::with_suffix(segment().abspath(), ".gz"));
+    if (sys::size(gzabspath) > 1024) return false;
+    return utils::compress::gunzip(gzabspath).empty();
+}
+size_t Data::size() const
+{
+    return (
+        sys::size(sys::with_suffix(segment().abspath(), ".gz")) +
+        sys::size(sys::with_suffix(segment().abspath(), ".gz.idx"), 0)
+    );
+}
+
 utils::files::PreserveFileTimes Data::preserve_mtime()
 {
     return utils::files::PreserveFileTimes(sys::with_suffix(segment().abspath(), ".gz"));
@@ -172,25 +190,6 @@ Checker<Data>::Checker(const std::shared_ptr<const Data> data)
 }
 
 template<typename Data>
-bool Checker<Data>::exists_on_disk()
-{
-    return std::filesystem::exists(gzabspath);
-}
-
-template<typename Data>
-bool Checker<Data>::is_empty()
-{
-    if (sys::size(gzabspath) > 1024) return false;
-    return utils::compress::gunzip(gzabspath).empty();
-}
-
-template<typename Data>
-size_t Checker<Data>::size()
-{
-    return sys::size(gzabspath) + sys::size(gzidxabspath, 0);
-}
-
-template<typename Data>
 void Checker<Data>::move_data(std::shared_ptr<const Segment> new_segment)
 {
     std::filesystem::rename(gzabspath, sys::with_suffix(new_segment->abspath(), ".gz"));
@@ -215,7 +214,7 @@ State Checker<Data>::check(std::function<void(const std::string&)> reporter, con
 template<typename Data>
 size_t Checker<Data>::remove()
 {
-    size_t size = this->size();
+    size_t size = this->data().size();
     sys::unlink(gzabspath);
     std::filesystem::remove(gzidxabspath);
     return size;

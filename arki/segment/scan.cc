@@ -74,7 +74,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
-    res.size = data_checker->size();
+    res.size = data().size();
 
     auto mds = scan();
 
@@ -123,12 +123,12 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config)
 {
     ReorderResult res;
+    res.size_pre = data().size();
     // Write out the data with the new order
     auto data_checker = data().checker();
     auto p_repack = data_checker->repack(mds, repack_config);
-    res.size_pre = data_checker->size();
     p_repack.commit();
-    res.size_post = data_checker->size();
+    res.size_post = data().size();
     res.segment_mtime = get_data_mtime_after_fix("reorder");
     return res;
 }
@@ -157,9 +157,9 @@ Fixer::ConvertResult Fixer::tar()
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -167,7 +167,7 @@ Fixer::ConvertResult Fixer::tar()
 
     // Create the .tar segment
     auto new_data_checker = data_checker->tar(mds);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
@@ -190,9 +190,9 @@ Fixer::ConvertResult Fixer::zip()
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -200,7 +200,7 @@ Fixer::ConvertResult Fixer::zip()
 
     // Create the .zip segment
     auto new_data_checker = data_checker->zip(mds);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
@@ -224,9 +224,9 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         res.segment_mtime = ts.value();
         return res;
     }
+    res.size_pre = data().size();
 
     auto data_checker = data().checker();
-    res.size_pre = data_checker->size();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -234,7 +234,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 
     // Create the .zip segment
     auto new_data_checker = data_checker->compress(mds, groupsize);
-    res.size_post = new_data_checker->size();
+    res.size_post = new_data_checker->data().size();
 
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
@@ -243,6 +243,11 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 }
 
 void Fixer::reindex(arki::metadata::Collection&)
+{
+    // Nothing to do, since we do not have an index
+}
+
+void Fixer::test_mark_all_removed()
 {
     // Nothing to do, since we do not have an index
 }

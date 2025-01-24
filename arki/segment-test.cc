@@ -280,7 +280,7 @@ add_method("fsck_no_metadata", [](Fixture& f) {
     segment::NullReporter reporter;
     auto res = checker->fsck(reporter);
     wassert(actual(res.size) > 0u);
-    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.mtime) == f.initial_mtime);
     wassert(actual(res.interval) == core::Interval());
     wassert(actual(res.state) == segment::SEGMENT_UNALIGNED);
 });
@@ -295,7 +295,7 @@ add_method("fsck_no_summary", [](Fixture& f) {
     segment::NullReporter reporter;
     auto res = checker->fsck(reporter);
     wassert(actual(res.size) > 0u);
-    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.mtime) == f.initial_mtime);
     wassert(actual(res.interval) != core::Interval());
     wassert(actual(res.state) == segment::SEGMENT_UNOPTIMIZED);
 });
@@ -310,7 +310,7 @@ add_method("fsck_no_iseg_index", [](Fixture& f) {
     segment::NullReporter reporter;
     auto res = checker->fsck(reporter);
     wassert(actual(res.size) > 0u);
-    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.mtime) == f.initial_mtime);
     wassert(actual(res.interval) == core::Interval());
     wassert(actual(res.state) == segment::SEGMENT_UNALIGNED);
 });
@@ -322,10 +322,27 @@ add_method("fsck_deleted", [](Fixture& f) {
     segment::NullReporter reporter;
     auto res = checker->fsck(reporter);
     wassert(actual(res.size) == 0u);
-    wassert(actual(res.mtime) > 0u);
+    wassert(actual(res.mtime) == f.initial_mtime);
     wassert(actual(res.interval) == core::Interval());
     wassert(actual(res.state) == segment::SEGMENT_DELETED);
 });
+
+add_method("test_mark_all_removed", [](Fixture& f) {
+    f.skip_unless_has_index();
+    auto segment = f.create(f.td.mds);
+    auto data_size = segment->data()->size();
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    auto fixer = checker->fixer();
+    fixer->test_mark_all_removed();
+
+    segment::NullReporter reporter;
+    auto res = checker->fsck(reporter);
+    wassert(actual(res.size) == data_size);
+    wassert(actual(res.mtime) == f.initial_mtime);
+    wassert(actual(res.interval) == core::Interval());
+    wassert(actual(res.state) == segment::SEGMENT_DELETED);
+});
+
 
 }
 
