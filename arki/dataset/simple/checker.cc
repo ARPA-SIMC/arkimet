@@ -160,21 +160,18 @@ public:
 
     void index(metadata::Collection&& mds) override
     {
-        time_t mtime = segment_data_checker->data().timestamp().value();
+        auto fixer = segment_checker->fixer();
+        fixer->reindex(mds);
 
-        // Iterate the metadata, computing the summary and making the data
-        // paths relative
-        Summary sum;
-        mds.add_to_summary(sum);
-
-        // Regenerate .metadata and .summary
-        mds.prepare_for_segment_metadata();
-        mds.writeAtomically(segment->abspath_metadata());
-        sum.writeAtomically(segment->abspath_summary());
+        time_t mtime = segment_data->timestamp().value();
+        core::Interval interval;
+        mds.expand_date_range(interval);
 
         // Add to manifest
-        dataset_checker.manifest.set(segment->relpath(), mtime, sum.get_reference_time());
+        dataset_checker.manifest.set(segment->relpath(), mtime, interval);
         dataset_checker.manifest.flush();
+
+        std::filesystem::remove(segment->abspath_iseg_index());
     }
 
     void rescan(dataset::Reporter& reporter) override
@@ -187,16 +184,15 @@ public:
                 [&](const std::string& msg) { reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), msg); },
                 lock, mds.inserter_func());
 
-        Summary sum;
-        mds.add_to_summary(sum);
+        time_t mtime = segment_data->timestamp().value();
+        core::Interval interval;
+        mds.expand_date_range(interval);
 
-        // Regenerate .metadata and .summary
-        mds.prepare_for_segment_metadata();
-        mds.writeAtomically(path_metadata);
-        sum.writeAtomically(path_summary);
+        auto fixer = segment_checker->fixer();
+        fixer->reindex(mds);
 
         // Add to manifest
-        dataset_checker.manifest.set(segment->relpath(), segment_data_checker->data().timestamp().value(), sum.get_reference_time());
+        dataset_checker.manifest.set(segment->relpath(), mtime, interval);
         dataset_checker.manifest.flush();
     }
 

@@ -88,13 +88,8 @@ public:
 
     void index(metadata::Collection&& mds) override
     {
-        // Add to index
-        auto write_lock = lock->write_lock();
-        Pending p_idx = idx().begin_transaction();
-        for (auto& md: mds)
-            if (idx().index(*md, md->sourceBlob().offset))
-                throw std::runtime_error("duplicate detected while reindexing segment");
-        p_idx.commit();
+        auto fixer = segment_checker->fixer();
+        fixer->reindex(mds);
 
         // Remove .metadata and .summary files
         std::filesystem::remove(segment->abspath_metadata());
@@ -113,11 +108,8 @@ public:
         // Filter out duplicates
         mds = mds.without_duplicates(unique_codes);
 
-        // Lock away writes and reads
-        auto write_lock = lock->write_lock();
-        Pending p = idx().begin_transaction();
-        idx().reindex(mds);
-        p.commit();
+        auto fixer = segment_checker->fixer();
+        fixer->reindex(mds);
     }
 
     arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
