@@ -79,6 +79,12 @@ endif
 
 # Dependencies
 
+# std::filesystem library needs to be explicitly linked with g++ < 9.0
+if cpp.find_library('stdc++fs').found()
+  # without this, std::filesystem is not present for some compilers
+  add_project_link_arguments(['-lstdc++fs'], language : 'cpp')
+endif
+
 compiler = meson.get_compiler('cpp')
 if compiler.has_function('splice', prefix : '#include <fcntl.h>')
     conf_data.set('ARKI_HAVE_SPLICE', true)

@@ -378,8 +378,8 @@ void CheckTest<TestFixture>::register_tests()
     });
 
     this->add_method("empty_dir_segment", R"(
-	- a directory segment without a .sequence file is not considered a
-	  segment, only a spurious empty directory
+        - a directory segment without a .sequence file is not considered a
+          segment, only a spurious empty directory
     )", [&](Fixture& f) {
         // See #279
         std::filesystem::create_directories(f.test_relpath);
