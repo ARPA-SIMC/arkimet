@@ -212,7 +212,9 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         time_t ts_sum = sys::timestamp(segment().abspath_summary(), 0);
         if (ts_sum < ts_md)
         {
-            reporter.info(segment(), "metadata is newer than summary");
+            std::stringstream buf;
+            buf << "metadata (ts:" << ts_md << ") is newer than summary (ts:" << ts_sum << ")";
+            reporter.info(segment(), buf.str());
             res.state += segment::SEGMENT_UNOPTIMIZED;
         }
     }
