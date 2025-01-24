@@ -266,6 +266,11 @@ Checker::~Checker()
 {
 }
 
+std::unique_ptr<CheckerSegment> Checker::segment_from_relpath(const std::filesystem::path& relpath)
+{
+    return segment(dataset().segment_session->segment_from_relpath(relpath));
+}
+
 void Checker::segments_all(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
     segments_tracked(dest);
@@ -298,7 +303,7 @@ void Checker::segments_recursive(CheckerConfig& opts, std::function<void(segment
 void Checker::remove_old(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        auto state = segment.scan(*opts.reporter, !opts.accurate);
+        auto state = segment.fsck(*opts.reporter, !opts.accurate);
         if (!state.state.has(segment::SEGMENT_DELETE_AGE)) return;
         if (opts.readonly)
             opts.reporter->segment_remove(name(), segment.path_relative(), "should be deleted");
@@ -422,7 +427,7 @@ void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 void Checker::state(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        auto state = segment.scan(*opts.reporter, !opts.accurate);
+        auto state = segment.fsck(*opts.reporter, !opts.accurate);
         opts.reporter->segment_info(name(), segment.path_relative(),
                 state.state.to_string() + " " + state.interval.begin.to_iso8601(' ') + " to " + state.interval.end.to_iso8601(' '));
     });
@@ -450,7 +455,7 @@ void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 
     try {
         segments(opts, [&](CheckerSegment& segment) {
-            (*repacker)(segment, segment.scan(*opts.reporter, true).state);
+            (*repacker)(segment, segment.fsck(*opts.reporter, true).state);
         });
         repacker->end();
     } catch (...) {
@@ -473,14 +478,14 @@ void Checker::check(CheckerConfig& opts)
     {
         maintenance::MockFixer fixer(*opts.reporter, *this);
         segments(opts, [&](CheckerSegment& segment) {
-            fixer(segment, segment.scan(*opts.reporter, !opts.accurate).state);
+            fixer(segment, segment.fsck(*opts.reporter, !opts.accurate).state);
         });
         fixer.end();
     } else {
         maintenance::RealFixer fixer(*opts.reporter, *this);
         try {
             segments(opts, [&](CheckerSegment& segment) {
-                fixer(segment, segment.scan(*opts.reporter, !opts.accurate).state);
+                fixer(segment, segment.fsck(*opts.reporter, !opts.accurate).state);
             });
             fixer.end();
         } catch (...) {

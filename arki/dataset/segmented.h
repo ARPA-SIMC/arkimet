@@ -150,7 +150,7 @@ public:
     virtual segmented::Dataset& dataset() = 0;
     virtual std::shared_ptr<dataset::archive::Checker> archives() = 0;
 
-    virtual SegmentState scan(dataset::Reporter& reporter, bool quick=true) = 0;
+    virtual SegmentState fsck(dataset::Reporter& reporter, bool quick=true) = 0;
 
     /**
      * Remove entries from this segment, indicated by their stating offsets.
@@ -214,6 +214,14 @@ public:
  */
 class Checker : public local::Checker
 {
+protected:
+    /**
+     * Instantiate a CheckerSegment from a relative segment path
+     *
+     * This is only intended for use in tests.
+     */
+    std::unique_ptr<CheckerSegment> segment_from_relpath(const std::filesystem::path& relpath);
+
 public:
     using local::Checker::Checker;
     ~Checker();

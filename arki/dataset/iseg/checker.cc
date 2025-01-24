@@ -53,7 +53,7 @@ public:
     iseg::Dataset& dataset() override { return dataset_checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(dataset_checker.archive()); }
 
-    segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
+    segmented::SegmentState fsck(dataset::Reporter& reporter, bool quick=true) override
     {
         segmented::SegmentState res;
 

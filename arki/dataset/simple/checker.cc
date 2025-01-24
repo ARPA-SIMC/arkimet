@@ -46,7 +46,7 @@ public:
     simple::Dataset& dataset() override { return dataset_checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(dataset_checker.archive()); }
 
-    segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
+    segmented::SegmentState fsck(dataset::Reporter& reporter, bool quick=true) override
     {
         segmented::SegmentState res;
 
@@ -244,15 +244,6 @@ Checker::~Checker()
 
 std::string Checker::type() const { return "simple"; }
 
-metadata::Collection Checker::query_segment(const std::filesystem::path& relpath)
-{
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    auto reader = segment->reader(lock);
-    metadata::Collection mds;
-    reader->read_all(mds.inserter_func());
-    return mds;
-}
-
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     segmented::Checker::repack(opts, test_flags);
@@ -377,10 +368,10 @@ void Checker::check_issue51(CheckerConfig& opts)
     const auto& files = manifest.file_list();
     for (const auto& info: files)
     {
-        const auto& relpath = info.relpath;
-        metadata::Collection mds = query_segment(relpath);
+        auto csegment = segment_from_relpath(info.relpath);
+        metadata::Collection mds = csegment->segment_checker->scan();
         if (mds.empty()) return;
-        File datafile(dataset().path / relpath, O_RDONLY);
+        File datafile(csegment->segment->abspath(), O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -398,7 +389,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
             {
-                opts.reporter->segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), csegment->segment->relpath(), "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
                 return;
             }
             // Check if it ends with 7777
@@ -411,13 +402,13 @@ void Checker::check_issue51(CheckerConfig& opts)
             if (memcmp(tail, "777", 3) == 0)
             {
                 ++count_issue51;
-                broken_mds[relpath].push_back(*md);
+                broken_mds[csegment->segment->relpath()].push_back(*md);
             } else {
                 ++count_corrupted;
-                opts.reporter->segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), csegment->segment->relpath(), "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
             }
         }
-        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
+        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), csegment->segment->relpath().c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
     }
 
     if (opts.readonly)
@@ -462,12 +453,12 @@ void Checker::check_issue51(CheckerConfig& opts)
 
 void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
 {
-    metadata::Collection mds = query_segment(relpath);
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    dataset().segment_session->segment_data_checker(segment)->test_make_overlap(mds, overlap_size, data_idx);
+    auto csegment = segment_from_relpath(relpath);
+    metadata::Collection mds = csegment->segment_checker->scan();
+    csegment->segment_data_checker->test_make_overlap(mds, overlap_size, data_idx);
 
     // TODO: delegate to segment checker
-    auto pathname = dataset().path / sys::with_suffix(relpath, ".metadata");
+    auto pathname = csegment->segment->abspath_metadata();
     utils::files::PreserveFileTimes pf(pathname);
     sys::File fd(pathname, O_RDWR);
     fd.lseek(0);
@@ -477,12 +468,12 @@ void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned o
 
 void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
 {
-    auto segment = dataset().segment_session->segment_from_relpath(relpath);
-    metadata::Collection mds = query_segment(relpath);
-    dataset().segment_session->segment_data_checker(segment)->test_make_hole(mds, hole_size, data_idx);
+    auto csegment = segment_from_relpath(relpath);
+    metadata::Collection mds = csegment->segment_checker->scan();
+    csegment->segment_data_checker->test_make_hole(mds, hole_size, data_idx);
 
     // TODO: delegate to segment checker
-    auto pathname = segment->abspath_metadata();
+    auto pathname = csegment->segment->abspath_metadata();
     utils::files::PreserveFileTimes pf(pathname);
     {
         sys::File fd(pathname, O_RDWR);

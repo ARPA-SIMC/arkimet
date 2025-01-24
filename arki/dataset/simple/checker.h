@@ -22,11 +22,6 @@ protected:
     manifest::Writer manifest;
     std::shared_ptr<core::CheckLock> lock;
 
-    metadata::Collection query_segment(const std::filesystem::path& relpath);
-
-    /// Return a (shared) instance of the Segment for the given relative pathname
-    //segment::Segment* file(const Metadata& md, const std::string& format);
-
 public:
     explicit Checker(std::shared_ptr<simple::Dataset> dataset);
     virtual ~Checker();

@@ -256,7 +256,7 @@ State DatasetTest::scan_state(bool quick, bool report_on_exit)
     opts.reporter = std::make_shared<OstreamReporter>(res.report);
     auto checker = makeSegmentedChecker();
     checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
-        res.insert(make_pair(checker.name() + ":" + segment.path_relative().native(), segment.scan(*opts.reporter, quick)));
+        res.insert(make_pair(checker.name() + ":" + segment.path_relative().native(), segment.fsck(*opts.reporter, quick)));
     });
     return res;
 }
@@ -284,7 +284,7 @@ State DatasetTest::scan_state(const Matcher& matcher, bool quick, bool report_on
     opts.reporter = std::make_shared<OstreamReporter>(res.report);
     opts.segment_filter = matcher;
     auto checker = makeSegmentedChecker();
-    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.fsck(*opts.reporter, quick))); });
     return res;
 }
 
