@@ -104,7 +104,7 @@ public:
     std::string ds_name;
     // Dataset root directory
     std::filesystem::path ds_root;
-    std::vector<std::shared_ptr<Metadata>> import_results;
+    metadata::Collection import_results;
 
     /**
      * @param cfg_tail
@@ -134,6 +134,7 @@ public:
     dataset::Dataset& config();
     std::shared_ptr<dataset::Dataset> dataset_config();
     std::shared_ptr<dataset::local::Dataset> local_config();
+    std::shared_ptr<dataset::segmented::Dataset> segmented_config();
 
     /**
      * Return the segment pathname in the current dataset where md is expected

@@ -329,7 +329,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
 this->add_method("read_missing_segment", [](Fixture& f) {
     // Delete a segment, leaving it in the index
-    auto segment = f.segment_session()->segment_from_relpath_and_format(f.import_results[0]->sourceBlob().filename, f.td.format);
+    auto segment = f.segment_session()->segment_from_relpath_and_format(f.import_results[0].sourceBlob().filename, f.td.format);
     f.segment_session()->segment_data_checker(segment)->remove();
 
     unsigned count_ok = 0;
