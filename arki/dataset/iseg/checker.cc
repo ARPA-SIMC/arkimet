@@ -39,6 +39,8 @@ public:
     CheckerSegment(Checker& checker, std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
         : segmented::CheckerSegment(segment, lock), dataset_checker(checker)
     {
+        if (auto hooks = dataset().test_hooks)
+            hooks->on_check_lock(*segment);
     }
     ~CheckerSegment()
     {

@@ -4,6 +4,7 @@
 #include "maintenance.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/stream.h"
 #include "arki/dataset/time.h"
 #include "arki/query.h"
@@ -827,6 +828,57 @@ add_method("scan_dir_dir2", [](Fixture& f) {
     std::vector<std::string> res;
     wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
     wassert(actual(res.size()) == 0u);
+});
+
+add_method("no_writes_when_repacking", [](Fixture& f) {
+    matcher::Parser parser;
+    std::filesystem::path relpath("2007/07-07.grib");
+    f.clean_and_import();
+    // Make a hole so the segment needs repack
+    f.makeSegmentedChecker()->test_make_hole(relpath, 10, 0);
+
+    auto dataset = f.segmented_config();
+
+    // Install hooks
+    bool on_check_lock_triggered = false;
+    bool on_repack_write_lock_triggered = false;
+    auto test_hooks = std::make_shared<segmented::TestHooks>();
+    test_hooks->on_check_lock = [&](const Segment& segment) {
+        if (segment.relpath() != relpath)
+            return;
+        on_check_lock_triggered = true;
+
+        // When repack is still checking, we can still query
+        auto reader = dataset->create_reader();
+        unsigned count = 0;
+        reader->query_data(parser.parse("reftime:=2007-07-07"), [&](const auto&) noexcept { ++count; return true; });
+        wassert(actual(count) == 1u);
+
+        // When repack is still checking, we cannot append
+        auto writer = dataset->create_writer();
+        wassert_throws(lock::locked_error, writer->acquire(f.import_results[1]));
+    };
+    test_hooks->on_repack_write_lock = [&](const Segment& segment) {
+        if (segment.relpath() != relpath)
+            return;
+        on_repack_write_lock_triggered = true;
+
+        // When repack is fixing, reading fails
+        auto reader = dataset->create_reader();
+        wassert_throws(lock::locked_error, reader->query_data(parser.parse("reftime:=2007-07-07"), [&](const auto&) noexcept {return true;}));
+
+        // When repack is fixing, appending fails
+        auto writer = dataset->create_writer();
+        wassert_throws(lock::locked_error, writer->acquire(f.import_results[1]));
+    };
+    dataset->test_hooks = test_hooks;
+
+    auto checker = dataset->create_checker();
+    CheckerConfig checker_config;
+    checker_config.readonly = false;
+    checker->repack(checker_config);
+    wassert_true(on_check_lock_triggered);
+    wassert_true(on_repack_write_lock_triggered);
 });
 
 }

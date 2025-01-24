@@ -6,6 +6,7 @@
 #include <arki/core/time.h>
 
 namespace arki::dataset::segmented {
+struct TestHooks;
 
 struct Dataset : public local::Dataset
 {
@@ -49,6 +50,11 @@ public:
      * Useful for writing fast to temporary private datasets.
      */
     bool eatmydata = false;
+
+    /**
+     * Set in test suite to set hooks in various points of dataset processing
+     */
+    std::shared_ptr<TestHooks> test_hooks;
 
 
     Dataset(std::shared_ptr<Session> session, std::shared_ptr<segment::Session> segment_session, const core::cfg::Section& cfg);
@@ -379,6 +385,15 @@ public:
      * root.
      */
     void scan_dir(std::function<void(std::shared_ptr<const Segment> segment)> dest);
+};
+
+
+struct TestHooks
+{
+    std::function<void(const Segment&)> on_check_lock;
+    std::function<void(const Segment&)> on_repack_write_lock;
+
+    TestHooks();
 };
 
 }

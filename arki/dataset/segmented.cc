@@ -226,6 +226,9 @@ segment::Fixer::ReorderResult CheckerSegment::repack(unsigned test_flags)
     repack_config.test_flags = test_flags;
 
     auto fixer = segment_checker->fixer();
+    if (auto hooks = dataset().test_hooks)
+        hooks->on_repack_write_lock(*segment);
+
     auto res = fixer->reorder(mds, repack_config);
     post_repack(fixer, res);
     return res;
@@ -615,6 +618,11 @@ void Checker::test_delete_from_index(const std::filesystem::path& relpath)
     auto csegment = segment_from_relpath(relpath);
     auto fixer = csegment->segment_checker->fixer();
     fixer->test_mark_all_removed();
+}
+
+TestHooks::TestHooks()
+    : on_check_lock([](const auto&) noexcept {}), on_repack_write_lock([](const auto&) noexcept {})
+{
 }
 
 }
