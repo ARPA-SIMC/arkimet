@@ -112,7 +112,7 @@ source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 # Try to limit parallel building based on system load
 # This mitigates building on CI systems designed for mostly non-parallel builds
-%meson_build -l%{_smp_build_ncpus}
+%meson_build -l$(( %{_smp_build_ncpus} * 2 ))
 
 
 %install
