@@ -65,6 +65,27 @@ public:
         mds.acquire(std::move(copy));
     }
 
+    void write_metadata()
+    {
+        auto path_md = segment->segment().abspath_metadata();
+        auto path_sum = segment->segment().abspath_summary();
+
+        mds.prepare_for_segment_metadata();
+        mds.writeAtomically(path_md);
+        sum.writeAtomically(path_sum);
+
+        // Synchronize summary and metadata timestamps.
+        // This is not normally needed, as the files are written and flushed in
+        // the correct order.
+        //
+        // When running with filesystem sync disabled (eatmydata or
+        // systemd-nspawn --suppress-sync) however there are cases where the
+        // summary timestamp ends up one second earlier than the metadata
+        // timestamp, which then gets flagged by a dataset check
+        auto ts_md = sys::timestamp(path_md);
+        sys::touch(path_sum, ts_md);
+    }
+
     WriterAcquireResult acquire(Metadata& md)
     {
         // Try appending
@@ -72,9 +93,7 @@ public:
             const types::source::Blob& new_source = segment->append(md);
             add(md, new_source);
             segment->commit();
-            mds.prepare_for_segment_metadata();
-            mds.writeAtomically(segment->segment().abspath_metadata());
-            sum.writeAtomically(segment->segment().abspath_summary());
+            write_metadata();
             return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -101,9 +120,7 @@ public:
         }
 
         segment->commit();
-        mds.prepare_for_segment_metadata();
-        mds.writeAtomically(segment->segment().abspath_metadata());
-        sum.writeAtomically(segment->segment().abspath_summary());
+        write_metadata();
         return true;
     }
 };
