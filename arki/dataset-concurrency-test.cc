@@ -468,7 +468,10 @@ this->add_method("read_repack2", [](Fixture& f) {
     RepackForever<Fixture> rf(f);
     wassert(rf.during([&]{
         for (unsigned i = 0; i < 60; ++i)
-            mdc.add(*f.config().create_reader(), Matcher());
+        {
+            auto reader = wcallchecked(f.config().create_reader());
+            mdc.add(*reader, Matcher());
+        }
     }));
 
     wassert(actual(mdc.size()) == 60u * 3);
@@ -496,6 +499,8 @@ this->add_method("write_repack", [](Fixture& f) {
             wassert(actual(*writer).import(*md));
         }
     });
+
+    wassert(f.all_clean(1));
 
     auto reader = f.config().create_reader();
     unsigned count = 0;
