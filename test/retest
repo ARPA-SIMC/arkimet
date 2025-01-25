@@ -1,0 +1,4 @@
+#!/bin/sh
+set -xe
+while true; do meson test -vC t "$@"; done
+
