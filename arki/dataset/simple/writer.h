@@ -22,7 +22,6 @@ protected:
     std::unique_ptr<AppendSegment> file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock);
 
     void invalidate_summary();
-    void invalidate_summary(const std::filesystem::path& relpath);
 
 public:
     Writer(std::shared_ptr<simple::Dataset> dataset);

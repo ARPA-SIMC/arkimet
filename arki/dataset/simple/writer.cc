@@ -133,13 +133,6 @@ void Writer::invalidate_summary()
     std::filesystem::remove(dataset().path / "summary");
 }
 
-void Writer::invalidate_summary(const std::filesystem::path& relpath)
-{
-    std::filesystem::remove(dataset().path / sys::with_suffix(relpath, ".summary"));
-    invalidate_summary();
-}
-
-
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, DataFormat format, std::shared_ptr<core::AppendLock> lock)
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
