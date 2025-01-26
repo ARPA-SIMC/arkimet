@@ -1,5 +1,4 @@
 #include "local.h"
-#include "lock.h"
 #include "segmented.h"
 #include "archive.h"
 #include "arki/dataset/time.h"
@@ -63,21 +62,6 @@ std::shared_ptr<archive::Dataset> Dataset::archive()
 bool Dataset::hasArchive() const
 {
     return std::filesystem::exists(path / ".archive");
-}
-
-std::shared_ptr<core::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
-{
-    return std::make_shared<SegmentReadLock>(*this, relpath);
-}
-
-std::shared_ptr<core::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
-{
-    return std::make_shared<SegmentAppendLock>(*this, relpath);
-}
-
-std::shared_ptr<core::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
-{
-    return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
 
 

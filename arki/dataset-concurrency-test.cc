@@ -470,7 +470,7 @@ this->add_method("read_repack2", [](Fixture& f) {
         for (unsigned i = 0; i < 60; ++i)
         {
             auto reader = wcallchecked(f.config().create_reader());
-            mdc.add(*reader, Matcher());
+            wassert(mdc.add(*reader, Matcher()));
         }
     }));
 

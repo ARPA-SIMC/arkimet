@@ -2,6 +2,7 @@
 #include "iseg/reader.h"
 #include "iseg/writer.h"
 #include "iseg/checker.h"
+#include "lock.h"
 #include "arki/defs.h"
 #include "arki/types.h"
 #include "arki/segment/iseg/session.h"
@@ -40,6 +41,21 @@ std::shared_ptr<dataset::Writer> Dataset::create_writer()
 std::shared_ptr<dataset::Checker> Dataset::create_checker()
 {
     return std::make_shared<iseg::Checker>(static_pointer_cast<Dataset>(shared_from_this()));
+}
+
+std::shared_ptr<core::ReadLock> Dataset::read_lock_segment(const std::filesystem::path& relpath) const
+{
+    return std::make_shared<SegmentReadLock>(*this, relpath);
+}
+
+std::shared_ptr<core::AppendLock> Dataset::append_lock_segment(const std::filesystem::path& relpath) const
+{
+    return std::make_shared<SegmentAppendLock>(*this, relpath);
+}
+
+std::shared_ptr<core::CheckLock> Dataset::check_lock_segment(const std::filesystem::path& relpath) const
+{
+    return std::make_shared<SegmentCheckLock>(*this, relpath);
 }
 
 }

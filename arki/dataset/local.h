@@ -50,13 +50,6 @@ public:
 
     /// Check if the dataset has archived data
     bool hasArchive() const;
-
-    /**
-     * Create/open a dataset-wide lockfile, returning the Lock instance
-     */
-    std::shared_ptr<core::ReadLock> read_lock_segment(const std::filesystem::path& relpath) const;
-    std::shared_ptr<core::AppendLock> append_lock_segment(const std::filesystem::path& relpath) const;
-    std::shared_ptr<core::CheckLock> check_lock_segment(const std::filesystem::path& relpath) const;
 };
 
 template<typename Parent>

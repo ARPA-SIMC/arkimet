@@ -21,6 +21,13 @@ struct Dataset : public segmented::Dataset
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Writer> create_writer() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
+
+    /**
+     * Create/open a dataset-wide lockfile, returning the Lock instance
+     */
+    std::shared_ptr<core::ReadLock> read_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<core::AppendLock> append_lock_segment(const std::filesystem::path& relpath) const;
+    std::shared_ptr<core::CheckLock> check_lock_segment(const std::filesystem::path& relpath) const;
 };
 
 }
