@@ -28,7 +28,10 @@ Session::Session(const std::filesystem::path& root)
 }
 
 Session::Session(const core::cfg::Section& cfg)
-    : reader_pool(), root(cfg.value("path")), smallfiles(cfg.value_bool("smallfiles"))
+    : reader_pool(),
+      root(cfg.value("path")),
+      smallfiles(cfg.value_bool("smallfiles")),
+      eatmydata(cfg.value_bool("eatmydata"))
 {
 }
 

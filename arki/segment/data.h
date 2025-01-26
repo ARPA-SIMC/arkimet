@@ -185,11 +185,6 @@ struct WriterConfig
      * segment
      */
     bool drop_cached_data_on_commit = false;
-
-    /**
-     * Skip fdatasync/fsync operations to trade consistency for speed
-     */
-    bool eatmydata = false;
 };
 
 class Writer : public core::Transaction, public std::enable_shared_from_this<Writer>

@@ -13,8 +13,7 @@ Session::Session(const core::cfg::Section& cfg)
       format(format_from_string(cfg.value("format"))),
       index(types::parse_code_names(cfg.value("index"))),
       unique(types::parse_code_names(cfg.value("unique"))),
-      trace_sql(cfg.value_bool("trace_sql")),
-      eatmydata(cfg.value_bool("eatmydata"))
+      trace_sql(cfg.value_bool("trace_sql"))
 {
     unique.erase(TYPE_REFTIME);
 }

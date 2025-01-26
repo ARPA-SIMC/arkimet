@@ -386,10 +386,6 @@ void Checker::remove(const metadata::Collection& mds)
 
     for (const auto& i: by_segment)
     {
-        segment::data::WriterConfig writer_config;
-        writer_config.drop_cached_data_on_commit = false;
-        writer_config.eatmydata = dataset().eatmydata;
-
         auto segment = dataset().segment_session->segment_from_relpath(i.first);
         auto seg = this->segment(segment);
         seg->remove_data(i.second);

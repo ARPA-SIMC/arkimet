@@ -19,13 +19,6 @@ public:
     std::set<types::Code> unique;
     bool trace_sql = false;
 
-    /**
-     * Trade write reliability and write concurrency in favour of performance.
-     *
-     * Useful for writing fast temporary private datasets.
-     */
-    bool eatmydata = false;
-
     explicit Session(const core::cfg::Section& cfg);
 
     std::shared_ptr<arki::Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const override;

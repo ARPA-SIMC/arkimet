@@ -32,6 +32,13 @@ public:
     bool smallfiles = false;
 
     /**
+     * Trade write reliability and write concurrency in favour of performance.
+     *
+     * Useful for writing fast temporary private datasets.
+     */
+    bool eatmydata = false;
+
+    /**
      * Discard data and use filesystem holes in segment data.
      *
      * This is only used in tests.

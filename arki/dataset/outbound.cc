@@ -19,7 +19,7 @@ namespace dataset {
 namespace outbound {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg.value("path")), cfg)
+    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg), cfg)
 {
 }
 
@@ -52,7 +52,6 @@ metadata::Inbound::Result Writer::acquire(Metadata& md, const AcquireConfig& cfg
 
     segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
-    writer_config.eatmydata = dataset().eatmydata;
 
     try {
         auto w = dataset().segment_session->segment_data_writer(segment, writer_config);

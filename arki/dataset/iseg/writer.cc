@@ -201,7 +201,6 @@ void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& c
 
     segment::data::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
-    writer_config.eatmydata = dataset().eatmydata;
 
     std::map<std::string, metadata::InboundBatch> by_segment = batch_by_segment(batch);
 

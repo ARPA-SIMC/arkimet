@@ -249,7 +249,7 @@ template<typename Data, typename File>
 void Writer<Data, File>::commit()
 {
     if (this->fired) return;
-    if (!this->config.eatmydata)
+    if (!this->segment().session().eatmydata)
         fd.fsync();
     for (auto& p: pending)
         p.set_source();

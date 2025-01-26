@@ -482,7 +482,7 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     const auto& data = md.get_data();
     data.write(fd);
-    if (!config.eatmydata)
+    if (!segment().session().eatmydata)
         if (fdatasync(fd) < 0)
             fd.throw_error("cannot flush write");
 }
