@@ -132,7 +132,16 @@ protected:
     std::shared_ptr<core::AppendLock> lock;
 
 public:
-    explicit Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
+    struct AcquireResult
+    {
+        size_t count_ok = 0;
+        size_t count_failed = 0;
+        time_t segment_mtime = 0;
+        arki::core::Interval data_timespan;
+    };
+
+
+    Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
     Writer(const Writer&) = delete;
     Writer(Writer&&) = delete;
     Writer& operator=(const Writer&) = delete;
@@ -142,11 +151,7 @@ public:
     /// Access the segment
     const Segment& segment() const { return *m_segment; }
 
-#if 0
-    virtual void acquire_batch_replace_never(arki::metadata::InboundBatch& batch) = 0;
-    virtual void acquire_batch_replace_always(arki::metadata::InboundBatch& batch) = 0;
-    virtual void acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch) = 0;
-#endif
+    virtual AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) = 0;
 };
 
 

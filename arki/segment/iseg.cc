@@ -67,6 +67,11 @@ Writer::~Writer()
 {
 }
 
+Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config)
+{
+    throw std::runtime_error("acquiring in iseg segments is not yet implemented");
+}
+
 
 Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
     : segment::Checker(segment, lock)

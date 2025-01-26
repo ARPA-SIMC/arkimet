@@ -10,16 +10,11 @@
 
 namespace arki::dataset::simple {
 
-class AppendSegment;
-
 class Writer : public DatasetAccess<simple::Dataset, segmented::Writer>
 {
 protected:
     manifest::Writer manifest;
     std::shared_ptr<simple::Dataset> m_config;
-
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const Metadata& md, DataFormat format, std::shared_ptr<core::AppendLock> lock);
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock);
 
     void invalidate_summary();
 

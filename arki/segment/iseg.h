@@ -33,6 +33,8 @@ class Writer : public segment::Writer
 public:
     using segment::Writer::Writer;
     ~Writer();
+
+    AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) override;
 };
 
 class Checker : public segment::Checker
