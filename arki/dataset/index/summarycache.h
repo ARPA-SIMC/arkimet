@@ -4,15 +4,15 @@
 /// dataset/index/summarycache - Cache precomputed summaries
 
 #include <arki/core/time.h>
+#include <arki/metadata/fwd.h>
+#include <arki/dataset/fwd.h>
 #include <filesystem>
 
 namespace arki {
-class Metadata;
 class Summary;
 
 namespace dataset {
 class Base;
-class Reporter;
 
 namespace index {
 
@@ -53,14 +53,18 @@ public:
     /// Remove cache contents for the period found in the given metadata
     void invalidate(const Metadata& md);
 
+    /**
+     * Remove cache contents for the period found in successfully imported
+     * metadata in the batch
+     */
+    void invalidate(const WriterBatch& batch);
+
     /// Remove cache contents for all dates from tmin and tmax (inclusive)
     void invalidate(const core::Time& tmin, const core::Time& tmax);
 
     /// Run consistency checks on the summary cache
     bool check(const dataset::Base& ds, Reporter& reporter) const;
 };
-
-
 
 }
 }

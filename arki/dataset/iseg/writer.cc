@@ -38,7 +38,7 @@ public:
     {
     }
 
-    WriterAcquireResult acquire_replace_never(Metadata& md, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_never(Metadata& md)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -48,8 +48,6 @@ public:
                 md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset));
                 return ACQ_ERROR_DUPLICATE;
             }
-            // Invalidate the summary cache for this month
-            scache.invalidate(md);
             data_writer->append(md);
             data_writer->commit();
             p_idx.commit();
@@ -61,14 +59,12 @@ public:
         }
     }
 
-    WriterAcquireResult acquire_replace_always(Metadata& md, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_always(Metadata& md)
     {
         Pending p_idx = idx->begin_transaction();
 
         try {
             idx->replace(md, data_writer->next_offset());
-            // Invalidate the summary cache for this month
-            scache.invalidate(md);
             data_writer->append(md);
             data_writer->commit();
             p_idx.commit();
@@ -80,7 +76,7 @@ public:
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md, index::SummaryCache& scache)
+    WriterAcquireResult acquire_replace_higher_usn(Metadata& md)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -109,20 +105,13 @@ public:
                 if (old_usn > new_usn)
                     return ACQ_ERROR_DUPLICATE;
 
-                // Replace, reusing the pending datafile transaction from earlier
+                // Replace
                 idx->replace(md, data_writer->next_offset());
-                data_writer->append(md);
-                data_writer->commit();
-                p_idx.commit();
-                return ACQ_OK;
-            } else {
-                data_writer->append(md);
-                // Invalidate the summary cache for this month
-                scache.invalidate(md);
-                data_writer->commit();
-                p_idx.commit();
-                return ACQ_OK;
             }
+            data_writer->append(md);
+            data_writer->commit();
+            p_idx.commit();
+            return ACQ_OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
@@ -130,7 +119,7 @@ public:
         }
     }
 
-    void acquire_batch_replace_never(WriterBatch& batch, index::SummaryCache& scache)
+    void acquire_batch_replace_never(WriterBatch& batch)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -146,8 +135,6 @@ public:
                     continue;
                 }
 
-                // Invalidate the summary cache for this month
-                scache.invalidate(e->md);
                 data_writer->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
@@ -162,7 +149,7 @@ public:
         p_idx.commit();
     }
 
-    void acquire_batch_replace_always(WriterBatch& batch, index::SummaryCache& scache)
+    void acquire_batch_replace_always(WriterBatch& batch)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -171,8 +158,6 @@ public:
             {
                 e->dataset_name.clear();
                 idx->replace(e->md, data_writer->next_offset());
-                // Invalidate the summary cache for this month
-                scache.invalidate(e->md);
                 data_writer->append(e->md);
                 e->result = ACQ_OK;
                 e->dataset_name = dataset->name();
@@ -187,7 +172,7 @@ public:
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch, index::SummaryCache& scache)
+    void acquire_batch_replace_higher_usn(WriterBatch& batch)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -231,17 +216,10 @@ public:
 
                     // Replace, reusing the pending datafile transaction from earlier
                     idx->replace(e->md, data_writer->next_offset());
-                    data_writer->append(e->md);
-                    e->result = ACQ_OK;
-                    e->dataset_name = dataset->name();
-                    continue;
-                } else {
-                    // Invalidate the summary cache for this month
-                    scache.invalidate(e->md);
-                    data_writer->append(e->md);
-                    e->result = ACQ_OK;
-                    e->dataset_name = dataset->name();
                 }
+                data_writer->append(e->md);
+                e->result = ACQ_OK;
+                e->dataset_name = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -308,9 +286,27 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     auto segment = file(writer_config, md);
     switch (replace)
     {
-        case REPLACE_NEVER: return segment->acquire_replace_never(md, scache);
-        case REPLACE_ALWAYS: return segment->acquire_replace_always(md, scache);
-        case REPLACE_HIGHER_USN: return segment->acquire_replace_higher_usn(md, scache);
+        case REPLACE_NEVER:
+        {
+            auto res = segment->acquire_replace_never(md);
+            if (res == ACQ_OK)
+                scache.invalidate(md);
+            return res;
+        }
+        case REPLACE_ALWAYS:
+        {
+            auto res = segment->acquire_replace_always(md);
+            if (res == ACQ_OK)
+                scache.invalidate(md);
+            return res;
+        }
+        case REPLACE_HIGHER_USN:
+        {
+            auto res = segment->acquire_replace_higher_usn(md);
+            if (res == ACQ_OK)
+                scache.invalidate(md);
+            return res;
+        }
         default:
         {
             stringstream ss;
@@ -345,13 +341,16 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
         switch (replace)
         {
             case REPLACE_NEVER:
-                segment->acquire_batch_replace_never(s.second, scache);
+                segment->acquire_batch_replace_never(s.second);
+                scache.invalidate(s.second);
                 break;
             case REPLACE_ALWAYS:
-                segment->acquire_batch_replace_always(s.second, scache);
+                segment->acquire_batch_replace_always(s.second);
+                scache.invalidate(s.second);
                 break;
             case REPLACE_HIGHER_USN:
-                segment->acquire_batch_replace_higher_usn(s.second, scache);
+                segment->acquire_batch_replace_higher_usn(s.second);
+                scache.invalidate(s.second);
                 break;
             default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
         }

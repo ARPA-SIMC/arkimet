@@ -113,6 +113,24 @@ void SummaryCache::invalidate(const Metadata& md)
     }
 }
 
+void SummaryCache::invalidate(const WriterBatch& batch)
+{
+    std::set<std::pair<int, int>> to_delete;
+    for (const auto& el: batch)
+    {
+        if (el->result != ACQ_OK)
+            continue;
+        if (const reftime::Position* rt = el->md.get<reftime::Position>())
+        {
+            auto t = rt->get_Position();
+            to_delete.emplace(std::make_pair(t.ye, t.mo));
+        }
+    }
+
+    for (const auto& month: to_delete)
+        invalidate(month.first, month.second);
+}
+
 void SummaryCache::invalidate(const Time& tmin, const Time& tmax)
 {
     bool deleted = false;

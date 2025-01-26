@@ -28,7 +28,7 @@ protected:
     std::unique_ptr<AppendSegment> file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath);
 
 public:
-    Writer(std::shared_ptr<iseg::Dataset> config);
+    explicit Writer(std::shared_ptr<iseg::Dataset> config);
     virtual ~Writer();
 
     std::string type() const override;
