@@ -22,7 +22,6 @@ protected:
     std::filesystem::path m_abspath;
 
 public:
-
     Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& relpath);
     virtual ~Segment();
 

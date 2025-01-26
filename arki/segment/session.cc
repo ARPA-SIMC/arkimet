@@ -22,7 +22,7 @@ using namespace arki::utils;
 namespace arki::segment {
 
 Session::Session(const std::filesystem::path& root)
-    : reader_pool(), root(root)
+    : reader_pool(), root(std::filesystem::weakly_canonical(root))
 {
 }
 
