@@ -71,6 +71,7 @@ public:
     using gz::Data::Data;
     const char* type() const override;
     bool single_file() const override;
+    size_t next_offset(size_t offset, size_t size) const override { return offset + size; }
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
@@ -104,6 +105,7 @@ struct Data : public gz::Data
     using gz::Data::Data;
     const char* type() const override;
     bool single_file() const override;
+    size_t next_offset(size_t offset, size_t size) const override { return offset + size + padding; }
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;

@@ -343,6 +343,33 @@ add_method("test_mark_all_removed", [](Fixture& f) {
     wassert(actual(res.state) == segment::SEGMENT_DELETED);
 });
 
+add_method("test_make_overlap", [](Fixture& f) {
+    f.skip_unless_has_index();
+    auto segment = f.create(f.td.mds);
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    {
+        auto fixer = checker->fixer();
+        fixer->test_make_overlap(10, 1);
+    }
+
+    auto mds = checker->scan();
+});
+
+add_method("test_make_hole", [](Fixture& f) {
+    f.skip_unless_has_index();
+    auto segment = f.create(f.td.mds);
+
+    auto checker = segment->checker(std::make_shared<core::lock::NullCheckLock>());
+    {
+        auto fixer = checker->fixer();
+        fixer->test_make_hole(10, 1);
+    }
+    auto mds = checker->scan();
+    const auto& blob0 = mds[0].sourceBlob();
+    const auto& blob1 = mds[1].sourceBlob();
+    wassert(actual(blob1.offset) == checker->data().next_offset(blob0.offset, blob0.size) + 10);
+});
 
 }
 

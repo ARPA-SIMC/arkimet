@@ -468,4 +468,36 @@ void Fixer::test_mark_all_removed()
     std::filesystem::remove(segment().abspath_summary());
 }
 
+void Fixer::test_make_overlap(unsigned overlap_size, unsigned data_idx)
+{
+    auto mds = checker().scan();
+    auto data_checker = data().checker();
+    data_checker->test_make_overlap(mds, overlap_size, data_idx);
+
+    auto pathname = segment().abspath_metadata();
+    utils::files::PreserveFileTimes pf(pathname);
+    sys::File fd(pathname, O_RDWR);
+    fd.lseek(0);
+    mds.write_to(fd);
+    fd.ftruncate(fd.lseek(0, SEEK_CUR));
+}
+
+void Fixer::test_make_hole(unsigned hole_size, unsigned data_idx)
+{
+    auto mds = checker().scan();
+    auto data_checker = data().checker();
+    data_checker->test_make_hole(mds, hole_size, data_idx);
+
+    auto pathname = segment().abspath_metadata();
+    utils::files::PreserveFileTimes pf(pathname);
+    {
+        sys::File fd(pathname, O_RDWR);
+        fd.lseek(0);
+        mds.prepare_for_segment_metadata();
+        mds.write_to(fd);
+        fd.ftruncate(fd.lseek(0, SEEK_CUR));
+        fd.close();
+    }
+}
+
 }

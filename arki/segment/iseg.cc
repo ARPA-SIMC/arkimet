@@ -369,4 +369,20 @@ void Fixer::test_mark_all_removed()
     index.reset();
 }
 
+void Fixer::test_make_overlap(unsigned overlap_size, unsigned data_idx)
+{
+    auto mds = checker().scan();
+    auto data_checker = data().checker();
+    data_checker->test_make_overlap(mds, overlap_size, data_idx);
+    checker().index().test_make_overlap(overlap_size, data_idx);
+}
+
+void Fixer::test_make_hole(unsigned hole_size, unsigned data_idx)
+{
+    auto mds = checker().scan();
+    auto data_checker = data().checker();
+    data_checker->test_make_hole(mds, hole_size, data_idx);
+    checker().index().test_make_hole(hole_size, data_idx);
+}
+
 }

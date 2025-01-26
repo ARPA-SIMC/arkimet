@@ -33,8 +33,6 @@ public:
     void check_issue51(CheckerConfig& opts) override;
     size_t vacuum(dataset::Reporter& reporter) override;
 
-    void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1) override;
-    void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0) override;
     void test_invalidate_in_index(const std::filesystem::path& relpath) override;
 
     friend class CheckerSegment;

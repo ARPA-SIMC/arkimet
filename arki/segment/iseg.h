@@ -60,6 +60,8 @@ public:
     void move(std::shared_ptr<arki::Segment> dest) override;
     void test_touch_contents(time_t timestamp) override;
     void test_mark_all_removed() override;
+    void test_make_overlap(unsigned overlap_size, unsigned data_idx=1) override;
+    void test_make_hole(unsigned hole_size, unsigned data_idx=0) override;
 };
 
 }

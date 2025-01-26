@@ -286,6 +286,24 @@ public:
      * Set the modification time of everything in the segment
      */
     virtual void test_touch_contents(time_t timestamp);
+
+    /**
+     * All data in the segment except the `data_idx`-one are shifted backwards
+     * by `overlap_size`, so that one in position `data_idx-1` overlaps with
+     * the one in position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_make_overlap(unsigned overlap_size, unsigned data_idx=1) = 0;
+
+    /**
+     * All data in the segment starting from the one at position `data_idx` are
+     * shifted forwards by `hole_size` offset positions, so that a gap is
+     * formed before the element at position `data_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_make_hole(unsigned hole_size, unsigned data_idx=0) = 0;
 };
 
 /**

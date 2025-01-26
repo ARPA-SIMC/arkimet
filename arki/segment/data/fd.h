@@ -115,6 +115,7 @@ public:
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { throw std::runtime_error("segment::data::single::create_segment not yet implemented"); }
+    size_t next_offset(size_t offset, size_t size) const override { throw std::runtime_error("this segment can only hold one data item"); }
 
     static const unsigned padding = 0;
 };
@@ -153,6 +154,7 @@ public:
 
     const char* type() const override;
     bool single_file() const override;
+    size_t next_offset(size_t offset, size_t size) const override { return offset + size; }
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
@@ -215,6 +217,7 @@ public:
 
     const char* type() const override;
     bool single_file() const override;
+    size_t next_offset(size_t offset, size_t size) const override { return offset + size + padding; }
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;

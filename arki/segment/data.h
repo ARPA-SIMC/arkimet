@@ -106,6 +106,23 @@ public:
     virtual bool is_empty() const = 0;
 
     /**
+     * Compute the offset of the beginning of data following this one in the
+     * segment
+     */
+    virtual size_t next_offset(size_t offset, size_t size) const = 0;
+
+#if 0
+    /// Get a read lock on this segment
+    virtual std::shared_ptr<const core::ReadLock> read_lock() const = 0;
+
+    /// Get an append lock on this segment
+    virtual std::shared_ptr<core::AppendLock> append_lock() const = 0;
+
+    /// Get a check lock on this segment
+    virtual std::shared_ptr<core::CheckLock> check_lock() const = 0;
+#endif
+
+    /**
      * Instantiate a reader for this segment
      */
     virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const = 0;

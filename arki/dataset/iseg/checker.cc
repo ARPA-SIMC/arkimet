@@ -315,30 +315,6 @@ size_t Checker::vacuum(dataset::Reporter&)
     return 0;
 }
 
-void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
-{
-    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
-    auto lock = dataset().check_lock_segment(relpath);
-    auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
-    metadata::Collection mds;
-    idx->query_segment(mds.inserter_func());
-    dataset().segment_session->segment_data_checker(segment)->test_make_overlap(mds, overlap_size, data_idx);
-    idx->test_make_overlap(overlap_size, data_idx);
-}
-
-void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
-{
-    auto segment = m_dataset->iseg_segment_session->segment_from_relpath_and_format(relpath, m_dataset->iseg_segment_session->format);
-    auto lock = dataset().check_lock_segment(relpath);
-    auto wrlock = lock->write_lock();
-    auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
-    metadata::Collection mds;
-    idx->query_segment(mds.inserter_func());
-    dataset().segment_session->segment_data_checker(segment)->test_make_hole(mds, hole_size, data_idx);
-    idx->test_make_hole(hole_size, data_idx);
-}
-
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
     std::filesystem::remove(dataset().path / sys::with_suffix(relpath, ".index"));

@@ -312,7 +312,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1) = 0;
+    virtual void test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx=1);
 
     /**
      * All data in the segment starting from the one at position `data_idx` are
@@ -321,7 +321,7 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0) = 0;
+    virtual void test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx=0);
 
     /**
      * Corrupt the data in the given segment at position `data_idx`, by

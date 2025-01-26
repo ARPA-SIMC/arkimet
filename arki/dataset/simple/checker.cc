@@ -396,40 +396,6 @@ void Checker::check_issue51(CheckerConfig& opts)
     return segmented::Checker::check_issue51(opts);
 }
 
-void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
-{
-    auto csegment = segment_from_relpath(relpath);
-    metadata::Collection mds = csegment->segment_checker->scan();
-    csegment->segment_data_checker->test_make_overlap(mds, overlap_size, data_idx);
-
-    // TODO: delegate to segment checker
-    auto pathname = csegment->segment->abspath_metadata();
-    utils::files::PreserveFileTimes pf(pathname);
-    sys::File fd(pathname, O_RDWR);
-    fd.lseek(0);
-    mds.write_to(fd);
-    fd.ftruncate(fd.lseek(0, SEEK_CUR));
-}
-
-void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
-{
-    auto csegment = segment_from_relpath(relpath);
-    metadata::Collection mds = csegment->segment_checker->scan();
-    csegment->segment_data_checker->test_make_hole(mds, hole_size, data_idx);
-
-    // TODO: delegate to segment checker
-    auto pathname = csegment->segment->abspath_metadata();
-    utils::files::PreserveFileTimes pf(pathname);
-    {
-        sys::File fd(pathname, O_RDWR);
-        fd.lseek(0);
-        mds.prepare_for_segment_metadata();
-        mds.write_to(fd);
-        fd.ftruncate(fd.lseek(0, SEEK_CUR));
-        fd.close();
-    }
-}
-
 void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
     segmented::Checker::test_rename(relpath, new_relpath);

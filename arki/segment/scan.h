@@ -41,6 +41,8 @@ public:
     ConvertResult compress(unsigned groupsize) override;
     void reindex(arki::metadata::Collection& mds) override;
     void test_mark_all_removed() override;
+    void test_make_overlap(unsigned overlap_size, unsigned data_idx=1) override;
+    void test_make_hole(unsigned hole_size, unsigned data_idx=0) override;
 };
 
 }

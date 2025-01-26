@@ -557,6 +557,20 @@ void Checker::test_touch_contents(time_t timestamp)
     });
 }
 
+void Checker::test_make_overlap(const std::filesystem::path& relpath, unsigned overlap_size, unsigned data_idx)
+{
+    auto csegment = segment_from_relpath(relpath);
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->test_make_overlap(overlap_size, data_idx);
+}
+
+void Checker::test_make_hole(const std::filesystem::path& relpath, unsigned hole_size, unsigned data_idx)
+{
+    auto csegment = segment_from_relpath(relpath);
+    auto fixer = csegment->segment_checker->fixer();
+    fixer->test_make_hole(hole_size, data_idx);
+}
+
 void Checker::test_corrupt_data(const std::filesystem::path& relpath, unsigned data_idx)
 {
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
