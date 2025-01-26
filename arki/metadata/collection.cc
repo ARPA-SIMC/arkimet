@@ -71,7 +71,7 @@ struct AtomicWriter
     std::filesystem::path destfname;
     sys::File out;
 
-    AtomicWriter(const std::filesystem::path& fname)
+    explicit AtomicWriter(const std::filesystem::path& fname)
         : destfname(fname), out(path_tmp(fname), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
     {
     }
@@ -96,6 +96,27 @@ struct AtomicWriter
     }
 };
 
+struct AtomicWriterPreservingTimestamp: public AtomicWriter
+{
+    ::timespec saved_timestamp[2];
+
+    explicit AtomicWriterPreservingTimestamp(const std::filesystem::path& fname)
+        : AtomicWriter(fname)
+    {
+        struct stat st;
+        out.fstat(st);
+        saved_timestamp[0] = st.st_atim;
+        saved_timestamp[1] = st.st_mtim;
+    }
+
+    void commit()
+    {
+        if (!out)
+            return;
+        out.futimens(saved_timestamp);
+        AtomicWriter::commit();
+    }
+};
 
 static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescriptor& out)
 {
@@ -281,6 +302,13 @@ void Collection::read_from_file(NamedFileDescriptor& fd)
 void Collection::writeAtomically(const std::filesystem::path& fname) const
 {
     AtomicWriter writer(fname);
+    write_to(writer.out);
+    writer.commit();
+}
+
+void Collection::writeAtomicallyPreservingTimestamp(const std::filesystem::path& fname) const
+{
+    AtomicWriterPreservingTimestamp writer(fname);
     write_to(writer.out);
     writer.commit();
 }

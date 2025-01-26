@@ -12,6 +12,94 @@ using namespace arki::utils;
 
 namespace arki::segment::metadata {
 
+namespace {
+
+/**
+ * This is unsafe for use in uncontrolled paths.
+ *
+ * Here however we are operating inside datasets, and we can afford a
+ * predictable ending.
+ */
+std::filesystem::path path_tmp(const std::filesystem::path& path)
+{
+    auto res(path);
+    res += ".tmp";
+    return res;
+}
+
+struct AtomicWriterWithSummary
+{
+    const Segment& segment;
+    Summary sum;
+    sys::File out_md;
+    sys::File out_sum;
+
+    explicit AtomicWriterWithSummary(const Segment& segment)
+        : segment(segment),
+          out_md(path_tmp(segment.abspath_metadata()), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666),
+          out_sum(path_tmp(segment.abspath_summary()), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
+    {
+    }
+
+    ~AtomicWriterWithSummary()
+    {
+        rollback();
+    }
+
+    void write(arki::metadata::Collection& mds)
+    {
+        mds.prepare_for_segment_metadata();
+        mds.add_to_summary(sum);
+        std::vector<uint8_t> sum_encoded = sum.encode(true);
+        // TODO: is this tracing still needed?
+        // iotrace::trace_file(segment.abspath_summary(), 0, sum_encoded.size(), "write summary");
+
+        mds.write_to(out_md);
+        out_sum.write_all_or_retry(sum_encoded);
+
+        // Syncronize metadata and summary timestamps
+        struct stat st_md;
+        out_md.fstat(st_md);
+        ::timespec ts_md[2];
+        ts_md[0] = st_md.st_atim;
+        ts_md[1] = st_md.st_mtim;
+
+        out_sum.futimens(ts_md);
+    }
+
+    void commit()
+    {
+        if (out_md)
+        {
+            out_md.close();
+            std::filesystem::rename(out_md.path(), segment.abspath_metadata());
+        }
+        if (out_sum)
+        {
+            out_sum.close();
+            std::filesystem::rename(out_sum.path(), segment.abspath_summary());
+        }
+    }
+
+    void rollback()
+    {
+        if (out_md)
+        {
+            out_md.close();
+            ::unlink(out_md.path().c_str());
+        }
+        if (out_sum)
+        {
+            out_sum.close();
+            ::unlink(out_sum.path().c_str());
+        }
+    }
+};
+
+}
+
+
+
 Index::Index(const Segment& segment)
     : segment(segment), md_path(segment.abspath_metadata())
 {
@@ -329,24 +417,19 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
     // Remove matching offsets
     mds = mds.without_data(offsets);
 
-    auto path_metadata = segment().abspath_metadata();
-    auto path_summary = segment().abspath_summary();
     if (mds.empty())
     {
+        auto path_metadata = segment().abspath_metadata();
+        auto path_summary = segment().abspath_summary();
         mds.writeAtomically(path_metadata);
         std::filesystem::remove(segment().abspath_summary());
         res.data_timespan = core::Interval();
     } else {
-
-        Summary sum;
-        mds.add_to_summary(sum);
-
         // Write out the new metadata
-        mds.prepare_for_segment_metadata();
-        mds.writeAtomically(path_metadata);
-        sum.writeAtomically(path_summary);
-
-        res.data_timespan = sum.get_reference_time();
+        AtomicWriterWithSummary writer(segment());
+        writer.write(mds);
+        writer.commit();
+        res.data_timespan = writer.sum.get_reference_time();
     }
     res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
     return res;
@@ -532,11 +615,9 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
 
 void Fixer::reindex(arki::metadata::Collection& mds)
 {
-    Summary sum;
-    mds.add_to_summary(sum);
-    mds.prepare_for_segment_metadata();
-    mds.writeAtomically(segment().abspath_metadata());
-    sum.writeAtomically(segment().abspath_summary());
+    AtomicWriterWithSummary writer(segment());
+    writer.write(mds);
+    writer.commit();
 }
 
 void Fixer::move(std::shared_ptr<arki::Segment> dest)
@@ -555,8 +636,7 @@ void Fixer::test_touch_contents(time_t timestamp)
 
 void Fixer::test_mark_all_removed()
 {
-    utils::files::PreserveFileTimes pf(segment().abspath_metadata());
-    arki::metadata::Collection().writeAtomically(segment().abspath_metadata());
+    arki::metadata::Collection().writeAtomicallyPreservingTimestamp(segment().abspath_metadata());
     std::filesystem::remove(segment().abspath_summary());
 }
 

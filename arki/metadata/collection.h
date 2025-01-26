@@ -103,9 +103,16 @@ public:
     void acquire(std::shared_ptr<Metadata> md, bool with_data=false);
 
     /**
-     * Write all the metadata to a file, atomically, using AtomicWriter
+     * Write all the metadata to a file, atomically
      */
     void writeAtomically(const std::filesystem::path& fname) const;
+
+    /**
+     * Write all the metadata to a file, atomically.
+     *
+     * The file timestamp is left unchanged.
+     */
+    void writeAtomicallyPreservingTimestamp(const std::filesystem::path& fname) const;
 
     /**
      * Append all metadata to the given file
