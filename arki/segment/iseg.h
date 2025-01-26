@@ -12,6 +12,7 @@ public:
     using arki::Segment::Segment;
 
     std::shared_ptr<RIndex> read_index(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<AIndex> append_index(std::shared_ptr<core::AppendLock> lock) const;
     std::shared_ptr<CIndex> check_index(std::shared_ptr<core::CheckLock> lock) const;
 };
 
@@ -30,8 +31,14 @@ public:
 
 class Writer : public segment::Writer
 {
+    std::shared_ptr<AIndex> index;
+
+    AcquireResult acquire_batch_replace_never(arki::metadata::InboundBatch& batch, const WriterConfig& config);
+    AcquireResult acquire_batch_replace_always(arki::metadata::InboundBatch& batch, const WriterConfig& config);
+    AcquireResult acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch, const WriterConfig& config);
+
 public:
-    using segment::Writer::Writer;
+    Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
     ~Writer();
 
     AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) override;

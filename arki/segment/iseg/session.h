@@ -24,9 +24,8 @@ public:
     std::shared_ptr<arki::Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const override;
 
     std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
+    std::shared_ptr<segment::Writer> segment_writer(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const override;
     std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
-
-    std::shared_ptr<AIndex> append_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const;
 
     void create_iseg(std::shared_ptr<arki::Segment> segment, arki::metadata::Collection& mds) const override;
 };

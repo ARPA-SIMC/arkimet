@@ -18,15 +18,6 @@ class Writer : public DatasetAccess<iseg::Dataset, segmented::Writer>
 protected:
     index::SummaryCache scache;
 
-    /// Return the relative path of the segment for this metadata
-    std::filesystem::path get_relpath(const Metadata& md);
-
-    /// Return an inserter for the given Metadata
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const Metadata& md);
-
-    /// Return an inserter for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath);
-
 public:
     explicit Writer(std::shared_ptr<iseg::Dataset> config);
     virtual ~Writer();

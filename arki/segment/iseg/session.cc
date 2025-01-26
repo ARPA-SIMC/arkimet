@@ -35,15 +35,14 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const a
     return std::make_shared<Reader>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
 }
 
+std::shared_ptr<segment::Writer> Session::segment_writer(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<segment::iseg::Writer>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
+}
+
 std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const
 {
     return std::make_shared<Checker>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
-}
-
-
-std::shared_ptr<AIndex> Session::append_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const
-{
-    return std::make_shared<AIndex>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
 }
 
 
