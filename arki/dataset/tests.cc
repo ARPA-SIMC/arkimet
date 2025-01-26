@@ -398,8 +398,10 @@ void DatasetTest::import(Metadata& md, metadata::Inbound::Result expected_result
     auto newmd = md.clone();
     import_results.acquire(newmd, true);
     auto writer(config().create_writer());
-    metadata::Inbound::Result res = writer->acquire(*newmd);
-    wassert(actual(res) == expected_result);
+    metadata::InboundBatch batch;
+    batch.add(newmd);
+    writer->acquire_batch(batch);
+    wassert(actual(batch[0]->result) == expected_result);
 }
 
 void DatasetTest::clean_and_import(const std::filesystem::path& testfile)
@@ -453,13 +455,18 @@ void DatasetTest::import_all(const metadata::Collection& mds)
     clean();
 
     auto writer = config().create_writer();
-    for (const auto& md: mds)
+
+    auto newmds = mds.clone();
+    for (auto& md: newmds)
+        import_results.acquire(md, true);
+
+    auto batch = newmds.make_batch();
+    writer->acquire_batch(batch);
+
+    for (const auto& el: batch)
     {
-        auto newmd = md->clone();
-        import_results.acquire(newmd, true);
-        metadata::Inbound::Result res = writer->acquire(*newmd);
-        wassert(actual(res) == metadata::Inbound::Result::OK);
-        newmd->sourceBlob().unlock();
+        wassert(actual(el->result) == metadata::Inbound::Result::OK);
+        el->md->sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg->value("path"));

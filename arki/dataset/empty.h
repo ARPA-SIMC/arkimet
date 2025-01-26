@@ -53,7 +53,6 @@ public:
 
     std::string type() const override { return "discard"; }
 
-    metadata::Inbound::Result acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
     void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
     static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);

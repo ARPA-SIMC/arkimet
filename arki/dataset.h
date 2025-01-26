@@ -253,18 +253,6 @@ public:
     using Base::Base;
 
     /**
-     * Acquire the given metadata item (and related data) in this dataset.
-     *
-     * After acquiring the data successfully, the data can be retrieved from
-     * the dataset.  Also, information such as the dataset name and the id of
-     * the data in the dataset are added to the Metadata object.
-     *
-     * @return The outcome of the operation.
-     */
-    // TODO: change to use a metadata::Inbound&
-    virtual metadata::Inbound::Result acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) = 0;
-
-    /**
      * Acquire the given metadata items (and related data) in this dataset.
      *
      * After acquiring the data successfully, the data can be retrieved from

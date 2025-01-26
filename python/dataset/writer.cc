@@ -94,13 +94,14 @@ If the import failed, a subclass of arki.dataset.ImportError is raised.
         try {
             auto cfg = acquire_config(arg_replace, arg_replace_len, drop_cached_data_on_commit);
 
-            metadata::Inbound::Result res;
+            metadata::InboundBatch batch;
+            batch.add(((arkipy_Metadata*)arg_md)->md);
             {
                 ReleaseGIL gil;
-                res = self->ptr->acquire(*((arkipy_Metadata*)arg_md)->md, cfg);
+                self->ptr->acquire_batch(batch, cfg);
             }
 
-            switch (res)
+            switch (batch[0]->result)
             {
                 case metadata::Inbound::Result::OK:
                     Py_RETURN_NONE;

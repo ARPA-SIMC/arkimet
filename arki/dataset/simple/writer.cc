@@ -86,22 +86,6 @@ public:
         sys::touch(path_sum, ts_md);
     }
 
-    metadata::Inbound::Result acquire(Metadata& md)
-    {
-        // Try appending
-        try {
-            const types::source::Blob& new_source = segment->append(md);
-            add(md, new_source);
-            segment->commit();
-            write_metadata();
-            return metadata::Inbound::Result::OK;
-        } catch (std::exception& e) {
-            // sqlite will take care of transaction consistency
-            md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
-            return metadata::Inbound::Result::ERROR;
-        }
-    }
-
     bool acquire_batch(metadata::InboundBatch& batch)
     {
         try {
@@ -165,30 +149,6 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
     auto segment_data_writer = dataset().segment_session->segment_data_writer(segment, writer_config);
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment_data_writer));
-}
-
-metadata::Inbound::Result Writer::acquire(Metadata& md, const AcquireConfig& cfg)
-{
-    acct::acquire_single_count.incr();
-    auto age_check = dataset().check_acquire_age(md);
-    if (age_check.first) return age_check.second;
-
-    segment::data::WriterConfig writer_config;
-    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
-    writer_config.eatmydata = dataset().eatmydata;
-
-    auto lock = dataset().append_lock_dataset();
-    auto segment = file(writer_config, md, md.source().format, lock);
-    auto res = segment->acquire(md);
-    if (res == metadata::Inbound::Result::OK)
-    {
-        time_t ts = segment->segment->data().timestamp().value();
-        manifest.reread();
-        manifest.set(segment->segment->segment().relpath(), ts, segment->sum.get_reference_time());
-        manifest.flush();
-        invalidate_summary();
-    }
-    return res;
 }
 
 void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
