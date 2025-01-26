@@ -18,6 +18,11 @@ Inbound::Inbound(std::shared_ptr<Metadata> md) : md(md) {}
 
 Inbound::~Inbound() {}
 
+void InboundBatch::add(std::shared_ptr<Metadata> md)
+{
+    emplace_back(std::make_shared<Inbound>(md));
+}
+
 void InboundBatch::set_all_error(const std::string& note)
 {
     for (auto& e: *this)

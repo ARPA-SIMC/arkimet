@@ -97,7 +97,7 @@ add_method("import_largefile", [](Fixture& f) {
             for (unsigned hour = 0; hour < 24; ++hour)
             {
                 auto md = make_large_mock(DataFormat::GRIB, 10*1024*1024, 12, day, hour);
-                wassert(actual(*writer).import(*md));
+                wassert(actual(*writer).acquire_ok(md));
             }
         }
         writer->flush();
@@ -181,7 +181,7 @@ add_method("issue237", [](Fixture& f) {
         wassert(actual(mdc1.size()) == 1u);
         wassert(actual_type(mdc1[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
         auto data = mdc1[0].get_data().read();
-        wassert(actual(std::string((const char*)data.data(), data.size())) == "202010312300,12865,158,9.409990,,,");
+        wassert(actual(std::string(reinterpret_cast<const char*>(data.data()), data.size())) == "202010312300,12865,158,9.409990,,,");
     }
 
     wassert(actual_file(f.ds_root / "2020/10-31.vm2").contents_equal("20201031230000,12865,158,9.409990,,,\n"));
@@ -205,7 +205,7 @@ this->add_method("import", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         std::shared_ptr<Metadata> md(f.td.mds[i].clone());
-        wassert(actual(*ds).import(*md));
+        wassert(actual(*ds).acquire_ok(md));
         wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(md->source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
@@ -313,7 +313,7 @@ this->add_method("import_before_delete_age", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         std::shared_ptr<Metadata> md(f.td.mds[i].clone());
-        wassert(actual(*ds).import(*md));
+        wassert(actual(*ds).acquire_ok(md));
         core::Time time;
         std::string content;
         md->get_last_note().get(time, content);
@@ -331,13 +331,13 @@ this->add_method("second_resolution", [](Fixture& f) {
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(*md));
+        wassert(actual(*writer).acquire_ok(md));
     }
 
     md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 0, 0, 1)));
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(*md));
+        wassert(actual(*writer).acquire_ok(md));
     }
 
     wassert(f.ensure_localds_clean(1, 2));
@@ -456,7 +456,7 @@ this->add_method("import_eatmydata", [](Fixture& f) {
     {
         auto ds = f.config().create_writer();
         for (auto& md: f.td.mds)
-            wassert(actual(*ds).import(*md));
+            wassert(actual(*ds).acquire_ok(md));
 
         metadata::InboundBatch batch = f.td.mds.make_batch();
         wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));

@@ -10,6 +10,10 @@
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/dataset/segmented.h>
+#include <arki/dataset/simple.h>
+#include <arki/dataset/simple/writer.h>
+#include <arki/dataset/iseg.h>
+#include <arki/dataset/iseg/writer.h>
 #include <arki/libconfig.h>
 #include <vector>
 #include <string>
@@ -315,8 +319,9 @@ class ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
 public:
     ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
-    void import(Metadata& md);
-    void import(metadata::Collection& mds, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
+    void acquire_ok(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
+    void acquire_ok(metadata::Collection& mds, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
+    void acquire_duplicate(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
 };
 
 inline arki::tests::ActualWriter<dataset::local::Writer> actual(arki::dataset::local::Writer* actual)
@@ -325,10 +330,12 @@ inline arki::tests::ActualWriter<dataset::local::Writer> actual(arki::dataset::l
 }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(std::shared_ptr<arki::dataset::Writer> actual) { return arki::tests::ActualWriter<dataset::Writer>(actual.get()); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(std::shared_ptr<arki::dataset::iseg::Writer> actual) { return arki::tests::ActualWriter<dataset::Writer>(actual.get()); }
 
 
 template<typename DatasetChecker>

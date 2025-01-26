@@ -38,9 +38,7 @@ add_method("import", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
 
     auto writer = f.config().create_writer();
-    wassert(actual(*writer).import(mdc[0]));
-    wassert(actual(*writer).import(mdc[1]));
-    wassert(actual(*writer).import(mdc[2]));
+    wassert(actual(writer).acquire_ok(mdc));
 });
 
 add_method("testacquire", [](Fixture& f) {

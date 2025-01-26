@@ -159,7 +159,7 @@ struct ReadHang : public TestSubprocess
 {
     std::shared_ptr<dataset::Dataset> dataset;
 
-    ReadHang(std::shared_ptr<dataset::Dataset> dataset) : dataset(dataset) {}
+    explicit ReadHang(std::shared_ptr<dataset::Dataset> dataset) : dataset(dataset) {}
 
     bool eat(std::shared_ptr<Metadata> md)
     {
@@ -188,7 +188,7 @@ struct HungReporter : public dataset::NullReporter
 {
     TestSubprocess& sp;
 
-    HungReporter(TestSubprocess& sp) : sp(sp) {}
+    explicit HungReporter(TestSubprocess& sp) : sp(sp) {}
 
     void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
@@ -290,7 +290,7 @@ this->add_method("read_write", [](Fixture& f) {
     // Import one grib in the dataset
     {
         auto ds = f.config().create_writer();
-        wassert(actual(*ds).import(f.td.mds[0]));
+        wassert(actual(*ds).acquire_ok(f.td.mds.get(0)));
         ds->flush();
     }
 
@@ -300,7 +300,7 @@ this->add_method("read_write", [](Fixture& f) {
         // Import another grib in the dataset
         {
             auto ds = f.config().create_writer();
-            wassert(actual(*ds).import(f.td.mds[1]));
+            wassert(actual(*ds).acquire_ok(f.td.mds.get(1)));
             ds->flush();
         }
     });
@@ -315,7 +315,7 @@ this->add_method("read_write1", [](Fixture& f) {
     // Import one
     {
         auto writer = f.dataset_config()->create_writer();
-        wassert(actual(*writer).import(f.td.mds[0]));
+        wassert(actual(*writer).acquire_ok(f.td.mds.get(0)));
     }
 
     // Query it and import during query
@@ -328,8 +328,8 @@ this->add_method("read_write1", [](Fixture& f) {
             wassert(actual(count) == 0u);
 
             auto writer = f.dataset_config()->create_writer();
-            wassert(actual(*writer).import(f.td.mds[1]));
-            wassert(actual(*writer).import(f.td.mds[2]));
+            wassert(actual(*writer).acquire_ok(f.td.mds.get(1)));
+            wassert(actual(*writer).acquire_ok(f.td.mds.get(2)));
         }
         ++count;
         return true;
@@ -426,7 +426,7 @@ this->add_method("write_check", [](Fixture& f) {
     {
         auto writer = f.config().create_writer();
         type = writer->type();
-        wassert(actual(*writer).import(f.td.mds[0]));
+        wassert(actual(*writer).acquire_ok(f.td.mds.get(0)));
         writer->flush();
 
         // Create an error to trigger a call to the reporter that then hangs
@@ -446,7 +446,7 @@ this->add_method("write_check", [](Fixture& f) {
             }
         } else if (type == "iseg") {
             auto writer = wcallchecked(f.makeSegmentedWriter());
-            wassert(actual(*writer).import(f.td.mds[2]));
+            wassert(actual(*writer).acquire_ok(f.td.mds.get(2)));
 
             try {
                 writer->acquire(f.td.mds[0]);
@@ -487,7 +487,7 @@ this->add_method("write_repack", [](Fixture& f) {
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(*md));
+        wassert(actual(*writer).acquire_ok(md));
     }
 
     RepackForever<Fixture> rf(f);
@@ -496,7 +496,7 @@ this->add_method("write_repack", [](Fixture& f) {
         {
             md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
             auto writer = f.config().create_writer();
-            wassert(actual(*writer).import(*md));
+            wassert(actual(*writer).acquire_ok(md));
         }
     });
 
@@ -504,7 +504,7 @@ this->add_method("write_repack", [](Fixture& f) {
 
     auto reader = f.config().create_reader();
     unsigned count = 0;
-    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
     wassert(actual(count) == 61u);
 });
 

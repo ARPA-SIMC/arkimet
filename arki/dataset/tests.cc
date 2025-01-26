@@ -896,64 +896,58 @@ struct CollectReporter : public dataset::Reporter
     }
 };
 
+namespace {
+void format_fail_inbound(std::ostream& o, const metadata::Inbound& inbound)
+{
+    o << "Unexpected import result " << inbound.result << ". Notes:" << endl;
+    auto notes = inbound.md->notes();
+    for (auto n = notes.first; n != notes.second; ++n)
+        o << "\t" << **n << endl;
+}
+}
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(Metadata& md)
+void ActualWriter<Dataset>::acquire_ok(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy)
 {
-    auto res = wcallchecked(this->_actual->acquire(md));
-    if (res != metadata::Inbound::Result::OK)
+    metadata::InboundBatch batch;
+    batch.add(md);
+    wassert(this->_actual->acquire_batch(batch, strategy));
+    if (batch[0]->result != metadata::Inbound::Result::OK)
     {
-        std::stringstream ss;
-        switch (res)
-        {
-            case metadata::Inbound::Result::DUPLICATE:
-                ss << "metadata::Inbound::Result::ERROR_DUPLICATE when importing data. notes:" << endl;
-                break;
-            case metadata::Inbound::Result::ERROR:
-                ss << "metadata::Inbound::Result::ERROR when importing data. notes:" << endl;
-                break;
-            default:
-                ss << "Error " << (int)res << " when importing data. notes:" << endl;
-                break;
-        }
-
-        auto notes = md.notes();
-        for (auto n = notes.first; n != notes.second; ++n)
-            ss << "\t" << **n << endl;
-
-        throw TestFailed(ss.str());
+        std::stringstream buf;
+        format_fail_inbound(buf, *batch[0]);
+        throw TestFailed(buf.str());
     }
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::acquire_ok(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
 {
     metadata::InboundBatch batch = mds.make_batch();
     wassert(this->_actual->acquire_batch(batch, strategy));
 
-    std::stringstream ss;
+    std::stringstream buf;
     for (const auto& e: batch)
     {
         if (e->result == metadata::Inbound::Result::OK) continue;
-        switch (e->result)
-        {
-            case metadata::Inbound::Result::DUPLICATE:
-                ss << "metadata::Inbound::Result::ERROR_DUPLICATE when importing data. notes:" << endl;
-                break;
-            case metadata::Inbound::Result::ERROR:
-                ss << "metadata::Inbound::Result::ERROR when importing data. notes:" << endl;
-                break;
-            default:
-                ss << "Error " << (int)e->result << " when importing data. notes:" << endl;
-                break;
-        }
-
-        auto notes = e->md->notes();
-        for (auto n = notes.first; n != notes.second; ++n)
-            ss << "\t" << **n << endl;
+        format_fail_inbound(buf, *e);
     }
-    if (!ss.str().empty())
-        throw TestFailed(ss.str());
+    if (!buf.str().empty())
+        throw TestFailed(buf.str());
+}
+
+template<typename Dataset>
+void ActualWriter<Dataset>::acquire_duplicate(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy)
+{
+    metadata::InboundBatch batch;
+    batch.add(md);
+    wassert(this->_actual->acquire_batch(batch, strategy));
+    if (batch[0]->result != metadata::Inbound::Result::DUPLICATE)
+    {
+        std::stringstream buf;
+        format_fail_inbound(buf, *batch[0]);
+        throw TestFailed(buf.str());
+    }
 }
 
 

@@ -58,6 +58,11 @@ class InboundBatch : public std::vector<std::shared_ptr<Inbound>>
 {
 public:
     /**
+     * Add a metadata to the batch
+     */
+    void add(std::shared_ptr<Metadata> md);
+
+    /**
      * Set all elements in the batch to ACQ_ERROR
      */
     void set_all_error(const std::string& note);

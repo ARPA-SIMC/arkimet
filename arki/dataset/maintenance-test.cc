@@ -149,7 +149,7 @@ void Fixture::make_hugefile()
         wassert(md->makeInline());
 
         auto writer(makeSegmentedWriter());
-        wassert(actual(*writer).import(*md));
+        wassert(actual(*writer).acquire_ok(md));
 
         wassert(actual(md->sourceBlob().offset) == 6000000000LLU);
     }
