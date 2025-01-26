@@ -82,7 +82,7 @@ public:
     /**
      * Create a batch for acquire_batch with the contents of this collection
      */
-    dataset::WriterBatch make_import_batch() const;
+    InboundBatch make_batch() const;
 
     /// Return a metadata_dest_func that inserts into this collection
     metadata_dest_func inserter_func();

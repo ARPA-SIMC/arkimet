@@ -118,6 +118,11 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 }
 
 
+Writer::~Writer()
+{
+}
+
+
 arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;

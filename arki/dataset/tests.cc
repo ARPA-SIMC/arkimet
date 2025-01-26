@@ -371,13 +371,13 @@ void DatasetTest::import(metadata::Collection& mds)
 {
     {
         auto writer(config().create_writer());
-        auto batch = mds.make_import_batch();
+        auto batch = mds.make_batch();
         writer->acquire_batch(batch);
         for (const auto& e: batch)
         {
-            wassert(actual(e->dataset_name) == config().name());
-            wassert(actual(e->result) == ACQ_OK);
-            auto newmd = e->md.clone();
+            wassert(actual(e->destination) == config().name());
+            wassert(actual(e->result) == metadata::Inbound::Result::OK);
+            auto newmd = e->md->clone();
             import_results.acquire(newmd, true);
             newmd->sourceBlob().unlock();
             //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
@@ -393,12 +393,12 @@ void DatasetTest::import(const std::filesystem::path& testfile)
     import(data);
 }
 
-void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
+void DatasetTest::import(Metadata& md, metadata::Inbound::Result expected_result)
 {
     auto newmd = md.clone();
     import_results.acquire(newmd, true);
     auto writer(config().create_writer());
-    WriterAcquireResult res = writer->acquire(*newmd);
+    metadata::Inbound::Result res = writer->acquire(*newmd);
     wassert(actual(res) == expected_result);
 }
 
@@ -457,8 +457,8 @@ void DatasetTest::import_all(const metadata::Collection& mds)
     {
         auto newmd = md->clone();
         import_results.acquire(newmd, true);
-        WriterAcquireResult res = writer->acquire(*newmd);
-        wassert(actual(res) == ACQ_OK);
+        metadata::Inbound::Result res = writer->acquire(*newmd);
+        wassert(actual(res) == metadata::Inbound::Result::OK);
         newmd->sourceBlob().unlock();
     }
 
@@ -901,16 +901,16 @@ template<typename Dataset>
 void ActualWriter<Dataset>::import(Metadata& md)
 {
     auto res = wcallchecked(this->_actual->acquire(md));
-    if (res != dataset::ACQ_OK)
+    if (res != metadata::Inbound::Result::OK)
     {
         std::stringstream ss;
         switch (res)
         {
-            case ACQ_ERROR_DUPLICATE:
-                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
+            case metadata::Inbound::Result::DUPLICATE:
+                ss << "metadata::Inbound::Result::ERROR_DUPLICATE when importing data. notes:" << endl;
                 break;
-            case ACQ_ERROR:
-                ss << "ACQ_ERROR when importing data. notes:" << endl;
+            case metadata::Inbound::Result::ERROR:
+                ss << "metadata::Inbound::Result::ERROR when importing data. notes:" << endl;
                 break;
             default:
                 ss << "Error " << (int)res << " when importing data. notes:" << endl;
@@ -928,30 +928,27 @@ void ActualWriter<Dataset>::import(Metadata& md)
 template<typename Dataset>
 void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
 {
-    WriterBatch batch;
-    batch.reserve(mds.size());
-    for (auto& md: mds)
-        batch.emplace_back(make_shared<WriterBatchElement>(*md));
+    metadata::InboundBatch batch = mds.make_batch();
     wassert(this->_actual->acquire_batch(batch, strategy));
 
     std::stringstream ss;
     for (const auto& e: batch)
     {
-        if (e->result == dataset::ACQ_OK) continue;
+        if (e->result == metadata::Inbound::Result::OK) continue;
         switch (e->result)
         {
-            case ACQ_ERROR_DUPLICATE:
-                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
+            case metadata::Inbound::Result::DUPLICATE:
+                ss << "metadata::Inbound::Result::ERROR_DUPLICATE when importing data. notes:" << endl;
                 break;
-            case ACQ_ERROR:
-                ss << "ACQ_ERROR when importing data. notes:" << endl;
+            case metadata::Inbound::Result::ERROR:
+                ss << "metadata::Inbound::Result::ERROR when importing data. notes:" << endl;
                 break;
             default:
                 ss << "Error " << (int)e->result << " when importing data. notes:" << endl;
                 break;
         }
 
-        auto notes = e->md.notes();
+        auto notes = e->md->notes();
         for (auto n = notes.first; n != notes.second; ++n)
             ss << "\t" << **n << endl;
     }

@@ -3,6 +3,7 @@
 
 #include <arki/defs.h>
 #include <arki/query/fwd.h>
+#include <arki/metadata/fwd.h>
 
 namespace arki {
 namespace dataset {
@@ -12,8 +13,6 @@ class Pool;
 class Dataset;
 class Reader;
 class Writer;
-struct WriterBatchElement;
-class WriterBatch;
 class Checker;
 class Reporter;
 struct SessionTime;

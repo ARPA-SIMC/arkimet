@@ -126,37 +126,37 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 
     auto ds = f.config().create_writer();
 
-    dataset::WriterBatch batch;
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
+    metadata::InboundBatch batch;
+    batch.emplace_back(make_shared<metadata::Inbound>(mdc.get(0)));
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
     wassert(actual_file(f.ds_root / "2009/12-04.bufr").exists());
     wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::BUFR, f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 
     // Acquire with a newer USN: it works
     batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc_upd[0]));
+    batch.emplace_back(make_shared<metadata::Inbound>(mdc_upd.get(0)));
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 
     // Acquire with the lower USN: it fails
     batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(mdc[0]));
+    batch.emplace_back(make_shared<metadata::Inbound>(mdc.get(0)));
     wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
     if (ds->type() == "simple")
     {
-        wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-        wassert(actual(batch[0]->dataset_name) == "testds");
+        wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+        wassert(actual(batch[0]->destination) == "testds");
     } else {
-        wassert(actual(batch[0]->result) == dataset::ACQ_ERROR_DUPLICATE);
-        wassert(actual(batch[0]->dataset_name) == "");
+        wassert(actual(batch[0]->result) == metadata::Inbound::Result::DUPLICATE);
+        wassert(actual(batch[0]->destination) == "");
     }
 });
 
@@ -171,7 +171,7 @@ add_method("issue237", [](Fixture& f) {
     // Acquire value
     {
         auto ds = f.config().create_writer();
-        wassert(actual(ds->acquire(mdc[0], dataset::REPLACE_NEVER)) == dataset::ACQ_OK);
+        wassert(actual(ds->acquire(mdc[0], dataset::REPLACE_NEVER)) == metadata::Inbound::Result::OK);
         wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
     }
 
@@ -219,7 +219,7 @@ this->add_method("import_error", [](Fixture& f) {
     md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
 
     auto ds = f.config().create_writer();
-    wassert(actual(ds->acquire(md, dataset::REPLACE_NEVER)) == dataset::ACQ_ERROR);
+    wassert(actual(ds->acquire(md, dataset::REPLACE_NEVER)) == metadata::Inbound::Result::ERROR);
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
@@ -230,39 +230,31 @@ this->add_method("import_error", [](Fixture& f) {
 this->add_method("import_batch_replace_never", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
-    dataset::WriterBatch batch;
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
+    metadata::InboundBatch batch = f.td.mds.make_batch();
     wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
-        wassert(actual(batch[i]->result) == dataset::ACQ_OK);
-        wassert(actual(batch[i]->dataset_name) == "testds");
+        wassert(actual(batch[i]->result) == metadata::Inbound::Result::OK);
+        wassert(actual(batch[i]->destination) == "testds");
         wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
-    std::shared_ptr<Metadata> mds[3];
-    for (unsigned i = 0; i < 3; ++i)
-        mds[i] = f.td.mds[i].clone();
-    batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[0]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[1]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[2]));
+    metadata::Collection mds = f.td.mds.clone();
+    batch = mds.make_batch();
     wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         if (ds->type() == "simple")
         {
-            wassert(actual(batch[i]->result) == dataset::ACQ_OK);
-            wassert(actual(batch[i]->dataset_name) == "testds");
-            wassert(actual(mds[i]->sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
-            wassert(actual(mds[i]->sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
-            wassert(actual(mds[i]->sourceBlob().size) == f.td.mds[i].sourceBlob().size);
+            wassert(actual(batch[i]->result) == metadata::Inbound::Result::OK);
+            wassert(actual(batch[i]->destination) == "testds");
+            wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
+            wassert(actual(mds[i].sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
+            wassert(actual(mds[i].sourceBlob().size) == f.td.mds[i].sourceBlob().size);
         } else {
-            wassert(actual(batch[i]->result) == dataset::ACQ_ERROR_DUPLICATE);
-            wassert(actual(batch[i]->dataset_name) == "");
+            wassert(actual(batch[i]->result) == metadata::Inbound::Result::DUPLICATE);
+            wassert(actual(batch[i]->destination) == "");
         }
     }
 });
@@ -270,35 +262,27 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
 this->add_method("import_batch_replace_always", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
-    dataset::WriterBatch batch;
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[0]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[1]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(f.td.mds[2]));
+    metadata::InboundBatch batch = f.td.mds.make_batch();
     wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        wassert(actual(batch[i]->result) == dataset::ACQ_OK);
-        wassert(actual(batch[i]->dataset_name) == "testds");
+        wassert(actual(batch[i]->result) == metadata::Inbound::Result::OK);
+        wassert(actual(batch[i]->destination) == "testds");
         wassert(actual_file(f.ds_root / f.destfile(f.td.mds[i])).exists());
         wassert(actual_type(f.td.mds[i].source()).is_source_blob(f.td.format, f.ds_root, f.destfile(f.td.mds[i])));
     }
 
-    std::shared_ptr<Metadata> mds[3];
-    for (unsigned i = 0; i < 3; ++i)
-        mds[i] = f.td.mds[i].clone();
-    batch.clear();
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[0]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[1]));
-    batch.emplace_back(make_shared<dataset::WriterBatchElement>(*mds[2]));
+    auto mds = f.td.mds.clone();
+    batch = mds.make_batch();
     wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
     for (unsigned i = 0; i < 3; ++i)
     {
-        wassert(actual(batch[i]->result) == dataset::ACQ_OK);
-        wassert(actual(batch[i]->dataset_name) == "testds");
-        wassert(actual(mds[i]->sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
-        wassert(actual(mds[i]->sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
-        wassert(actual(mds[i]->sourceBlob().size) == f.td.mds[i].sourceBlob().size);
+        wassert(actual(batch[i]->result) == metadata::Inbound::Result::OK);
+        wassert(actual(batch[i]->destination) == "testds");
+        wassert(actual(mds[i].sourceBlob().absolutePathname()) == f.td.mds[i].sourceBlob().absolutePathname());
+        wassert(actual(mds[i].sourceBlob().offset) > f.td.mds[i].sourceBlob().offset);
+        wassert(actual(mds[i].sourceBlob().size) == f.td.mds[i].sourceBlob().size);
     }
 });
 
@@ -310,7 +294,7 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
     for (unsigned i = 0; i < 3; ++i)
     {
         std::shared_ptr<Metadata> md(f.td.mds[i].clone());
-        wassert(actual(ds->acquire(*md)) == dataset::ACQ_ERROR);
+        wassert(actual(ds->acquire(*md)) == metadata::Inbound::Result::ERROR);
         core::Time time;
         std::string content;
         md->get_last_note().get(time, content);
@@ -378,11 +362,11 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
     }
 
     auto ds = f.config().create_writer();
-    dataset::WriterBatch batch = mds.make_import_batch();
+    metadata::InboundBatch batch = mds.make_batch();
     wassert(ds->acquire_batch(batch, strategy));
-    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[1]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[2]->result) == dataset::ACQ_ERROR);
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
+    wassert(actual(batch[1]->result) == metadata::Inbound::Result::ERROR);
+    wassert(actual(batch[2]->result) == metadata::Inbound::Result::ERROR);
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
@@ -427,11 +411,11 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
     }
 
     auto ds = f.config().create_writer();
-    dataset::WriterBatch batch = mds.make_import_batch();
+    metadata::InboundBatch batch = mds.make_batch();
     wassert(ds->acquire_batch(batch, strategy));
-    wassert(actual(batch[0]->result) == (fail_idx == 0 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
-    wassert(actual(batch[1]->result) == (fail_idx == 1 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
-    wassert(actual(batch[2]->result) == (fail_idx == 2 ? dataset::ACQ_ERROR : dataset::ACQ_OK));
+    wassert(actual(batch[0]->result) == (fail_idx == 0 ? metadata::Inbound::Result::ERROR : metadata::Inbound::Result::OK));
+    wassert(actual(batch[1]->result) == (fail_idx == 1 ? metadata::Inbound::Result::ERROR : metadata::Inbound::Result::OK));
+    wassert(actual(batch[2]->result) == (fail_idx == 2 ? metadata::Inbound::Result::ERROR : metadata::Inbound::Result::OK));
     ds->flush();
 
     auto state = f.scan_state();
@@ -474,9 +458,7 @@ this->add_method("import_eatmydata", [](Fixture& f) {
         for (auto& md: f.td.mds)
             wassert(actual(*ds).import(*md));
 
-        dataset::WriterBatch batch;
-        for (auto& md: f.td.mds)
-            batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
+        metadata::InboundBatch batch = f.td.mds.make_batch();
         wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
     }
 

@@ -43,7 +43,8 @@ public:
      *
      * If it is not, returns false and WriterAcquireResult should be ignored.
      */
-    std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
+    // TODO: change to use a metadata::Inbound
+    std::pair<bool, metadata::Inbound::Result> check_acquire_age(Metadata& md) const;
 
     /// Return the Archives for this dataset
     virtual std::shared_ptr<archive::Dataset> archive();
@@ -95,7 +96,7 @@ public:
     using Base::Base;
     ~Writer();
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 class Checker : public Base<dataset::Checker>

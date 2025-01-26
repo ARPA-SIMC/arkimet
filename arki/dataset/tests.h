@@ -186,7 +186,7 @@ public:
     void import(metadata::Collection& mds);
 
     // Import a datum
-    void import(Metadata& md, dataset::WriterAcquireResult expected_result=dataset::ACQ_OK);
+    void import(Metadata& md, metadata::Inbound::Result expected_result=metadata::Inbound::Result::OK);
 
     // Recreate the dataset importing data into it
     void clean_and_import(const std::filesystem::path& testfile="inbound/test.grib1");

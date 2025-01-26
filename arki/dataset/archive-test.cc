@@ -151,9 +151,9 @@ add_method("reader_empty_last", [](Fixture& f) {
         cfg.set("type", "simple");
         cfg.set("step", "daily");
         auto writer = f.session->dataset(cfg)->create_writer();
-        wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
-        wassert(actual(writer->acquire(mdc[1])) == dataset::ACQ_OK);
-        wassert(actual(writer->acquire(mdc[2])) == dataset::ACQ_OK);
+        wassert(actual(writer->acquire(mdc[0])) == metadata::Inbound::Result::OK);
+        wassert(actual(writer->acquire(mdc[1])) == metadata::Inbound::Result::OK);
+        wassert(actual(writer->acquire(mdc[2])) == metadata::Inbound::Result::OK);
         writer->flush();
     }
 

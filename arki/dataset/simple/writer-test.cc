@@ -194,20 +194,20 @@ add_method("testacquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
     while (mdc.size() > 1) mdc.pop_back();
 
-    auto batch = mdc.make_import_batch();
+    auto batch = mdc.make_batch();
     wassert(simple::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 
     f.cfg->set("archive age", "1");
     wassert(simple::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[0]->dataset_name) == "");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
+    wassert(actual(batch[0]->destination) == "");
 
     f.cfg->set("delete age", "1");
     wassert(simple::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 });
 
 }

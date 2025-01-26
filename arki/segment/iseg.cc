@@ -63,6 +63,11 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 }
 
 
+Writer::~Writer()
+{
+}
+
+
 Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
     : segment::Checker(segment, lock)
 {

@@ -63,6 +63,11 @@ std::shared_ptr<segment::Reader> Segment::reader(std::shared_ptr<const core::Rea
     return session().segment_reader(shared_from_this(), lock);
 }
 
+std::shared_ptr<segment::Writer> Segment::writer(std::shared_ptr<core::AppendLock> lock) const
+{
+    return session().segment_writer(shared_from_this(), lock);
+}
+
 std::shared_ptr<segment::Checker> Segment::checker(std::shared_ptr<core::CheckLock> lock) const
 {
     return session().segment_checker(shared_from_this(), lock);
@@ -238,6 +243,17 @@ bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
 void EmptyReader::query_summary(const Matcher& matcher, Summary& summary)
 {
 }
+
+
+Writer::Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock)
+    : m_segment(segment), lock(lock)
+{
+}
+
+Writer::~Writer()
+{
+}
+
 
 
 Checker::Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)

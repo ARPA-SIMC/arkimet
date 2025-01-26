@@ -33,6 +33,13 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
+class Writer : public segment::Writer
+{
+public:
+    using segment::Writer::Writer;
+    ~Writer();
+};
+
 class Checker : public segment::Checker
 {
 public:

@@ -60,21 +60,6 @@ DataFormat format_from_string(const std::string& format);
 
 std::ostream& operator<<(std::ostream& o, DataFormat format);
 
-
-namespace dataset {
-
-/// Possible outcomes of acquire
-enum WriterAcquireResult {
-    /// Acquire successful
-    ACQ_OK,
-    /// Acquire failed because the data is already in the database
-    ACQ_ERROR_DUPLICATE,
-    /// Acquire failed for other reasons than duplicates
-    ACQ_ERROR
-};
-
-}
-
 }
 
 #endif

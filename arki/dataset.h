@@ -8,6 +8,7 @@
 #include <arki/core/transaction.h>
 #include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/metadata/inbound.h>
 #include <arki/dataset/fwd.h>
 #include <string>
 #include <vector>
@@ -216,32 +217,6 @@ public:
     virtual core::Interval get_stored_time_interval() = 0;
 };
 
-struct WriterBatchElement
-{
-    /// Metadata to acquire
-    Metadata& md;
-    /// Name of the dataset where it has been acquired (empty when not
-    /// acquired)
-    std::string dataset_name;
-    /// Acquire result
-    WriterAcquireResult result = ACQ_ERROR;
-
-    WriterBatchElement(Metadata& md) : md(md) {}
-    WriterBatchElement(const WriterBatchElement& o) = default;
-    WriterBatchElement(WriterBatchElement&& o) = default;
-    WriterBatchElement& operator=(const WriterBatchElement& o) = default;
-    WriterBatchElement& operator=(WriterBatchElement&& o) = default;
-};
-
-class WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
-{
-public:
-    /**
-     * Set all elements in the batch to ACQ_ERROR
-     */
-    void set_all_error(const std::string& note);
-};
-
 
 enum ReplaceStrategy {
     /// Default strategy, as configured in the dataset
@@ -286,7 +261,8 @@ public:
      *
      * @return The outcome of the operation.
      */
-    virtual WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) = 0;
+    // TODO: change to use a metadata::Inbound&
+    virtual metadata::Inbound::Result acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
      * Acquire the given metadata items (and related data) in this dataset.
@@ -298,7 +274,7 @@ public:
      * @return The outcome of the operation, as a vector with an WriterAcquireResult
      * for each metadata in the collection.
      */
-    virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
+    virtual void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
      * Flush pending changes to disk
@@ -319,7 +295,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 struct CheckerConfig

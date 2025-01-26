@@ -86,7 +86,7 @@ public:
 class Writer : public local::Writer
 {
 protected:
-    std::map<std::string, WriterBatch> batch_by_segment(WriterBatch& batch);
+    std::map<std::string, metadata::InboundBatch> batch_by_segment(metadata::InboundBatch& batch);
 
 public:
     using local::Writer::Writer;
@@ -95,7 +95,8 @@ public:
     const Dataset& dataset() const override = 0;
     Dataset& dataset() override = 0;
 
-    static void test_acquire(std::shared_ptr<Session>, const core::cfg::Section& cfg, WriterBatch& batch);
+    // TODO: make it a member and refactor TestDispatcher to instantiate dataset writers
+    static void test_acquire(std::shared_ptr<Session>, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 

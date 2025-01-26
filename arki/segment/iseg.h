@@ -28,6 +28,13 @@ public:
     // core::Interval get_stored_time_interval() override;
 };
 
+class Writer : public segment::Writer
+{
+public:
+    using segment::Writer::Writer;
+    ~Writer();
+};
+
 class Checker : public segment::Checker
 {
     std::shared_ptr<CIndex> m_index;

@@ -47,7 +47,7 @@ add_method("acquire_replace", [](Fixture& f) {
     {
         auto writer = f.makeIsegWriter();
         for (auto& md: mdc)
-            wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
+            wassert(actual(writer->acquire(*md)) == metadata::Inbound::Result::OK);
         writer->flush();
     }
 
@@ -55,7 +55,7 @@ add_method("acquire_replace", [](Fixture& f) {
     {
         auto writer = f.makeIsegWriter();
         for (auto& md: mdc)
-            wassert(actual(writer->acquire(*md)) == dataset::ACQ_ERROR_DUPLICATE);
+            wassert(actual(writer->acquire(*md)) == metadata::Inbound::Result::DUPLICATE);
         writer->flush();
     }
 
@@ -66,7 +66,7 @@ add_method("acquire_replace", [](Fixture& f) {
         auto config = std::make_shared<dataset::iseg::Dataset>(f.session(), *cfg);
         auto writer = config->create_writer();
         for (auto& md: mdc)
-            wassert(actual(writer->acquire(*md)) == dataset::ACQ_OK);
+            wassert(actual(writer->acquire(*md)) == metadata::Inbound::Result::OK);
         writer->flush();
     }
 
@@ -95,28 +95,28 @@ add_method("acquire_replace_usn", [](Fixture& f) {
     wassert(actual(mdc.size()) == 1u);
 
     // Acquire
-    wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0])) == metadata::Inbound::Result::OK);
 
     // Acquire again: it fails
-    wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc[0])) == metadata::Inbound::Result::DUPLICATE);
 
     // Acquire again: it fails even with a higher USN
-    wassert(actual(writer->acquire(mdc_upd[0])) == dataset::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc_upd[0])) == metadata::Inbound::Result::DUPLICATE);
 
     // Acquire with replace: it works
-    wassert(actual(writer->acquire(mdc[0], dataset::REPLACE_ALWAYS)) == dataset::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0], dataset::REPLACE_ALWAYS)) == metadata::Inbound::Result::OK);
 
     // Acquire with USN: it works, since USNs the same as the existing ones do overwrite
-    wassert(actual(writer->acquire(mdc[0], dataset::REPLACE_HIGHER_USN)) == dataset::ACQ_OK);
+    wassert(actual(writer->acquire(mdc[0], dataset::REPLACE_HIGHER_USN)) == metadata::Inbound::Result::OK);
 
     // Acquire with a newer USN: it works
-    wassert(actual(writer->acquire(mdc_upd[0], dataset::REPLACE_HIGHER_USN)) == dataset::ACQ_OK);
+    wassert(actual(writer->acquire(mdc_upd[0], dataset::REPLACE_HIGHER_USN)) == metadata::Inbound::Result::OK);
 
     // Acquire with the lower USN: it fails
-    wassert(actual(writer->acquire(mdc[0], dataset::REPLACE_HIGHER_USN)) == dataset::ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(mdc[0], dataset::REPLACE_HIGHER_USN)) == metadata::Inbound::Result::DUPLICATE);
 
     // Acquire with the same high USN: it works, since USNs the same as the existing ones do overwrite
-    wassert(actual(writer->acquire(mdc_upd[0], dataset::REPLACE_HIGHER_USN)) == dataset::ACQ_OK);
+    wassert(actual(writer->acquire(mdc_upd[0], dataset::REPLACE_HIGHER_USN)) == metadata::Inbound::Result::OK);
 
     // Try to query the element and see if it is the right one
     {
@@ -134,7 +134,7 @@ add_method("delete_missing", [](Fixture& f) {
     // Import once
     {
         auto writer = f.makeIsegWriter();
-        wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
+        wassert(actual(writer->acquire(mdc[0])) == metadata::Inbound::Result::OK);
         writer->flush();
     }
 

@@ -38,7 +38,7 @@ public:
     {
     }
 
-    WriterAcquireResult acquire_replace_never(Metadata& md)
+    metadata::Inbound::Result acquire_replace_never(Metadata& md)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -46,20 +46,20 @@ public:
             if (std::unique_ptr<types::source::Blob> old = idx->index(md, data_writer->next_offset()))
             {
                 md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset));
-                return ACQ_ERROR_DUPLICATE;
+                return metadata::Inbound::Result::DUPLICATE;
             }
             data_writer->append(md);
             data_writer->commit();
             p_idx.commit();
-            return ACQ_OK;
+            return metadata::Inbound::Result::OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
-            return ACQ_ERROR;
+            return metadata::Inbound::Result::ERROR;
         }
     }
 
-    WriterAcquireResult acquire_replace_always(Metadata& md)
+    metadata::Inbound::Result acquire_replace_always(Metadata& md)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -68,15 +68,15 @@ public:
             data_writer->append(md);
             data_writer->commit();
             p_idx.commit();
-            return ACQ_OK;
+            return metadata::Inbound::Result::OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
-            return ACQ_ERROR;
+            return metadata::Inbound::Result::ERROR;
         }
     }
 
-    WriterAcquireResult acquire_replace_higher_usn(Metadata& md)
+    metadata::Inbound::Result acquire_replace_higher_usn(Metadata& md)
     {
         Pending p_idx = idx->begin_transaction();
 
@@ -89,7 +89,7 @@ public:
                 // Read the update sequence number of the new BUFR
                 int new_usn;
                 if (!scan::Scanner::update_sequence_number(md, new_usn))
-                    return ACQ_ERROR_DUPLICATE;
+                    return metadata::Inbound::Result::DUPLICATE;
 
                 // Read the update sequence number of the old BUFR
                 auto reader = segment->data_reader(append_lock);
@@ -98,12 +98,12 @@ public:
                 if (!scan::Scanner::update_sequence_number(*old, old_usn))
                 {
                     md.add_note("Failed to store in dataset '" + dataset->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
-                    return ACQ_ERROR;
+                    return metadata::Inbound::Result::ERROR;
                 }
 
                 // If the new element has no higher Update Sequence Number, report a duplicate
                 if (old_usn > new_usn)
-                    return ACQ_ERROR_DUPLICATE;
+                    return metadata::Inbound::Result::DUPLICATE;
 
                 // Replace
                 idx->replace(md, data_writer->next_offset());
@@ -111,33 +111,33 @@ public:
             data_writer->append(md);
             data_writer->commit();
             p_idx.commit();
-            return ACQ_OK;
+            return metadata::Inbound::Result::OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
-            return ACQ_ERROR;
+            return metadata::Inbound::Result::ERROR;
         }
     }
 
-    void acquire_batch_replace_never(WriterBatch& batch)
+    void acquire_batch_replace_never(metadata::InboundBatch& batch)
     {
         Pending p_idx = idx->begin_transaction();
 
         try {
             for (auto& e: batch)
             {
-                e->dataset_name.clear();
+                e->destination.clear();
 
-                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, data_writer->next_offset()))
+                if (std::unique_ptr<types::source::Blob> old = idx->index(*e->md, data_writer->next_offset()))
                 {
-                    e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset));
-                    e->result = ACQ_ERROR_DUPLICATE;
+                    e->md->add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset));
+                    e->result = metadata::Inbound::Result::DUPLICATE;
                     continue;
                 }
 
-                data_writer->append(e->md);
-                e->result = ACQ_OK;
-                e->dataset_name = dataset->name();
+                data_writer->append(*e->md);
+                e->result = metadata::Inbound::Result::OK;
+                e->destination = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -149,18 +149,18 @@ public:
         p_idx.commit();
     }
 
-    void acquire_batch_replace_always(WriterBatch& batch)
+    void acquire_batch_replace_always(metadata::InboundBatch& batch)
     {
         Pending p_idx = idx->begin_transaction();
 
         try {
             for (auto& e: batch)
             {
-                e->dataset_name.clear();
-                idx->replace(e->md, data_writer->next_offset());
-                data_writer->append(e->md);
-                e->result = ACQ_OK;
-                e->dataset_name = dataset->name();
+                e->destination.clear();
+                idx->replace(*e->md, data_writer->next_offset());
+                data_writer->append(*e->md);
+                e->result = metadata::Inbound::Result::OK;
+                e->destination = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -172,26 +172,26 @@ public:
         p_idx.commit();
     }
 
-    void acquire_batch_replace_higher_usn(WriterBatch& batch)
+    void acquire_batch_replace_higher_usn(metadata::InboundBatch& batch)
     {
         Pending p_idx = idx->begin_transaction();
 
         try {
             for (auto& e: batch)
             {
-                e->dataset_name.clear();
+                e->destination.clear();
 
                 // Try to acquire without replacing
-                if (std::unique_ptr<types::source::Blob> old = idx->index(e->md, data_writer->next_offset()))
+                if (std::unique_ptr<types::source::Blob> old = idx->index(*e->md, data_writer->next_offset()))
                 {
                     // Duplicate detected
 
                     // Read the update sequence number of the new BUFR
                     int new_usn;
-                    if (!scan::Scanner::update_sequence_number(e->md, new_usn))
+                    if (!scan::Scanner::update_sequence_number(*e->md, new_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
-                        e->result = ACQ_ERROR_DUPLICATE;
+                        e->md->add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                        e->result = metadata::Inbound::Result::DUPLICATE;
                         continue;
                     }
 
@@ -201,25 +201,25 @@ public:
                     int old_usn;
                     if (!scan::Scanner::update_sequence_number(*old, old_usn))
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
-                        e->result = ACQ_ERROR;
+                        e->md->add_note("Failed to store in dataset '" + dataset->name() + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                        e->result = metadata::Inbound::Result::ERROR;
                         continue;
                     }
 
                     // If the new element has no higher Update Sequence Number, report a duplicate
                     if (old_usn > new_usn)
                     {
-                        e->md.add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
-                        e->result = ACQ_ERROR_DUPLICATE;
+                        e->md->add_note("Failed to store in dataset '" + dataset->name() + "' because the dataset already has the data in " + segment->relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                        e->result = metadata::Inbound::Result::DUPLICATE;
                         continue;
                     }
 
                     // Replace, reusing the pending datafile transaction from earlier
-                    idx->replace(e->md, data_writer->next_offset());
+                    idx->replace(*e->md, data_writer->next_offset());
                 }
-                data_writer->append(e->md);
-                e->result = ACQ_OK;
-                e->dataset_name = dataset->name();
+                data_writer->append(*e->md);
+                e->result = metadata::Inbound::Result::OK;
+                e->destination = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -268,7 +268,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, append_lock, data_writer));
 }
 
-WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
+metadata::Inbound::Result Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
     if (md.source().format != dataset().iseg_segment_session->format)
@@ -289,21 +289,21 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
         case REPLACE_NEVER:
         {
             auto res = segment->acquire_replace_never(md);
-            if (res == ACQ_OK)
+            if (res == metadata::Inbound::Result::OK)
                 scache.invalidate(md);
             return res;
         }
         case REPLACE_ALWAYS:
         {
             auto res = segment->acquire_replace_always(md);
-            if (res == ACQ_OK)
+            if (res == metadata::Inbound::Result::OK)
                 scache.invalidate(md);
             return res;
         }
         case REPLACE_HIGHER_USN:
         {
             auto res = segment->acquire_replace_higher_usn(md);
-            if (res == ACQ_OK)
+            if (res == metadata::Inbound::Result::OK)
                 scache.invalidate(md);
             return res;
         }
@@ -316,15 +316,15 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     }
 }
 
-void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
+void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
     ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
     if (batch.empty()) return;
-    if (batch[0]->md.source().format != dataset().iseg_segment_session->format)
+    if (batch[0]->md->source().format != dataset().iseg_segment_session->format)
     {
-        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(batch[0]->md.source().format) + " but the dataset only accepts " + format_name(dataset().iseg_segment_session->format));
+        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(batch[0]->md->source().format) + " but the dataset only accepts " + format_name(dataset().iseg_segment_session->format));
         return;
     }
 
@@ -332,7 +332,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 
-    std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
+    std::map<std::string, metadata::InboundBatch> by_segment = batch_by_segment(batch);
 
     // Import segment by segment
     for (auto& s: by_segment)
@@ -357,23 +357,23 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     }
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     std::shared_ptr<const iseg::Dataset> dataset(new iseg::Dataset(session, cfg));
     for (auto& e: batch)
     {
-        auto age_check = dataset->check_acquire_age(e->md);
+        auto age_check = dataset->check_acquire_age(*e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
-            if (age_check.second == ACQ_OK)
-                e->dataset_name = dataset->name();
+            if (age_check.second == metadata::Inbound::Result::OK)
+                e->destination = dataset->name();
             else
-                e->dataset_name.clear();
+                e->destination.clear();
         } else {
             // TODO: check for duplicates
-            e->result = ACQ_OK;
-            e->dataset_name = dataset->name();
+            e->result = metadata::Inbound::Result::OK;
+            e->destination = dataset->name();
         }
     }
 }

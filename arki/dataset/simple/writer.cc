@@ -86,7 +86,7 @@ public:
         sys::touch(path_sum, ts_md);
     }
 
-    WriterAcquireResult acquire(Metadata& md)
+    metadata::Inbound::Result acquire(Metadata& md)
     {
         // Try appending
         try {
@@ -94,24 +94,24 @@ public:
             add(md, new_source);
             segment->commit();
             write_metadata();
-            return ACQ_OK;
+            return metadata::Inbound::Result::OK;
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
             md.add_note("Failed to store in dataset '" + dataset->name() + "': " + e.what());
-            return ACQ_ERROR;
+            return metadata::Inbound::Result::ERROR;
         }
     }
 
-    bool acquire_batch(WriterBatch& batch)
+    bool acquire_batch(metadata::InboundBatch& batch)
     {
         try {
             for (auto& e: batch)
             {
-                e->dataset_name.clear();
-                const types::source::Blob& new_source = segment->append(e->md);
-                add(e->md, new_source);
-                e->result = ACQ_OK;
-                e->dataset_name = dataset->name();
+                e->destination.clear();
+                const types::source::Blob& new_source = segment->append(*e->md);
+                add(*e->md, new_source);
+                e->result = metadata::Inbound::Result::OK;
+                e->destination = dataset->name();
             }
         } catch (std::exception& e) {
             // sqlite will take care of transaction consistency
@@ -167,7 +167,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
     return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment_data_writer));
 }
 
-WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
+metadata::Inbound::Result Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
     auto age_check = dataset().check_acquire_age(md);
@@ -180,7 +180,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     auto lock = dataset().append_lock_dataset();
     auto segment = file(writer_config, md, md.source().format, lock);
     auto res = segment->acquire(md);
-    if (res == ACQ_OK)
+    if (res == metadata::Inbound::Result::OK)
     {
         time_t ts = segment->segment->data().timestamp().value();
         manifest.reread();
@@ -191,7 +191,7 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     return res;
 }
 
-void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
+void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
 
@@ -199,7 +199,7 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
     writer_config.eatmydata = dataset().eatmydata;
 
-    std::map<std::string, WriterBatch> by_segment = batch_by_segment(batch);
+    std::map<std::string, metadata::InboundBatch> by_segment = batch_by_segment(batch);
 
     // Import data grouped by segment
     auto lock = dataset().append_lock_dataset();
@@ -220,24 +220,24 @@ void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
         manifest.flush();
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     std::shared_ptr<const simple::Dataset> dataset(new simple::Dataset(session, cfg));
     for (auto& e: batch)
     {
-        auto age_check = dataset->check_acquire_age(e->md);
+        auto age_check = dataset->check_acquire_age(*e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
-            if (age_check.second == ACQ_OK)
-                e->dataset_name = dataset->name();
+            if (age_check.second == metadata::Inbound::Result::OK)
+                e->destination = dataset->name();
             else
-                e->dataset_name.clear();
+                e->destination.clear();
         } else {
             // Acquire on simple datasets always succeeds except in case of envrionment
             // issues like I/O errors and full disks
-            e->result = ACQ_OK;
-            e->dataset_name = dataset->name();
+            e->result = metadata::Inbound::Result::OK;
+            e->destination = dataset->name();
         }
     }
 }

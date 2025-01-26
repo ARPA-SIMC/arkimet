@@ -35,6 +35,7 @@ public:
     std::filesystem::path abspath_iseg_index() const;
 
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<segment::Writer> writer(std::shared_ptr<core::AppendLock> lock) const;
     std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;
 
     /// Instantiate the right Data for this segment
@@ -104,6 +105,26 @@ public:
     virtual core::Interval get_stored_time_interval() = 0;
 #endif
 };
+
+
+class Writer : public std::enable_shared_from_this<Writer>
+{
+protected:
+    std::shared_ptr<const Segment> m_segment;
+    std::shared_ptr<core::AppendLock> lock;
+
+public:
+    explicit Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
+    Writer(const Writer&) = delete;
+    Writer(Writer&&) = delete;
+    Writer& operator=(const Writer&) = delete;
+    Writer& operator=(Writer&&) = delete;
+    virtual ~Writer();
+
+    /// Access the segment
+    const Segment& segment() const { return *m_segment; }
+};
+
 
 class Checker : public std::enable_shared_from_this<Checker>
 {

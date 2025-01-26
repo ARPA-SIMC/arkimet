@@ -42,10 +42,10 @@ public:
      * false.  If false is returned, a note is added to the dataset explaining
      * the reason of the failure.
      */
-    WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
-    void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    metadata::Inbound::Result acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 }

@@ -2,6 +2,7 @@
 #include "arki/exceptions.h"
 #include "arki/core/lock.h"
 #include "arki/metadata.h"
+#include "arki/metadata/inbound.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
@@ -178,11 +179,11 @@ Collection Collection::clone() const
     return res;
 }
 
-dataset::WriterBatch Collection::make_import_batch() const
+InboundBatch Collection::make_batch() const
 {
-    dataset::WriterBatch batch;
+    InboundBatch batch;
     for (auto& md: vals)
-        batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
+        batch.emplace_back(std::make_shared<metadata::Inbound>(md));
     return batch;
 }
 

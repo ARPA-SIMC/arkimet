@@ -12,6 +12,7 @@ namespace segment {
 class Reporter;
 class Session;
 class Reader;
+class Writer;
 class Checker;
 class Fixer;
 class Data;

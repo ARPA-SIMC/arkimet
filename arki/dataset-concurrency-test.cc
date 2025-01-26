@@ -132,7 +132,7 @@ struct ConcurrentImporter : public subprocess::Child
                     md->test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
                 auto res = ds->acquire(*md);
-                if (res != dataset::ACQ_OK)
+                if (res != metadata::Inbound::Result::OK)
                 {
                     fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
                     auto notes = md->notes();

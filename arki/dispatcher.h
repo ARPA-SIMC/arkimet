@@ -25,7 +25,7 @@ protected:
     /// Number of failed acquires to outbound datasets
     int m_outbound_failures;
 
-    virtual void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) = 0;
+    virtual void raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit) = 0;
 
 public:
     Dispatcher(std::shared_ptr<dataset::Pool> pool);
@@ -59,7 +59,7 @@ public:
      *
      * @returns The outcome of the dispatch, one element per metadata in mds.
      */
-    virtual void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit);
+    virtual void dispatch(metadata::InboundBatch& batch, bool drop_cached_data_on_commit);
 
     virtual void flush() = 0;
 };
@@ -83,11 +83,11 @@ class RealDispatcher : public Dispatcher
 protected:
     dataset::DispatchPool pool;
 
-    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
+    void raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    RealDispatcher(std::shared_ptr<dataset::Pool> pool);
-    ~RealDispatcher();
+    explicit RealDispatcher(std::shared_ptr<dataset::Pool> pool);
+    ~RealDispatcher() override;
 
     /**
      * Flush all dataset data do disk
@@ -106,13 +106,13 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-    void raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
+    void raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit) override;
 
 public:
-    TestDispatcher(std::shared_ptr<dataset::Pool> pool);
-    ~TestDispatcher();
+    explicit TestDispatcher(std::shared_ptr<dataset::Pool> pool);
+    ~TestDispatcher() override;
 
-    void dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit) override;
+    void dispatch(metadata::InboundBatch& batch, bool drop_cached_data_on_commit) override;
 
     /**
      * Flush all dataset data do disk

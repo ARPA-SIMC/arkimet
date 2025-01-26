@@ -114,46 +114,46 @@ Writer::~Writer()
 {
 }
 
-static bool writer_batch_element_lt(const std::shared_ptr<WriterBatchElement>& a, const std::shared_ptr<WriterBatchElement>& b)
+static bool writer_batch_element_lt(const std::shared_ptr<metadata::Inbound>& a, const std::shared_ptr<metadata::Inbound>& b)
 {
-    const types::Type* ta = a->md.get(TYPE_REFTIME);
-    const types::Type* tb = b->md.get(TYPE_REFTIME);
+    const types::Type* ta = a->md->get(TYPE_REFTIME);
+    const types::Type* tb = b->md->get(TYPE_REFTIME);
     if (!ta && !tb) return false;
     if (ta && !tb) return false;
     if (!ta && tb) return true;
     return *ta < *tb;
 }
 
-std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
+std::map<std::string, metadata::InboundBatch> Writer::batch_by_segment(metadata::InboundBatch& batch)
 {
     // Clear dataset names, pre-process items that do not need further
     // dispatching, and divide the rest of the batch by segment
-    std::map<std::string, WriterBatch> by_segment;
+    std::map<std::string, metadata::InboundBatch> by_segment;
 
     if (batch.empty()) return by_segment;
-    auto format = batch[0]->md.source().format;
+    auto format = batch[0]->md->source().format;
 
     for (auto& e: batch)
     {
-        e->dataset_name.clear();
+        e->destination.clear();
 
-        if (e->md.source().format != format)
+        if (e->md->source().format != format)
         {
-            e->md.add_note("cannot acquire into dataset " + name() + ": data is in format " + format_name(e->md.source().format) + " but the batch also has data in format " + format_name(format));
-            e->result = ACQ_ERROR;
+            e->md->add_note("cannot acquire into dataset " + name() + ": data is in format " + format_name(e->md->source().format) + " but the batch also has data in format " + format_name(format));
+            e->result = metadata::Inbound::Result::ERROR;
             continue;
         }
 
-        auto age_check = dataset().check_acquire_age(e->md);
+        auto age_check = dataset().check_acquire_age(*e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
-            if (age_check.second == ACQ_OK)
-                e->dataset_name = name();
+            if (age_check.second == metadata::Inbound::Result::OK)
+                e->destination = name();
             continue;
         }
 
-        core::Time time = e->md.get<types::reftime::Position>()->get_Position();
+        core::Time time = e->md->get<types::reftime::Position>()->get_Position();
         auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(format));
         by_segment[relpath].push_back(e);
     }
@@ -164,7 +164,7 @@ std::map<std::string, WriterBatch> Writer::batch_by_segment(WriterBatch& batch)
     return by_segment;
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type.empty())

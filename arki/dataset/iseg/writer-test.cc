@@ -76,7 +76,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again finds the duplicate
-    wassert(actual(writer->acquire(md)) == ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer->acquire(md)) == metadata::Inbound::Result::DUPLICATE);
 
     // Flush the changes and check that everything is allright
     writer->flush();
@@ -97,20 +97,20 @@ add_method("acquire", [](Fixture& f) {
 add_method("testacquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
     while (mdc.size() > 1) mdc.pop_back();
-    auto batch = mdc.make_import_batch();
+    auto batch = mdc.make_batch();
     wassert(iseg::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 
     f.cfg->set("archive age", "1");
     wassert(iseg::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[0]->dataset_name) == "");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
+    wassert(actual(batch[0]->destination) == "");
 
     f.cfg->set("delete age", "1");
     wassert(iseg::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 });
 
 }

@@ -83,14 +83,14 @@ add_method("simple", [] {
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
     RealDispatcher dispatcher(pool);
-    auto batch = mdc.make_import_batch();
+    auto batch = mdc.make_batch();
     wassert(dispatcher.dispatch(batch, false));
-    wassert(actual(batch[0]->dataset_name) == "test200");
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[1]->dataset_name) == "test80");
-    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[2]->dataset_name) == "error");
-    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->destination) == "test200");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[1]->destination) == "test80");
+    wassert(actual(batch[1]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[2]->destination) == "error");
+    wassert(actual(batch[2]->result) == metadata::Inbound::Result::OK);
     dispatcher.flush();
 
     wassert(actual(plain_data_read_count.val()) == 0u);
@@ -112,14 +112,14 @@ add_method("drop_cached_data", [] {
 
     metadata::TestCollection mdc("inbound/test.grib1", true);
     RealDispatcher dispatcher(pool);
-    auto batch = mdc.make_import_batch();
+    auto batch = mdc.make_batch();
     wassert(dispatcher.dispatch(batch, true));
-    wassert(actual(batch[0]->dataset_name) == "test200");
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[1]->dataset_name) == "test80");
-    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[2]->dataset_name) == "error");
-    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->destination) == "test200");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[1]->destination) == "test80");
+    wassert(actual(batch[1]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[2]->destination) == "error");
+    wassert(actual(batch[2]->result) == metadata::Inbound::Result::OK);
     dispatcher.flush();
 
     wassert(actual(plain_data_read_count.val()) == 0u);
@@ -157,10 +157,10 @@ add_method("regression01", [] {
     wassert_true(matcher(source[0]));
 
     RealDispatcher dispatcher(pool);
-    auto batch = source.make_import_batch();
+    auto batch = source.make_batch();
     wassert(dispatcher.dispatch(batch, false));
-    wassert(actual(batch[0]->dataset_name) == "lami_temp");
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->destination) == "lami_temp");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
     dispatcher.flush();
 });
 
@@ -175,14 +175,14 @@ add_method("validation", [] {
     metadata::validators::FailAlways fail_always;
     dispatcher.add_validator(fail_always);
     metadata::TestCollection mdc("inbound/test.grib1", true);
-    auto batch = mdc.make_import_batch();
+    auto batch = mdc.make_batch();
     wassert(dispatcher.dispatch(batch, false));
-    wassert(actual(batch[0]->dataset_name) == "error");
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[1]->dataset_name) == "error");
-    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[2]->dataset_name) == "error");
-    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->destination) == "error");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[1]->destination) == "error");
+    wassert(actual(batch[1]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[2]->destination) == "error");
+    wassert(actual(batch[2]->result) == metadata::Inbound::Result::OK);
     dispatcher.flush();
 });
 
@@ -197,20 +197,20 @@ add_method("missing_reftime", [] {
     wassert(actual(source.size()) == 6u);
 
     RealDispatcher dispatcher(pool);
-    auto batch = source.make_import_batch();
+    auto batch = source.make_batch();
     wassert(dispatcher.dispatch(batch, false));
-    wassert(actual(batch[0]->dataset_name) == "error");
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[1]->dataset_name) == "error");
-    wassert(actual(batch[1]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[2]->dataset_name) == "error");
-    wassert(actual(batch[2]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[3]->dataset_name) == "error");
-    wassert(actual(batch[3]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[4]->dataset_name) == "error");
-    wassert(actual(batch[4]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[5]->dataset_name) == "error");
-    wassert(actual(batch[5]->result) == dataset::ACQ_OK);
+    wassert(actual(batch[0]->destination) == "error");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[1]->destination) == "error");
+    wassert(actual(batch[1]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[2]->destination) == "error");
+    wassert(actual(batch[2]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[3]->destination) == "error");
+    wassert(actual(batch[3]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[4]->destination) == "error");
+    wassert(actual(batch[4]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[5]->destination) == "error");
+    wassert(actual(batch[5]->result) == metadata::Inbound::Result::OK);
     dispatcher.flush();
 });
 
