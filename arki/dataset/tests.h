@@ -319,9 +319,9 @@ class ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
 public:
     ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
-    void acquire_ok(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
-    void acquire_ok(metadata::Collection& mds, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
-    void acquire_duplicate(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
+    void acquire_ok(std::shared_ptr<Metadata> md, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
+    void acquire_ok(metadata::Collection& mds, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
+    void acquire_duplicate(std::shared_ptr<Metadata> md, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
 };
 
 inline arki::tests::ActualWriter<dataset::local::Writer> actual(arki::dataset::local::Writer* actual)

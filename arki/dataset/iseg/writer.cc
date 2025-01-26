@@ -190,7 +190,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_
 void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
-    ReplaceStrategy replace = cfg.replace == REPLACE_DEFAULT ? dataset().default_replace_strategy : cfg.replace;
+    ReplaceStrategy replace = cfg.replace == ReplaceStrategy::DEFAULT ? dataset().default_replace_strategy : cfg.replace;
 
     if (batch.empty()) return;
     if (batch[0]->md->source().format != dataset().iseg_segment_session->format)
@@ -210,19 +210,24 @@ void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& c
         auto segment = file(writer_config, s.first);
         switch (replace)
         {
-            case REPLACE_NEVER:
+            case ReplaceStrategy::NEVER:
                 segment->acquire_batch_replace_never(s.second);
                 scache.invalidate(s.second);
                 break;
-            case REPLACE_ALWAYS:
+            case ReplaceStrategy::ALWAYS:
                 segment->acquire_batch_replace_always(s.second);
                 scache.invalidate(s.second);
                 break;
-            case REPLACE_HIGHER_USN:
+            case ReplaceStrategy::HIGHER_USN:
                 segment->acquire_batch_replace_higher_usn(s.second);
                 scache.invalidate(s.second);
                 break;
-            default: throw std::runtime_error("programming error: unsupported replace value " + std::to_string(replace));
+            default:
+            {
+                std::stringstream buf;
+                buf << "programming error: unsupported replace value " << replace;
+                throw std::runtime_error(buf.str());
+            }
         }
     }
 }

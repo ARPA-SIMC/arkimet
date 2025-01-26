@@ -7,6 +7,7 @@
 #include <arki/segment/fwd.h>
 #include <arki/segment/session.h>
 #include <arki/query/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <arki/core/time.h>
 #include <arki/summary.h>
 
@@ -110,6 +111,13 @@ public:
 struct WriterConfig
 {
     /**
+     * Name of the destination to set in Inbount elements on success
+     */
+    std::string destination_name;
+
+    ReplaceStrategy replace_strategy = ReplaceStrategy::DEFAULT;
+
+    /**
      * Drop cached data from Metadata objects after it has been written to the
      * segment
      */
@@ -133,6 +141,12 @@ public:
 
     /// Access the segment
     const Segment& segment() const { return *m_segment; }
+
+#if 0
+    virtual void acquire_batch_replace_never(arki::metadata::InboundBatch& batch) = 0;
+    virtual void acquire_batch_replace_always(arki::metadata::InboundBatch& batch) = 0;
+    virtual void acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch) = 0;
+#endif
 };
 
 

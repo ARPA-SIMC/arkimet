@@ -128,28 +128,28 @@ add_method("import_batch_replace_usn", [](Fixture& f) {
 
     metadata::InboundBatch batch;
     batch.emplace_back(make_shared<metadata::Inbound>(mdc.get(0)));
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::HIGHER_USN));
     wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
     wassert(actual(batch[0]->destination) == "testds");
     wassert(actual_file(f.ds_root / "2009/12-04.bufr").exists());
     wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::BUFR, f.ds_root, "2009/12-04.bufr"));
 
     // Acquire again: it works, since USNs the same as the existing ones do overwrite
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::HIGHER_USN));
     wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
     wassert(actual(batch[0]->destination) == "testds");
 
     // Acquire with a newer USN: it works
     batch.clear();
     batch.emplace_back(make_shared<metadata::Inbound>(mdc_upd.get(0)));
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::HIGHER_USN));
     wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
     wassert(actual(batch[0]->destination) == "testds");
 
     // Acquire with the lower USN: it fails
     batch.clear();
     batch.emplace_back(make_shared<metadata::Inbound>(mdc.get(0)));
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_HIGHER_USN));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::HIGHER_USN));
     if (ds->type() == "simple")
     {
         wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
@@ -173,7 +173,7 @@ add_method("issue237", [](Fixture& f) {
         auto ds = f.config().create_writer();
         metadata::InboundBatch batch;
         batch.add(mdc.get(0));
-        wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
+        wassert(ds->acquire_batch(batch, ReplaceStrategy::NEVER));
         wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
         wassert(actual_type(batch[0]->md->source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
     }
@@ -224,7 +224,7 @@ this->add_method("import_error", [](Fixture& f) {
     auto ds = f.config().create_writer();
     metadata::InboundBatch batch;
     batch.add(md.clone());
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::NEVER));
     wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
 
     auto state = f.scan_state();
@@ -237,7 +237,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
     metadata::InboundBatch batch = f.td.mds.make_batch();
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == metadata::Inbound::Result::OK);
@@ -248,7 +248,7 @@ this->add_method("import_batch_replace_never", [](Fixture& f) {
 
     metadata::Collection mds = f.td.mds.clone();
     batch = mds.make_batch();
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::NEVER));
     for (unsigned i = 0; i < 3; ++i)
     {
         if (ds->type() == "simple")
@@ -269,7 +269,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
     auto ds = f.config().create_writer();
 
     metadata::InboundBatch batch = f.td.mds.make_batch();
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::ALWAYS));
 
     for (unsigned i = 0; i < 3; ++i)
     {
@@ -281,7 +281,7 @@ this->add_method("import_batch_replace_always", [](Fixture& f) {
 
     auto mds = f.td.mds.clone();
     batch = mds.make_batch();
-    wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
+    wassert(ds->acquire_batch(batch, ReplaceStrategy::ALWAYS));
     for (unsigned i = 0; i < 3; ++i)
     {
         wassert(actual(batch[i]->result) == metadata::Inbound::Result::OK);
@@ -351,7 +351,7 @@ this->add_method("second_resolution", [](Fixture& f) {
     wassert(f.ensure_localds_clean(1, 2));
 });
 
-auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::ReplaceStrategy strategy) {
+auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, ReplaceStrategy strategy) {
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
@@ -383,24 +383,24 @@ auto test_same_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Replace
 };
 
 this->add_method("transaction_same_segment_fail_first", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_NEVER));
-    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_ALWAYS));
-    wassert(test_same_segment_fail(f, 0, dataset::REPLACE_HIGHER_USN));
+    wassert(test_same_segment_fail(f, 0, ReplaceStrategy::NEVER));
+    wassert(test_same_segment_fail(f, 0, ReplaceStrategy::ALWAYS));
+    wassert(test_same_segment_fail(f, 0, ReplaceStrategy::HIGHER_USN));
 });
 
 this->add_method("transaction_same_segment_fail_middle", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_NEVER));
-    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_ALWAYS));
-    wassert(test_same_segment_fail(f, 1, dataset::REPLACE_HIGHER_USN));
+    wassert(test_same_segment_fail(f, 1, ReplaceStrategy::NEVER));
+    wassert(test_same_segment_fail(f, 1, ReplaceStrategy::ALWAYS));
+    wassert(test_same_segment_fail(f, 1, ReplaceStrategy::HIGHER_USN));
 });
 
 this->add_method("transaction_same_segment_fail_last", [=](Fixture& f) {
-    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_NEVER));
-    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_ALWAYS));
-    wassert(test_same_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
+    wassert(test_same_segment_fail(f, 2, ReplaceStrategy::NEVER));
+    wassert(test_same_segment_fail(f, 2, ReplaceStrategy::ALWAYS));
+    wassert(test_same_segment_fail(f, 2, ReplaceStrategy::HIGHER_USN));
 });
 
-auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::ReplaceStrategy strategy) {
+auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, ReplaceStrategy strategy) {
     sys::rmtree_ifexists("testds");
     Metadata md;
     fill(md);
@@ -437,21 +437,21 @@ auto test_different_segment_fail = [](Fixture& f, unsigned fail_idx, dataset::Re
 };
 
 this->add_method("transaction_different_segment_fail_first", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_NEVER));
-    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_ALWAYS));
-    wassert(test_different_segment_fail(f, 0, dataset::REPLACE_HIGHER_USN));
+    wassert(test_different_segment_fail(f, 0, ReplaceStrategy::NEVER));
+    wassert(test_different_segment_fail(f, 0, ReplaceStrategy::ALWAYS));
+    wassert(test_different_segment_fail(f, 0, ReplaceStrategy::HIGHER_USN));
 });
 
 this->add_method("transaction_different_segment_fail_middle", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_NEVER));
-    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_ALWAYS));
-    wassert(test_different_segment_fail(f, 1, dataset::REPLACE_HIGHER_USN));
+    wassert(test_different_segment_fail(f, 1, ReplaceStrategy::NEVER));
+    wassert(test_different_segment_fail(f, 1, ReplaceStrategy::ALWAYS));
+    wassert(test_different_segment_fail(f, 1, ReplaceStrategy::HIGHER_USN));
 });
 
 this->add_method("transaction_different_segment_fail_last", [=](Fixture& f) {
-    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_NEVER));
-    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_ALWAYS));
-    wassert(test_different_segment_fail(f, 2, dataset::REPLACE_HIGHER_USN));
+    wassert(test_different_segment_fail(f, 2, ReplaceStrategy::NEVER));
+    wassert(test_different_segment_fail(f, 2, ReplaceStrategy::ALWAYS));
+    wassert(test_different_segment_fail(f, 2, ReplaceStrategy::HIGHER_USN));
 });
 
 this->add_method("test_acquire", [](Fixture& f) noexcept {
@@ -467,7 +467,7 @@ this->add_method("import_eatmydata", [](Fixture& f) {
             wassert(actual(*ds).acquire_ok(md));
 
         metadata::InboundBatch batch = f.td.mds.make_batch();
-        wassert(ds->acquire_batch(batch, dataset::REPLACE_ALWAYS));
+        wassert(ds->acquire_batch(batch, ReplaceStrategy::ALWAYS));
     }
 
     metadata::Collection mdc(*f.config().create_reader(), "");

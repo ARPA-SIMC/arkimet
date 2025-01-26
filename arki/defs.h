@@ -60,6 +60,25 @@ DataFormat format_from_string(const std::string& format);
 
 std::ostream& operator<<(std::ostream& o, DataFormat format);
 
+
+/// What to do if duplicate data is found
+enum class ReplaceStrategy {
+    /// Default strategy
+    DEFAULT,
+    /// Never replace
+    NEVER,
+    /// Always replace
+    ALWAYS,
+    /**
+     * Replace if update sequence number is higher (do not replace if USN
+     * not available)
+     */
+    HIGHER_USN,
+};
+
+std::ostream& operator<<(std::ostream& o, ReplaceStrategy strategy);
+
+
 }
 
 #endif

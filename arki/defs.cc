@@ -52,4 +52,16 @@ std::ostream& operator<<(std::ostream& o, DataFormat format)
     return o << format_name(format);
 }
 
+std::ostream& operator<<(std::ostream& o, ReplaceStrategy strategy)
+{
+    switch (strategy)
+    {
+        case ReplaceStrategy::DEFAULT: return o << "DEFAULT";
+        case ReplaceStrategy::NEVER: return o << "NEVER";
+        case ReplaceStrategy::ALWAYS: return o << "ALWAYS";
+        case ReplaceStrategy::HIGHER_USN: return o << "HIGHER_USN";
+        default: return o << "<unknown>";
+    }
+}
+
 }

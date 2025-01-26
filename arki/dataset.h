@@ -218,24 +218,9 @@ public:
 };
 
 
-enum ReplaceStrategy {
-    /// Default strategy, as configured in the dataset
-    REPLACE_DEFAULT,
-    /// Never replace
-    REPLACE_NEVER,
-    /// Always replace
-    REPLACE_ALWAYS,
-    /**
-     * Replace if update sequence number is higher (do not replace if USN
-     * not available)
-     */
-    REPLACE_HIGHER_USN,
-};
-
-
 struct AcquireConfig
 {
-    ReplaceStrategy replace=REPLACE_DEFAULT;
+    ReplaceStrategy replace=ReplaceStrategy::DEFAULT;
     bool drop_cached_data_on_commit=false;
 
     AcquireConfig() = default;

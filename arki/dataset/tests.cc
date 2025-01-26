@@ -914,7 +914,7 @@ void format_fail_inbound(std::ostream& o, const metadata::Inbound& inbound)
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::acquire_ok(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::acquire_ok(std::shared_ptr<Metadata> md, ReplaceStrategy strategy)
 {
     metadata::InboundBatch batch;
     batch.add(md);
@@ -928,7 +928,7 @@ void ActualWriter<Dataset>::acquire_ok(std::shared_ptr<Metadata> md, dataset::Re
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::acquire_ok(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::acquire_ok(metadata::Collection& mds, ReplaceStrategy strategy)
 {
     metadata::InboundBatch batch = mds.make_batch();
     wassert(this->_actual->acquire_batch(batch, strategy));
@@ -944,7 +944,7 @@ void ActualWriter<Dataset>::acquire_ok(metadata::Collection& mds, dataset::Repla
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::acquire_duplicate(std::shared_ptr<Metadata> md, dataset::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::acquire_duplicate(std::shared_ptr<Metadata> md, ReplaceStrategy strategy)
 {
     metadata::InboundBatch batch;
     batch.add(md);

@@ -104,19 +104,19 @@ add_method("acquire_replace_usn", [](Fixture& f) {
     wassert(actual(writer).acquire_duplicate(mdc_upd.get(0)));
 
     // Acquire with replace: it works
-    wassert(actual(writer).acquire_ok(mdc.get(0), dataset::REPLACE_ALWAYS));
+    wassert(actual(writer).acquire_ok(mdc.get(0), ReplaceStrategy::ALWAYS));
 
     // Acquire with USN: it works, since USNs the same as the existing ones do overwrite
-    wassert(actual(writer).acquire_ok(mdc.get(0), dataset::REPLACE_HIGHER_USN));
+    wassert(actual(writer).acquire_ok(mdc.get(0), ReplaceStrategy::HIGHER_USN));
 
     // Acquire with a newer USN: it works
-    wassert(actual(writer).acquire_ok(mdc_upd.get(0), dataset::REPLACE_HIGHER_USN));
+    wassert(actual(writer).acquire_ok(mdc_upd.get(0), ReplaceStrategy::HIGHER_USN));
 
     // Acquire with the lower USN: it fails
-    wassert(actual(writer).acquire_duplicate(mdc.get(0), dataset::REPLACE_HIGHER_USN));
+    wassert(actual(writer).acquire_duplicate(mdc.get(0), ReplaceStrategy::HIGHER_USN));
 
     // Acquire with the same high USN: it works, since USNs the same as the existing ones do overwrite
-    wassert(actual(writer).acquire_ok(mdc_upd.get(0), dataset::REPLACE_HIGHER_USN));
+    wassert(actual(writer).acquire_ok(mdc_upd.get(0), ReplaceStrategy::HIGHER_USN));
 
     // Try to query the element and see if it is the right one
     {

@@ -24,7 +24,7 @@ public:
     std::string step_name;
 
     /// What replace strategy to use when acquire() is called with REPLACE_DEFAULT
-    dataset::ReplaceStrategy default_replace_strategy;
+    ReplaceStrategy default_replace_strategy;
 
     /**
      * If true, this dataset is used as an archive for offline data

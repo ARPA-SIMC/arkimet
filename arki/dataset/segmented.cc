@@ -68,11 +68,11 @@ Dataset::Dataset(std::shared_ptr<Session> session, std::shared_ptr<segment::Sess
 
     string repl = cfg.value("replace");
     if (repl == "yes" || repl == "true" || repl == "always")
-        default_replace_strategy = REPLACE_ALWAYS;
+        default_replace_strategy = ReplaceStrategy::ALWAYS;
     else if (repl == "USN")
-        default_replace_strategy = REPLACE_HIGHER_USN;
+        default_replace_strategy = ReplaceStrategy::HIGHER_USN;
     else if (repl == "" || repl == "no" || repl == "never")
-        default_replace_strategy = REPLACE_NEVER;
+        default_replace_strategy = ReplaceStrategy::NEVER;
     else
         throw std::runtime_error("Replace strategy '" + repl + "' is not recognised in the configuration of dataset " + name());
 

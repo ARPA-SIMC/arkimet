@@ -45,13 +45,13 @@ arki::dataset::AcquireConfig acquire_config(
     {
         std::string replace(arg_replace, arg_replace_len);
         if (replace == "default")
-            cfg.replace = arki::dataset::REPLACE_DEFAULT;
+            cfg.replace = arki::ReplaceStrategy::DEFAULT;
         else if (replace == "never")
-            cfg.replace = arki::dataset::REPLACE_NEVER;
+            cfg.replace = arki::ReplaceStrategy::NEVER;
         else if (replace == "always")
-            cfg.replace = arki::dataset::REPLACE_ALWAYS;
+            cfg.replace = arki::ReplaceStrategy::ALWAYS;
         else if (replace == "higher_usn")
-            cfg.replace = arki::dataset::REPLACE_HIGHER_USN;
+            cfg.replace = arki::ReplaceStrategy::HIGHER_USN;
         else
         {
             PyErr_SetString(PyExc_ValueError, "replace argument must be 'default', 'never', 'always', or 'higher_usn'");
