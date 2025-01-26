@@ -20,7 +20,7 @@ std::shared_ptr<RIndex> Segment::read_index(std::shared_ptr<const core::ReadLock
 
 std::shared_ptr<CIndex> Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
 {
-    return std::static_pointer_cast<const iseg::Session>(m_session)->check_index(shared_from_this(), lock);
+    return std::make_shared<CIndex>(std::static_pointer_cast<const iseg::Segment>(shared_from_this()), lock);
 }
 
 Reader::Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<const core::ReadLock> lock)

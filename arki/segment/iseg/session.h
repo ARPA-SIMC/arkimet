@@ -38,7 +38,6 @@ public:
     std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
 
     std::shared_ptr<AIndex> append_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const;
-    std::shared_ptr<CIndex> check_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const;
 
     void create_iseg(std::shared_ptr<arki::Segment> segment, arki::metadata::Collection& mds) const override;
 };

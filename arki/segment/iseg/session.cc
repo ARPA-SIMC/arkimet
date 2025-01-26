@@ -34,11 +34,6 @@ std::shared_ptr<AIndex> Session::append_index(std::shared_ptr<const arki::Segmen
     return std::make_shared<AIndex>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
 }
 
-std::shared_ptr<CIndex> Session::check_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const
-{
-    return std::make_shared<CIndex>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
-}
-
 
 void Session::create_iseg(std::shared_ptr<arki::Segment> segment, arki::metadata::Collection& mds) const
 {
