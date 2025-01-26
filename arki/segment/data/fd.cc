@@ -216,7 +216,7 @@ stream::SendResult Reader<Data>::stream(const types::source::Blob& src, StreamOu
 
 
 template<typename Data, typename File>
-Writer<Data, File>::Writer(const WriterConfig& config, std::shared_ptr<const Data> data, int mode)
+Writer<Data, File>::Writer(const segment::WriterConfig& config, std::shared_ptr<const Data> data, int mode)
     : BaseWriter<Data>(config, data), fd(data->segment().abspath(), O_WRONLY | O_CREAT | mode, 0666)
 {
     struct stat st;
@@ -249,7 +249,7 @@ template<typename Data, typename File>
 void Writer<Data, File>::commit()
 {
     if (this->fired) return;
-    if (!this->config.eatmydata)
+    if (!this->segment().session().eatmydata)
         fd.fsync();
     for (auto& p: pending)
         p.set_source();
@@ -448,7 +448,7 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
+std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig& config) const
 {
     throw std::runtime_error("cannot store " + format_name(segment().format()) + " using fd::single writer");
 }
@@ -504,7 +504,7 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
+std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig& config) const
 {
     if (session().mock_data)
         return make_shared<HoleWriter>(config, static_pointer_cast<const Data>(shared_from_this()));
@@ -601,7 +601,7 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
+std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig& config) const
 {
     return make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
 }

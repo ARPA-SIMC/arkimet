@@ -295,7 +295,7 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
+std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig& config) const
 {
     if (session().mock_data)
         return make_shared<HoleWriter>(config, static_pointer_cast<const Data>(shared_from_this()));
@@ -399,7 +399,7 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 
 
 template<typename Data>
-BaseWriter<Data>::BaseWriter(const WriterConfig& config, std::shared_ptr<const Data> data)
+BaseWriter<Data>::BaseWriter(const segment::WriterConfig& config, std::shared_ptr<const Data> data)
     : data::BaseWriter<Data>(config, data), seqfile(data->segment().abspath())
 {
     // Ensure that the directory 'abspath' exists
@@ -482,7 +482,7 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     const auto& data = md.get_data();
     data.write(fd);
-    if (!config.eatmydata)
+    if (!segment().session().eatmydata)
         if (fdatasync(fd) < 0)
             fd.throw_error("cannot flush write");
 }

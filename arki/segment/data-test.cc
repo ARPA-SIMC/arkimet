@@ -56,7 +56,7 @@ add_method("auto_instantiate_existing", [] {
     make_samples();
 
     auto get_writer = [&](const char* format, const char* name) {
-        segment::data::WriterConfig writer_config;
+        segment::WriterConfig writer_config;
         auto segment = session->segment_from_relpath_and_format(name, format_from_string(format));
         return segment->data_writer(writer_config);
     };

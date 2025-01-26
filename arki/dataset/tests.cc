@@ -371,13 +371,13 @@ void DatasetTest::import(metadata::Collection& mds)
 {
     {
         auto writer(config().create_writer());
-        auto batch = mds.make_import_batch();
+        auto batch = mds.make_batch();
         writer->acquire_batch(batch);
         for (const auto& e: batch)
         {
-            wassert(actual(e->dataset_name) == config().name());
-            wassert(actual(e->result) == ACQ_OK);
-            auto newmd = e->md.clone();
+            wassert(actual(e->destination) == config().name());
+            wassert(actual(e->result) == metadata::Inbound::Result::OK);
+            auto newmd = e->md->clone();
             import_results.acquire(newmd, true);
             newmd->sourceBlob().unlock();
             //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
@@ -393,13 +393,15 @@ void DatasetTest::import(const std::filesystem::path& testfile)
     import(data);
 }
 
-void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
+void DatasetTest::import(Metadata& md, metadata::Inbound::Result expected_result)
 {
     auto newmd = md.clone();
     import_results.acquire(newmd, true);
     auto writer(config().create_writer());
-    WriterAcquireResult res = writer->acquire(*newmd);
-    wassert(actual(res) == expected_result);
+    metadata::InboundBatch batch;
+    batch.add(newmd);
+    writer->acquire_batch(batch);
+    wassert(actual(batch[0]->result) == expected_result);
 }
 
 void DatasetTest::clean_and_import(const std::filesystem::path& testfile)
@@ -453,13 +455,18 @@ void DatasetTest::import_all(const metadata::Collection& mds)
     clean();
 
     auto writer = config().create_writer();
-    for (const auto& md: mds)
+
+    auto newmds = mds.clone();
+    for (auto& md: newmds)
+        import_results.acquire(md, true);
+
+    auto batch = newmds.make_batch();
+    writer->acquire_batch(batch);
+
+    for (const auto& el: batch)
     {
-        auto newmd = md->clone();
-        import_results.acquire(newmd, true);
-        WriterAcquireResult res = writer->acquire(*newmd);
-        wassert(actual(res) == ACQ_OK);
-        newmd->sourceBlob().unlock();
+        wassert(actual(el->result) == metadata::Inbound::Result::OK);
+        el->md->sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg->value("path"));
@@ -896,67 +903,58 @@ struct CollectReporter : public dataset::Reporter
     }
 };
 
+namespace {
+void format_fail_inbound(std::ostream& o, const metadata::Inbound& inbound)
+{
+    o << "Unexpected import result " << inbound.result << ". Notes:" << endl;
+    auto notes = inbound.md->notes();
+    for (auto n = notes.first; n != notes.second; ++n)
+        o << "\t" << **n << endl;
+}
+}
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(Metadata& md)
+void ActualWriter<Dataset>::acquire_ok(std::shared_ptr<Metadata> md, ReplaceStrategy strategy)
 {
-    auto res = wcallchecked(this->_actual->acquire(md));
-    if (res != dataset::ACQ_OK)
+    metadata::InboundBatch batch;
+    batch.add(md);
+    wassert(this->_actual->acquire_batch(batch, strategy));
+    if (batch[0]->result != metadata::Inbound::Result::OK)
     {
-        std::stringstream ss;
-        switch (res)
-        {
-            case ACQ_ERROR_DUPLICATE:
-                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
-                break;
-            case ACQ_ERROR:
-                ss << "ACQ_ERROR when importing data. notes:" << endl;
-                break;
-            default:
-                ss << "Error " << (int)res << " when importing data. notes:" << endl;
-                break;
-        }
-
-        auto notes = md.notes();
-        for (auto n = notes.first; n != notes.second; ++n)
-            ss << "\t" << **n << endl;
-
-        throw TestFailed(ss.str());
+        std::stringstream buf;
+        format_fail_inbound(buf, *batch[0]);
+        throw TestFailed(buf.str());
     }
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::acquire_ok(metadata::Collection& mds, ReplaceStrategy strategy)
 {
-    WriterBatch batch;
-    batch.reserve(mds.size());
-    for (auto& md: mds)
-        batch.emplace_back(make_shared<WriterBatchElement>(*md));
+    metadata::InboundBatch batch = mds.make_batch();
     wassert(this->_actual->acquire_batch(batch, strategy));
 
-    std::stringstream ss;
+    std::stringstream buf;
     for (const auto& e: batch)
     {
-        if (e->result == dataset::ACQ_OK) continue;
-        switch (e->result)
-        {
-            case ACQ_ERROR_DUPLICATE:
-                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
-                break;
-            case ACQ_ERROR:
-                ss << "ACQ_ERROR when importing data. notes:" << endl;
-                break;
-            default:
-                ss << "Error " << (int)e->result << " when importing data. notes:" << endl;
-                break;
-        }
-
-        auto notes = e->md.notes();
-        for (auto n = notes.first; n != notes.second; ++n)
-            ss << "\t" << **n << endl;
+        if (e->result == metadata::Inbound::Result::OK) continue;
+        format_fail_inbound(buf, *e);
     }
-    if (!ss.str().empty())
-        throw TestFailed(ss.str());
+    if (!buf.str().empty())
+        throw TestFailed(buf.str());
+}
+
+template<typename Dataset>
+void ActualWriter<Dataset>::acquire_duplicate(std::shared_ptr<Metadata> md, ReplaceStrategy strategy)
+{
+    metadata::InboundBatch batch;
+    batch.add(md);
+    wassert(this->_actual->acquire_batch(batch, strategy));
+    if (batch[0]->result != metadata::Inbound::Result::DUPLICATE)
+    {
+        std::stringstream buf;
+        format_fail_inbound(buf, *batch[0]);
+        throw TestFailed(buf.str());
+    }
 }
 
 

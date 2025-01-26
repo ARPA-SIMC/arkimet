@@ -130,7 +130,7 @@ public:
     /**
      * Instantiate a writer for this segment
      */
-    virtual std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const = 0;
+    virtual std::shared_ptr<segment::data::Writer> writer(const segment::WriterConfig& config) const = 0;
 
     /**
      * Instantiate a checker for this segment
@@ -178,30 +178,16 @@ public:
     virtual stream::SendResult stream(const types::source::Blob& src, StreamOutput& out);
 };
 
-struct WriterConfig
-{
-    /**
-     * Drop cached data from Metadata objects after it has been written to the
-     * segment
-     */
-    bool drop_cached_data_on_commit = false;
-
-    /**
-     * Skip fdatasync/fsync operations to trade consistency for speed
-     */
-    bool eatmydata = false;
-};
-
 class Writer : public core::Transaction, public std::enable_shared_from_this<Writer>
 {
 public:
     struct PendingMetadata
     {
-        const WriterConfig& config;
+        const segment::WriterConfig& config;
         Metadata& md;
         types::source::Blob* new_source;
 
-        PendingMetadata(const WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source);
+        PendingMetadata(const segment::WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source);
         PendingMetadata(const PendingMetadata&) = delete;
         PendingMetadata(PendingMetadata&& o);
         ~PendingMetadata();
@@ -211,11 +197,11 @@ public:
         void set_source();
     };
 
-    WriterConfig config;
+    segment::WriterConfig config;
     bool fired = false;
 
     Writer() = default;
-    Writer(const WriterConfig& config) : config(config) {}
+    Writer(const segment::WriterConfig& config) : config(config) {}
     virtual ~Writer() {}
 
     virtual const Segment& segment() const = 0;

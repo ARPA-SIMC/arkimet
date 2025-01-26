@@ -18,25 +18,15 @@ class Writer : public DatasetAccess<iseg::Dataset, segmented::Writer>
 protected:
     index::SummaryCache scache;
 
-    /// Return the relative path of the segment for this metadata
-    std::filesystem::path get_relpath(const Metadata& md);
-
-    /// Return an inserter for the given Metadata
-    std::unique_ptr<AppendSegment> file(const segment::data::WriterConfig& writer_config, const Metadata& md);
-
-    /// Return an inserter for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath);
-
 public:
     explicit Writer(std::shared_ptr<iseg::Dataset> config);
     virtual ~Writer();
 
     std::string type() const override;
 
-    WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
-    void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 

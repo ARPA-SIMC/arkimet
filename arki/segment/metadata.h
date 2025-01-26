@@ -4,6 +4,7 @@
 #include <arki/types/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/segment.h>
+#include <arki/metadata/collection.h>
 
 namespace arki::segment::metadata {
 
@@ -31,6 +32,22 @@ public:
     bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;
+};
+
+class Writer : public segment::Writer
+{
+protected:
+    arki::metadata::Collection mds;
+    Summary sum;
+
+    void add(const Metadata& md, const types::source::Blob& source);
+    void write_metadata();
+
+public:
+    Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
+    ~Writer();
+
+    AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) override;
 };
 
 class Checker : public segment::Checker

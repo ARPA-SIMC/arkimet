@@ -9,6 +9,7 @@
 #include "scan.h"
 #include "arki/core/file.h"
 #include "arki/core/lock.h"
+#include "arki/core/cfg.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -23,6 +24,14 @@ namespace arki::segment {
 
 Session::Session(const std::filesystem::path& root)
     : reader_pool(), root(std::filesystem::weakly_canonical(root))
+{
+}
+
+Session::Session(const core::cfg::Section& cfg)
+    : reader_pool(),
+      root(cfg.value("path")),
+      smallfiles(cfg.value_bool("smallfiles")),
+      eatmydata(cfg.value_bool("eatmydata"))
 {
 }
 
@@ -123,6 +132,23 @@ std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const S
     return std::make_shared<segment::scan::Reader>(segment, lock);
 }
 
+std::shared_ptr<segment::Writer> Session::segment_writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock) const
+{
+    // stat the metadata file, if it exists
+    auto md_abspath = segment->abspath_metadata();
+    auto st_md = sys::stat(md_abspath);
+    // If it exists and it looks new enough, use it
+    if (st_md.get())
+        return std::make_shared<segment::metadata::Writer>(segment, lock);
+
+    auto data = segment->data();
+    auto ts = data->timestamp();
+    if (ts)
+        return std::make_shared<segment::scan::Writer>(segment, lock);
+    else
+        throw std::runtime_error("this session misses a policy to determine how to create writers for segments that do not yet exist");
+}
+
 std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
 {
     // stat the metadata file, if it exists
@@ -137,7 +163,7 @@ std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const
     if (ts)
         return std::make_shared<segment::scan::Checker>(segment, lock);
     else
-        throw std::runtime_error("this session misses a policy to determine how to create checkers for segments to be created");
+        throw std::runtime_error("this session misses a policy to determine how to create checkers for segments that do not yet exist");
 }
 
 std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
@@ -152,7 +178,7 @@ std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_
     return res->second.lock();
 }
 
-std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::data::WriterConfig& config) const
+std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::WriterConfig& config) const
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
     auto data = segment->data();

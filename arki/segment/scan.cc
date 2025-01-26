@@ -52,6 +52,17 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     });
 }
 
+
+Writer::~Writer()
+{
+}
+
+Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config)
+{
+    throw std::runtime_error("acquiring in scan segments is not yet implemented");
+}
+
+
 arki::metadata::Collection Checker::scan()
 {
     // Rescan the file

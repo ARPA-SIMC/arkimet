@@ -19,25 +19,13 @@ public:
     std::set<types::Code> unique;
     bool trace_sql = false;
 
-    /**
-     * If true, try to store the content of small files in the index if
-     * possible, to avoid extra I/O when querying
-     */
-    bool smallfiles = false;
-
-    /**
-     * Trade write reliability and write concurrency in favour of performance.
-     *
-     * Useful for writing fast temporary private datasets.
-     */
-    bool eatmydata = false;
+    explicit Session(const core::cfg::Section& cfg);
 
     std::shared_ptr<arki::Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const override;
 
     std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
+    std::shared_ptr<segment::Writer> segment_writer(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const override;
     std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
-
-    std::shared_ptr<AIndex> append_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const;
 
     void create_iseg(std::shared_ptr<arki::Segment> segment, arki::metadata::Collection& mds) const override;
 };

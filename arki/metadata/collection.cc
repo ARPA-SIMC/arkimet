@@ -2,6 +2,7 @@
 #include "arki/exceptions.h"
 #include "arki/core/lock.h"
 #include "arki/metadata.h"
+#include "arki/metadata/inbound.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/compress.h"
@@ -70,7 +71,7 @@ struct AtomicWriter
     std::filesystem::path destfname;
     sys::File out;
 
-    AtomicWriter(const std::filesystem::path& fname)
+    explicit AtomicWriter(const std::filesystem::path& fname)
         : destfname(fname), out(path_tmp(fname), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
     {
     }
@@ -95,6 +96,27 @@ struct AtomicWriter
     }
 };
 
+struct AtomicWriterPreservingTimestamp: public AtomicWriter
+{
+    ::timespec saved_timestamp[2];
+
+    explicit AtomicWriterPreservingTimestamp(const std::filesystem::path& fname)
+        : AtomicWriter(fname)
+    {
+        struct stat st;
+        out.fstat(st);
+        saved_timestamp[0] = st.st_atim;
+        saved_timestamp[1] = st.st_mtim;
+    }
+
+    void commit()
+    {
+        if (!out)
+            return;
+        out.futimens(saved_timestamp);
+        AtomicWriter::commit();
+    }
+};
 
 static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescriptor& out)
 {
@@ -178,11 +200,11 @@ Collection Collection::clone() const
     return res;
 }
 
-dataset::WriterBatch Collection::make_import_batch() const
+InboundBatch Collection::make_batch() const
 {
-    dataset::WriterBatch batch;
+    InboundBatch batch;
     for (auto& md: vals)
-        batch.emplace_back(make_shared<dataset::WriterBatchElement>(*md));
+        batch.emplace_back(std::make_shared<metadata::Inbound>(md));
     return batch;
 }
 
@@ -280,6 +302,13 @@ void Collection::read_from_file(NamedFileDescriptor& fd)
 void Collection::writeAtomically(const std::filesystem::path& fname) const
 {
     AtomicWriter writer(fname);
+    write_to(writer.out);
+    writer.commit();
+}
+
+void Collection::writeAtomicallyPreservingTimestamp(const std::filesystem::path& fname) const
+{
+    AtomicWriterPreservingTimestamp writer(fname);
     write_to(writer.out);
     writer.commit();
 }

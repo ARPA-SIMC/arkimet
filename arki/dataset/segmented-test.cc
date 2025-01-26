@@ -574,7 +574,7 @@ add_method("archive_age", [](Fixture& f) {
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     metadata::TestCollection mds("inbound/test.grib1");
-    wassert(actual(*f.makeSegmentedWriter()).import(mds[0]));
+    wassert(actual(*f.makeSegmentedWriter()).acquire_ok(mds.get(0)));
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
@@ -606,7 +606,7 @@ add_method("delete_age", [](Fixture& f) {
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     metadata::TestCollection mds("inbound/test.grib1");
-    wassert(actual(*f.makeSegmentedWriter()).import(mds[0]));
+    wassert(actual(*f.makeSegmentedWriter()).acquire_ok(mds.get(0)));
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
@@ -856,7 +856,9 @@ add_method("no_writes_when_repacking", [](Fixture& f) {
 
         // When repack is still checking, we cannot append
         auto writer = dataset->create_writer();
-        wassert_throws(lock::locked_error, writer->acquire(f.import_results[1]));
+        metadata::InboundBatch batch;
+        batch.add(f.import_results.get(1));
+        wassert_throws(lock::locked_error, writer->acquire_batch(batch));
     };
     test_hooks->on_repack_write_lock = [&](const Segment& segment) {
         if (segment.relpath() != relpath)
@@ -869,7 +871,9 @@ add_method("no_writes_when_repacking", [](Fixture& f) {
 
         // When repack is fixing, appending fails
         auto writer = dataset->create_writer();
-        wassert_throws(lock::locked_error, writer->acquire(f.import_results[1]));
+        metadata::InboundBatch batch;
+        batch.add(f.import_results.get(1));
+        wassert_throws(lock::locked_error, writer->acquire_batch(batch));
     };
     dataset->test_hooks = test_hooks;
 

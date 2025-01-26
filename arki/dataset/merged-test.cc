@@ -59,15 +59,15 @@ struct Fixture : public arki::utils::tests::Fixture
         session = std::make_shared<dataset::Session>();
         pool = std::make_shared<dataset::Pool>(session);
         // Cleanup the test datasets
-	sys::rmtree_ifexists("test200");
-	sys::rmtree_ifexists("test80");
-	sys::rmtree_ifexists("error");
+        sys::rmtree_ifexists("test200");
+        sys::rmtree_ifexists("test80");
+        sys::rmtree_ifexists("error");
 
         // Import data into the datasets
         metadata::TestCollection mdc("inbound/test.grib1");
-        wassert(import("test200", mdc[0]));
-        wassert(import("test80", mdc[1]));
-        wassert(import("error", mdc[2]));
+        wassert(import("test200", mdc.get(0)));
+        wassert(import("test80", mdc.get(1)));
+        wassert(import("error", mdc.get(2)));
         pool->add_dataset(*config->section("test200"));
         pool->add_dataset(*config->section("test80"));
         pool->add_dataset(*config->section("error"));
@@ -75,10 +75,10 @@ struct Fixture : public arki::utils::tests::Fixture
         ds = std::make_shared<dataset::merged::Dataset>(pool);
     }
 
-    void import(const std::string& dsname, Metadata& md)
+    void import(const std::string& dsname, std::shared_ptr<Metadata> md)
     {
         auto writer = session->dataset(*config->section(dsname))->create_writer();
-        wassert(arki::tests::actual(writer.get()).import(md));
+        wassert(arki::tests::actual(writer.get()).acquire_ok(md));
     }
 };
 

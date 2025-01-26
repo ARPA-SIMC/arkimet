@@ -10,16 +10,11 @@
 
 namespace arki::dataset::simple {
 
-class AppendSegment;
-
 class Writer : public DatasetAccess<simple::Dataset, segmented::Writer>
 {
 protected:
     manifest::Writer manifest;
     std::shared_ptr<simple::Dataset> m_config;
-
-    std::unique_ptr<AppendSegment> file(const segment::data::WriterConfig& writer_config, const Metadata& md, DataFormat format, std::shared_ptr<core::AppendLock> lock);
-    std::unique_ptr<AppendSegment> file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock);
 
     void invalidate_summary();
 
@@ -29,10 +24,9 @@ public:
 
     std::string type() const override;
 
-    WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
-    void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 }

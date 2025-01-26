@@ -375,7 +375,7 @@ add_method("read_partial", [](Fixture& f) {
     sys::NamedFileDescriptor in(child.get_stdout(), "child pipe");
 
     unsigned count = 0;
-    Metadata::read_file(in, [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
+    wassert(Metadata::read_file(in, [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; }));
     wassert(actual(count) == 3u);
 
     wassert(actual(child.wait()) == 0);

@@ -1,5 +1,6 @@
 #include "summarycache.h"
 #include "arki/metadata.h"
+#include "arki/metadata/inbound.h"
 #include "arki/summary.h"
 #include "arki/dataset.h"
 #include "arki/dataset/reporter.h"
@@ -113,14 +114,14 @@ void SummaryCache::invalidate(const Metadata& md)
     }
 }
 
-void SummaryCache::invalidate(const WriterBatch& batch)
+void SummaryCache::invalidate(const metadata::InboundBatch& batch)
 {
     std::set<std::pair<int, int>> to_delete;
     for (const auto& el: batch)
     {
-        if (el->result != ACQ_OK)
+        if (el->result != metadata::Inbound::Result::OK)
             continue;
-        if (const reftime::Position* rt = el->md.get<reftime::Position>())
+        if (const reftime::Position* rt = el->md->get<reftime::Position>())
         {
             auto t = rt->get_Position();
             to_delete.emplace(std::make_pair(t.ye, t.mo));

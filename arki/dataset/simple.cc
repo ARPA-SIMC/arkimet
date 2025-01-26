@@ -33,6 +33,11 @@ std::shared_ptr<segment::Reader> SegmentSession::segment_reader(std::shared_ptr<
         return std::make_shared<segment::EmptyReader>(segment, lock);
 }
 
+std::shared_ptr<segment::Writer> SegmentSession::segment_writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<segment::metadata::Writer>(segment, lock);
+}
+
 std::shared_ptr<segment::Checker> SegmentSession::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
 {
     return std::make_shared<segment::metadata::Checker>(segment, lock);
@@ -40,7 +45,7 @@ std::shared_ptr<segment::Checker> SegmentSession::segment_checker(std::shared_pt
 
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::segmented::Dataset(session, std::make_shared<SegmentSession>(cfg.value("path")), cfg)
+    : dataset::segmented::Dataset(session, std::make_shared<SegmentSession>(cfg), cfg)
 {
     if (cfg.value("index_type") == "sqlite")
         nag::warning("%s: dataset has index_type=sqlite. It is now ignored, and automatically converted to plain MANIFEST", name().c_str());

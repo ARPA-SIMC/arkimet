@@ -8,6 +8,7 @@
 #include <arki/core/transaction.h>
 #include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/metadata/inbound.h>
 #include <arki/dataset/fwd.h>
 #include <string>
 #include <vector>
@@ -216,51 +217,10 @@ public:
     virtual core::Interval get_stored_time_interval() = 0;
 };
 
-struct WriterBatchElement
-{
-    /// Metadata to acquire
-    Metadata& md;
-    /// Name of the dataset where it has been acquired (empty when not
-    /// acquired)
-    std::string dataset_name;
-    /// Acquire result
-    WriterAcquireResult result = ACQ_ERROR;
-
-    WriterBatchElement(Metadata& md) : md(md) {}
-    WriterBatchElement(const WriterBatchElement& o) = default;
-    WriterBatchElement(WriterBatchElement&& o) = default;
-    WriterBatchElement& operator=(const WriterBatchElement& o) = default;
-    WriterBatchElement& operator=(WriterBatchElement&& o) = default;
-};
-
-class WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
-{
-public:
-    /**
-     * Set all elements in the batch to ACQ_ERROR
-     */
-    void set_all_error(const std::string& note);
-};
-
-
-enum ReplaceStrategy {
-    /// Default strategy, as configured in the dataset
-    REPLACE_DEFAULT,
-    /// Never replace
-    REPLACE_NEVER,
-    /// Always replace
-    REPLACE_ALWAYS,
-    /**
-     * Replace if update sequence number is higher (do not replace if USN
-     * not available)
-     */
-    REPLACE_HIGHER_USN,
-};
-
 
 struct AcquireConfig
 {
-    ReplaceStrategy replace=REPLACE_DEFAULT;
+    ReplaceStrategy replace=ReplaceStrategy::DEFAULT;
     bool drop_cached_data_on_commit=false;
 
     AcquireConfig() = default;
@@ -278,17 +238,6 @@ public:
     using Base::Base;
 
     /**
-     * Acquire the given metadata item (and related data) in this dataset.
-     *
-     * After acquiring the data successfully, the data can be retrieved from
-     * the dataset.  Also, information such as the dataset name and the id of
-     * the data in the dataset are added to the Metadata object.
-     *
-     * @return The outcome of the operation.
-     */
-    virtual WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) = 0;
-
-    /**
      * Acquire the given metadata items (and related data) in this dataset.
      *
      * After acquiring the data successfully, the data can be retrieved from
@@ -298,7 +247,7 @@ public:
      * @return The outcome of the operation, as a vector with an WriterAcquireResult
      * for each metadata in the collection.
      */
-    virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
+    virtual void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
      * Flush pending changes to disk
@@ -319,7 +268,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 struct CheckerConfig

@@ -7,6 +7,7 @@
 #include <arki/segment/fwd.h>
 #include <arki/segment/session.h>
 #include <arki/query/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <arki/core/time.h>
 #include <arki/summary.h>
 
@@ -35,6 +36,7 @@ public:
     std::filesystem::path abspath_iseg_index() const;
 
     std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<segment::Writer> writer(std::shared_ptr<core::AppendLock> lock) const;
     std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;
 
     /// Instantiate the right Data for this segment
@@ -44,7 +46,7 @@ public:
     std::shared_ptr<segment::data::Reader> data_reader(std::shared_ptr<const core::ReadLock> lock) const;
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    std::shared_ptr<segment::data::Writer> data_writer(const segment::data::WriterConfig& config) const;
+    std::shared_ptr<segment::data::Writer> data_writer(const segment::WriterConfig& config) const;
 
     /// Instantiate the right Checker implementation for a segment that already exists
     std::shared_ptr<segment::data::Checker> data_checker() const;
@@ -104,6 +106,54 @@ public:
     virtual core::Interval get_stored_time_interval() = 0;
 #endif
 };
+
+
+struct WriterConfig
+{
+    /**
+     * Name of the destination to set in Inbount elements on success
+     */
+    std::string destination_name;
+
+    ReplaceStrategy replace_strategy = ReplaceStrategy::DEFAULT;
+
+    /**
+     * Drop cached data from Metadata objects after it has been written to the
+     * segment
+     */
+    bool drop_cached_data_on_commit = false;
+};
+
+
+class Writer : public std::enable_shared_from_this<Writer>
+{
+protected:
+    std::shared_ptr<const Segment> m_segment;
+    std::shared_ptr<core::AppendLock> lock;
+
+public:
+    struct AcquireResult
+    {
+        size_t count_ok = 0;
+        size_t count_failed = 0;
+        time_t segment_mtime = 0;
+        arki::core::Interval data_timespan;
+    };
+
+
+    Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
+    Writer(const Writer&) = delete;
+    Writer(Writer&&) = delete;
+    Writer& operator=(const Writer&) = delete;
+    Writer& operator=(Writer&&) = delete;
+    virtual ~Writer();
+
+    /// Access the segment
+    const Segment& segment() const { return *m_segment; }
+
+    virtual AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) = 0;
+};
+
 
 class Checker : public std::enable_shared_from_this<Checker>
 {

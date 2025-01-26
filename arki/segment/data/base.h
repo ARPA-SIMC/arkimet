@@ -37,7 +37,7 @@ protected:
     std::shared_ptr<const Data> m_data;
 
 public:
-    BaseWriter(const data::WriterConfig& config, std::shared_ptr<const Data> data)
+    BaseWriter(const segment::WriterConfig& config, std::shared_ptr<const Data> data)
         : data::Writer(config), m_data(data)
     {
     }

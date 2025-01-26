@@ -54,7 +54,7 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
 }
 
 
-Writer::PendingMetadata::PendingMetadata(const WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source)
+Writer::PendingMetadata::PendingMetadata(const segment::WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source)
     : config(config), md(md), new_source(new_source.release())
 {
 }

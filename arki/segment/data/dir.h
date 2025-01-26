@@ -30,7 +30,7 @@ public:
     size_t next_offset(size_t offset, size_t size) const override { return offset + 1; }
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Writer> writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
@@ -62,7 +62,7 @@ public:
     std::vector<data::Writer::PendingMetadata> pending;
     size_t current_pos;
 
-    BaseWriter(const WriterConfig& config, std::shared_ptr<const Data> data);
+    BaseWriter(const segment::WriterConfig& config, std::shared_ptr<const Data> data);
     ~BaseWriter();
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;

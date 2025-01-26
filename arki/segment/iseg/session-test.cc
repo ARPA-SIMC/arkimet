@@ -7,7 +7,6 @@ using namespace std;
 using namespace arki;
 using namespace arki::utils;
 using namespace arki::tests;
-using namespace arki::dataset;
 
 class Tests : public TestCase
 {

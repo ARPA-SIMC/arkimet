@@ -29,7 +29,7 @@ this->add_method("append", [](Fixture& f) {
     delete_if_exists(segment->abspath());
     wassert(actual_file(segment->abspath()).not_exists());
     {
-        segment::data::WriterConfig writer_config;
+        segment::WriterConfig writer_config;
         auto w = segment->data_writer(writer_config);
 
         // It should exist but be empty
@@ -70,7 +70,7 @@ this->add_method("large", [](Fixture& f) {
     }
 
     {
-        segment::data::WriterConfig writer_config;
+        segment::WriterConfig writer_config;
         auto dw = segment->data_writer(writer_config);
 
         // Try a successful transaction

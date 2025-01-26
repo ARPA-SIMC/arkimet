@@ -33,7 +33,7 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
         lock_policy = core::lock::policy_ofd;
 }
 
-std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) const
+std::pair<bool, metadata::Inbound::Result> Dataset::check_acquire_age(Metadata& md) const
 {
     const auto& st = SessionTime::get();
     const types::reftime::Position* rt = md.get<types::reftime::Position>();
@@ -42,16 +42,16 @@ std::pair<bool, WriterAcquireResult> Dataset::check_acquire_age(Metadata& md) co
     if (delete_age != -1 && time < st.age_threshold(delete_age))
     {
         md.add_note("Safely discarded: data is older than delete age");
-        return make_pair(true, ACQ_OK);
+        return make_pair(true, metadata::Inbound::Result::OK);
     }
 
     if (archive_age != -1 && time < st.age_threshold(archive_age))
     {
         md.add_note("Import refused: data is older than archive age");
-        return make_pair(true, ACQ_ERROR);
+        return make_pair(true, metadata::Inbound::Result::ERROR);
     }
 
-    return make_pair(false, ACQ_OK);
+    return make_pair(false, metadata::Inbound::Result::OK);
 }
 
 std::shared_ptr<archive::Dataset> Dataset::archive()
@@ -146,7 +146,7 @@ Writer::~Writer()
 {
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     return segmented::Writer::test_acquire(session, cfg, batch);
 }

@@ -57,7 +57,7 @@ public:
      * Remove cache contents for the period found in successfully imported
      * metadata in the batch
      */
-    void invalidate(const WriterBatch& batch);
+    void invalidate(const metadata::InboundBatch& batch);
 
     /// Remove cache contents for all dates from tmin and tmax (inclusive)
     void invalidate(const core::Time& tmin, const core::Time& tmax);

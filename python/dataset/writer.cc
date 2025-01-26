@@ -45,13 +45,13 @@ arki::dataset::AcquireConfig acquire_config(
     {
         std::string replace(arg_replace, arg_replace_len);
         if (replace == "default")
-            cfg.replace = arki::dataset::REPLACE_DEFAULT;
+            cfg.replace = arki::ReplaceStrategy::DEFAULT;
         else if (replace == "never")
-            cfg.replace = arki::dataset::REPLACE_NEVER;
+            cfg.replace = arki::ReplaceStrategy::NEVER;
         else if (replace == "always")
-            cfg.replace = arki::dataset::REPLACE_ALWAYS;
+            cfg.replace = arki::ReplaceStrategy::ALWAYS;
         else if (replace == "higher_usn")
-            cfg.replace = arki::dataset::REPLACE_HIGHER_USN;
+            cfg.replace = arki::ReplaceStrategy::HIGHER_USN;
         else
         {
             PyErr_SetString(PyExc_ValueError, "replace argument must be 'default', 'never', 'always', or 'higher_usn'");
@@ -94,20 +94,21 @@ If the import failed, a subclass of arki.dataset.ImportError is raised.
         try {
             auto cfg = acquire_config(arg_replace, arg_replace_len, drop_cached_data_on_commit);
 
-            arki::dataset::WriterAcquireResult res;
+            metadata::InboundBatch batch;
+            batch.add(((arkipy_Metadata*)arg_md)->md);
             {
                 ReleaseGIL gil;
-                res = self->ptr->acquire(*((arkipy_Metadata*)arg_md)->md, cfg);
+                self->ptr->acquire_batch(batch, cfg);
             }
 
-            switch (res)
+            switch (batch[0]->result)
             {
-                case arki::dataset::ACQ_OK:
+                case metadata::Inbound::Result::OK:
                     Py_RETURN_NONE;
-                case arki::dataset::ACQ_ERROR_DUPLICATE:
+                case metadata::Inbound::Result::DUPLICATE:
                     PyErr_SetString(arkipy_ImportDuplicateError, "data already exists in the dataset");
                     return nullptr;
-                case arki::dataset::ACQ_ERROR:
+                case metadata::Inbound::Result::ERROR:
                     PyErr_SetString(arkipy_ImportFailedError, "import failed");
                     return nullptr;
                 default:
@@ -148,7 +149,7 @@ representing the outcome: "ok", "duplicate", or "error".
         try {
             auto cfg = acquire_config(arg_replace, arg_replace_len, drop_cached_data_on_commit);
 
-            arki::dataset::WriterBatch batch;
+            metadata::InboundBatch batch;
 
             // Iterate the input metadata and fill the batch
             pyo_unique_ptr iterator(throw_ifnull(PyObject_GetIter(arg_mds)));
@@ -164,7 +165,7 @@ representing the outcome: "ok", "duplicate", or "error".
                         break;
                 }
 
-                batch.emplace_back(std::make_shared<arki::dataset::WriterBatchElement>(*item->md));
+                batch.emplace_back(std::make_shared<metadata::Inbound>(item->md));
             }
 
             {
@@ -180,13 +181,13 @@ representing the outcome: "ok", "duplicate", or "error".
                 pyo_unique_ptr val;
                 switch (el->result)
                 {
-                    case arki::dataset::ACQ_OK:
+                    case metadata::Inbound::Result::OK:
                         val = to_python("ok");
                         break;
-                    case arki::dataset::ACQ_ERROR_DUPLICATE:
+                    case metadata::Inbound::Result::DUPLICATE:
                         val = to_python("duplicate");
                         break;
-                    case arki::dataset::ACQ_ERROR:
+                    case metadata::Inbound::Result::ERROR:
                         val = to_python("error");
                         break;
                     default:

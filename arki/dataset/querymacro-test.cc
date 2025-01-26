@@ -28,7 +28,7 @@ struct Fixture : public DatasetTest {
             for (unsigned i = 7; i <= 9; ++i)
             {
                 md->test_set(Reftime::createPosition(core::Time(2009, 8, i, 0, 0, 0)));
-                wassert(actual(*writer).import(*md));
+                wassert(actual(*writer).acquire_ok(md));
             }
         }
     }

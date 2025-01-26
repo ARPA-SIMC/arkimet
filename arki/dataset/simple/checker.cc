@@ -273,7 +273,6 @@ size_t Checker::vacuum(dataset::Reporter& reporter)
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
     segmented::Checker::test_delete_from_index(relpath);
-    utils::files::PreserveFileTimes pft(manifest.root() / "MANIFEST");
     manifest.remove(relpath);
     manifest.flush();
 }
@@ -290,7 +289,6 @@ metadata::Collection Checker::test_change_metadata(const std::filesystem::path& 
     core::Interval interval;
     mds.expand_date_range(interval);
 
-    utils::files::PreserveFileTimes pft(manifest.root() / "MANIFEST");
     if (const auto* mseg = manifest.segment(relpath))
         manifest.set(relpath, mseg->mtime, interval);
 
@@ -400,7 +398,6 @@ void Checker::test_rename(const std::filesystem::path& relpath, const std::files
 {
     segmented::Checker::test_rename(relpath, new_relpath);
 
-    utils::files::PreserveFileTimes pft(manifest.root() / "MANIFEST");
     manifest.rename(relpath, new_relpath);
     manifest.flush();
 }

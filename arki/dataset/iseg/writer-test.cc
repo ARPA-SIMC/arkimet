@@ -60,23 +60,23 @@ void Tests::register_tests() {
 // Test acquiring data
 add_method("acquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
-    Metadata& md = mdc[0];
+    auto md = mdc.get(0);
 
     auto writer = f.makeIsegWriter();
 
     // Import once in the empty dataset
-    wassert(actual(*writer).import(md));
+    wassert(actual(*writer).acquire_ok(md));
     #if 0
     for (vector<Note>::const_iterator i = md.notes.begin();
             i != md.notes.end(); ++i)
         cerr << *i << endl;
     #endif
-    wassert(actual(dsname(md)) == "testds");
+    wassert(actual(dsname(*md)) == "testds");
 
-    wassert(actual_type(md.source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
+    wassert(actual_type(md->source()).is_source_blob(DataFormat::GRIB, std::filesystem::canonical("./testds"), "2007/07-08.grib", 0, 7218));
 
     // Import again finds the duplicate
-    wassert(actual(writer->acquire(md)) == ACQ_ERROR_DUPLICATE);
+    wassert(actual(writer).acquire_duplicate(md));
 
     // Flush the changes and check that everything is allright
     writer->flush();
@@ -88,7 +88,7 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
     wassert_false(files::hasDontpackFlagfile("testds"));
 
-    f.import_results.acquire(md.clone());
+    f.import_results.acquire(md->clone());
 
     wassert(f.query_results({0}));
     wassert(f.all_clean(1));
@@ -97,20 +97,20 @@ add_method("acquire", [](Fixture& f) {
 add_method("testacquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
     while (mdc.size() > 1) mdc.pop_back();
-    auto batch = mdc.make_import_batch();
+    auto batch = mdc.make_batch();
     wassert(iseg::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 
     f.cfg->set("archive age", "1");
     wassert(iseg::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_ERROR);
-    wassert(actual(batch[0]->dataset_name) == "");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
+    wassert(actual(batch[0]->destination) == "");
 
     f.cfg->set("delete age", "1");
     wassert(iseg::Writer::test_acquire(f.session(), *f.cfg, batch));
-    wassert(actual(batch[0]->result) == dataset::ACQ_OK);
-    wassert(actual(batch[0]->dataset_name) == "testds");
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+    wassert(actual(batch[0]->destination) == "testds");
 });
 
 }

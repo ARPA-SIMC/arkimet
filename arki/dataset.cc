@@ -98,22 +98,12 @@ void Reader::query_summary(const std::string& matcher, Summary& summary)
 }
 
 
-void WriterBatch::set_all_error(const std::string& note)
-{
-    for (auto& e: *this)
-    {
-        e->dataset_name.clear();
-        e->md.add_note(note);
-        e->result = ACQ_ERROR;
-    }
-}
-
 
 void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")

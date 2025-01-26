@@ -19,29 +19,23 @@ std::shared_ptr<dataset::Writer> Dataset::create_writer() { return std::make_sha
 std::shared_ptr<dataset::Checker> Dataset::create_checker() { return std::make_shared<Checker>(shared_from_this()); }
 core::Interval Reader::get_stored_time_interval() { return core::Interval(); }
 
-WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
-{
-    utils::acct::acquire_single_count.incr();
-    return ACQ_OK;
-}
-
-void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
+void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
 {
     utils::acct::acquire_batch_count.incr();
     for (auto& e: batch)
     {
-        e->result = ACQ_OK;
-        e->dataset_name = name();
+        e->result = metadata::Inbound::Result::OK;
+        e->destination = name();
     }
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     auto dataset = session->dataset(cfg);
     for (auto& e: batch)
     {
-        e->result = ACQ_OK;
-        e->dataset_name = dataset->name();
+        e->result = metadata::Inbound::Result::OK;
+        e->destination = dataset->name();
     }
 }
 

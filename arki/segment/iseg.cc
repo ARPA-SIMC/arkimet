@@ -6,6 +6,8 @@
 #include "arki/types/source/blob.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/inbound.h"
+#include "arki/scan.h"
 #include "arki/nag.h"
 #include "arki/utils/sys.h"
 
@@ -16,6 +18,11 @@ namespace arki::segment::iseg {
 std::shared_ptr<RIndex> Segment::read_index(std::shared_ptr<const core::ReadLock> lock) const
 {
     return std::make_shared<RIndex>(std::static_pointer_cast<const iseg::Segment>(shared_from_this()), lock);
+}
+
+std::shared_ptr<AIndex> Segment::append_index(std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<AIndex>(std::static_pointer_cast<const iseg::Segment>(shared_from_this()), lock);
 }
 
 std::shared_ptr<CIndex> Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
@@ -60,6 +67,177 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
     m_index->query_summary_from_db(matcher, summary);
+}
+
+
+Writer::Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock)
+    : segment::Writer(segment, lock), index(segment->append_index(lock))
+{
+}
+
+Writer::~Writer()
+{
+}
+
+Writer::AcquireResult Writer::acquire_batch_replace_never(arki::metadata::InboundBatch& batch, const WriterConfig& config)
+{
+    AcquireResult res;
+    auto data_writer = segment().session().segment_data_writer(m_segment, config);
+    core::Pending p_idx = index->begin_transaction();
+
+    try {
+        for (auto& e: batch)
+        {
+            e->destination.clear();
+
+            if (std::unique_ptr<types::source::Blob> old = index->index(*e->md, data_writer->next_offset()))
+            {
+                e->md->add_note("Failed to store in '" + config.destination_name + "' because the data already exists in " + segment().relpath().native() + ":" + std::to_string(old->offset));
+                e->result = arki::metadata::Inbound::Result::DUPLICATE;
+                ++res.count_failed;
+            } else {
+                data_writer->append(*e->md);
+                e->result = arki::metadata::Inbound::Result::OK;
+                e->destination = config.destination_name;
+                ++res.count_ok;
+            }
+        }
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        batch.set_all_error("Failed to store in '" + config.destination_name + "': " + e.what());
+        res.count_ok = 0;
+        res.count_failed = batch.size();
+        return res;
+    }
+
+    data_writer->commit();
+    p_idx.commit();
+    return res;
+}
+
+Writer::AcquireResult Writer::acquire_batch_replace_always(arki::metadata::InboundBatch& batch, const WriterConfig& config)
+{
+    AcquireResult res;
+    auto data_writer = segment().session().segment_data_writer(m_segment, config);
+    core::Pending p_idx = index->begin_transaction();
+
+    try {
+        for (auto& e: batch)
+        {
+            e->destination.clear();
+            index->replace(*e->md, data_writer->next_offset());
+            data_writer->append(*e->md);
+            e->result = arki::metadata::Inbound::Result::OK;
+            e->destination = config.destination_name;
+            ++res.count_ok;
+        }
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        batch.set_all_error("Failed to store in '" + config.destination_name + "': " + e.what());
+        res.count_ok = 0;
+        res.count_failed = batch.size();
+        return res;
+    }
+
+    data_writer->commit();
+    p_idx.commit();
+    return res;
+}
+
+Writer::AcquireResult Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch, const WriterConfig& config)
+{
+    AcquireResult res;
+    auto data_writer = segment().session().segment_data_writer(m_segment, config);
+    core::Pending p_idx = index->begin_transaction();
+
+    try {
+        for (auto& e: batch)
+        {
+            e->destination.clear();
+
+            // Try to acquire without replacing
+            if (std::unique_ptr<types::source::Blob> old = index->index(*e->md, data_writer->next_offset()))
+            {
+                // Duplicate detected
+
+                // Read the update sequence number of the new BUFR
+                int new_usn;
+                if (!arki::scan::Scanner::update_sequence_number(*e->md, new_usn))
+                {
+                    e->md->add_note("Failed to store in '" + config.destination_name + "' because the dataset already has the data in " + segment().relpath().native() + ":" + std::to_string(old->offset) + " and there is no Update Sequence Number to compare");
+                    e->result = arki::metadata::Inbound::Result::DUPLICATE;
+                    ++res.count_failed;
+                    continue;
+                }
+
+                // Read the update sequence number of the old BUFR
+                auto reader = segment().data_reader(lock);
+                old->lock(reader);
+                int old_usn;
+                if (!arki::scan::Scanner::update_sequence_number(*old, old_usn))
+                {
+                    e->md->add_note("Failed to store in '" + config.destination_name + "': a similar element exists, the new element has an Update Sequence Number but the old one does not, so they cannot be compared");
+                    e->result = arki::metadata::Inbound::Result::ERROR;
+                    ++res.count_failed;
+                    continue;
+                }
+
+                // If the new element has no higher Update Sequence Number, report a duplicate
+                if (old_usn > new_usn)
+                {
+                    e->md->add_note("Failed to store in '" + config.destination_name + "' because the dataset already has the data in " + segment().relpath().native() + ":" + std::to_string(old->offset) + " with a higher Update Sequence Number");
+                    e->result = arki::metadata::Inbound::Result::DUPLICATE;
+                    ++res.count_failed;
+                    continue;
+                }
+
+                // Replace, reusing the pending datafile transaction from earlier
+                index->replace(*e->md, data_writer->next_offset());
+            }
+            data_writer->append(*e->md);
+            e->result = arki::metadata::Inbound::Result::OK;
+            e->destination = config.destination_name;
+            ++res.count_ok;
+        }
+    } catch (std::exception& e) {
+        // sqlite will take care of transaction consistency
+        batch.set_all_error("Failed to store in dataset '" + config.destination_name + "': " + e.what());
+        res.count_ok = 0;
+        res.count_failed = batch.size();
+        return res;
+    }
+
+    data_writer->commit();
+    p_idx.commit();
+    return res;
+}
+
+Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config)
+{
+    AcquireResult res;
+    switch (config.replace_strategy)
+    {
+        case ReplaceStrategy::DEFAULT:
+        case ReplaceStrategy::NEVER:
+            res = acquire_batch_replace_never(batch, config);
+            break;
+        case ReplaceStrategy::ALWAYS:
+            res = acquire_batch_replace_always(batch, config);
+            break;
+        case ReplaceStrategy::HIGHER_USN:
+            res = acquire_batch_replace_higher_usn(batch, config);
+            break;
+        default:
+        {
+            std::stringstream buf;
+            buf << "programming error: unsupported replace value " << config.replace_strategy << " for " << config.destination_name;
+            throw std::runtime_error(buf.str());
+        }
+    }
+
+    res.segment_mtime = segment().data()->timestamp().value_or(0);
+    res.data_timespan = index->query_data_timespan();
+    return res;
 }
 
 

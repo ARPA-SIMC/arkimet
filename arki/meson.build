@@ -94,6 +94,7 @@ libarkimet_sources = [
     'metadata/clusterer.cc',
     'metadata/archive.cc',
     'metadata/validator.cc',
+    'metadata/inbound.cc',
     'metadata/postprocess.cc',
     'metadata/test-generator.cc',
     'summary/stats.cc',
