@@ -26,25 +26,26 @@ namespace arki::dataset::simple {
 class AppendSegment
 {
 public:
+    std::shared_ptr<Segment> segment;
     std::shared_ptr<simple::Dataset> dataset;
     std::shared_ptr<core::AppendLock> lock;
-    std::shared_ptr<segment::data::Writer> segment;
+    std::shared_ptr<segment::data::Writer> segment_data_writer;
     utils::sys::Path dir;
     std::string basename;
     metadata::Collection mds;
     Summary sum;
 
-    AppendSegment(std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<core::AppendLock> lock, std::shared_ptr<segment::data::Writer> segment)
-        : dataset(dataset), lock(lock), segment(segment),
-          dir(segment->segment().abspath().parent_path()),
-          basename(segment->segment().abspath().filename())
+    AppendSegment(std::shared_ptr<Segment> segment, std::shared_ptr<simple::Dataset> dataset, std::shared_ptr<core::AppendLock> lock, std::shared_ptr<segment::data::Writer> segment_data_writer)
+        : segment(segment), dataset(dataset), lock(lock), segment_data_writer(segment_data_writer),
+          dir(segment->abspath().parent_path()),
+          basename(segment->abspath().filename())
     {
         struct stat st_data;
         if (!dir.fstatat_ifexists(basename.c_str(), st_data))
             return;
 
         // Read the metadata
-        auto reader = segment->segment().reader(lock);
+        auto reader = segment->reader(lock);
         reader->read_all(mds.inserter_func());
 
         // Read the summary
@@ -58,7 +59,7 @@ public:
 
         // Replace the pathname with its basename
         auto copy(md.clone());
-        if (!dataset->smallfiles)
+        if (!segment->session().smallfiles)
             copy->unset(TYPE_VALUE);
         copy->set_source(Source::createBlobUnlocked(source.format, dir.path(), basename, source.offset, source.size));
         sum.add(*copy);
@@ -67,8 +68,8 @@ public:
 
     void write_metadata()
     {
-        auto path_md = segment->segment().abspath_metadata();
-        auto path_sum = segment->segment().abspath_summary();
+        auto path_md = segment->abspath_metadata();
+        auto path_sum = segment->abspath_summary();
 
         mds.prepare_for_segment_metadata();
         mds.writeAtomically(path_md);
@@ -92,7 +93,7 @@ public:
             for (auto& e: batch)
             {
                 e->destination.clear();
-                const types::source::Blob& new_source = segment->append(*e->md);
+                const types::source::Blob& new_source = segment_data_writer->append(*e->md);
                 add(*e->md, new_source);
                 e->result = metadata::Inbound::Result::OK;
                 e->destination = dataset->name();
@@ -103,7 +104,7 @@ public:
             return false;
         }
 
-        segment->commit();
+        segment_data_writer->commit();
         write_metadata();
         return true;
     }
@@ -140,7 +141,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
     auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
     auto segment = dataset().segment_session->segment_from_relpath_and_format(relpath, format);
     auto writer = dataset().segment_session->segment_data_writer(segment, writer_config);
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, writer));
+    return std::unique_ptr<AppendSegment>(new AppendSegment(segment, m_dataset, lock, writer));
 }
 
 std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock)
@@ -148,7 +149,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
     auto segment_data_writer = dataset().segment_session->segment_data_writer(segment, writer_config);
-    return std::unique_ptr<AppendSegment>(new AppendSegment(m_dataset, lock, segment_data_writer));
+    return std::unique_ptr<AppendSegment>(new AppendSegment(segment, m_dataset, lock, segment_data_writer));
 }
 
 void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
@@ -170,8 +171,8 @@ void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& c
         auto segment = file(writer_config, s.first, lock);
         if (segment->acquire_batch(s.second))
         {
-            time_t ts = segment->segment->data().timestamp().value();
-            manifest.set(segment->segment->segment().relpath(), ts, segment->sum.get_reference_time());
+            time_t ts = segment->segment_data_writer->data().timestamp().value();
+            manifest.set(segment->segment->relpath(), ts, segment->sum.get_reference_time());
             invalidate_summary();
             changed = true;
         }
