@@ -9,6 +9,7 @@
 #include "scan.h"
 #include "arki/core/file.h"
 #include "arki/core/lock.h"
+#include "arki/core/cfg.h"
 #include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -23,6 +24,11 @@ namespace arki::segment {
 
 Session::Session(const std::filesystem::path& root)
     : reader_pool(), root(std::filesystem::weakly_canonical(root))
+{
+}
+
+Session::Session(const core::cfg::Section& cfg)
+    : reader_pool(), root(cfg.value("path")), smallfiles(cfg.value_bool("smallfiles"))
 {
 }
 

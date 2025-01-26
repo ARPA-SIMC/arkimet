@@ -20,17 +20,13 @@ public:
     bool trace_sql = false;
 
     /**
-     * If true, try to store the content of small files in the index if
-     * possible, to avoid extra I/O when querying
-     */
-    bool smallfiles = false;
-
-    /**
      * Trade write reliability and write concurrency in favour of performance.
      *
      * Useful for writing fast temporary private datasets.
      */
     bool eatmydata = false;
+
+    explicit Session(const core::cfg::Section& cfg);
 
     std::shared_ptr<arki::Segment> segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const override;
 

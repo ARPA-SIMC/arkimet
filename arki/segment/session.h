@@ -21,10 +21,25 @@ protected:
 public:
     DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
     DefaultDirSegment default_dir_segment = DefaultDirSegment::SEGMENT_DIR;
-    bool mock_data = false;
+
+    /// Toplevel directory for all segments in this session
     std::filesystem::path root;
 
+    /**
+     * Try to store the content of small files in the index if possible, to
+     * avoid extra I/O when querying
+     */
+    bool smallfiles = false;
+
+    /**
+     * Discard data and use filesystem holes in segment data.
+     *
+     * This is only used in tests.
+     */
+    bool mock_data = false;
+
     explicit Session(const std::filesystem::path& root);
+    explicit Session(const core::cfg::Section& cfg);
     Session(const Session&) = delete;
     Session(Session&&) = delete;
     virtual ~Session();

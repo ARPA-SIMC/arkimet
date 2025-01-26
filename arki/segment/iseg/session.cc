@@ -2,9 +2,22 @@
 #include "index.h"
 #include "arki/segment/iseg.h"
 #include "arki/segment/data.h"
+#include "arki/core/cfg.h"
+#include "arki/types.h"
 #include "arki/nag.h"
 
 namespace arki::segment::iseg {
+
+Session::Session(const core::cfg::Section& cfg)
+    : segment::Session(cfg),
+      format(format_from_string(cfg.value("format"))),
+      index(types::parse_code_names(cfg.value("index"))),
+      unique(types::parse_code_names(cfg.value("unique"))),
+      trace_sql(cfg.value_bool("trace_sql")),
+      eatmydata(cfg.value_bool("eatmydata"))
+{
+    unique.erase(TYPE_REFTIME);
+}
 
 std::shared_ptr<arki::Segment> Session::segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const
 {
