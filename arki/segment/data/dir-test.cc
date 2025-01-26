@@ -2,6 +2,7 @@
 #include "tests.h"
 #include "arki/metadata/tests.h"
 #include "arki/metadata/collection.h"
+#include "arki/segment.h"
 #include "arki/types/source/blob.h"
 #include "arki/core/lock.h"
 #include "arki/utils/sys.h"
@@ -47,7 +48,7 @@ std::shared_ptr<segment::data::dir::Writer> make_w()
 {
     auto session = std::make_shared<segment::Session>(std::filesystem::current_path());
     auto segment = session->segment_from_relpath_and_format(relpath, DataFormat::GRIB);
-    segment::data::WriterConfig writer_config;
+    segment::WriterConfig writer_config;
     auto data = std::make_shared<segment::data::dir::Data>(segment);
     return std::make_shared<segment::data::dir::Writer>(writer_config, data);
 }

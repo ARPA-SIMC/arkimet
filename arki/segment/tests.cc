@@ -12,7 +12,7 @@ namespace arki::tests {
 
 void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds)
 {
-    segment::data::WriterConfig wconf{true};
+    segment::WriterConfig wconf{true};
     auto data_writer = segment->data_writer(wconf);
     for (auto i: mds)
         data_writer->append(*i);
@@ -21,7 +21,7 @@ void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::C
 
 void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds)
 {
-    segment::data::WriterConfig wconf{true};
+    segment::WriterConfig wconf{true};
     auto data_writer = segment->data_writer(wconf);
     for (auto i: mds)
         data_writer->append(*i);

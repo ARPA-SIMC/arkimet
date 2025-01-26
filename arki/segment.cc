@@ -189,7 +189,7 @@ std::shared_ptr<segment::data::Reader> Segment::data_reader(std::shared_ptr<cons
     return m_session->segment_data_reader(shared_from_this(), lock);
 }
 
-std::shared_ptr<segment::data::Writer> Segment::data_writer(const segment::data::WriterConfig& config) const
+std::shared_ptr<segment::data::Writer> Segment::data_writer(const segment::WriterConfig& config) const
 {
     return m_session->segment_data_writer(shared_from_this(), config);
 }

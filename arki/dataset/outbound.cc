@@ -50,7 +50,7 @@ metadata::Inbound::Result Writer::acquire(Metadata& md, const AcquireConfig& cfg
     auto segment = dataset().segment_session->segment_from_relpath_and_format(dataset().step()(time), md.source().format);
     std::filesystem::create_directories(segment->abspath().parent_path());
 
-    segment::data::WriterConfig writer_config;
+    segment::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
 
     try {

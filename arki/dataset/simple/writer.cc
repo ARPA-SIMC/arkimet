@@ -135,7 +135,7 @@ void Writer::invalidate_summary()
     std::filesystem::remove(dataset().path / "summary");
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md, DataFormat format, std::shared_ptr<core::AppendLock> lock)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md, DataFormat format, std::shared_ptr<core::AppendLock> lock)
 {
     core::Time time = md.get<types::reftime::Position>()->get_Position();
     auto relpath = sys::with_suffix(dataset().step()(time), "."s + format_name(md.source().format));
@@ -144,7 +144,7 @@ std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& w
     return std::unique_ptr<AppendSegment>(new AppendSegment(segment, m_dataset, lock, writer));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath, std::shared_ptr<core::AppendLock> lock)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     auto segment = dataset().segment_session->segment_from_relpath(relpath);
@@ -156,7 +156,7 @@ void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& c
 {
     acct::acquire_batch_count.incr();
 
-    segment::data::WriterConfig writer_config;
+    segment::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
 
     std::map<std::string, metadata::InboundBatch> by_segment = batch_by_segment(batch);

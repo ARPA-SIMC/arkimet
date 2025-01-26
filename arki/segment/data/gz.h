@@ -74,7 +74,7 @@ public:
     size_t next_offset(size_t offset, size_t size) const override { return offset + size; }
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Writer> writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 
@@ -108,7 +108,7 @@ struct Data : public gz::Data
     size_t next_offset(size_t offset, size_t size) const override { return offset + size + padding; }
 
     std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const data::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Writer> writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
     void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
 

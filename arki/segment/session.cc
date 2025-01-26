@@ -178,7 +178,7 @@ std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_
     return res->second.lock();
 }
 
-std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::data::WriterConfig& config) const
+std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::WriterConfig& config) const
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
     auto data = segment->data();

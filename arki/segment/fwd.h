@@ -12,6 +12,7 @@ namespace segment {
 class Reporter;
 class Session;
 class Reader;
+struct WriterConfig;
 class Writer;
 class Checker;
 class Fixer;
@@ -20,7 +21,6 @@ class Data;
 namespace data {
 class Reader;
 class Writer;
-struct WriterConfig;
 class Checker;
 struct RepackConfig;
 }

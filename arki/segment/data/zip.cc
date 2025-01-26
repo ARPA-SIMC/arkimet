@@ -249,7 +249,7 @@ std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock>
 {
     return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Writer> Data::writer(const data::WriterConfig& config) const
+std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig& config) const
 {
     throw std::runtime_error(std::string(type()) + " writing is not yet implemented");
     // return std::make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));

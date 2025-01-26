@@ -173,12 +173,12 @@ std::filesystem::path Writer::get_relpath(const Metadata& md)
     return sys::with_suffix(dataset().step()(time), "."s + format_name(dataset().iseg_segment_session->format));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const Metadata& md)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const Metadata& md)
 {
     return file(writer_config, get_relpath(md));
 }
 
-std::unique_ptr<AppendSegment> Writer::file(const segment::data::WriterConfig& writer_config, const std::filesystem::path& relpath)
+std::unique_ptr<AppendSegment> Writer::file(const segment::WriterConfig& writer_config, const std::filesystem::path& relpath)
 {
     std::filesystem::create_directories((dataset().path / relpath).parent_path());
     std::shared_ptr<core::AppendLock> append_lock(dataset().append_lock_segment(relpath));
@@ -199,7 +199,7 @@ void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& c
         return;
     }
 
-    segment::data::WriterConfig writer_config;
+    segment::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
 
     std::map<std::string, metadata::InboundBatch> by_segment = batch_by_segment(batch);

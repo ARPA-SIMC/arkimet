@@ -64,7 +64,7 @@ public:
     virtual std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const;
 
     virtual std::shared_ptr<segment::data::Reader> segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const;
-    virtual std::shared_ptr<segment::data::Writer> segment_data_writer(std::shared_ptr<const Segment> segment, const segment::data::WriterConfig& config) const;
+    virtual std::shared_ptr<segment::data::Writer> segment_data_writer(std::shared_ptr<const Segment> segment, const segment::WriterConfig& config) const;
     virtual std::shared_ptr<segment::data::Checker> segment_data_checker(std::shared_ptr<const Segment> segment) const;
 
     virtual void create_scan(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const;

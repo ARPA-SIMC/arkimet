@@ -45,7 +45,7 @@ public:
     std::shared_ptr<segment::data::Reader> data_reader(std::shared_ptr<const core::ReadLock> lock) const;
 
     /// Instantiate the right Writer implementation for a segment that already exists
-    std::shared_ptr<segment::data::Writer> data_writer(const segment::data::WriterConfig& config) const;
+    std::shared_ptr<segment::data::Writer> data_writer(const segment::WriterConfig& config) const;
 
     /// Instantiate the right Checker implementation for a segment that already exists
     std::shared_ptr<segment::data::Checker> data_checker() const;
@@ -104,6 +104,16 @@ public:
      */
     virtual core::Interval get_stored_time_interval() = 0;
 #endif
+};
+
+
+struct WriterConfig
+{
+    /**
+     * Drop cached data from Metadata objects after it has been written to the
+     * segment
+     */
+    bool drop_cached_data_on_commit = false;
 };
 
 
