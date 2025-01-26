@@ -34,6 +34,8 @@ Segment::Segment(std::shared_ptr<const segment::Session> session, DataFormat for
     //
     // As a workaround we ensure that session->root is weakly canonical, and
     // that relpath is well formed
+    //
+    // See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1094270
 }
 
 Segment::~Segment()
