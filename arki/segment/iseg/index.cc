@@ -6,7 +6,6 @@
 #include "arki/matcher/utils.h"
 #include "arki/query.h"
 #include "arki/segment/iseg.h"
-#include "arki/segment/data.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -170,13 +169,11 @@ bool Index<LockType>::scan(metadata_dest_func dest, const std::string& order_by)
     Query mdq("scan_file_md", m_db);
     mdq.compile(query);
 
-    auto reader = session().segment_data_reader(segment, lock);
-
     while (mdq.step())
     {
         // Rebuild the Metadata
         std::unique_ptr<Metadata> md(new Metadata);
-        build_md(mdq, *md, reader);
+        build_md(mdq, *md);
         if (!dest(std::move(md)))
             return false;
     }
@@ -286,7 +283,7 @@ void Index<LockType>::add_joins_and_constraints(const Matcher& m, std::string& q
 }
 
 template<typename LockType>
-void Index<LockType>::build_md(Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const
+void Index<LockType>::build_md(Query& q, Metadata& md) const
 {
     // Rebuild the Metadata
     md.set(Reftime::createPosition(core::Time::create_sql(q.fetchString(3))));
@@ -318,20 +315,13 @@ void Index<LockType>::build_md(Query& q, Metadata& md, std::shared_ptr<arki::seg
     int notes_l = q.fetchBytes(2);
     md.set_notes_encoded(notes_p, notes_l);
 
-    // TODO: if using smallfiles there is no need to lock the source
-
-    if (reader)
-        md.set_source(Source::createBlob(
-                session().format, session().root, segment->relpath(),
-                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1), reader));
-    else
-        md.set_source(Source::createBlobUnlocked(
-                session().format, session().root, segment->relpath(),
-                q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
+    md.set_source(Source::createBlobUnlocked(
+            session().format, session().root, segment->relpath(),
+            q.fetch<uint64_t>(0), q.fetch<uint64_t>(1)));
 }
 
 template<typename LockType>
-arki::metadata::Collection Index<LockType>::query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader)
+arki::metadata::Collection Index<LockType>::query_data(const Matcher& matcher)
 {
     // Buffer the results in memory, to release the database lock as soon as possible
     arki::metadata::Collection res;
@@ -361,7 +351,7 @@ arki::metadata::Collection Index<LockType>::query_data(const Matcher& matcher, s
     while (mdq.step())
     {
         auto md = std::make_unique<Metadata>();
-        build_md(mdq, *md, reader);
+        build_md(mdq, *md);
         res.acquire(std::move(md));
     }
     return res;

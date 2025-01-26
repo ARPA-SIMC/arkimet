@@ -15,7 +15,7 @@ namespace arki::segment::iseg {
 
 std::shared_ptr<RIndex> Segment::read_index(std::shared_ptr<const core::ReadLock> lock) const
 {
-    return std::static_pointer_cast<const iseg::Session>(m_session)->read_index(shared_from_this(), lock);
+    return std::make_shared<RIndex>(std::static_pointer_cast<const iseg::Segment>(shared_from_this()), lock);
 }
 
 std::shared_ptr<CIndex> Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
@@ -31,16 +31,24 @@ Reader::Reader(std::shared_ptr<const iseg::Segment> segment, std::shared_ptr<con
 
 bool Reader::read_all(metadata_dest_func dest)
 {
-    return m_index->scan(dest);
+    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+    return m_index->scan([&](auto md) {
+        md->sourceBlob().lock(reader);
+        return dest(md);
+    });
 }
 
 bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 {
-    std::shared_ptr<arki::segment::data::Reader> reader;
-    if (q.with_data)
-        reader = m_segment->session().segment_data_reader(m_segment, lock);
+    auto mdbuf = m_index->query_data(q.matcher);
 
-    auto mdbuf = m_index->query_data(q.matcher, reader);
+    // TODO: if using smallfiles there is no need to lock the source
+    if (q.with_data)
+    {
+        auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+        for (auto& md: mdbuf)
+            md->sourceBlob().lock(reader);
+    }
 
     // Sort and output the rest
     if (q.sorter) mdbuf.sort(*q.sorter);
@@ -69,8 +77,14 @@ CIndex& Checker::index()
 
 arki::metadata::Collection Checker::scan()
 {
+    auto reader = segment().session().segment_data_reader(m_segment, lock);
+
     arki::metadata::Collection res;
-    index().scan(res.inserter_func(), "offset");
+    index().scan([&](auto md) {
+        md->sourceBlob().lock(reader);
+        res.acquire(md);
+        return true;
+    }, "offset");
     return res;
 }
 

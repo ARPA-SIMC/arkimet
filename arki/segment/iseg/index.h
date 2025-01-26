@@ -94,7 +94,7 @@ protected:
      * The rows should be:
      * m.offset, m.size, m.notes, m.reftime[, uniq][, other]
      */
-    void build_md(utils::sqlite::Query& q, Metadata& md, std::shared_ptr<arki::segment::data::Reader> reader) const;
+    void build_md(utils::sqlite::Query& q, Metadata& md) const;
 
     Index(std::shared_ptr<const Segment> segment, std::shared_ptr<LockType> lock=nullptr);
 
@@ -139,7 +139,7 @@ public:
      * @param reader: if set, generate blob sources attached to this data reader
      * @returns the collection of metadata matching the query
      */
-    arki::metadata::Collection query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader);
+    arki::metadata::Collection query_data(const Matcher& matcher);
 
     /**
      * Query this index, returning a summary

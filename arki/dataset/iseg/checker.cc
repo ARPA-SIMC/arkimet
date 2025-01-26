@@ -208,10 +208,9 @@ void Checker::check_issue51(CheckerConfig& opts)
 
     // Iterate all segments
     list_segments([&](std::shared_ptr<const Segment> segment) {
-        auto lock = dataset().check_lock_segment(segment->relpath());
-        auto idx = m_dataset->iseg_segment_session->check_index(segment, lock);
-        metadata::Collection mds;
-        idx->scan(mds.inserter_func(), "reftime, offset");
+        auto csegment = this->segment(segment);
+        auto mds = csegment->segment_checker->scan();
+        mds.sort_segment();
         if (mds.empty()) return;
         File datafile(segment->abspath(), O_RDONLY);
         // Iterate all metadata in the segment

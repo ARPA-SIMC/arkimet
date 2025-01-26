@@ -29,11 +29,6 @@ std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const
 }
 
 
-std::shared_ptr<RIndex> Session::read_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
-{
-    return std::make_shared<RIndex>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
-}
-
 std::shared_ptr<AIndex> Session::append_index(std::shared_ptr<const arki::Segment> segment, std::shared_ptr<core::AppendLock> lock) const
 {
     return std::make_shared<AIndex>(std::static_pointer_cast<const iseg::Segment>(segment), lock);
