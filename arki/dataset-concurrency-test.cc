@@ -131,10 +131,12 @@ struct ConcurrentImporter : public subprocess::Child
                 else
                     md->test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
-                auto res = ds->acquire(*md);
-                if (res != metadata::Inbound::Result::OK)
+                metadata::InboundBatch batch;
+                batch.add(md);
+                ds->acquire_batch(batch);
+                if (batch[0]->result != metadata::Inbound::Result::OK)
                 {
-                    fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
+                    fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)batch[0]->result);
                     auto notes = md->notes();
                     for (auto n = notes.first; n != notes.second; ++n)
                     {
@@ -438,22 +440,18 @@ this->add_method("write_check", [](Fixture& f) {
     cf.during([&]{
         if (type == "simple") {
             auto writer = wcallchecked(f.config().create_writer());
-            try {
-                writer->acquire(f.td.mds[2]);
-                wassert(actual(0) == 1);
-            } catch (std::runtime_error& e) {
-                wassert(actual(e.what()).contains("a write lock is already held"));
-            }
+            metadata::InboundBatch batch;
+            batch.add(f.td.mds.get(2));
+            auto e = wassert_throws(std::runtime_error, writer->acquire_batch(batch));
+            wassert(actual(e.what()).contains("a write lock is already held"));
         } else if (type == "iseg") {
             auto writer = wcallchecked(f.makeSegmentedWriter());
             wassert(actual(*writer).acquire_ok(f.td.mds.get(2)));
 
-            try {
-                writer->acquire(f.td.mds[0]);
-                wassert(actual(0) == 1);
-            } catch (std::runtime_error& e) {
-                wassert(actual(e.what()).contains("a write lock is already held"));
-            }
+            metadata::InboundBatch batch;
+            batch.add(f.td.mds.get(0));
+            auto e = wassert_throws(std::runtime_error, writer->acquire_batch(batch));
+            wassert(actual(e.what()).contains("a write lock is already held"));
         } else
             throw std::runtime_error("untested segment type " + type);
     });

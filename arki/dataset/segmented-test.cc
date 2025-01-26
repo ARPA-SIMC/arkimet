@@ -856,7 +856,9 @@ add_method("no_writes_when_repacking", [](Fixture& f) {
 
         // When repack is still checking, we cannot append
         auto writer = dataset->create_writer();
-        wassert_throws(lock::locked_error, writer->acquire(f.import_results[1]));
+        metadata::InboundBatch batch;
+        batch.add(f.import_results.get(1));
+        wassert_throws(lock::locked_error, writer->acquire_batch(batch));
     };
     test_hooks->on_repack_write_lock = [&](const Segment& segment) {
         if (segment.relpath() != relpath)
@@ -869,7 +871,9 @@ add_method("no_writes_when_repacking", [](Fixture& f) {
 
         // When repack is fixing, appending fails
         auto writer = dataset->create_writer();
-        wassert_throws(lock::locked_error, writer->acquire(f.import_results[1]));
+        metadata::InboundBatch batch;
+        batch.add(f.import_results.get(1));
+        wassert_throws(lock::locked_error, writer->acquire_batch(batch));
     };
     dataset->test_hooks = test_hooks;
 

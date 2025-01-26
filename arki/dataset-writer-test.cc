@@ -171,8 +171,11 @@ add_method("issue237", [](Fixture& f) {
     // Acquire value
     {
         auto ds = f.config().create_writer();
-        wassert(actual(ds->acquire(mdc[0], dataset::REPLACE_NEVER)) == metadata::Inbound::Result::OK);
-        wassert(actual_type(mdc[0].source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
+        metadata::InboundBatch batch;
+        batch.add(mdc.get(0));
+        wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
+        wassert(actual(batch[0]->result) == metadata::Inbound::Result::OK);
+        wassert(actual_type(batch[0]->md->source()).is_source_blob(DataFormat::VM2, f.ds_root, "2020/10-31.vm2", 0, 36));
     }
 
     // Read it back
@@ -219,7 +222,10 @@ this->add_method("import_error", [](Fixture& f) {
     md.set_source_inline(format, metadata::DataManager::get().to_unreadable_data(1));
 
     auto ds = f.config().create_writer();
-    wassert(actual(ds->acquire(md, dataset::REPLACE_NEVER)) == metadata::Inbound::Result::ERROR);
+    metadata::InboundBatch batch;
+    batch.add(md.clone());
+    wassert(ds->acquire_batch(batch, dataset::REPLACE_NEVER));
+    wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
 
     auto state = f.scan_state();
     wassert(actual(state.size()) == 1u);
@@ -293,11 +299,13 @@ this->add_method("import_before_archive_age", [](Fixture& f) {
 
     for (unsigned i = 0; i < 3; ++i)
     {
-        std::shared_ptr<Metadata> md(f.td.mds[i].clone());
-        wassert(actual(ds->acquire(*md)) == metadata::Inbound::Result::ERROR);
+        metadata::InboundBatch batch;
+        batch.add(f.td.mds[i].clone());
+        wassert(ds->acquire_batch(batch));
+        wassert(actual(batch[0]->result) == metadata::Inbound::Result::ERROR);
         core::Time time;
         std::string content;
-        md->get_last_note().get(time, content);
+        batch[0]->md->get_last_note().get(time, content);
         wassert(actual(content).contains("is older than archive age"));
     }
 
