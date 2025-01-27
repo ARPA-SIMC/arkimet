@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.55
+Version: 1.56
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,9 +177,13 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Jan 27 2025 Daniele Branchini <dbranchini@arpae.it> - 1.56-1
+- Refactored segment writing of metadata+summary in simple segments
+- Optimize repack operation on file segments
+- Fixed builds (#345)
+
 * Wed Jan 22 2025 Daniele Branchini <dbranchini@arpae.it> - 1.55-1
 - Implemented segment-specific checking
-- Fixed builds (#345)
 
 * Tue Jan 21 2025 Daniele Branchini <dbranchini@arpae.it> - 1.54-1
 - Refactoring of segment and dataset implementations
