@@ -1,6 +1,6 @@
 = ArkiGuida =
 Emanuele Di Giacomo <edigiacomo@arpae.it>
-v0.10, 2023-10-05
+v0.11, 2025-02-26
 :lang: it
 
 == Introduzione ==
@@ -836,6 +836,27 @@ $ arki-scan --yaml arkimet:/tmp/delete.md
 
 ====
 
+.Esempio di cancellazione tramite reftime
+====
+
+In maniera analoga è possibile effettuare operazioni di cancellazione anche sui dati archiviati, usando la directory `.archive/last` del dataset come target.
+
+Esempio di workflow:
+
+----
+arki-query ${query} ${dataset}/.archive/last/ > /tmp/delete.md
+arki-check -f --remove /tmp/delete.md ${dataset}/.archive/last/
+arki-check -f ${dataset}/.archive/last/
+# il seguente comando è quello che libera spazio
+arki-check -f -r ${dataset}/.archive/last/
+----
+
+In questo caso è necessario cancellare manualmente i summary dei file coinvolti prima di lanciare un `arki-check` per rigenerarli
+
+(vedi issue https://github.com/ARPA-SIMC/arkimet/issues/347)
+
+====
+
 === Importazione dati su periodi archiviati di dataset ===
 
 Se la configurazione del dataset contiene un `archive age`, è stato effettuato un repack
@@ -932,4 +953,4 @@ metadato::
 See: https://arpa-simc.github.io/arkimet/matcher.html
 
 == Copyright ==
-Copyright (C) 2013-2023 ARPAE-SIMC <simc-urp@arpae.it>
+Copyright (C) 2013-2025 ARPAE-SIMC <simc-urp@arpae.it>
