@@ -813,6 +813,21 @@ struct OverrideRlimit
 };
 
 
+/// Override an environment variable for the duration of this object
+struct OverrideEnvironment
+{
+    std::string name;
+    bool was_set = false;
+    std::string orig_value;
+
+    // Unset the variable
+    explicit OverrideEnvironment(const std::string& name);
+    // Set the variable to the given value
+    OverrideEnvironment(const std::string& name, const std::string& value);
+    ~OverrideEnvironment();
+};
+
+
 /// RAII local memory buffer
 template<typename T = char>
 class TempBuffer
