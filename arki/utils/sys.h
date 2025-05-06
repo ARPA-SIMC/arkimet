@@ -134,7 +134,9 @@ void chroot(const std::filesystem::path& dir);
 mode_t umask(mode_t mask);
 
 /// Get the absolute path of a file
-[[deprecated("Use std::filesystem::canonical")]] std::string abspath(const std::string& pathname);
+std::filesystem::path abspath(const std::filesystem::path& path);
+[[deprecated("Use abspath(const std::filesystem::path&)")]] std::string abspath(const std::string& pathname);
+std::filesystem::path abspath(const char* path);
 
 /**
  * Wraps a mmapped memory area, unmapping it on destruction.

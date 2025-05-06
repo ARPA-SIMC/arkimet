@@ -220,9 +220,57 @@ mode_t umask(mode_t mask)
     return ::umask(mask);
 }
 
-std::string abspath(const std::string& pathname)
+std::filesystem::path abspath(const char* file)
 {
-    return std::filesystem::absolute(pathname).lexically_normal().native();
+    return abspath(std::filesystem::path(file));
+}
+std::string abspath(const std::string& path)
+{
+    return abspath(std::filesystem::path(path)).native();
+}
+
+std::filesystem::path abspath(const std::filesystem::path& path)
+{
+    // weakly_canonical is defined as "the result of calling canonical() with a
+    // path argument composed of the leading elements of p that exist (as
+    // determined by status(p) or status(p, ec)), if any, followed by the
+    // elements of p that do not exist."
+    //
+    // This means that if no lead components of the path exist then the
+    // resulting path is not made absolute, and we need to work around that.
+    if (!path.is_absolute())
+        return abspath(std::filesystem::current_path() / path);
+
+    // This is further and needlessly complicated because we need to work
+    // around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118733
+    unsigned retry = 0;
+    while (true)
+    {
+        std::error_code code;
+        auto result = std::filesystem::weakly_canonical(path, code);
+        if (!code)
+        {
+            // fprintf(stderr, "%s: ok in %u tries\n", path.c_str(), retry+1);
+            return result;
+        }
+
+        if (code == std::errc::no_such_file_or_directory)
+        {
+            ++retry;
+            if (retry > 50)
+                throw std::system_error(code);
+        }
+        else
+            throw std::system_error(code);
+    }
+
+    // Alternative implementation that however may not work on all platforms
+    // since, formally, "[std::filesystem::absolute] Implementations are
+    // encouraged to not consider p not existing to be an error", but they do
+    // not mandate it, and if they did, they might still be affected by the
+    // undefined behaviour outlined in https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118733
+    //
+    // return std::filesystem::absolute(path).lexically_normal();
 }
 
 
@@ -1372,8 +1420,8 @@ void OverrideRlimit::set(rlim_t rlim)
  * OverrideEnvironment
  */
 
-OverrideEnvironment::OverrideEnvironment(const std::string& name)
-    : name(name)
+OverrideEnvironment::OverrideEnvironment(const std::string& name_)
+    : name(name_)
 {
     char* old_val = getenv(name.c_str());
     if (old_val)
@@ -1385,8 +1433,8 @@ OverrideEnvironment::OverrideEnvironment(const std::string& name)
         throw std::system_error(errno, std::system_category(), "unsetenv " + name + " failed");
 }
 
-OverrideEnvironment::OverrideEnvironment(const std::string& name, const std::string& value)
-    : name(name)
+OverrideEnvironment::OverrideEnvironment(const std::string& name_, const std::string& value)
+    : name(name_)
 {
     char* old_val = getenv(name.c_str());
     if (old_val)
