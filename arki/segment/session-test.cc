@@ -31,6 +31,24 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
+add_method("segment_from_relpath", [&] {
+    std::shared_ptr<Segment> segment;
+
+    wassert(segment = session->segment_from_relpath("foo.grib"));
+    wassert(actual(segment->abspath()) == session->root / "foo.grib");
+    wassert(actual(segment->relpath()) == "foo.grib");
+
+    wassert(segment = session->segment_from_relpath("../test/foo.grib"));
+    wassert(actual(segment->abspath()) == session->root / "foo.grib");
+    wassert(actual(segment->relpath()) == "foo.grib");
+
+    auto e = wassert_throws(std::runtime_error, session->segment_from_relpath("../foo.grib"));
+    wassert(actual(e.what()) == "relative segment path points outside the segment root");
+
+    e = wassert_throws(std::runtime_error, session->segment_from_relpath_and_format("", DataFormat::GRIB));
+    wassert(actual(e.what()) == "relative segment path is empty");
+});
+
 add_method("detect_metadata", [&] {
     GRIBData td;
     auto segment = session->segment_from_relpath_and_format("test." + format_name(td.format), td.format);

@@ -23,19 +23,16 @@ using namespace arki::utils;
 namespace arki {
 
 Segment::Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& relpath)
-    : m_session(session), m_format(format), m_relpath(relpath), m_abspath(session->root / relpath)
+    : m_session(session), m_format(format), m_abspath(sys::abspath(session->root / relpath))
 {
-    // Note: std::filesystem::weakly_canonical looks innocuous but it can throw
-    // of the path disappears during its execution.
-    //
-    // It would be nice to canonicalize abspath, but we need to create a
-    // segment before we take a lock on it, and a repack on the segment at the
-    // wrong time during weakly_canonical would cause us to break.
-    //
-    // As a workaround we ensure that session->root is weakly canonical, and
-    // that relpath is well formed
-    //
-    // See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1094270
+    m_relpath = std::filesystem::relative(m_abspath, root());
+    if (m_relpath.begin() == m_relpath.end())
+        throw std::runtime_error("relative segment path is empty");
+    auto lead = *m_relpath.begin();
+    if (lead == "..")
+        throw std::runtime_error("relative segment path points outside the segment root");
+    if (lead == ".")
+        throw std::runtime_error("relative segment path is empty");
 }
 
 Segment::~Segment()

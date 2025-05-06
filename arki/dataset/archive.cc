@@ -477,8 +477,8 @@ void Checker::index_segment(const std::filesystem::path& relpath, metadata::Coll
 arki::metadata::Collection Checker::release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
 {
     arki::metadata::Collection res;
-    auto path = std::filesystem::weakly_canonical(relpath);
-    string name = poppath(path);
+    auto path = relpath;
+    auto name = poppath(path);
     if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath.native() + ": segment is not in last/ archive");
 
     if (auto a = archives->lookup(name))

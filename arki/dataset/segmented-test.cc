@@ -685,65 +685,6 @@ add_method("unarchive_segment", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
-add_method("unarchive_segment_lastonly", [](Fixture& f) {
-    // Import a file with a known reftime
-    // Reftime: 2007-07-08T13:00:00Z
-    // Reftime: 2007-07-07T00:00:00Z
-    // Reftime: 2007-10-09T00:00:00Z
-    f.clean_and_import();
-
-    // TZ=UTC date --date="2007-07-09 00:00:00" +%s
-    time_t now = 1183939200;
-    f.cfg->set("archive age", "1");
-
-    f.test_reread_config();
-
-    // Archive one segment
-    {
-        auto o = dataset::SessionTime::local_override(now);
-        ReporterExpected e;
-        e.archived.emplace_back("testds", "2007/07-07.grib");
-        wassert(actual(f.makeSegmentedChecker().get()).repack(e, true));
-    }
-
-    // Check that segments are where we expect them
-    std::filesystem::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib").exists());
-    wassert(actual_file("testds/2007/10-09.grib").exists());
-
-    try {
-        auto checker = f.makeSegmentedChecker();
-        auto segment = checker->dataset().segment_session->segment_from_relpath("../test-ds/2007/07-07.grib");
-        checker->segment(segment)->unarchive();
-        wassert(throw std::runtime_error("unarchive_segment should have thrown at this point"));
-    } catch (std::exception& e) {
-        wassert(actual(e.what()).contains("segment is not in last/ archive"));
-    }
-
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib").exists());
-    wassert(actual_file("testds/2007/10-09.grib").exists());
-});
-
 // Test scan_dir on an empty directory
 add_method("scan_dir_empty", [](Fixture& f) {
     sys::rmtree_ifexists("testds");

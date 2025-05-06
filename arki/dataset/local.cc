@@ -17,7 +17,7 @@ namespace dataset {
 namespace local {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Dataset(session, cfg), path(std::filesystem::weakly_canonical(cfg.value("path")))
+    : dataset::Dataset(session, cfg), path(sys::abspath(cfg.value("path")))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -103,7 +103,7 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::p
         res->set("name", name);
 
         if (res->value("type") != "remote")
-            res->set("path", std::filesystem::weakly_canonical(path));
+            res->set("path", sys::abspath(path));
         return res;
     } else {
         auto abspath = std::filesystem::canonical(path);

@@ -209,6 +209,7 @@ class TestMetadata(unittest.TestCase):
     def test_write_yaml(self):
         self.maxDiff = None
         md = self.read(os.path.abspath("inbound/test.grib1"))[0]
+        md.make_absolute()
         with io.BytesIO() as out:
             md.write(out, format="yaml")
             self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
