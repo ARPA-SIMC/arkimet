@@ -1,3 +1,7 @@
+# New in version UNRELEASED
+
+* Normalize paths before reading configuration from them (#348)
+
 # New in version 1.56
 
 * Refactored segment writing of metadata+summary in simple segments

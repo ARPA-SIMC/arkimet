@@ -46,6 +46,10 @@ add_method("read_config", [] {
     wassert(actual(cfg->value("name")) == "testds");
     wassert(actual(cfg->value("path")) == expected_path);
 
+    cfg = wcallchecked(dataset::Session::read_config("testds/"));
+    wassert(actual(cfg->value("name")) == "testds");
+    wassert(actual(cfg->value("path")) == expected_path);
+
     cfg = wcallchecked(dataset::Session::read_config("testds/config"));
     wassert(actual(cfg->value("name")) == "testds");
     wassert(actual(cfg->value("path")) == expected_path);

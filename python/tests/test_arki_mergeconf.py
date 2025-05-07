@@ -1,8 +1,9 @@
 # python 3.7+ from __future__ import annotations
-import unittest
-from arkimet.cmdline.mergeconf import Mergeconf
 import os
 import tempfile
+import unittest
+from pathlib import Path
+from arkimet.cmdline.mergeconf import Mergeconf
 from arkimet.test import daemon, CmdlineTestMixin
 
 
@@ -155,3 +156,14 @@ type=discard
             rf"path = {src}\n"
             r"type = file\n",
         )
+
+    def test_trailing_slash(self) -> None:
+        # See https://github.com/ARPA-SIMC/arkimet/issues/348
+        with tempfile.TemporaryDirectory() as workdir_str:
+            workdir = Path(workdir_str)
+            (workdir / "config").write_text("type=iseg\nformat=grib\nstep=daily\n")
+            out = self.call_output_success(workdir.as_posix())
+            self.assertEqual(out.splitlines()[0], f"[{workdir.name}]")
+
+            out = self.call_output_success(workdir.as_posix() + "/")
+            self.assertEqual(out.splitlines()[0], f"[{workdir.name}]")

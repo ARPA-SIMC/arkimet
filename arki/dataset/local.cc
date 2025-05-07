@@ -17,7 +17,7 @@ namespace dataset {
 namespace local {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Dataset(session, cfg), path(sys::abspath(cfg.value("path")))
+    : dataset::Dataset(session, cfg), path(sys::abspath(std::filesystem::path(cfg.value("path"))))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -88,9 +88,10 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         archive()->query_summary(matcher, summary);
 }
 
-std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::path& path)
+std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::path& path_)
 {
     // Read the config file inside the directory
+    auto path = sys::abspath(path_);
     auto name = path.filename();
     auto file = path / "config";
 
