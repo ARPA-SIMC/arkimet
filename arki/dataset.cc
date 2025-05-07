@@ -19,12 +19,57 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
+namespace {
+
+DatasetUse compute_use(const std::string& name, const core::cfg::Section& cfg = core::cfg::Section())
+{
+    auto cfg_use = cfg.value("use");
+    auto cfg_type = cfg.value("type");
+    if (cfg_use == "error" or cfg_use == "errors")
+    {
+        if (name == "duplicates")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot be called " + name);
+        if (cfg_type == "duplicates")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot have type=" + cfg_type);
+        return DatasetUse::ERRORS;
+    } else if (cfg_use == "duplicates") {
+        if (name == "error" or name == "errors")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot be called " + name);
+        if (cfg_type == "error" or cfg_type == "errors")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot have type=" + cfg_type);
+        return DatasetUse::DUPLICATES;
+    } else if (cfg_use.empty()) {
+        if (cfg_type == "error" or cfg_type == "errors")
+        {
+            if (name == "duplicates")
+                throw std::runtime_error("dataset with type=" + cfg_type + " cannot be called " + name);
+            return DatasetUse::ERRORS;
+        } else if (cfg_type == "duplicates") {
+            if (name == "error" or name == "errors")
+                throw std::runtime_error("dataset with type=" + cfg_type + " cannot be called " + name);
+            return DatasetUse::DUPLICATES;
+        } else {
+            if (name == "error" or name == "errors")
+                return DatasetUse::ERRORS;
+            else if (name == "duplicates")
+                return DatasetUse::DUPLICATES;
+        }
+        return DatasetUse::DEFAULT;
+    } else {
+        throw std::runtime_error("invalid use '" + cfg_use + "' for dataset " + name);
+    }
+
+    // TODO: type=error, type=duplicates
+}
+
+}
+
 Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
+Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), m_use(compute_use(name)), session(session) {}
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : m_name(cfg.value("name")), session(session), config(std::make_shared<core::cfg::Section>(cfg))
+    : m_name(cfg.value("name")), m_use(compute_use(m_name, cfg)), session(session), config(std::make_shared<core::cfg::Section>(cfg))
 {
 }
 
@@ -34,6 +79,11 @@ std::string Dataset::name() const
         return m_parent->name() + "." + m_name;
     else
         return m_name;
+}
+
+DatasetUse Dataset::use() const
+{
+    return m_use;
 }
 
 void Dataset::set_parent(const Dataset* parent)

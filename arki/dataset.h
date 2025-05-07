@@ -70,6 +70,9 @@ protected:
     /// Dataset name
     std::string m_name;
 
+    /// Dataset intended usage
+    DatasetUse m_use;
+
 public:
     /// Work session
     std::shared_ptr<Session> session;
@@ -84,6 +87,9 @@ public:
 
     /// Return the dataset name
     std::string name() const;
+
+    /// Return the intended dataset use
+    DatasetUse use() const;
 
     virtual std::shared_ptr<Reader> create_reader();
     virtual std::shared_ptr<Writer> create_writer();
