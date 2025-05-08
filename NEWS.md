@@ -1,6 +1,9 @@
 # New in version UNRELEASED
 
 * Normalize paths before reading configuration from them (#348)
+* Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
+  allow an error or duplicates dataset to have an arbitrary name (#328)
+* Fixed examples in error and duplicates dataset documentation (#349)
 
 # New in version 1.56
 
