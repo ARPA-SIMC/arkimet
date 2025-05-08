@@ -139,6 +139,7 @@ python3.install_sources(
 runtest = find_program('../arki/runtest')
 
 test('python', runtest, args: ['PYTHON'], timeout: 600,
+     depends: [py_arkimet],
      env: [
          'PYTHON=' + python3_path,
          'PYTHONPATH=' + meson.current_source_dir() + ':' + meson.current_build_dir(),
