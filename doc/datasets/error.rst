@@ -13,13 +13,16 @@ A common reason data may end up in the error dataset is if it not matched by
 any dataset ``filter`` rule. Storing it in the error dataset means the data is
 not lost, and can be inspected and reimported after adjusting the filter rules.
 
+You can give the error dataset a name other than "error" by using ``use=error``
+in its configuration.
+
 
 Example configuration
 ---------------------
 
 This could be an example of a standard setup::
 
-  [error]
+  name = error
   type = error
   step = daily
   delete age = 15
@@ -27,7 +30,7 @@ This could be an example of a standard setup::
 This will just store the data, but won't allow to query it or automatically
 delete it, and will require inspecting it manually::
 
-  [error]
+  name = error
   type = outbound
   step = daily
 
@@ -35,5 +38,11 @@ This will throw away all data which had issues during dispatch. It may be
 useful in some cases, but it will make dispatch errors unrecoverable unless you
 keep the original data::
 
-  [error]
+  name = error
   type = discard
+
+This is an alternate way of specifying the same thing::
+
+  name = devnull
+  type = discard
+  use = error
