@@ -64,4 +64,15 @@ std::ostream& operator<<(std::ostream& o, ReplaceStrategy strategy)
     }
 }
 
+std::ostream& operator<<(std::ostream& o, DatasetUse use)
+{
+    switch (use)
+    {
+        case DatasetUse::DEFAULT: return o << "DEFAULT";
+        case DatasetUse::ERRORS: return o << "ERRORS";
+        case DatasetUse::DUPLICATES: return o << "DUPLICATES";
+        default: return o << "<unknown>";
+    }
+}
+
 }

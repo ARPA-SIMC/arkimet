@@ -79,6 +79,18 @@ enum class ReplaceStrategy {
 std::ostream& operator<<(std::ostream& o, ReplaceStrategy strategy);
 
 
+/// Intended special user for a dataset
+enum class DatasetUse {
+    /// No special use intended
+    DEFAULT,
+    /// Store data that errored during dispatching
+    ERRORS,
+    /// Store duplicates detected during dispatching
+    DUPLICATES,
+};
+std::ostream& operator<<(std::ostream& o, DatasetUse use);
+
+
 }
 
 #endif
