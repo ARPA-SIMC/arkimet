@@ -8,6 +8,7 @@
 #include "arki/core/file.h"
 #include "arki/metadata.h"
 #include "arki/runtime.h"
+#include <datetime.h>
 
 using namespace std;
 
@@ -106,11 +107,53 @@ PyObject* dataformat_to_python(DataFormat val)
     return string_to_python(format_name(val));
 }
 
+static int get_attr_int(PyObject* o, const char* name)
+{
+  pyo_unique_ptr res(throw_ifnull(PyObject_GetAttrString(o, name)));
+  return from_python<int>(res);
+}
+
+core::Time core_time_from_python(PyObject* o)
+{
+    if (o == NULL || o == Py_None)
+        return core::Time();
+
+    if (PyDateTime_Check(0))
+    {
+        PyDateTime_DateTime* dt = reinterpret_cast<PyDateTime_DateTime*>(o);
+        return core::Time(
+                PyDateTime_GET_YEAR(dt), PyDateTime_GET_MONTH(dt), PyDateTime_GET_DAY(dt),
+                PyDateTime_DATE_GET_HOUR(dt), PyDateTime_DATE_GET_MINUTE(dt), PyDateTime_DATE_GET_SECOND(dt));
+    }
+  
+    // Fall back to duck typing, to catch creative cases such as
+    // cftime.datetime instances. See https://unidata.github.io/cftime/api.html
+    return core::Time(
+            get_attr_int(o, "year"),
+            get_attr_int(o, "month"),
+            get_attr_int(o, "day"),
+            get_attr_int(o, "hour"),
+            get_attr_int(o, "minute"),
+            get_attr_int(o, "second")
+    );
+
+    // PyErr_SetString(PyExc_TypeError, "value must be an instance of datetime.datetime");
+    // throw PythonException();
+
+}
+
+PyObject* core_time_to_python(const core::Time& time)
+{
+    if (!time.isset())
+        Py_RETURN_NONE;
+
+    return throw_ifnull(PyDateTime_FromDateAndTime(
+                time.ye, time.mo, time.da,
+                time.ho, time.mi, time.se, 0));
+}
 
 int common_init()
 {
-    arki::init();
-#if 0
     /*
      * PyDateTimeAPI, that is used by all the PyDate* and PyTime* macros, is
      * defined as a static variable defaulting to NULL, and it needs to be
@@ -122,6 +165,7 @@ int common_init()
     if (!PyDateTimeAPI)
         PyDateTime_IMPORT;
 
+#if 0
     if (!wrpy)
     {
         wrpy = (wrpy_c_api*)PyCapsule_Import("_wreport._C_API", 0);

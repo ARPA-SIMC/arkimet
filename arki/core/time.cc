@@ -139,6 +139,11 @@ Time Time::create_upperbound(int ye, int mo, int da, int ho, int mi, int se)
     return res;
 }
 
+bool Time::isset() const
+{
+    return not (ye == 0 and mo == 0 and da == 0 and ho == 0 and mi == 0 and se == 0);
+}
+
 void Time::unset()
 {
     this->ye = 0;

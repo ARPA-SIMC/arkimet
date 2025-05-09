@@ -4,6 +4,8 @@
 * Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
   allow an error or duplicates dataset to have an arbitrary name (#328)
 * Fixed examples in error and duplicates dataset documentation (#349)
+* Add `Summary.reference_time` python accessor giving a `tuple[datetime, datetime]`
+  with the extremes
 
 # New in version 1.56
 

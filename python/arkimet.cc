@@ -391,6 +391,8 @@ static bool arkimet_initialized = false;
             arkimet_initialized = true;
         }
 
+        common_init();
+
         PyObject* m = PyModule_Create(&arkimet_module);
         if (!m) return m;
 
