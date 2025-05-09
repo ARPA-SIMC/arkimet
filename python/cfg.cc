@@ -241,7 +241,7 @@ struct section_items : public MethNoargs<section_items, arkipy_cfgSection>
 struct parse_sections : public ClassMethKwargs<parse_sections>
 {
     constexpr static const char* name = "parse";
-    constexpr static const char* signature = "Union[Str, TextIO]";
+    constexpr static const char* signature = "Union[str, Path, TextIO]";
     constexpr static const char* returns = "arki.cfg.Sections";
     constexpr static const char* summary = "parse the named file or open file, and return the resulting Sections object";
     constexpr static const char* doc = nullptr;
@@ -253,11 +253,14 @@ struct parse_sections : public ClassMethKwargs<parse_sections>
         if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_input))
             return nullptr;
 
+        pyo_unique_ptr pathlib(throw_ifnull(PyImport_ImportModule("pathlib")));
+        pyo_unique_ptr Path(throw_ifnull(PyObject_GetAttrString(pathlib, "Path")));
+
         try {
-            if (PyUnicode_Check(arg_input))
+            if (PyUnicode_Check(arg_input) or PyObject_IsInstance(arg_input, Path))
             {
-                std::string fname = from_python<std::string>(arg_input);
-                arki::utils::sys::File in(fname, O_RDONLY);
+                auto path = from_python<std::filesystem::path>(arg_input);
+                arki::utils::sys::File in(path, O_RDONLY);
                 auto parsed = arki::core::cfg::Sections::parse(in);
                 // If string, open file and parse it
                 py_unique_ptr<arkipy_cfgSections> res(throw_ifnull(PyObject_New(arkipy_cfgSections, arkipy_cfgSections_Type)));
@@ -278,7 +281,7 @@ struct parse_sections : public ClassMethKwargs<parse_sections>
 struct parse_section : public ClassMethKwargs<parse_section>
 {
     constexpr static const char* name = "parse";
-    constexpr static const char* signature = "Union[Str, TextIO]";
+    constexpr static const char* signature = "Union[str, Path, TextIO]";
     constexpr static const char* returns = "arki.cfg.Section";
     constexpr static const char* summary = "parse the named file or open file, and return the resulting Section object";
     constexpr static const char* doc = nullptr;
@@ -290,10 +293,13 @@ struct parse_section : public ClassMethKwargs<parse_section>
         if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_input))
             return nullptr;
 
+        pyo_unique_ptr pathlib(throw_ifnull(PyImport_ImportModule("pathlib")));
+        pyo_unique_ptr Path(throw_ifnull(PyObject_GetAttrString(pathlib, "Path")));
+
         try {
-            if (PyUnicode_Check(arg_input))
+            if (PyUnicode_Check(arg_input) or PyObject_IsInstance(arg_input, Path))
             {
-                std::string fname = from_python<std::string>(arg_input);
+                auto fname = from_python<std::filesystem::path>(arg_input);
                 arki::utils::sys::File in(fname, O_RDONLY);
                 auto parsed = arki::core::cfg::Section::parse(in);
                 // If string, open file and parse it

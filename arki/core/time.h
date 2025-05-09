@@ -110,6 +110,9 @@ public:
      */
     static Time create_upperbound(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1);
 
+    /// Check if the time is set
+    bool isset() const;
+
     /// Set all components to 0
     void unset();
 

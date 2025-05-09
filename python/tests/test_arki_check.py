@@ -1,8 +1,12 @@
 # python 3.7+ from __future__ import annotations
 import arkimet as arki
+import datetime
+import shutil
 import unittest
 import os
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Optional, Tuple
 from arkimet.cmdline.check import Check
 from arkimet.test import Env, CmdlineTestMixin, LogCapture
 
@@ -63,7 +67,7 @@ class StatsReporter:
         self.seg_issue51.append((ds, relpath, message))
 
 
-class ArkiCheckTestsBase(CmdlineTestMixin):
+class ArkiCheckTestsBase(CmdlineTestMixin, unittest.TestCase):
     command = Check
 
     @contextmanager
@@ -518,8 +522,85 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
                 self.assertCheckClean(env, files=2, items=2)
                 self.assertQueryResults(env, imported, [1, 2])
 
+    def _summary_range(self, env: Env, cfg: Optional[arki.cfg.Section] = None) -> Tuple[datetime.date, datetime.date]:
+        """Get the reftime range of the dataset according to summary."""
+        with env.session.dataset_reader(cfg=cfg) as source:
+            summary = source.query_summary()
+            reftime = summary.reference_time
+            return reftime[0].date(), reftime[1].date()
 
-class ArkiCheckNonSimpleTestsMixin:
+    def assertDeleteUpdatesSummary(self, env: Env, repo: Path) -> None:
+        """Check that deleting items from a dataset affects its summary."""
+        cfg = arki.dataset.read_config(repo)
+
+        queried = env.query(cfg)
+        self.assertEqual(
+            [md["reftime"] for md in queried],
+            ["2007-07-07T00:00:00Z", "2007-07-08T13:00:00Z", "2007-10-09T00:00:00Z"],
+        )
+        self.assertEqual(self._summary_range(env, cfg), (datetime.date(2007, 7, 7), datetime.date(2007, 10, 9)))
+
+        to_delete = [queried[0]]
+        to_delete[0].make_absolute()
+        with open("testenv/todelete.md", "wb") as fd:
+            arki.Metadata.write_bundle(to_delete, file=fd)
+        out = self.call_output_success(repo.as_posix(), "--remove=testenv/todelete.md", "--fix")
+        self.assertEqual(out, "")
+
+        post_delete = env.query(cfg)
+        self.assertEqual(
+            [md["reftime"] for md in post_delete],
+            ["2007-07-08T13:00:00Z", "2007-10-09T00:00:00Z"],
+        )
+        self.assertEqual(self._summary_range(env, cfg), (datetime.date(2007, 7, 8), datetime.date(2007, 10, 9)))
+
+    def test_delete_from_online(self) -> None:
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+            self.assertDeleteUpdatesSummary(env, env.dsroot)
+
+    def test_delete_from_last(self) -> None:
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+            env.update_config(**{"archive age": "1"})
+            env.repack(readonly=False)
+
+            last = env.dsroot / ".archive" / "last"
+            self.assertDeleteUpdatesSummary(env, last)
+
+    def test_delete_from_archived(self) -> None:
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+            env.update_config(**{"archive age": "1"})
+            env.repack(readonly=False)
+
+            last = env.dsroot / ".archive" / "last"
+            archive = env.dsroot / ".archive" / "test"
+            last.rename(archive)
+            self.assertDeleteUpdatesSummary(env, archive)
+
+    def test_delete_from_offline(self) -> None:
+        with self.datasets() as env:
+            env.import_file("inbound/fixture.grib1")
+            env.update_config(**{"archive age": "1"})
+            env.repack(readonly=False)
+
+            last = env.dsroot / ".archive" / "last"
+            archive = env.dsroot / ".archive" / "test"
+            last.rename(archive)
+
+            # Query once to generate the summary
+            with env.session.dataset_reader(cfg=arki.dataset.read_config(archive)) as source:
+                source.query_summary()
+            shutil.copyfile(archive / "summary", env.dsroot / ".archive" / "test.summary")
+            self.assertDeleteUpdatesSummary(env, archive)
+
+
+class TestArkiCheckIseg(ArkiCheckTestsBase, unittest.TestCase):
+    def dataset_config(self, **kw):
+        kw["type"] = "iseg"
+        return kw
+
     def test_issue57(self):
         arki.test.skip_unless_vm2()
         with self.datasets(format="vm2", unique="reftime, area, product", skip_initial_check=True) as env:
@@ -677,13 +758,10 @@ class ArkiCheckNonSimpleTestsMixin:
                 self.assertQueryResults(env, imported, [1, 0, 2])
 
 
-class TestArkiCheckIseg(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
-    def dataset_config(self, **kw):
-        kw["type"] = "iseg"
-        return kw
-
-
 class TestArkiCheckSimple(ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "simple"
         return kw
+
+
+del ArkiCheckTestsBase
