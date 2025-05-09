@@ -9,7 +9,8 @@ import io
 import sys
 import tempfile
 import logging
-from typing import Type
+from typing import Optional, Type
+from pathlib import Path
 from arkimet.cmdline.base import App
 
 
@@ -101,13 +102,13 @@ class Env(contextlib.ExitStack):
             shutil.rmtree("testenv")
         except FileNotFoundError:
             pass
-        os.mkdir("testenv")
-        os.mkdir("testenv/testds")
+        self.dsroot = Path("testenv/testds")
+        self.dsroot.mkdir(parents=True, exist_ok=True)
 
         self.session = self.enter_context(arki.dataset.Session())
 
         kw["name"] = "testds"
-        kw["path"] = os.path.abspath("testenv/testds")
+        kw["path"] = self.dsroot.absolute().as_posix()
         kw.setdefault("step", "daily")
         kw.setdefault("type", "iseg")
         self.ds_cfg = arki.cfg.Section(**kw)
@@ -172,14 +173,16 @@ class Env(contextlib.ExitStack):
 
             return res
 
-    def query(self, *args, **kw):
+    def query(self, cfg: Optional[arki.cfg.Section] = None, *args, **kw):
+        if cfg is None:
+            cfg = self.ds_cfg
         res = []
 
         def on_metadata(md):
             res.append(md)
 
         kw["on_metadata"] = on_metadata
-        with self.session.dataset_reader(cfg=self.ds_cfg) as source:
+        with self.session.dataset_reader(cfg=cfg) as source:
             source.query_data(**kw)
             return res
 
