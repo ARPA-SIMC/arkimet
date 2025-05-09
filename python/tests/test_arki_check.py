@@ -518,8 +518,11 @@ class ArkiCheckTestsBase(CmdlineTestMixin):
                 self.assertCheckClean(env, files=2, items=2)
                 self.assertQueryResults(env, imported, [1, 2])
 
+class TestArkiCheckIseg(ArkiCheckTestsBase, unittest.TestCase):
+    def dataset_config(self, **kw):
+        kw["type"] = "iseg"
+        return kw
 
-class ArkiCheckNonSimpleTestsMixin:
     def test_issue57(self):
         arki.test.skip_unless_vm2()
         with self.datasets(format="vm2", unique="reftime, area, product", skip_initial_check=True) as env:
@@ -677,13 +680,10 @@ class ArkiCheckNonSimpleTestsMixin:
                 self.assertQueryResults(env, imported, [1, 0, 2])
 
 
-class TestArkiCheckIseg(ArkiCheckNonSimpleTestsMixin, ArkiCheckTestsBase, unittest.TestCase):
-    def dataset_config(self, **kw):
-        kw["type"] = "iseg"
-        return kw
-
-
 class TestArkiCheckSimple(ArkiCheckTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "simple"
         return kw
+
+
+del ArkiCheckTestsBase

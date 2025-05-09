@@ -9,34 +9,41 @@ import io
 import sys
 import tempfile
 import logging
+from typing import Type
+from arkimet.cmdline.base import App
 
 
 def skip_unless_vm2():
     import unittest
+
     if "vm2" not in arki.features:
         raise unittest.SkipTest("VM2 support not available")
 
 
 def skip_unless_libzip():
     import unittest
+
     if "libzip" not in arki.features:
         raise unittest.SkipTest("libzip support not available")
 
 
 def skip_unless_libarchive():
     import unittest
+
     if "libarchive" not in arki.features:
         raise unittest.SkipTest("libarchive support not available")
 
 
 def skip_unless_geos():
     import unittest
+
     if "geos" not in arki.features:
         raise unittest.SkipTest("GEOS support not available")
 
 
 def skip_unless_arpae_tests():
     import unittest
+
     if "arpae_tests" not in arki.features:
         raise unittest.SkipTest("ARPAE tests disabled")
 
@@ -149,12 +156,14 @@ class Env(contextlib.ExitStack):
 
     def import_file(self, pathname):
         with self.session.dataset_writer(cfg=self.ds_cfg) as dest:
-            with self.session.dataset_reader(cfg={
-                        "format": self.ds_cfg["format"],
-                        "name": os.path.basename(pathname),
-                        "path": pathname,
-                        "type": "file",
-                    }) as source:
+            with self.session.dataset_reader(
+                cfg={
+                    "format": self.ds_cfg["format"],
+                    "name": os.path.basename(pathname),
+                    "path": pathname,
+                    "type": "file",
+                }
+            ) as source:
                 res = source.query_data()
                 for md in res:
                     dest.acquire(md)
@@ -192,7 +201,7 @@ class Env(contextlib.ExitStack):
 
 class CmdlineTestMixin:
     # Class of the Cmdline subclass to be tested
-    command = None
+    command: Type[App]
 
     def runcmd(self, *args):
         try:
@@ -318,7 +327,7 @@ class ServerProcess(multiprocessing.Process):
     def __exit__(self, type, value, traceback):
         self.terminate()
         self.join()
-        if hasattr(self, 'close'):
+        if hasattr(self, "close"):
             # multiprocessing.Process.close() only exists from Python 3.7
             self.close()
         # FIXME: this is never found, given that we're using a multiprocessing.Process
