@@ -588,6 +588,10 @@ class ArkiCheckTestsBase(CmdlineTestMixin, unittest.TestCase):
             last = env.dsroot / ".archive" / "last"
             archive = env.dsroot / ".archive" / "test"
             last.rename(archive)
+
+            # Query once to generate the summary
+            with env.session.dataset_reader(cfg=arki.dataset.read_config(archive)) as source:
+                source.query_summary()
             shutil.copyfile(archive / "summary", env.dsroot / ".archive" / "test.summary")
             self.assertDeleteUpdatesSummary(env, archive)
 

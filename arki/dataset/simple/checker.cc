@@ -48,6 +48,12 @@ public:
     simple::Dataset& dataset() override { return dataset_checker.dataset(); }
     std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(dataset_checker.archive()); }
 
+    /// Delete the dataset summary (if present)
+    void invalidate_dataset_summary()
+    {
+        std::filesystem::remove(dataset().path / "summary");
+    }
+
     segmented::SegmentState fsck(dataset::Reporter& reporter, bool quick=true) override
     {
         segmented::SegmentState res;
@@ -103,6 +109,7 @@ public:
         // Reindex with the new file information
         dataset_checker.manifest.set(segment->relpath(), res.segment_mtime, res.data_timespan);
         dataset_checker.manifest.flush();
+        invalidate_dataset_summary();
     }
 
     void post_repack(std::shared_ptr<segment::Fixer>, segment::Fixer::ReorderResult& res) override
@@ -139,12 +146,12 @@ public:
         dataset_checker.manifest.flush();
 
         std::filesystem::remove(segment->abspath_iseg_index());
+        invalidate_dataset_summary();
     }
 
     void rescan(dataset::Reporter& reporter) override
     {
         auto path_metadata = segment->abspath_metadata();
-        auto path_summary = segment->abspath_summary();
 
         metadata::Collection mds;
         segment_data_checker->rescan_data(
@@ -161,6 +168,7 @@ public:
         // Add to manifest
         dataset_checker.manifest.set(segment->relpath(), mtime, interval);
         dataset_checker.manifest.flush();
+        invalidate_dataset_summary();
     }
 
     arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
@@ -170,6 +178,7 @@ public:
         segment_data_checker->move(new_segment_session, new_relpath);
         dataset_checker.manifest.remove(segment_data_checker->segment().relpath());
         dataset_checker.manifest.flush();
+        invalidate_dataset_summary();
         return mds;
     }
 };
