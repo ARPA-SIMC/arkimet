@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.56
+Version: 1.57
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,18 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri May 16 2025 Daniele Branchini <dbranchini@arpae.it> - 1.57-1
+- Normalize paths before reading configuration from them (#348)
+- Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
+  allow an error or duplicates dataset to have an arbitrary name (#328)
+- Fixed examples in error and duplicates dataset documentation (#349)
+- Add `Summary.reference_time` python accessor giving a `tuple[datetime, datetime]`
+  with the extremes
+- Python methods that read a config file now also accept a Path to point to the file
+- Correctly invalidate dataset summaries when doing deletion and maintenance of
+  simple datasets (#347)
+- Updated arkiguide (#344)
+
 * Mon Jan 27 2025 Daniele Branchini <dbranchini@arpae.it> - 1.56-1
 - Refactored segment writing of metadata+summary in simple segments
 - Optimize repack operation on file segments

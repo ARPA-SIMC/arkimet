@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.57
 
 * Normalize paths before reading configuration from them (#348)
 * Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
@@ -9,6 +9,7 @@
 * Python methods that read a config file now also accept a Path to point to the file
 * Correctly invalidate dataset summaries when doing deletion and maintenance of
   simple datasets (#347)
+* Updated arkiguide (#344)
 
 # New in version 1.56
 
