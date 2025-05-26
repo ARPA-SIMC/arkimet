@@ -1,3 +1,7 @@
+# New in version 1.58
+
+* Fix synthesizing a segment root path for file datasetes (#350)
+
 # New in version 1.57
 
 * Normalize paths before reading configuration from them (#348)

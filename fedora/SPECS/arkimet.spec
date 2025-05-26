@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.57
+Version: 1.58
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon May 26 2025 Daniele Branchini <dbranchini@arpae.it> - 1.58-1
+- Fix synthesizing a segment root path for file datasetes (#350)
+
 * Fri May 16 2025 Daniele Branchini <dbranchini@arpae.it> - 1.57-1
 - Normalize paths before reading configuration from them (#348)
 - Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
