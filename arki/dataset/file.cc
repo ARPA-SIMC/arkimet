@@ -183,6 +183,8 @@ SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg
     std::filesystem::path basedir;
     std::filesystem::path relpath;
     utils::files::resolve_path(cfg.value("path"), basedir, relpath);
+    if (basedir.empty())
+        basedir = relpath.parent_path();
     segment_session = std::make_shared<segment::Session>(basedir);
     segment = segment_session->segment_from_relpath_and_format(relpath, format_from_string(cfg.value("format")));
 }
