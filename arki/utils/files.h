@@ -14,9 +14,7 @@
 #define FLAGFILE_INDEX "index-out-of-sync"
 #define FLAGFILE_DONTPACK "needs-check-do-not-pack"
 
-namespace arki {
-namespace utils {
-namespace files {
+namespace arki::utils::files {
 
 /**
  * Check if a directory is on a filesystem that supports holes in files, by
@@ -150,7 +148,20 @@ struct RAIIFILE
     operator FILE*() { return fd; }
 };
 
-}
-}
+struct Chdir
+{
+    std::filesystem::path oldcwd;
+
+    Chdir(const std::filesystem::path& cwd)
+        : oldcwd(std::filesystem::current_path())
+    {
+        std::filesystem::current_path(cwd);
+    }
+    ~Chdir()
+    {
+        std::filesystem::current_path(oldcwd);
+    }
+};
+
 }
 #endif

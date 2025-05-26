@@ -12,9 +12,7 @@
 using namespace std;
 using namespace std::string_literals;
 
-namespace arki {
-namespace utils {
-namespace files {
+namespace arki::utils::files {
 
 bool filesystem_has_holes(const std::filesystem::path& dir)
 {
@@ -217,6 +215,4 @@ void FinalizeTempfilesTransaction::rollback_nothrow() noexcept
     fired = true;
 }
 
-}
-}
 }
