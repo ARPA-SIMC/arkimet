@@ -673,7 +673,7 @@ int Path::openat(const char* pathname_, int flags, mode_t mode)
 {
     int res = ::openat(fd, pathname_, flags, mode);
     if (res == -1)
-        throw_error("cannot openat");
+        throw_error_string("cannot openat "s + pathname_);
     return res;
 }
 
@@ -684,7 +684,7 @@ int Path::openat_ifexists(const char* pathname_, int flags, mode_t mode)
     {
         if (errno == ENOENT)
             return -1;
-        throw_error("cannot openat");
+        throw_error_string("cannot openat "s + pathname_);
     }
     return res;
 }
@@ -731,25 +731,25 @@ bool Path::lstatat_ifexists(const char* pathname_, struct stat& st)
 void Path::unlinkat(const char* pathname_)
 {
     if (::unlinkat(fd, pathname_, 0) == -1)
-        throw_error("cannot unlinkat");
+        throw_error_string("cannot unlinkat "s + pathname_);
 }
 
 void Path::mkdirat(const char* pathname_, mode_t mode)
 {
     if (::mkdirat(fd, pathname_, mode) == -1)
-        throw_error("cannot mkdirat");
+        throw_error_string("cannot mkdirat "s + pathname_);
 }
 
 void Path::rmdirat(const char* pathname_)
 {
     if (::unlinkat(fd, pathname_, AT_REMOVEDIR) == -1)
-        throw_error("cannot unlinkat");
+        throw_error_string("cannot unlinkat directory "s + pathname_);
 }
 
 void Path::symlinkat(const char* target, const char* linkpath)
 {
     if (::symlinkat(target, fd, linkpath) == -1)
-        throw_error("cannot symlinkat");
+        throw_error_string("cannot symlinkat "s + target);
 }
 
 std::string Path::readlinkat(const char* pathname_)
@@ -759,7 +759,7 @@ std::string Path::readlinkat(const char* pathname_)
     {
         ssize_t sz = ::readlinkat(fd, pathname_, res.data(), res.size());
         if (sz == -1)
-            throw_error("cannot readlinkat");
+            throw_error_string("cannot readlinkat "s + pathname_);
         if (sz < static_cast<ssize_t>(res.size()))
         {
             res.resize(sz);
