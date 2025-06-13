@@ -333,6 +333,11 @@ void FileDescriptor::throw_error(const char* desc)
     throw std::system_error(errno, std::system_category(), desc);
 }
 
+void FileDescriptor::throw_error_string(const std::string& desc)
+{
+    throw std::system_error(errno, std::system_category(), desc);
+}
+
 void FileDescriptor::throw_runtime_error(const char* desc)
 {
     throw std::runtime_error(desc);
@@ -584,6 +589,11 @@ void NamedFileDescriptor::throw_error(const char* desc)
     throw std::system_error(errno, std::system_category(), path_.native() + ": " + desc);
 }
 
+void NamedFileDescriptor::throw_error_string(const std::string& desc)
+{
+    throw std::system_error(errno, std::system_category(), path_.native() + ": " + desc);
+}
+
 void NamedFileDescriptor::throw_runtime_error(const char* desc)
 {
     throw std::runtime_error(path_.native() + ": " + desc);
@@ -687,7 +697,7 @@ bool Path::faccessat(const char* pathname_, int mode, int flags)
 void Path::fstatat(const char* pathname_, struct stat& st)
 {
     if (::fstatat(fd, pathname_, &st, 0) == -1)
-        throw_error("cannot fstatat");
+        throw_error_string("cannot fstatat "s + pathname_);
 }
 
 bool Path::fstatat_ifexists(const char* pathname_, struct stat& st)
@@ -696,7 +706,7 @@ bool Path::fstatat_ifexists(const char* pathname_, struct stat& st)
     {
         if (errno == ENOENT)
             return false;
-        throw_error("cannot fstatat");
+        throw_error_string("cannot fstatat "s + pathname_);
     }
     return true;
 }
@@ -704,7 +714,7 @@ bool Path::fstatat_ifexists(const char* pathname_, struct stat& st)
 void Path::lstatat(const char* pathname_, struct stat& st)
 {
     if (::fstatat(fd, pathname_, &st, AT_SYMLINK_NOFOLLOW) == -1)
-        throw_error("cannot fstatat");
+        throw_error_string("cannot lstatat "s + pathname_);
 }
 
 bool Path::lstatat_ifexists(const char* pathname_, struct stat& st)
@@ -713,7 +723,7 @@ bool Path::lstatat_ifexists(const char* pathname_, struct stat& st)
     {
         if (errno == ENOENT)
             return false;
-        throw_error("cannot fstatat");
+        throw_error_string("cannot lstatat "s + pathname_);
     }
     return true;
 }

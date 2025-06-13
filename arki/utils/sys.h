@@ -205,6 +205,15 @@ public:
     [[noreturn]] virtual void throw_error(const char* desc);
 
     /**
+     * Throw an exception based on errno and the given message.
+     *
+     * This can be overridden by subclasses that may have more information
+     * about the file descriptor, so that they can generate more descriptive
+     * messages.
+     */
+    [[noreturn]] virtual void throw_error_string(const std::string& desc);
+
+    /**
      * Throw a runtime_error unrelated from errno.
      *
      * This can be overridden by subclasses that may have more information
@@ -365,6 +374,7 @@ public:
     NamedFileDescriptor& operator=(const NamedFileDescriptor& o) = default;
 
     [[noreturn]] virtual void throw_error(const char* desc) override;
+    [[noreturn]] virtual void throw_error_string(const std::string& desc) override;
     [[noreturn]] virtual void throw_runtime_error(const char* desc) override;
 
     /// Return the file pathname
