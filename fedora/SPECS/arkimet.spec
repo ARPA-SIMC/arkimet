@@ -4,7 +4,7 @@
 Summary: Archive for weather information
 Name: arkimet
 Version: 1.58
-Release: 1
+Release: 2
 License: GPL
 Group: Applications/Meteo
 URL: https://github.com/arpa-simc/%{name}
@@ -177,6 +177,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri Jun 13 2025 Daniele Branchini <dbranchini@arpae.it> - 1.58-2
+- Updated wobble (shows offending file in fstatat/lstatat error messages) (#351)
+
 * Mon May 26 2025 Daniele Branchini <dbranchini@arpae.it> - 1.58-1
 - Fix synthesizing a segment root path for file datasetes (#350)
 
