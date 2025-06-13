@@ -115,8 +115,14 @@ void PathWalk::walk(const std::filesystem::path& relpath, sys::Path& path)
 {
     for (auto i = path.begin(); i != path.end(); ++i)
     {
+        // Skip . and ..
+        if (i->d_name[0] == '.' and (i->d_name[1] == 0 or (i->d_name[1] == '.' and i->d_name[2] == 0)))
+            continue;
+
         struct stat st;
-        path.fstatat(i->d_name, st);
+        if (!path.fstatat_ifexists(i->d_name, st))
+            // The file has disappeared during iteration
+            continue;
 
         // Prevent infinite loops
         if (seen.find(st.st_ino) != seen.end())

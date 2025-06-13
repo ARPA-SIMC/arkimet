@@ -49,6 +49,24 @@ add_method("resolve_path", [] {
     wassert(actual(relpath) == "foo/baz");
 });
 
+add_method("pathwalk_changed_during_iteration", [] {
+    std::vector<std::string> names ={"file1", "file2", "file3"};
+    sys::Tempdir path;
+    for (const auto& fname: names)
+        sys::FileDescriptor fd(path.openat(fname.c_str(), O_CREAT|O_WRONLY));
+
+    unsigned count = 0;
+    PathWalk walk(path.path(), [&](const std::filesystem::path&, sys::Path::iterator&, struct stat&) {
+        if (count == 0)
+            for (const auto& fname: names)
+                path.unlinkat(fname.c_str());
+        ++count;
+        return true;
+    });
+    walk.walk();
+    wassert(actual(count) == 1u);
+});
+
 }
 
 }
