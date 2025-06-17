@@ -1,3 +1,8 @@
+# New in version 1.59
+
+* Deal with files deleted during iteration in PathWalk (#351)
+* Improved error logs in wobble
+
 # New in version 1.58
 
 * Fix synthesizing a segment root path for file datasetes (#350)
