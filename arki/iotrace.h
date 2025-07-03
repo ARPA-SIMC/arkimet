@@ -11,7 +11,7 @@
 #include <arki/core/fwd.h>
 #include <arki/stream/fwd.h>
 #include <vector>
-#include <string>
+#include <filesystem>
 #include <cstddef>
 #include <sys/types.h>
 
@@ -23,7 +23,7 @@ namespace iotrace {
 /// Information about one I/O event
 struct Event
 {
-    std::string filename;
+    std::filesystem::path filename;
     off_t offset;
     size_t size;
     const char* desc;
@@ -46,7 +46,7 @@ struct Collector : public Listener
     Collector();
     ~Collector();
 
-    virtual void operator()(const Event& e);
+    void operator()(const Event& e) override;
 
     void dump(std::ostream& out) const;
 };
@@ -55,9 +55,9 @@ struct Logger : public Listener
 {
     FILE* out;
 
-    Logger(FILE* out) : out(out) {}
+    explicit Logger(FILE* out) : out(out) {}
 
-    virtual void operator()(const Event& e);
+    void operator()(const Event& e) override;
 };
 
 /**
@@ -78,7 +78,7 @@ void init();
  *   Description of the I/O operation. It MUST be some static string, since its
  *   contents are not copied but only a pointer to it is kepy.
  */
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc);
+void trace_file(const std::filesystem::path& name, off_t offset, size_t size, const char* desc);
 
 /// Specialised implementation for C-style filenames
 void trace_file(const char* name, off_t offset, size_t size, const char* desc);
@@ -98,7 +98,7 @@ void remove_listener(Listener& l);
 #else
 
 void init() {}
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc) {}
+void trace_file(const std::filesystem::path& name, off_t offset, size_t size, const char* desc) {}
 void trace_file(const char* name, off_t offset, size_t size, const char* desc) {}
 
 #endif

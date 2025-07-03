@@ -1,7 +1,7 @@
 #include "jpeg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -27,7 +27,7 @@ struct JPEGValidator : public Validator
 {
     // For reference about signatures, see https://en.wikipedia.org/wiki/JPEG#Syntax_and_structure
 
-    std::string format() const override { return "jpeg"; }
+    DataFormat format() const override { return DataFormat::JPEG; }
 
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
@@ -78,38 +78,36 @@ const Validator& validator() { return jpeg_validator; }
  * JPEGScanner
  */
 
-void JPEGScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)
+void JPEGScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::data::Reader> reader)
 {
     struct stat st;
-    sys::stat(reader->segment().abspath, st);
-    std::stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath);
-    md.add_note(note.str());
+    sys::stat(reader->segment().abspath(), st);
+    md.add_note_scanned_from(reader->segment().relpath());
     md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 
 std::shared_ptr<Metadata> JPEGScanner::scan_data(const std::vector<uint8_t>& data)
 {
     std::shared_ptr<Metadata> md = scan_jpeg_data(data);
-    md->set_source_inline("jpeg", metadata::DataManager::get().to_data("jpeg", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::JPEG, metadata::DataManager::get().to_data(DataFormat::JPEG, std::vector<uint8_t>(data)));
     return md;
 }
 
-std::shared_ptr<Metadata> JPEGScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> JPEGScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     return scan_jpeg_file(abspath);
 }
 
-bool JPEGScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool JPEGScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     // If the file is empty, skip it
-    auto st = sys::stat(reader->segment().abspath);
+    auto st = sys::stat(reader->segment().abspath());
     if (!st) return true;
     if (S_ISDIR(st->st_mode))
         throw std::runtime_error("JPEGScanner::scan_segment cannot be called on directory segments");
     if (!st->st_size) return true;
 
-    auto md = scan_jpeg_file(reader->segment().abspath);
+    auto md = scan_jpeg_file(reader->segment().abspath());
     set_blob_source(*md, reader);
     return dest(md);
 }
@@ -148,7 +146,7 @@ MockJPEGScanner::~MockJPEGScanner()
     delete engine;
 }
 
-std::shared_ptr<Metadata> MockJPEGScanner::scan_jpeg_file(const std::string& pathname)
+std::shared_ptr<Metadata> MockJPEGScanner::scan_jpeg_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
     return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
@@ -162,7 +160,7 @@ std::shared_ptr<Metadata> MockJPEGScanner::scan_jpeg_data(const std::vector<uint
 
 void register_jpeg_scanner()
 {
-    Scanner::register_factory("jpeg", [] {
+    Scanner::register_factory(DataFormat::JPEG, [] {
         return std::make_shared<scan::MockJPEGScanner>();
     });
 }

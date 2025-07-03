@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <iosfwd>
 
 namespace arki {
 class Metadata;
@@ -40,19 +41,55 @@ enum TypeCode
     TYPE_MAXCODE
 };
 
-namespace dataset {
-
-/// Possible outcomes of acquire
-enum WriterAcquireResult {
-    /// Acquire successful
-    ACQ_OK,
-    /// Acquire failed because the data is already in the database
-    ACQ_ERROR_DUPLICATE,
-    /// Acquire failed for other reasons than duplicates
-    ACQ_ERROR
+/// Supported data formats
+enum class DataFormat : int
+{
+    GRIB = 1,
+    BUFR = 2,
+    VM2 = 3,
+    ODIMH5 = 4,
+    NETCDF = 5,
+    JPEG = 6,
 };
 
-}
+/// String version of a format name
+const std::string& format_name(DataFormat format);
+
+/// Format from its string version
+DataFormat format_from_string(const std::string& format);
+
+std::ostream& operator<<(std::ostream& o, DataFormat format);
+
+
+/// What to do if duplicate data is found
+enum class ReplaceStrategy {
+    /// Default strategy
+    DEFAULT,
+    /// Never replace
+    NEVER,
+    /// Always replace
+    ALWAYS,
+    /**
+     * Replace if update sequence number is higher (do not replace if USN
+     * not available)
+     */
+    HIGHER_USN,
+};
+
+std::ostream& operator<<(std::ostream& o, ReplaceStrategy strategy);
+
+
+/// Intended special user for a dataset
+enum class DatasetUse {
+    /// No special use intended
+    DEFAULT,
+    /// Store data that errored during dispatching
+    ERRORS,
+    /// Store duplicates detected during dispatching
+    DUPLICATES,
+};
+std::ostream& operator<<(std::ostream& o, DatasetUse use);
+
 
 }
 

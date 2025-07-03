@@ -86,12 +86,12 @@ struct DataLineBuffer : public DataBuffer
     size_t write(core::NamedFileDescriptor& fd) const override
     {
         struct iovec todo[2] = {
-            { (void*)buffer.data(), buffer.size() },
-            { (void*)"\n", 1 },
+            { const_cast<uint8_t*>(buffer.data()), buffer.size() },
+            { const_cast<char*>("\n"), 1 },
         };
         ssize_t res = ::writev(fd, todo, 2);
         if (res < 0 || (unsigned)res != buffer.size() + 1)
-            throw_system_error("cannot write " + std::to_string(buffer.size() + 1) + " bytes to " + fd.name());
+            throw_system_error(errno, "cannot write ", (buffer.size() + 1), " bytes to ", fd.path());
         return buffer.size() + 1;
     }
     stream::SendResult write(StreamOutput& out) const override
@@ -140,11 +140,11 @@ void DataManager::stop_tracking(TrackedData* tracker)
     trackers.remove(tracker);
 }
 
-std::shared_ptr<Data> DataManager::to_data(const std::string& format, std::vector<uint8_t>&& data)
+std::shared_ptr<Data> DataManager::to_data(DataFormat format, std::vector<uint8_t>&& data)
 {
     std::shared_ptr<Data> res;
 
-    if (format == "vm2")
+    if (format == DataFormat::VM2)
         res = std::make_shared<DataLineBuffer>(std::move(data));
     else
         res = std::make_shared<DataBuffer>(std::move(data));

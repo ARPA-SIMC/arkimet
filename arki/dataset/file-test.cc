@@ -4,14 +4,17 @@
 #include "arki/matcher.h"
 #include "arki/dataset/file.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/metadata/collection.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
 #include <memory>
 
 namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
+using namespace arki::utils;
 using arki::core::Time;
 
 class Tests : public TestCase
@@ -30,7 +33,7 @@ add_method("grib", [] {
 });
 
 add_method("grib_as_bufr", [] {
-    auto cfg = dataset::file::read_config("bUFr:inbound/test.grib1");
+    auto cfg = dataset::file::read_config("bUFr", "inbound/test.grib1");
     wassert(actual(cfg->value("name")) == "inbound/test.grib1");
     wassert(actual(cfg->value("type")) == "file");
     wassert(actual(cfg->value("format")) == "bufr");
@@ -38,7 +41,7 @@ add_method("grib_as_bufr", [] {
 
 add_method("grib_strangename", [] {
     system("cp inbound/test.grib1 strangename");
-    auto cfg = dataset::file::read_config("GRIB:strangename");
+    auto cfg = dataset::file::read_config("GRIB", "strangename");
     wassert(actual(cfg->value("name")) == "strangename");
     wassert(actual(cfg->value("type")) == "file");
     wassert(actual(cfg->value("format")) == "grib");
@@ -71,6 +74,21 @@ add_method("yaml", [] {
     auto session = std::make_shared<dataset::Session>();
     metadata::Collection mdc(*session->dataset(*cfg), Matcher());
     wassert(actual(mdc.size()) == 1u);
+});
+
+add_method("absolute_path", [] {
+    // Enter into a directory which is not the parent of where the file is
+    std::filesystem::create_directory("test");
+    files::Chdir chdir("test");
+    auto cfg = dataset::file::read_config("../inbound/test.grib1");
+    wassert(actual(cfg->value("name")) == "../inbound/test.grib1");
+    wassert(actual(cfg->value("type")) == "file");
+    wassert(actual(cfg->value("format")) == "grib");
+
+    // Scan it to be sure it can be read
+    auto session = std::make_shared<dataset::Session>();
+    metadata::Collection mdc(*session->dataset(*cfg), Matcher());
+    wassert(actual(mdc.size()) == 3u);
 });
 
 }

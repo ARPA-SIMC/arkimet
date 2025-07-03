@@ -18,6 +18,7 @@ struct TestStream : public stream::AbstractStreamOutput<stream::TestingBackend>
     std::string streamed;
 
     std::string name() const override { return "test stream"; }
+    std::filesystem::path path() const override { return "test stream"; }
 
     stream::SendResult _write_output_buffer(const void* data, size_t size) override
     {

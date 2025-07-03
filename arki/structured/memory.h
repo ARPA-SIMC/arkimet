@@ -38,7 +38,7 @@ public:
     const char* tag() const override { return "bool"; }
     NodeType type() const override { return NodeType::BOOL; }
     std::string repr() const override { return val ? "true" : "false"; }
-    bool as_bool(const char* desc) const override { return val; }
+    bool scalar_as_bool(const char* desc) const override { return val; }
 };
 
 class Int : public Node
@@ -49,7 +49,7 @@ public:
     const char* tag() const override { return "int"; }
     NodeType type() const override { return NodeType::INT; }
     std::string repr() const override { return std::to_string(val); }
-    long long int as_int(const char* desc) const override { return val; }
+    long long int scalar_as_int(const char* desc) const override { return val; }
 };
 
 class Double : public Node
@@ -60,7 +60,7 @@ public:
     const char* tag() const override { return "double"; }
     NodeType type() const override { return NodeType::DOUBLE; }
     std::string repr() const override { return std::to_string(val); }
-    double as_double(const char* desc) const override { return val; }
+    double scalar_as_double(const char* desc) const override { return val; }
 };
 
 class String : public Node
@@ -71,7 +71,7 @@ public:
     const char* tag() const override { return "string"; }
     NodeType type() const override { return NodeType::STRING; }
     std::string repr() const override;
-    std::string as_string(const char* desc) const override { return val; }
+    std::string scalar_as_string(const char* desc) const override { return val; }
 };
 
 class List : public Node
@@ -90,14 +90,14 @@ public:
 
     NodeType type() const override { return NodeType::LIST; }
     std::string repr() const override;
-    core::Time as_time(const char* desc) const override;
+    core::Time scalar_as_time(const char* desc) const override;
     unsigned list_size(const char* desc) const override { return size(); }
-    bool as_bool(unsigned idx, const char* desc) const override { return val[idx]->as_bool(desc); }
-    long long int as_int(unsigned idx, const char* desc) const override { return val[idx]->as_int(desc); }
-    double as_double(unsigned idx, const char* desc) const override { return val[idx]->as_double(desc); }
-    std::string as_string(unsigned idx, const char* desc) const override { return val[idx]->as_string(desc); }
-    std::unique_ptr<types::Type> as_type(unsigned idx, const char* desc, const structured::Keys& keys) const override;
-    void sub(unsigned idx, const char* desc, std::function<void(const Reader&)> func) const override { func(*val[idx]); }
+    bool list_as_bool(unsigned idx, const char* desc) const override { return val[idx]->as_bool(desc); }
+    long long int list_as_int(unsigned idx, const char* desc) const override { return val[idx]->as_int(desc); }
+    double list_as_double(unsigned idx, const char* desc) const override { return val[idx]->as_double(desc); }
+    std::string list_as_string(unsigned idx, const char* desc) const override { return val[idx]->as_string(desc); }
+    std::unique_ptr<types::Type> list_as_type(unsigned idx, const char* desc, const structured::Keys& keys) const override;
+    void list_sub(unsigned idx, const char* desc, std::function<void(const Reader&)> func) const override { func(*val[idx]); }
 };
 
 class Mapping : public Node
@@ -125,15 +125,15 @@ public:
 
     NodeType type() const override { return NodeType::MAPPING; }
     std::string repr() const override;
-    bool has_key(const std::string& key, NodeType type) const override;
-    bool as_bool(const std::string& key, const char* desc) const override { return (*this)[key].as_bool(desc); }
-    long long int as_int(const std::string& key, const char* desc) const override { return (*this)[key].as_int(desc); }
-    double as_double(const std::string& key, const char* desc) const override { return (*this)[key].as_double(desc); }
-    std::string as_string(const std::string& key, const char* desc) const override { return (*this)[key].as_string(desc); }
-    core::Time as_time(const std::string& key, const char* desc) const override;
-    std::unique_ptr<types::Type> as_type(const std::string& key, const char* desc, const structured::Keys& keys) const override;
-    void sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const override { dest((*this)[key]); }
-    void items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const override
+    bool dict_has_key(const std::string& key, NodeType type) const override;
+    bool dict_as_bool(const std::string& key, const char* desc) const override { return (*this)[key].as_bool(desc); }
+    long long int dict_as_int(const std::string& key, const char* desc) const override { return (*this)[key].as_int(desc); }
+    double dict_as_double(const std::string& key, const char* desc) const override { return (*this)[key].as_double(desc); }
+    std::string dict_as_string(const std::string& key, const char* desc) const override { return (*this)[key].as_string(desc); }
+    core::Time dict_as_time(const std::string& key, const char* desc) const override;
+    std::unique_ptr<types::Type> dict_as_type(const std::string& key, const char* desc, const structured::Keys& keys) const override;
+    void dict_sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const override { dest((*this)[key]); }
+    void dict_items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const override
     {
         for (const auto& i: val)
             dest(i.first, *i.second);
@@ -157,17 +157,17 @@ public:
     Memory();
     virtual ~Memory();
 
-    virtual void start_list();
-    virtual void end_list();
+    void start_list() override;
+    void end_list() override;
 
-    virtual void start_mapping();
-    virtual void end_mapping();
+    void start_mapping() override;
+    void end_mapping() override;
 
-    virtual void add_null();
-    virtual void add_bool(bool val);
-    virtual void add_int(long long int val);
-    virtual void add_double(double val);
-    virtual void add_string(const std::string& val);
+    void add_null() override;
+    void add_bool(bool val) override;
+    void add_int(long long int val) override;
+    void add_double(double val) override;
+    void add_string(const std::string& val) override;
 
     const memory::Node& root() const { return *m_root; }
 };

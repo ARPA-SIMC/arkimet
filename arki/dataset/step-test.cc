@@ -29,7 +29,7 @@ struct Fixture : public arki::utils::tests::Fixture
     }
 
     // Called before each test
-    void test_setup() { sys::mkdir_ifmissing("test_step"); }
+    void test_setup() { std::filesystem::create_directory("test_step"); }
 
     // Called after each test
     void test_teardown() { sys::rmtree("test_step"); }
@@ -58,26 +58,26 @@ add_method("single", [](Fixture& f) {
     wassert_true(step->pathMatches("all.test", mimpl(parser.parse("reftime:>2006"))));
     wassert_true(step->pathMatches("all.test", mimpl(parser.parse("reftime:<=2008"))));
 
-    sys::mkdir_ifmissing("test_step/");
+    std::filesystem::create_directory("test_step/");
     files::createFlagfile("test_step/all.grib");
     files::createFlagfile("test_step/all.bufr");
 
     vector<string> res;
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:<2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:<2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
     std::sort(res.begin(), res.end());
     wassert(actual(res.size()) == 1u);
     wassert(actual(res[0]) == "all.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 1u);
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 1u);
 
     core::Interval interval;
-    step->time_extremes(step::SegmentQuery("test_step", "grib"), interval);
+    step->time_extremes(step::SegmentQuery("test_step", DataFormat::GRIB), interval);
     wassert_true(interval.begin.is_set());
     wassert_true(interval.end.is_set());
     wassert(actual(interval.begin) == core::Time(1000, 1, 1));
@@ -94,35 +94,35 @@ add_method("yearly", [](Fixture& f) {
     wassert_false(step->pathMatches("20/2007.test", mimpl(parser.parse("reftime:>2007"))));
     wassert_false(step->pathMatches("20/2007.test", mimpl(parser.parse("reftime:<2007"))));
 
-    sys::mkdir_ifmissing("test_step/19");
+    std::filesystem::create_directory("test_step/19");
     files::createFlagfile("test_step/19/1998.grib");
     files::createFlagfile("test_step/19/1998.bufr");
-    sys::mkdir_ifmissing("test_step/20");
+    std::filesystem::create_directory("test_step/20");
     files::createFlagfile("test_step/20/2001.grib");
     files::createFlagfile("test_step/20/2002.grib");
 
     vector<string> res;
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:<2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:<2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
     std::sort(res.begin(), res.end());
     wassert(actual(res.size()) == 2u);
     wassert(actual(res[0]) == "19/1998.grib");
     wassert(actual(res[1]) == "20/2001.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:>=2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:>=2002")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 1u);
     wassert(actual(res[0]) == "20/2002.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 3u);
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 3u);
 
     core::Interval interval;
-    step->time_extremes(step::SegmentQuery("test_step", "grib"), interval);
+    step->time_extremes(step::SegmentQuery("test_step", DataFormat::GRIB), interval);
     wassert_true(interval.begin.is_set());
     wassert_true(interval.end.is_set());
     wassert(actual(interval.begin) == core::Time(1998, 1, 1));
@@ -135,18 +135,18 @@ add_method("monthly", [](Fixture& f) {
 
     wassert(actual((*step)(f.time)) == "2007/06");
 
-    sys::mkdir_ifmissing("test_step/2007");
+    std::filesystem::create_directory("test_step/2007");
     files::createFlagfile("test_step/2007/01.grib");
     files::createFlagfile("test_step/2007/01.bufr");
-    sys::mkdir_ifmissing("test_step/2008");
+    std::filesystem::create_directory("test_step/2008");
     files::createFlagfile("test_step/2008/06.grib");
-    sys::mkdir_ifmissing("test_step/2008/07.grib");
-    sys::mkdir_ifmissing("test_step/2009");
+    std::filesystem::create_directory("test_step/2008/07.grib");
+    std::filesystem::create_directory("test_step/2009");
     files::createFlagfile("test_step/2009/11.grib");
     files::createFlagfile("test_step/2009/12.grib");
 
     vector<string> res;
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:<2009-11-15")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:<2009-11-15")), [&](std::string&& s) { res.emplace_back(move(s)); });
     std::sort(res.begin(), res.end());
     wassert(actual(res.size()) == 4u);
     wassert(actual(res[0]) == "2007/01.grib");
@@ -155,20 +155,20 @@ add_method("monthly", [](Fixture& f) {
     wassert(actual(res[3]) == "2009/11.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:>=2009-12-01")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:>=2009-12-01")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 1u);
     wassert(actual(res[0]) == "2009/12.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 5u);
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 5u);
 
     core::Interval interval;
-    step->time_extremes(step::SegmentQuery("test_step", "grib"), interval);
+    step->time_extremes(step::SegmentQuery("test_step", DataFormat::GRIB), interval);
     wassert_true(interval.begin.is_set());
     wassert_true(interval.end.is_set());
     wassert(actual(interval.begin) == core::Time(2007, 1, 1));
@@ -193,18 +193,18 @@ add_method("daily", [](Fixture& f) {
 
     wassert(actual((*step)(f.time)) == "2007/06-05");
 
-    sys::mkdir_ifmissing("test_step/2007");
+    std::filesystem::create_directory("test_step/2007");
     files::createFlagfile("test_step/2007/01-01.grib");
     files::createFlagfile("test_step/2007/01-01.bufr");
-    sys::mkdir_ifmissing("test_step/2008");
+    std::filesystem::create_directory("test_step/2008");
     files::createFlagfile("test_step/2008/06-01.grib");
-    sys::mkdir_ifmissing("test_step/2008/06-05.grib");
-    sys::mkdir_ifmissing("test_step/2009");
+    std::filesystem::create_directory("test_step/2008/06-05.grib");
+    std::filesystem::create_directory("test_step/2009");
     files::createFlagfile("test_step/2009/12-29.grib");
     files::createFlagfile("test_step/2009/12-30.grib");
 
     vector<string> res;
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:<2009-12-30")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:<2009-12-30")), [&](std::string&& s) { res.emplace_back(move(s)); });
     std::sort(res.begin(), res.end());
     wassert(actual(res.size()) == 4u);
     wassert(actual(res[0]) == "2007/01-01.grib");
@@ -213,20 +213,20 @@ add_method("daily", [](Fixture& f) {
     wassert(actual(res[3]) == "2009/12-29.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("reftime:>=2009-12-30")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("reftime:>=2009-12-30")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 1u);
     wassert(actual(res[0]) == "2009/12-30.grib");
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib"), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 5u);
 
     res.clear();
-    step->list_segments(step::SegmentQuery("test_step", "grib", parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
+    step->list_segments(step::SegmentQuery("test_step", DataFormat::GRIB, parser.parse("origin:GRIB1,98")), [&](std::string&& s) { res.emplace_back(move(s)); });
     wassert(actual(res.size()) == 5u);
 
     core::Interval interval;
-    step->time_extremes(step::SegmentQuery("test_step", "grib"), interval);
+    step->time_extremes(step::SegmentQuery("test_step", DataFormat::GRIB), interval);
     wassert_true(interval.begin.is_set());
     wassert_true(interval.end.is_set());
     wassert(actual(interval.begin) == core::Time(2007, 1, 1));

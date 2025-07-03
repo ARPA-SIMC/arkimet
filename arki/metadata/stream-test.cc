@@ -90,14 +90,14 @@ void Tests::register_tests() {
 add_method("stream", [] {
     // Create test metadata
     auto md1 = std::make_shared<Metadata>();
-    md1->set_source(types::Source::createURL("grib", "http://www.example.org"));
+    md1->set_source(types::Source::createURL(DataFormat::GRIB, "http://www.example.org"));
     fill(*md1);
 
     std::shared_ptr<Metadata> md2(md1->clone());
     md2->test_set(types::Origin::createBUFR(1, 2));
 
     const char* teststr = "this is a test";
-    md1->set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(teststr, teststr + 14)));
+    md1->set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, vector<uint8_t>(teststr, teststr + 14)));
 
     // Encode everything in a buffer
     size_t end1, end2;
@@ -108,13 +108,13 @@ add_method("stream", [] {
         end2 = out.lseek(0, SEEK_CUR);
     });
 
-	// Where we collect the decoded metadata
-	metadata::Collection results;
+    // Where we collect the decoded metadata
+    metadata::Collection results;
 
     // Stream for the decoding
     metadata::Stream mdstream(results.inserter_func(), "test stream");
 
-	size_t cur = 0;
+    size_t cur = 0;
 
     // Not a full metadata yet
     mdstream.readData(input.data() + cur, end1 - 20);
@@ -131,9 +131,9 @@ add_method("stream", [] {
     cur += 40;
     wassert(actual(results.size()) == 1u);
 
-	// All the rest
-	mdstream.readData(input.data() + cur, end2-cur);
-	cur = end2;
+    // All the rest
+    mdstream.readData(input.data() + cur, end2-cur);
+    cur = end2;
 
     // No bytes must be left to decode
     wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
@@ -143,10 +143,10 @@ add_method("stream", [] {
     wassert_true(cmpmd(*md1, results[0]));
     wassert_true(cmpmd(*md2, results[1]));
 
-	results.clear();
+    results.clear();
 
-	// Try feeding all the data at the same time
-	mdstream.readData(input.data(), input.size());
+    // Try feeding all the data at the same time
+    mdstream.readData(input.data(), input.size());
 
     // No bytes must be left to decode
     wassert(actual(mdstream.countBytesUnprocessed()) == 0u);
@@ -161,7 +161,7 @@ add_method("stream", [] {
 add_method("split", [] {
     // Create test metadata
     Metadata md;
-    md.set_source(types::Source::createURL("grib", "http://www.example.org"));
+    md.set_source(types::Source::createURL(DataFormat::GRIB, "http://www.example.org"));
     fill(md);
 
     // Encode it in a buffer 3 times

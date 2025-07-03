@@ -2,7 +2,7 @@
 #include "archive.h"
 #include "reporter.h"
 #include "simple/writer.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
@@ -26,7 +26,6 @@ namespace {
 struct Fixture : public arki::utils::tests::Fixture
 {
     std::shared_ptr<dataset::Session> session;
-    core::cfg::Section cfg;
     metadata::TestCollection orig;
     std::shared_ptr<archive::Dataset> config;
 
@@ -39,19 +38,10 @@ struct Fixture : public arki::utils::tests::Fixture
     {
         session = make_shared<dataset::Session>();
 
-        if (sys::exists("testds")) sys::rmtree("testds");
-        sys::makedirs("testds/.archive/last");
+        if (std::filesystem::exists("testds")) sys::rmtree("testds");
+        std::filesystem::create_directories("testds/.archive/last");
 
-        cfg.clear();
-        cfg.set("path", "testds");
-        cfg.set("name", "testds");
-        cfg.set("type", "iseg");
-        cfg.set("format", "grib");
-        cfg.set("step", "daily");
-        cfg.set("unique", "origin, reftime");
-        cfg.set("archive age", "7");
-
-        config = std::make_shared<archive::Dataset>(session, "testds");
+        config = std::make_shared<archive::Dataset>(session, "testds/.archive", "yearly");
 
         iotrace::init();
     }
@@ -71,18 +61,13 @@ add_method("acquire_last", [](Fixture& f) {
     // Acquire
     {
         archive::Checker checker(f.config);
-        system("cp -a inbound/test-sorted.grib1 testds/.archive/last/test-sorted.grib1");
-        wassert(checker.index_segment("last/test-sorted.grib1", metadata::Collection(f.orig)));
-        wassert(actual_file("testds/.archive/last/test-sorted.grib1").exists());
-        wassert(actual_file("testds/.archive/last/test-sorted.grib1.metadata").exists());
-        wassert(actual_file("testds/.archive/last/test-sorted.grib1.summary").exists());
-        wassert(actual_file("testds/.archive/last/" + manifest_idx_fname()).exists());
-
-        metadata::Collection mdc;
-        Metadata::read_file("testds/.archive/last/test-sorted.grib1.metadata", mdc.inserter_func());
-        wassert(actual(mdc.size()) == 3u);
-        wassert(actual(mdc[0].sourceBlob().filename) == "test-sorted.grib1");
-
+        std::filesystem::create_directories("testds/.archive/last/20");
+        system("cp -a inbound/test-sorted.grib1 testds/.archive/last/20/2007.grib");
+        wassert(checker.index_segment("last/20/2007.grib", metadata::Collection(f.orig)));
+        wassert(actual_file("testds/.archive/last/20/2007.grib").exists());
+        wassert(actual_file("testds/.archive/last/20/2007.grib.metadata").exists());
+        wassert(actual_file("testds/.archive/last/20/2007.grib.summary").exists());
+        wassert(actual_file("testds/.archive/last/MANIFEST").exists());
         wassert(actual(checker).check_clean(false, true));
     }
 
@@ -98,19 +83,19 @@ add_method("acquire_last", [](Fixture& f) {
 
 // Test maintenance scan on non-indexed files
 add_method("maintenance_nonindexed", [](Fixture& f) {
-    sys::makedirs("testds/.archive/last");
-    system("cp inbound/test-sorted.grib1 testds/.archive/last/");
+    std::filesystem::create_directories("testds/.archive/last/20");
+    system("cp inbound/test-sorted.grib1 testds/.archive/last/20/2007.grib");
 
     // Query now has empty results
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 0u);
 
         // Maintenance should show one file to index
         archive::Checker checker(f.config);
         ReporterExpected e;
-        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
+        e.rescanned.emplace_back("archives.last", "20/2007.grib");
         wassert(actual(checker).check(e, false, true));
     }
 
@@ -119,7 +104,7 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
         // Checker should reindex
         archive::Checker checker(f.config);
         ReporterExpected e;
-        e.rescanned.emplace_back("archives.last", "test-sorted.grib1");
+        e.rescanned.emplace_back("archives.last", "20/2007.grib");
         wassert(actual(checker).check(e, true, true));
 
         wassert(actual(checker).check_clean(false, true));
@@ -131,8 +116,27 @@ add_method("maintenance_nonindexed", [](Fixture& f) {
     // Query now has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
+    }
+});
+
+// Test maintenance scan on non-indexed files
+add_method("maintenance_nonindexed_outofstep", [](Fixture& f) {
+    std::filesystem::create_directories("testds/.archive/last/");
+    system("cp inbound/test-sorted.grib1 testds/.archive/last/test-sorted.grib1");
+
+    // Query now has empty results
+    {
+        archive::Reader reader(f.config);
+        metadata::Collection mdc(reader, query::Data(Matcher()));
+        wassert(actual(mdc.size()) == 0u);
+
+        // Maintenance should show one file needing manual intervention
+        archive::Checker checker(f.config);
+        ReporterExpected e;
+        e.segment_manual_intervention.emplace_back("archives.last", "test-sorted.grib1");
+        wassert(actual(checker).check(e, false, true));
     }
 });
 
@@ -147,16 +151,14 @@ add_method("reader_empty_last", [](Fixture& f) {
         cfg.set("type", "simple");
         cfg.set("step", "daily");
         auto writer = f.session->dataset(cfg)->create_writer();
-        wassert(actual(writer->acquire(mdc[0])) == dataset::ACQ_OK);
-        wassert(actual(writer->acquire(mdc[1])) == dataset::ACQ_OK);
-        wassert(actual(writer->acquire(mdc[2])) == dataset::ACQ_OK);
+        wassert(actual(writer).acquire_ok(mdc));
         writer->flush();
     }
 
     // Query has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
     }
 });
@@ -165,23 +167,23 @@ add_method("reader_empty_last", [](Fixture& f) {
 // still seen as archives (#91)
 add_method("enumerate_no_manifest", [](Fixture& f) {
     // Create a dataset without the manifest
-    sys::makedirs("testds/.archive/last");
-    sys::makedirs("testds/.archive/2007");
-    system("cp inbound/test-sorted.grib1 testds/.archive/2007/07.grib");
+    std::filesystem::create_directories("testds/.archive/last");
+    std::filesystem::create_directories("testds/.archive/2007/20/");
+    system("cp inbound/test-sorted.grib1 testds/.archive/2007/20/2007.grib");
 
     // Run check
     {
         archive::Checker checker(f.config);
         wassert(actual(checker.test_count_archives()) == 1u);
         ReporterExpected e;
-        e.rescanned.emplace_back("archives.2007", "07.grib");
+        e.rescanned.emplace_back("archives.2007", "20/2007.grib");
         wassert(actual(checker).check(e, true, true));
     }
 
     // Query has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
 
         wassert(actual(reader.test_count_archives()) == 1u);
@@ -199,7 +201,7 @@ add_method("enumerate_no_manifest", [](Fixture& f) {
     // Query still has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 3u);
 
         wassert(actual(reader.test_count_archives()) == 1u);
@@ -213,7 +215,7 @@ add_method("reader_offline", [](Fixture& f) {
     // Query has all data
     {
         archive::Reader reader(f.config);
-        metadata::Collection mdc(reader, dataset::DataQuery(Matcher()));
+        metadata::Collection mdc(reader, query::Data(Matcher()));
         wassert(actual(mdc.size()) == 0u);
     }
 });

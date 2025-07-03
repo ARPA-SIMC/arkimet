@@ -187,6 +187,11 @@ void Section::set(const std::string& key, int value)
     set(key, std::to_string(value));
 }
 
+void Section::unset(const std::string& key)
+{
+    erase(key);
+}
+
 void Section::write(std::ostream& out) const
 {
     for (const auto& i: *this)
@@ -211,7 +216,7 @@ void Section::dump(FILE* out) const
 std::shared_ptr<Section> Section::parse(core::NamedFileDescriptor& in)
 {
     auto reader = LineReader::from_fd(in);
-    return parse(*reader, in.name());
+    return parse(*reader, in.path().native());
 }
 
 std::shared_ptr<Section> Section::parse(const std::string& in, const std::string& pathname)
@@ -308,7 +313,7 @@ void Sections::dump(FILE* out) const
 std::shared_ptr<Sections> Sections::parse(core::NamedFileDescriptor& in)
 {
     auto reader = LineReader::from_fd(in);
-    return parse(*reader, in.name());
+    return parse(*reader, in.path());
 }
 
 std::shared_ptr<Sections> Sections::parse(const std::string& in, const std::string& pathname)

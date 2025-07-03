@@ -9,12 +9,11 @@
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
 #include <arki/matcher/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <string>
 
 namespace arki {
-class Summary;
-
 namespace dataset {
 
 namespace segmented {
@@ -27,14 +26,16 @@ namespace archive {
 class ArchivesReaderRoot;
 class ArchivesCheckerRoot;
 
-bool is_archive(const std::string& dir);
+bool is_archive(const std::filesystem::path& dir);
 
 class Dataset : public dataset::Dataset
 {
 public:
-    std::string root;
+    std::filesystem::path root;
+    std::shared_ptr<segment::Session> segment_session;
+    std::string step_name;
 
-    Dataset(std::shared_ptr<Session> session, const std::string& root);
+    Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root, const std::string& step_name);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Checker> create_checker() override;
@@ -68,9 +69,9 @@ protected:
 
     void summary_for_all(Summary& out);
 
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
-    void impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out) override;
+    void impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out) override;
 
 public:
     Reader(std::shared_ptr<Dataset> dataset);
@@ -96,8 +97,14 @@ public:
 
     std::string type() const override;
 
-    void index_segment(const std::string& relpath, metadata::Collection&& mds);
-    void release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath);
+    void index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds);
+    /**
+     * Deindex the segment at relpath and move it to new_relpath in segment_session.
+     *
+     * Only the data part of the segment is moved. The segment metadata is
+     * returned so it can be reindexed
+     */
+    arki::metadata::Collection release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath);
     void segments_recursive(CheckerConfig& opts, std::function<void(segmented::Checker&, segmented::CheckerSegment&)> dest);
 
     void remove_old(CheckerConfig& opts) override;

@@ -13,8 +13,10 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <utime.h>
-#include <alloca.h>
 #include <algorithm>
+#include <csignal>
+
+using namespace std::literals;
 
 namespace {
 
@@ -34,6 +36,28 @@ namespace arki {
 namespace utils {
 namespace sys {
 
+std::filesystem::path with_suffix(const std::filesystem::path& path, const std::string& suffix)
+{
+    if (not path.has_filename())
+        throw std::invalid_argument("cannot append a suffix to path "s + path.native() + " that does not have a filename");
+    auto res(path);
+    res += suffix;
+    return res;
+}
+
+std::unique_ptr<struct stat> stat(const char* pathname)
+{
+    std::unique_ptr<struct stat> res(new struct stat);
+    if (::stat(pathname, res.get()) == -1)
+    {
+        if (errno == ENOENT)
+            return std::unique_ptr<struct stat>();
+        else
+            throw std::system_error(errno, std::system_category(), "cannot stat "s + pathname);
+    }
+    return res;
+}
+
 std::unique_ptr<struct stat> stat(const std::string& pathname)
 {
     std::unique_ptr<struct stat> res(new struct stat);
@@ -42,15 +66,40 @@ std::unique_ptr<struct stat> stat(const std::string& pathname)
         if (errno == ENOENT)
             return std::unique_ptr<struct stat>();
         else
-            throw std::system_error(errno, std::system_category(), "cannot stat " + pathname);
+            throw std::system_error(errno, std::system_category(), "cannot stat "s + pathname);
     }
     return res;
+}
+
+std::unique_ptr<struct stat> stat(const std::filesystem::path& path)
+{
+    std::unique_ptr<struct stat> res(new struct stat);
+    if (::stat(path.c_str(), res.get()) == -1)
+    {
+        if (errno == ENOENT)
+            return std::unique_ptr<struct stat>();
+        else
+            throw std::system_error(errno, std::system_category(), "cannot stat "s + path.native());
+    }
+    return res;
+}
+
+void stat(const char* pathname, struct stat& st)
+{
+    if (::stat(pathname, &st) == -1)
+        throw std::system_error(errno, std::system_category(), "cannot stat "s + pathname);
 }
 
 void stat(const std::string& pathname, struct stat& st)
 {
     if (::stat(pathname.c_str(), &st) == -1)
         throw std::system_error(errno, std::system_category(), "cannot stat " + pathname);
+}
+
+void stat(const std::filesystem::path& path, struct stat& st)
+{
+    if (::stat(path.c_str(), &st) == -1)
+        throw std::system_error(errno, std::system_category(), "cannot stat " + path.native());
 }
 
 #define common_stat_body(testfunc) \
@@ -100,84 +149,70 @@ bool issock(const std::string& pathname)
 
 #undef common_stat_body
 
-time_t timestamp(const std::string& file)
+time_t timestamp(const std::filesystem::path& file)
 {
     struct stat st;
     stat(file, st);
     return st.st_mtime;
 }
 
-time_t timestamp(const std::string& file, time_t def)
+time_t timestamp(const std::filesystem::path& file, time_t def)
 {
     auto st = sys::stat(file);
     return st.get() ? st->st_mtime : def;
 }
 
-size_t size(const std::string& file)
+size_t size(const std::filesystem::path& file)
 {
     struct stat st;
     stat(file, st);
-    return (size_t)st.st_size;
+    return static_cast<size_t>(st.st_size);
 }
 
-size_t size(const std::string& file, size_t def)
+size_t size(const std::filesystem::path& file, size_t def)
 {
     auto st = sys::stat(file);
-    return st.get() ? (size_t)st->st_size : def;
+    return st.get() ? static_cast<size_t>(st->st_size) : def;
 }
 
-ino_t inode(const std::string& file)
+ino_t inode(const std::filesystem::path& file)
 {
     struct stat st;
     stat(file, st);
     return st.st_ino;
 }
 
-ino_t inode(const std::string& file, ino_t def)
+ino_t inode(const std::filesystem::path& file, ino_t def)
 {
     auto st = sys::stat(file);
     return st.get() ? st->st_ino : def;
 }
 
 
-bool access(const std::string &s, int m)
+bool access(const std::filesystem::path &s, int m)
 {
     return ::access(s.c_str(), m) == 0;
 }
 
 bool exists(const std::string& file)
 {
-    return sys::access(file, F_OK);
+    return std::filesystem::exists(file);
 }
 
 std::string getcwd()
 {
-#if defined(__GLIBC__)
-    char* cwd = ::get_current_dir_name();
-    if (cwd == NULL)
-        throw std::system_error(errno, std::system_category(), "cannot get the current working directory");
-    const std::string str(cwd);
-    ::free(cwd);
-    return str;
-#else
-    size_t size = pathconf(".", _PC_PATH_MAX);
-    char *buf = (char *)alloca( size );
-    if (::getcwd(buf, size) == NULL)
-        throw std::system_error(errno, std::system_category(), "cannot get the current working directory");
-    return buf;
-#endif
+    return std::filesystem::current_path().native();
 }
 
 void chdir(const std::string& dir)
 {
-    if (::chdir(dir.c_str()) == -1)
-        throw std::system_error(errno, std::system_category(), "cannot change the current working directory to " + dir);
+    std::filesystem::current_path(dir);
 }
 
-void chroot(const std::string& dir)
+void chroot(const std::filesystem::path& dir)
 {
     if (::chroot(dir.c_str()) == -1)
-        throw std::system_error(errno, std::system_category(), "cannot chroot to " + dir);
+        throw std::system_error(errno, std::system_category(), "cannot chroot to "s + dir.native());
 }
 
 mode_t umask(mode_t mask)
@@ -185,12 +220,57 @@ mode_t umask(mode_t mask)
     return ::umask(mask);
 }
 
-std::string abspath(const std::string& pathname)
+std::filesystem::path abspath(const char* file)
 {
-    if (pathname[0] == '/')
-        return str::normpath(pathname);
-    else
-        return str::normpath(str::joinpath(sys::getcwd(), pathname));
+    return abspath(std::filesystem::path(file));
+}
+std::string abspath(const std::string& path)
+{
+    return abspath(std::filesystem::path(path)).native();
+}
+
+std::filesystem::path abspath(const std::filesystem::path& path)
+{
+    // weakly_canonical is defined as "the result of calling canonical() with a
+    // path argument composed of the leading elements of p that exist (as
+    // determined by status(p) or status(p, ec)), if any, followed by the
+    // elements of p that do not exist."
+    //
+    // This means that if no lead components of the path exist then the
+    // resulting path is not made absolute, and we need to work around that.
+    if (!path.is_absolute())
+        return abspath(std::filesystem::current_path() / path);
+
+    // This is further and needlessly complicated because we need to work
+    // around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118733
+    unsigned retry = 0;
+    while (true)
+    {
+        std::error_code code;
+        auto result = std::filesystem::weakly_canonical(path, code);
+        if (!code)
+        {
+            // fprintf(stderr, "%s: ok in %u tries\n", path.c_str(), retry+1);
+            return result;
+        }
+
+        if (code == std::errc::no_such_file_or_directory)
+        {
+            ++retry;
+            if (retry > 50)
+                throw std::system_error(code);
+        }
+        else
+            throw std::system_error(code);
+    }
+
+    // Alternative implementation that however may not work on all platforms
+    // since, formally, "[std::filesystem::absolute] Implementations are
+    // encouraged to not consider p not existing to be an error", but they do
+    // not mandate it, and if they did, they might still be affected by the
+    // undefined behaviour outlined in https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118733
+    //
+    // return std::filesystem::absolute(path).lexically_normal();
 }
 
 
@@ -198,8 +278,8 @@ std::string abspath(const std::string& pathname)
  * MMap
  */
 
-MMap::MMap(void* addr, size_t length)
-    : addr(addr), length(length)
+MMap::MMap(void* addr_, size_t length_)
+    : addr(addr_), length(length_)
 {
 }
 
@@ -245,10 +325,15 @@ FileDescriptor::FileDescriptor(FileDescriptor&& o)
 {
     o.fd = -1;
 }
-FileDescriptor::FileDescriptor(int fd) : fd(fd) {}
+FileDescriptor::FileDescriptor(int fd_) : fd(fd_) {}
 FileDescriptor::~FileDescriptor() {}
 
 void FileDescriptor::throw_error(const char* desc)
+{
+    throw std::system_error(errno, std::system_category(), desc);
+}
+
+void FileDescriptor::throw_error_string(const std::string& desc)
 {
     throw std::system_error(errno, std::system_category(), desc);
 }
@@ -298,7 +383,7 @@ size_t FileDescriptor::read(void* buf, size_t count)
 
 bool FileDescriptor::read_all_or_retry(void* buf, size_t count)
 {
-    char* dest = (char*)buf;
+    char* dest = static_cast<char*>(buf);
     size_t remaining = count;
     while (remaining > 0)
     {
@@ -350,7 +435,7 @@ size_t FileDescriptor::pwrite(const void* buf, size_t count, off_t offset)
 off_t FileDescriptor::lseek(off_t offset, int whence)
 {
     off_t res = ::lseek(fd, offset, whence);
-    if (res == (off_t)-1)
+    if (res == static_cast<off_t>(-1))
         throw_error("cannot seek");
     return res;
 }
@@ -359,12 +444,12 @@ void FileDescriptor::write_all_or_retry(const void* buf, size_t count)
 {
     size_t written = 0;
     while (written < count)
-        written += write((unsigned char*)buf + written, count - written);
+        written += write(static_cast<const unsigned char*>(buf) + written, count - written);
 }
 
 void FileDescriptor::write_all_or_throw(const void* buf, size_t count)
 {
-    size_t written = write((unsigned char*)buf, count);
+    size_t written = write(static_cast<const unsigned char*>(buf), count);
     if (written < count)
         throw_runtime_error("partial write");
 }
@@ -377,13 +462,13 @@ void FileDescriptor::ftruncate(off_t length)
 
 MMap FileDescriptor::mmap(size_t length, int prot, int flags, off_t offset)
 {
-    void* res =::mmap(0, length, prot, flags, fd, offset);
+    void* res =::mmap(nullptr, length, prot, flags, fd, offset);
     if (res == MAP_FAILED)
         throw_error("cannot mmap");
     return MMap(res, length);
 }
 
-bool FileDescriptor::ofd_setlk(struct flock& lk)
+bool FileDescriptor::ofd_setlk(flock& lk)
 {
 #ifdef F_OFD_SETLK
     if (fcntl(fd, F_OFD_SETLK, &lk) != -1)
@@ -396,7 +481,7 @@ bool FileDescriptor::ofd_setlk(struct flock& lk)
     return false;
 }
 
-bool FileDescriptor::ofd_setlkw(struct flock& lk, bool retry_on_signal)
+bool FileDescriptor::ofd_setlkw(flock& lk, bool retry_on_signal)
 {
     while (true)
     {
@@ -413,7 +498,7 @@ bool FileDescriptor::ofd_setlkw(struct flock& lk, bool retry_on_signal)
     }
 }
 
-bool FileDescriptor::ofd_getlk(struct flock& lk)
+bool FileDescriptor::ofd_getlk(flock& lk)
 {
 #ifdef F_OFD_SETLK
     if (fcntl(fd, F_OFD_GETLK, &lk) == -1)
@@ -438,7 +523,7 @@ void FileDescriptor::setfl(int flags)
         throw_error("cannot set file flags (fcntl F_SETFL)");
 }
 
-void FileDescriptor::futimens(const struct ::timespec ts[2])
+void FileDescriptor::futimens(const ::timespec ts[2])
 {
     if (::futimens(fd, ts) == -1)
         throw_error("cannot change file timestamps");
@@ -461,8 +546,8 @@ void FileDescriptor::fdatasync()
  * PreserveFileTimes
  */
 
-PreserveFileTimes::PreserveFileTimes(FileDescriptor fd)
-    : fd(fd)
+PreserveFileTimes::PreserveFileTimes(FileDescriptor fd_)
+    : fd(fd_)
 {
     struct stat st;
     fd.fstat(st);
@@ -480,13 +565,13 @@ PreserveFileTimes::~PreserveFileTimes()
  * NamedFileDescriptor
  */
 
-NamedFileDescriptor::NamedFileDescriptor(int fd, const std::string& pathname)
-    : FileDescriptor(fd), pathname(pathname)
+NamedFileDescriptor::NamedFileDescriptor(int fd_, const std::filesystem::path& path)
+    : FileDescriptor(fd_), path_(path)
 {
 }
 
 NamedFileDescriptor::NamedFileDescriptor(NamedFileDescriptor&& o)
-    : FileDescriptor(std::move(o)), pathname(std::move(o.pathname))
+    : FileDescriptor(std::move(o)), path_(std::move(o.path_))
 {
 }
 
@@ -494,19 +579,24 @@ NamedFileDescriptor& NamedFileDescriptor::operator=(NamedFileDescriptor&& o)
 {
     if (this == &o) return *this;
     fd = o.fd;
-    pathname = std::move(o.pathname);
+    path_ = std::move(o.path_);
     o.fd = -1;
     return *this;
 }
 
 void NamedFileDescriptor::throw_error(const char* desc)
 {
-    throw std::system_error(errno, std::system_category(), pathname + ": " + desc);
+    throw std::system_error(errno, std::system_category(), path_.native() + ": " + desc);
+}
+
+void NamedFileDescriptor::throw_error_string(const std::string& desc)
+{
+    throw std::system_error(errno, std::system_category(), path_.native() + ": " + desc);
 }
 
 void NamedFileDescriptor::throw_runtime_error(const char* desc)
 {
-    throw std::runtime_error(pathname + ": " + desc);
+    throw std::runtime_error(path_.native() + ": " + desc);
 }
 
 
@@ -524,7 +614,7 @@ ManagedNamedFileDescriptor& ManagedNamedFileDescriptor::operator=(ManagedNamedFi
     if (&o == this) return *this;
     close();
     fd = o.fd;
-    pathname = std::move(o.pathname);
+    path_ = std::move(o.path_);
     o.fd = -1;
     return *this;
 }
@@ -534,28 +624,21 @@ ManagedNamedFileDescriptor& ManagedNamedFileDescriptor::operator=(ManagedNamedFi
  * Path
  */
 
-Path::Path(const char* pathname, int flags, mode_t mode)
-    : ManagedNamedFileDescriptor(-1, pathname)
+Path::Path(const std::filesystem::path& path, int flags, mode_t mode)
+    : ManagedNamedFileDescriptor(-1, path)
 {
     open(flags, mode);
 }
 
-Path::Path(const std::string& pathname, int flags, mode_t mode)
-    : ManagedNamedFileDescriptor(-1, pathname)
-{
-    open(flags, mode);
-}
-
-Path::Path(Path& parent, const char* pathname, int flags, mode_t mode)
-    : ManagedNamedFileDescriptor(parent.openat(pathname, flags | O_PATH, mode),
-            str::joinpath(parent.name(), pathname))
+Path::Path(Path& parent, const char* path, int flags, mode_t mode)
+    : ManagedNamedFileDescriptor(parent.openat(path, flags | O_PATH, mode), parent.path() / path)
 {
 }
 
 void Path::open(int flags, mode_t mode)
 {
     close();
-    fd = ::open(pathname.c_str(), flags | O_PATH, mode);
+    fd = ::open(path_.c_str(), flags | O_PATH, mode);
     if (fd == -1)
         throw_error("cannot open path");
 }
@@ -586,99 +669,98 @@ Path::iterator Path::end()
     return iterator();
 }
 
-int Path::openat(const char* pathname, int flags, mode_t mode)
+int Path::openat(const char* pathname_, int flags, mode_t mode)
 {
-    int res = ::openat(fd, pathname, flags, mode);
+    int res = ::openat(fd, pathname_, flags, mode);
     if (res == -1)
-        throw_error("cannot openat");
+        throw_error_string("cannot openat "s + pathname_);
     return res;
 }
 
-int Path::openat_ifexists(const char* pathname, int flags, mode_t mode)
+int Path::openat_ifexists(const char* pathname_, int flags, mode_t mode)
 {
-    int res = ::openat(fd, pathname, flags, mode);
+    int res = ::openat(fd, pathname_, flags, mode);
     if (res == -1)
     {
         if (errno == ENOENT)
             return -1;
-        throw_error("cannot openat");
+        throw_error_string("cannot openat "s + pathname_);
     }
     return res;
 }
 
-bool Path::faccessat(const char* pathname, int mode, int flags)
+bool Path::faccessat(const char* pathname_, int mode, int flags)
 {
-    return ::faccessat(fd, pathname, mode, flags) == 0;
+    return ::faccessat(fd, pathname_, mode, flags) == 0;
 }
 
-void Path::fstatat(const char* pathname, struct stat& st)
+void Path::fstatat(const char* pathname_, struct stat& st)
 {
-    if (::fstatat(fd, pathname, &st, 0) == -1)
-        throw_error("cannot fstatat");
+    if (::fstatat(fd, pathname_, &st, 0) == -1)
+        throw_error_string("cannot fstatat "s + pathname_);
 }
 
-bool Path::fstatat_ifexists(const char* pathname, struct stat& st)
+bool Path::fstatat_ifexists(const char* pathname_, struct stat& st)
 {
-    if (::fstatat(fd, pathname, &st, 0) == -1)
+    if (::fstatat(fd, pathname_, &st, 0) == -1)
     {
         if (errno == ENOENT)
             return false;
-        throw_error("cannot fstatat");
+        throw_error_string("cannot fstatat "s + pathname_);
     }
     return true;
 }
 
-void Path::lstatat(const char* pathname, struct stat& st)
+void Path::lstatat(const char* pathname_, struct stat& st)
 {
-    if (::fstatat(fd, pathname, &st, AT_SYMLINK_NOFOLLOW) == -1)
-        throw_error("cannot fstatat");
+    if (::fstatat(fd, pathname_, &st, AT_SYMLINK_NOFOLLOW) == -1)
+        throw_error_string("cannot lstatat "s + pathname_);
 }
 
-bool Path::lstatat_ifexists(const char* pathname, struct stat& st)
+bool Path::lstatat_ifexists(const char* pathname_, struct stat& st)
 {
-    if (::fstatat(fd, pathname, &st, AT_SYMLINK_NOFOLLOW) == -1)
+    if (::fstatat(fd, pathname_, &st, AT_SYMLINK_NOFOLLOW) == -1)
     {
         if (errno == ENOENT)
             return false;
-        throw_error("cannot fstatat");
+        throw_error_string("cannot lstatat "s + pathname_);
     }
     return true;
 }
 
-void Path::unlinkat(const char* pathname)
+void Path::unlinkat(const char* pathname_)
 {
-    if (::unlinkat(fd, pathname, 0) == -1)
-        throw_error("cannot unlinkat");
+    if (::unlinkat(fd, pathname_, 0) == -1)
+        throw_error_string("cannot unlinkat "s + pathname_);
 }
 
-void Path::mkdirat(const char* pathname, mode_t mode)
+void Path::mkdirat(const char* pathname_, mode_t mode)
 {
-    if (::mkdirat(fd, pathname, mode) == -1)
-        throw_error("cannot mkdirat");
+    if (::mkdirat(fd, pathname_, mode) == -1)
+        throw_error_string("cannot mkdirat "s + pathname_);
 }
 
-void Path::rmdirat(const char* pathname)
+void Path::rmdirat(const char* pathname_)
 {
-    if (::unlinkat(fd, pathname, AT_REMOVEDIR) == -1)
-        throw_error("cannot unlinkat");
+    if (::unlinkat(fd, pathname_, AT_REMOVEDIR) == -1)
+        throw_error_string("cannot unlinkat directory "s + pathname_);
 }
 
 void Path::symlinkat(const char* target, const char* linkpath)
 {
     if (::symlinkat(target, fd, linkpath) == -1)
-        throw_error("cannot symlinkat");
+        throw_error_string("cannot symlinkat "s + target);
 }
 
-std::string Path::readlinkat(const char* pathname)
+std::string Path::readlinkat(const char* pathname_)
 {
     std::string res(256, 0);
     while (true)
     {
-        // TODO: remove the cast to char* after C++14
-        ssize_t sz = ::readlinkat(fd, pathname, (char*)res.data(), res.size());
+        ssize_t sz = ::readlinkat(fd, pathname_, res.data(), res.size());
         if (sz == -1)
-            throw_error("cannot readlinkat");
-        if (sz < (ssize_t)res.size())
+            throw_error_string("cannot readlinkat "s + pathname_);
+        if (sz < static_cast<ssize_t>(res.size()))
         {
             res.resize(sz);
             return res;
@@ -692,10 +774,10 @@ Path::iterator::iterator()
 {
 }
 
-Path::iterator::iterator(Path& dir)
-    : path(&dir)
+Path::iterator::iterator(Path& dir_)
+    : path(&dir_)
 {
-    this->dir = dir.fdopendir();
+    dir = dir_.fdopendir();
     operator++();
 }
 
@@ -717,7 +799,7 @@ bool Path::iterator::operator!=(const iterator& i) const
     return cur_entry->d_ino != i.cur_entry->d_ino;
 }
 
-void Path::iterator::operator++()
+Path::iterator& Path::iterator::operator++()
 {
     errno = 0;
     cur_entry = readdir(dir);
@@ -731,6 +813,7 @@ void Path::iterator::operator++()
         closedir(dir);
         dir = nullptr;
     }
+    return *this;
 }
 
 bool Path::iterator::isdir() const
@@ -830,7 +913,7 @@ bool Path::iterator::issock() const
 
 Path Path::iterator::open_path(int flags) const
 {
-    return Path(*path, cur_entry->d_name);
+    return Path(*path, cur_entry->d_name, flags);
 }
 
 
@@ -848,12 +931,20 @@ void Path::rmtree()
             unlinkat(i->d_name);
     }
     // TODO: is there a way to do this using fd instead?
-    rmdir(name());
+    std::filesystem::remove(path_);
+}
+
+std::string Path::mkdtemp(const std::filesystem::path& prefix)
+{
+    TempBuffer fbuf(prefix.native().size() + 7);
+    memcpy(fbuf, prefix.native().data(), prefix.native().size());
+    memcpy(fbuf + prefix.native().size(), "XXXXXX", 7);
+    return mkdtemp(fbuf);
 }
 
 std::string Path::mkdtemp(const std::string& prefix)
 {
-    char* fbuf = (char*)alloca(prefix.size() + 7);
+    TempBuffer fbuf(prefix.size() + 7);
     memcpy(fbuf, prefix.data(), prefix.size());
     memcpy(fbuf + prefix.size(), "XXXXXX", 7);
     return mkdtemp(fbuf);
@@ -862,7 +953,7 @@ std::string Path::mkdtemp(const std::string& prefix)
 std::string Path::mkdtemp(const char* prefix)
 {
     size_t prefix_size = strlen(prefix);
-    char* fbuf = (char*)alloca(prefix_size + 7);
+    TempBuffer fbuf(prefix_size + 7);
     memcpy(fbuf, prefix, prefix_size);
     memcpy(fbuf + prefix_size, "XXXXXX", 7);
     return mkdtemp(fbuf);
@@ -872,20 +963,30 @@ std::string Path::mkdtemp(char* pathname_template)
 {
     if (char* pathname = ::mkdtemp(pathname_template))
         return pathname;
-    throw std::system_error(errno, std::system_category(), std::string("mkdtemp failed on ") + pathname_template);
+    throw std::system_error(errno, std::system_category(), "mkdtemp failed on "s + pathname_template);
 }
 
 /*
  * File
  */
 
-File::File(const std::string& pathname)
-    : ManagedNamedFileDescriptor(-1, pathname)
+File::File(const char* path)
+    : ManagedNamedFileDescriptor(-1, path)
 {
 }
 
-File::File(const std::string& pathname, int flags, mode_t mode)
-    : ManagedNamedFileDescriptor(-1, pathname)
+File::File(const std::string& path)
+    : ManagedNamedFileDescriptor(-1, path)
+{
+}
+
+File::File(const std::filesystem::path& path)
+    : ManagedNamedFileDescriptor(-1, path)
+{
+}
+
+File::File(const std::filesystem::path& path, int flags, mode_t mode)
+    : ManagedNamedFileDescriptor(-1, path)
 {
     open(flags, mode);
 }
@@ -893,23 +994,31 @@ File::File(const std::string& pathname, int flags, mode_t mode)
 void File::open(int flags, mode_t mode)
 {
     close();
-    fd = ::open(pathname.c_str(), flags, mode);
+    fd = ::open(path_.c_str(), flags, mode);
     if (fd == -1)
-        throw std::system_error(errno, std::system_category(), "cannot open file " + pathname);
+        throw std::system_error(errno, std::system_category(), "cannot open file "s + path_.native());
 }
 
 bool File::open_ifexists(int flags, mode_t mode)
 {
     close();
-    fd = ::open(pathname.c_str(), flags, mode);
+    fd = ::open(path_.c_str(), flags, mode);
     if (fd != -1) return true;
     if (errno == ENOENT) return false;
-    throw std::system_error(errno, std::system_category(), "cannot open file " + pathname);
+    throw std::system_error(errno, std::system_category(), "cannot open file "s + path_.native());
+}
+
+File File::mkstemp(const std::filesystem::path& prefix)
+{
+    TempBuffer fbuf(prefix.native().size() + 7);
+    memcpy(fbuf, prefix.native().data(), prefix.native().size());
+    memcpy(fbuf + prefix.native().size(), "XXXXXX", 7);
+    return mkstemp(fbuf);
 }
 
 File File::mkstemp(const std::string& prefix)
 {
-    char* fbuf = (char*)alloca(prefix.size() + 7);
+    TempBuffer fbuf(prefix.size() + 7);
     memcpy(fbuf, prefix.data(), prefix.size());
     memcpy(fbuf + prefix.size(), "XXXXXX", 7);
     return mkstemp(fbuf);
@@ -918,7 +1027,7 @@ File File::mkstemp(const std::string& prefix)
 File File::mkstemp(const char* prefix)
 {
     size_t prefix_size = strlen(prefix);
-    char* fbuf = (char*)alloca(prefix_size + 7);
+    TempBuffer fbuf(prefix_size + 7);
     memcpy(fbuf, prefix, prefix_size);
     memcpy(fbuf + prefix_size, "XXXXXX", 7);
     return mkstemp(fbuf);
@@ -928,7 +1037,7 @@ File File::mkstemp(char* pathname_template)
 {
     int fd = ::mkstemp(pathname_template);
     if (fd < 0)
-        throw std::system_error(errno, std::system_category(), std::string("cannot create temporary file ") + pathname_template);
+        throw std::system_error(errno, std::system_category(), "cannot create temporary file "s + pathname_template);
     return File(fd, pathname_template);
 }
 
@@ -938,13 +1047,14 @@ File File::mkstemp(char* pathname_template)
  */
 
 Tempfile::Tempfile() : sys::File(sys::File::mkstemp("")) {}
-Tempfile::Tempfile(const std::string& prefix) : sys::File(sys::File::mkstemp(prefix)) {}
+Tempfile::Tempfile(const std::filesystem::path& prefix) : sys::File(sys::File::mkstemp(prefix)) {}
+Tempfile::Tempfile(const std::string& prefix) : sys::File(sys::File::mkstemp(std::filesystem::path(prefix))) {}
 Tempfile::Tempfile(const char* prefix) : sys::File(sys::File::mkstemp(prefix)) {}
 
 Tempfile::~Tempfile()
 {
     if (m_unlink_on_exit)
-        ::unlink(name().c_str());
+        std::filesystem::remove(path_);
 }
 
 void Tempfile::unlink_on_exit(bool val)
@@ -954,7 +1064,7 @@ void Tempfile::unlink_on_exit(bool val)
 
 void Tempfile::unlink()
 {
-    sys::unlink(name());
+    std::filesystem::remove(path_);
 }
 
 
@@ -963,7 +1073,8 @@ void Tempfile::unlink()
  */
 
 Tempdir::Tempdir() : sys::Path(sys::Path::mkdtemp("")) {}
-Tempdir::Tempdir(const std::string& prefix) : sys::Path(sys::Path::mkdtemp(prefix)) {}
+Tempdir::Tempdir(const std::filesystem::path& prefix) : sys::Path(sys::Path::mkdtemp(prefix)) {}
+Tempdir::Tempdir(const std::string& prefix) : sys::Path(sys::Path::mkdtemp(std::filesystem::path(prefix))) {}
 Tempdir::Tempdir(const char* prefix) : sys::Path(sys::Path::mkdtemp(prefix)) {}
 
 Tempdir::~Tempdir()
@@ -981,7 +1092,17 @@ void Tempdir::rmtree_on_exit(bool val)
 }
 
 
+std::string read_file(const char* file)
+{
+    return read_file(std::filesystem::path(file));
+}
+
 std::string read_file(const std::string& file)
+{
+    return read_file(std::filesystem::path(file));
+}
+
+std::string read_file(const std::filesystem::path& file)
 {
     File in(file, O_RDONLY);
 
@@ -995,27 +1116,62 @@ std::string read_file(const std::string& file)
     // mmap the input file
     MMap src = in.mmap(st.st_size, PROT_READ, MAP_SHARED);
 
-    return std::string((const char*)src, st.st_size);
+    return std::string(static_cast<const char*>(src), st.st_size);
+}
+
+void write_file(const char* file, const std::string& data, mode_t mode)
+{
+    write_file(std::filesystem::path(file), data.data(), data.size(), mode);
 }
 
 void write_file(const std::string& file, const std::string& data, mode_t mode)
+{
+    write_file(std::filesystem::path(file), data.data(), data.size(), mode);
+}
+
+void write_file(const std::filesystem::path& file, const std::string& data, mode_t mode)
 {
     write_file(file, data.data(), data.size(), mode);
 }
 
 void write_file(const std::string& file, const void* data, size_t size, mode_t mode)
 {
+    write_file(std::filesystem::path(file), data, size, mode);
+}
+
+void write_file(const char* file, const void* data, size_t size, mode_t mode)
+{
+    write_file(std::filesystem::path(file), data, size, mode);
+}
+
+void write_file(const std::filesystem::path& file, const void* data, size_t size, mode_t mode)
+{
     File out(file, O_WRONLY | O_CREAT | O_TRUNC, mode);
     out.write_all_or_retry(data, size);
     out.close();
 }
 
+void write_file_atomically(const char* file, const std::string& data, mode_t mode)
+{
+    write_file_atomically(std::filesystem::path(file), data.data(), data.size(), mode);
+}
+
 void write_file_atomically(const std::string& file, const std::string& data, mode_t mode)
+{
+    write_file_atomically(std::filesystem::path(file), data.data(), data.size(), mode);
+}
+
+void write_file_atomically(const std::filesystem::path& file, const std::string& data, mode_t mode)
 {
     write_file_atomically(file, data.data(), data.size(), mode);
 }
 
 void write_file_atomically(const std::string& file, const void* data, size_t size, mode_t mode)
+{
+    write_file_atomically(std::filesystem::path(file), data, size, mode);
+}
+
+void write_file_atomically(const std::filesystem::path& file, const void* data, size_t size, mode_t mode)
 {
     File out = File::mkstemp(file);
 
@@ -1029,8 +1185,8 @@ void write_file_atomically(const std::string& file, const void* data, size_t siz
     out.write_all_or_retry(data, size);
     out.close();
 
-    if (::rename(out.name().c_str(), file.c_str()) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot rename " + out.name() + " to " + file);
+    if (::rename(out.path().c_str(), file.c_str()) < 0)
+        throw std::system_error(errno, std::system_category(), "cannot rename "s + out.path().native() + " to " + file.native());
 }
 
 #if 0
@@ -1042,12 +1198,38 @@ void mkFilePath(const std::string& file)
 }
 #endif
 
+bool unlink_ifexists(const char* file)
+{
+    if (::unlink(file) != 0)
+    {
+        if (errno != ENOENT)
+            throw std::system_error(errno, std::system_category(), "cannot unlink "s + file);
+        else
+            return false;
+    }
+    else
+        return true;
+}
+
 bool unlink_ifexists(const std::string& file)
 {
     if (::unlink(file.c_str()) != 0)
     {
         if (errno != ENOENT)
-            throw std::system_error(errno, std::system_category(), "cannot unlink " + file);
+            throw std::system_error(errno, std::system_category(), "cannot unlink "s + file);
+        else
+            return false;
+    }
+    else
+        return true;
+}
+
+bool unlink_ifexists(const std::filesystem::path& file)
+{
+    if (::unlink(file.c_str()) != 0)
+    {
+        if (errno != ENOENT)
+            throw std::system_error(errno, std::system_category(), "cannot unlink "s + file.native());
         else
             return false;
     }
@@ -1057,16 +1239,15 @@ bool unlink_ifexists(const std::string& file)
 
 void rename(const std::string& src_pathname, const std::string& dst_pathname)
 {
-    if (::rename(src_pathname.c_str(), dst_pathname.c_str()) != 0)
-        throw std::system_error(errno, std::system_category(), "cannot rename " + src_pathname + " to " + dst_pathname);
+    std::filesystem::rename(src_pathname, dst_pathname);
 }
 
-bool rename_ifexists(const std::string& src, const std::string& dst)
+bool rename_ifexists(const std::filesystem::path& src, const std::filesystem::path& dst)
 {
     if (::rename(src.c_str(), dst.c_str()) != 0)
     {
         if (errno != ENOENT)
-            throw std::system_error(errno, std::system_category(), "cannot rename " + src + " to " + dst);
+            throw std::system_error(errno, std::system_category(), "cannot rename "s + src.native() + " to " + dst.native());
         else
             return false;
     }
@@ -1074,90 +1255,40 @@ bool rename_ifexists(const std::string& src, const std::string& dst)
         return true;
 }
 
-void touch(const std::string& pathname, time_t ts)
+void touch(const std::filesystem::path& pathname, time_t ts)
 {
-    struct utimbuf t = { ts, ts };
+    utimbuf t = { ts, ts };
     if (::utime(pathname.c_str(), &t) != 0)
-        throw std::system_error(errno, std::system_category(), "cannot set mtime/atime of " + pathname);
+        throw std::system_error(errno, std::system_category(), "cannot set mtime/atime of "s + pathname.native());
 }
 
-
-template<typename String>
-static bool impl_mkdir_ifmissing(String pathname, mode_t mode)
+bool touch_ifexists(const std::filesystem::path& pathname, time_t ts)
 {
-    for (unsigned i = 0; i < 5; ++i)
+    utimbuf t = { ts, ts };
+    if (::utime(pathname.c_str(), &t) != 0)
     {
-        // If it does not exist, make it
-        if (::mkdir(to_cstring(pathname), mode) != -1)
-            return true;
-
-        // throw on all errors except EEXIST. Note that EEXIST "includes the case
-        // where pathname is a symbolic link, dangling or not."
-        if (errno != EEXIST && errno != EISDIR)
-        {
-            std::stringstream msg;
-            msg << "cannot create directory " << pathname;
-            throw std::system_error(errno, std::system_category(), msg.str());
-        }
-
-        // Ensure that, if dir exists, it is a directory
-        std::unique_ptr<struct stat> st = sys::stat(pathname);
-        if (st.get() == NULL)
-        {
-            // Either dir has just been deleted, or we hit a dangling
-            // symlink.
-            //
-            // Retry creating a directory: the more we keep failing, the more
-            // the likelyhood of a dangling symlink increases.
-            //
-            // We could lstat here, but it would add yet another case for a
-            // race condition if the broken symlink gets deleted between the
-            // stat and the lstat.
-            continue;
-        }
-        else if (!S_ISDIR(st->st_mode))
-        {
-            // If it exists but it is not a directory, complain
-            std::stringstream msg;
-            msg << pathname << " exists but is not a directory";
-            throw std::runtime_error(msg.str());
-        }
-        else
-            // If it exists and it is a directory, we're fine
-            return false;
+        if (errno != ENOENT)
+            throw std::system_error(errno, std::system_category(), "cannot set mtime/atime of "s + pathname.native());
+        return false;
     }
-    std::stringstream msg;
-    msg << pathname << " exists and looks like a dangling symlink";
-    throw std::runtime_error(msg.str());
+    return true;
 }
 
-bool mkdir_ifmissing(const char* pathname, mode_t mode)
+bool mkdir_ifmissing(const std::filesystem::path& path)
 {
-    return impl_mkdir_ifmissing(pathname, mode);
+    return std::filesystem::create_directory(path);
 }
 
-bool mkdir_ifmissing(const std::string& pathname, mode_t mode)
+bool makedirs(const std::filesystem::path& path)
 {
-    return impl_mkdir_ifmissing(pathname, mode);
+    return std::filesystem::create_directories(path);
 }
 
-bool makedirs(const std::string& pathname, mode_t mode)
-{
-    if (pathname == "/" || pathname == ".") return false;
-    std::string parent = str::dirname(pathname);
-
-    // First ensure that the upper path exists
-    makedirs(parent, mode);
-
-    // Then create this dir
-    return mkdir_ifmissing(pathname, mode);
-}
-
-std::string which(const std::string& name)
+std::filesystem::path which(const std::string& name)
 {
     // argv[0] has an explicit path: ensure it becomes absolute
     if (name.find('/') != std::string::npos)
-        return sys::abspath(name);
+        return std::filesystem::absolute(name);
 
     // argv[0] has no explicit path, look for it in $PATH
     const char* path = getenv("PATH");
@@ -1166,27 +1297,27 @@ std::string which(const std::string& name)
     str::Split splitter(path, ":", true);
     for (const auto& i: splitter)
     {
-        std::string candidate = str::joinpath(i, name);
+        auto candidate = std::filesystem::path(i) / name;
         if (sys::access(candidate, X_OK))
-            return sys::abspath(candidate);
+            return std::filesystem::absolute(candidate);
     }
 
     return name;
 }
 
-void unlink(const std::string& pathname)
+void unlink(const std::filesystem::path& pathname)
 {
     if (::unlink(pathname.c_str()) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot unlink " + pathname);
+        throw std::system_error(errno, std::system_category(), "cannot unlink "s + pathname.native());
 }
 
-void rmdir(const std::string& pathname)
+void rmdir(const std::filesystem::path& pathname)
 {
     if (::rmdir(pathname.c_str()) < 0)
-        throw std::system_error(errno, std::system_category(), "cannot rmdir " + pathname);
+        throw std::system_error(errno, std::system_category(), "cannot rmdir "s + pathname.native());
 }
 
-void rmtree(const std::string& pathname)
+void rmtree(const std::filesystem::path& pathname)
 {
     Path path(pathname);
     path.rmtree();
@@ -1194,26 +1325,36 @@ void rmtree(const std::string& pathname)
 
 bool rmtree_ifexists(const std::string& pathname)
 {
+    return rmtree_ifexists(std::filesystem::path(pathname));
+}
+
+bool rmtree_ifexists(const char* pathname)
+{
+    return rmtree_ifexists(std::filesystem::path(pathname));
+}
+
+bool rmtree_ifexists(const std::filesystem::path& pathname)
+{
     int fd = open(pathname.c_str(), O_PATH);
     if (fd == -1)
     {
         if (errno == ENOENT)
             return false;
-        throw std::system_error(errno, std::system_category(), "cannot open path " + pathname);
+        throw std::system_error(errno, std::system_category(), "cannot open path "s + pathname.native());
     }
     Path path(fd, pathname);
     path.rmtree();
     return true;
 }
 
-void clock_gettime(::clockid_t clk_id, struct ::timespec& ts)
+void clock_gettime(::clockid_t clk_id, ::timespec& ts)
 {
     int res = ::clock_gettime(clk_id, &ts);
     if (res == -1)
-        throw std::system_error(errno, std::system_category(), "clock_gettime failed on clock " + std::to_string(clk_id));
+        throw std::system_error(errno, std::system_category(), "clock_gettime failed on clock "s + std::to_string(clk_id));
 }
 
-unsigned long long timesec_elapsed(const struct ::timespec& begin, const struct ::timespec& until)
+unsigned long long timesec_elapsed(const ::timespec& begin, const ::timespec& until)
 {
     if (begin.tv_sec > until.tv_sec)
         return 0;
@@ -1235,15 +1376,15 @@ unsigned long long timesec_elapsed(const struct ::timespec& begin, const struct 
  * Clock
  */
 
-Clock::Clock(clockid_t clk_id)
-    : clk_id(clk_id)
+Clock::Clock(clockid_t clk_id_)
+    : clk_id(clk_id_), ts()
 {
     clock_gettime(clk_id, ts);
 }
 
 unsigned long long Clock::elapsed()
 {
-    struct timespec cur_ts;
+    timespec cur_ts;
     clock_gettime(clk_id, cur_ts);
     return timesec_elapsed(ts, cur_ts);
 }
@@ -1253,20 +1394,20 @@ unsigned long long Clock::elapsed()
  * rlimit
  */
 
-void getrlimit(int resource, struct ::rlimit& rlim)
+void getrlimit(int resource, ::rlimit& rlim)
 {
     if (::getrlimit(resource, &rlim) == -1)
         throw std::system_error(errno, std::system_category(), "getrlimit failed");
 }
 
-void setrlimit(int resource, const struct ::rlimit& rlim)
+void setrlimit(int resource, const ::rlimit& rlim)
 {
     if (::setrlimit(resource, &rlim) == -1)
         throw std::system_error(errno, std::system_category(), "setrlimit failed");
 }
 
-OverrideRlimit::OverrideRlimit(int resource, rlim_t rlim)
-    : resource(resource)
+OverrideRlimit::OverrideRlimit(int resource_, rlim_t rlim)
+    : resource(resource_), orig()
 {
     getrlimit(resource, orig);
     set(rlim);
@@ -1279,9 +1420,53 @@ OverrideRlimit::~OverrideRlimit()
 
 void OverrideRlimit::set(rlim_t rlim)
 {
-    struct rlimit newval(orig);
+    rlimit newval(orig);
     newval.rlim_cur = rlim;
     setrlimit(resource, newval);
+}
+
+
+/*
+ * OverrideEnvironment
+ */
+
+OverrideEnvironment::OverrideEnvironment(const std::string& name_)
+    : name(name_)
+{
+    char* old_val = getenv(name.c_str());
+    if (old_val)
+    {
+        was_set = true;
+        orig_value = old_val;
+    }
+    if (::unsetenv(name.c_str()) == -1)
+        throw std::system_error(errno, std::system_category(), "unsetenv " + name + " failed");
+}
+
+OverrideEnvironment::OverrideEnvironment(const std::string& name_, const std::string& value)
+    : name(name_)
+{
+    char* old_val = getenv(name.c_str());
+    if (old_val)
+    {
+        was_set = true;
+        orig_value = old_val;
+    }
+    if (::setenv(name.c_str(), value.c_str(), 1) == -1)
+        throw std::system_error(errno, std::system_category(), "setenv " + name + "=" + value + " failed");
+}
+
+OverrideEnvironment::~OverrideEnvironment()
+{
+    if (was_set)
+        setenv(name.c_str(), orig_value.c_str(), 1);
+    else
+        unsetenv(name.c_str());
+}
+
+void breakpoint()
+{
+    raise(SIGTRAP);
 }
 
 }

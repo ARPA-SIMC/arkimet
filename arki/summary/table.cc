@@ -233,7 +233,7 @@ void Table::merge(const structured::Keys& keys, const structured::Reader& val)
     merge(new_row);
 }
 
-bool Table::merge_yaml(LineReader& in, const std::string& filename)
+bool Table::merge_yaml(LineReader& in, const std::filesystem::path& filename)
 {
     Row new_row;
     new_row.set_to_zero();

@@ -1,14 +1,15 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/core/file.h"
 #include "arki/stream.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher/parser.h"
 #include "arki/summary.h"
+#include "arki/nag.h"
 #include "arki/scan.h"
 #include "arki/scan/validator.h"
 #include "arki/types/source.h"
@@ -40,14 +41,14 @@ struct FixtureReader : public DatasetTest
             step = daily
             unique = product, area, reftime
         )");
-        if (td.format == "vm2")
+        if (td.format == DataFormat::VM2)
             cfg->set("smallfiles", "true");
         import_all_packed(td.mds);
     }
 
     bool smallfiles() const
     {
-        return cfg->value_bool("smallfiles") || (td.format == "vm2" && cfg->value("type") == "simple");
+        return cfg->value_bool("smallfiles") || (td.format == DataFormat::VM2 && cfg->value("type") == "simple");
     }
 };
 
@@ -60,23 +61,17 @@ class TestsReader : public FixtureTestCase<FixtureReader<Data>>
     void register_tests() override;
 };
 
-TestsReader<GRIBData> test_reader_grib_simple_plain("arki_dataset_reader_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<GRIBData> test_reader_grib_simple_sqlite("arki_dataset_reader_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<GRIBData> test_reader_grib_simple("arki_dataset_reader_grib_simple", "type=simple");
 TestsReader<GRIBData> test_reader_grib_iseg("arki_dataset_reader_grib_iseg", "type=iseg\nformat=grib\n");
-TestsReader<BUFRData> test_reader_bufr_simple_plain("arki_dataset_reader_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<BUFRData> test_reader_bufr_simple_sqlite("arki_dataset_reader_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<BUFRData> test_reader_bufr_simple("arki_dataset_reader_bufr_simple", "type=simple");
 TestsReader<BUFRData> test_reader_bufr_iseg("arki_dataset_reader_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsReader<VM2Data> test_reader_vm2_simple_plain("arki_dataset_reader_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<VM2Data> test_reader_vm2_simple_sqlite("arki_dataset_reader_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<VM2Data> test_reader_vm2_simple("arki_dataset_reader_vm2_simple", "type=simple");
 TestsReader<VM2Data> test_reader_vm2_iseg("arki_dataset_reader_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsReader<ODIMData> test_reader_odim_simple_plain("arki_dataset_reader_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<ODIMData> test_reader_odim_simple_sqlite("arki_dataset_reader_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<ODIMData> test_reader_odim_simple("arki_dataset_reader_odim_simple", "type=simple");
 TestsReader<ODIMData> test_reader_odim_iseg("arki_dataset_reader_odim_iseg", "type=iseg\nformat=odimh5\n");
-TestsReader<NCData> test_reader_nc_simple_plain("arki_dataset_reader_nc_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<NCData> test_reader_nc_simple_sqlite("arki_dataset_reader_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<NCData> test_reader_nc_simple("arki_dataset_reader_nc_simple", "type=simple");
 TestsReader<NCData> test_reader_nc_iseg("arki_dataset_reader_nc_iseg", "type=iseg\nformat=nc\n");
-TestsReader<JPEGData> test_reader_jpeg_simple_plain("arki_dataset_reader_jpeg_simple_plain", "type=simple\nindex_type=plain\n");
-TestsReader<JPEGData> test_reader_jpeg_simple_sqlite("arki_dataset_reader_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsReader<JPEGData> test_reader_jpeg_simple("arki_dataset_reader_jpeg_simple", "type=simple");
 TestsReader<JPEGData> test_reader_jpeg_iseg("arki_dataset_reader_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 template<class Data>
@@ -103,7 +98,7 @@ this->add_method("querydata", [](Fixture& f) {
         Matcher matcher = parser.parse(f.matchers[i]);
 
         // Check that what we imported can be queried
-        metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
+        metadata::Collection mdc(*ds, query::Data(matcher, true));
         wassert(actual(mdc.size()) == 1u);
 
         // Check that the result matches what was imported
@@ -162,7 +157,7 @@ this->add_method("querybytes", [](Fixture& f) {
         Matcher matcher = parser.parse(f.matchers[i]);
 
         // Query into a file
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(matcher);
         auto out = std::make_shared<sys::File>("testdata", O_WRONLY | O_CREAT | O_TRUNC);
         auto strm = StreamOutput::create(out);
@@ -190,14 +185,14 @@ this->add_method("query_data", [](Fixture& f) {
 
     std::vector<uint8_t> buf;
     auto out = StreamOutput::create(buf);
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(matcher);
     reader->query_bytes(bq, *out);
 
     std::vector<uint8_t> data = f.td.mds[1].get_data().read();
     // Add a newline in case of VM2, because get_data() gives us the minimal
     // VM2 without newline
-    if (f.td.format == "vm2")
+    if (f.td.format == DataFormat::VM2)
         data.emplace_back('\n');
     wassert(actual(buf) == data);
 });
@@ -210,7 +205,7 @@ this->add_method("query_inline", [](Fixture& f) {
 
     auto reader(f.config().create_reader());
 
-    metadata::Collection mdc(*reader, dataset::DataQuery(matcher, true));
+    metadata::Collection mdc(*reader, query::Data(matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -233,7 +228,7 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
     auto ds(f.config().create_reader());
 
     // Query everything
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(Matcher());
     auto out = std::make_shared<sys::File>("tempdata", O_WRONLY | O_CREAT | O_TRUNC);
     auto strm = StreamOutput::create(out);
@@ -246,13 +241,13 @@ this->add_method("querybytes_integrity", [](Fixture& f) {
         total_size += f.td.mds[i].sourceBlob().size;
     // We use >= and not == because some data sources add extra information
     // to data, like line endings for VM2
-    wassert(actual(sys::size(out->name())) >= total_size);
+    wassert(actual(sys::size(out->path())) >= total_size);
 
     // Check that they can be scanned again
     // Read chunks from tempdata and scan them individually, to allow scanning
     // formats like ODIM that do not support concatenation
     unsigned padding = 0;
-    if (f.td.format == "vm2")
+    if (f.td.format == DataFormat::VM2)
         padding = 1;
     std::vector<uint8_t> buf1(f.td.mds[1].sourceBlob().size + padding);
     std::vector<uint8_t> buf2(f.td.mds[0].sourceBlob().size + padding);
@@ -284,12 +279,12 @@ this->add_method("postprocess", [](Fixture& f) {
 
     // Do a simple export first, to get the exact metadata that would come
     // out
-    metadata::Collection mdc(*ds, dataset::DataQuery(matcher, true));
+    metadata::Collection mdc(*ds, query::Data(matcher, true));
     wassert(actual(mdc.size()) == 1u);
 
     // Then do a postprocessed query_bytes
 
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setPostprocess(matcher, "testcountbytes");
     auto strm = StreamOutput::create(std::make_shared<Stderr>());
     ds->query_bytes(bq, *strm);
@@ -300,7 +295,7 @@ this->add_method("postprocess", [](Fixture& f) {
     auto copy(mdc[0].clone());
     copy->makeInline();
     char buf[32];
-    snprintf(buf, 32, "%zd\n", copy->encodeBinary().size() + copy->data_size());
+    snprintf(buf, 32, "%zu\n", copy->encodeBinary().size() + copy->data_size());
     wassert(actual(out) == buf);
 });
 
@@ -311,7 +306,7 @@ this->add_method("locked", [](Fixture& f) {
 
     // Try to read from it, it should still work with WAL
     auto rds(f.config().create_reader());
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(Matcher());
     auto out = StreamOutput::create_discard();
     rds->query_bytes(bq, *out);
@@ -322,7 +317,7 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
+    reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         auto data = md->get_data().read();
         wassert(actual(data) == orig_data);
         ++count;
@@ -334,42 +329,36 @@ this->add_method("interrupted_read", [](Fixture& f) {
 
 this->add_method("read_missing_segment", [](Fixture& f) {
     // Delete a segment, leaving it in the index
-    f.session()->segment_checker(f.td.format, f.local_config()->path, f.import_results[0]->sourceBlob().filename)->remove();
+    auto segment = f.segment_session()->segment_from_relpath_and_format(f.import_results[0].sourceBlob().filename, f.td.format);
+    f.segment_session()->segment_data_checker(segment)->remove();
 
     unsigned count_ok = 0;
-    unsigned count_err = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
-        try {
+    {
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
             md->get_data().read();
             ++count_ok;
-        } catch (std::runtime_error& e) {
-            wassert(actual(e.what()).contains("the segment has disappeared"));
-            ++count_err;
-        }
-        return true;
-    });
-
-    if (f.smallfiles())
-    {
-        wassert(actual(count_ok) == 3u);
-        wassert(actual(count_err) == 0u);
-    } else {
-        wassert(actual(count_ok) == 2u);
-        wassert(actual(count_err) == 1u);
+            return true;
+        });
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-08\\.\\w+: segment data is not available"));
+        nag_messages.collected.clear();
     }
+    wassert(actual(count_ok) == 2u);
 });
 
 this->add_method("issue116", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data("reftime:==13:00", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:==13:00", [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 
 this->add_method("issue213_manyquery", [](Fixture& f) {
     matcher::Parser parser;
-    dataset::DataQuery dq(parser.parse("reftime:==13:00"), true);
+    query::Data dq(parser.parse("reftime:==13:00"), true);
     auto reader = f.dataset_config()->create_reader();
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
@@ -378,7 +367,7 @@ this->add_method("issue213_manyquery", [](Fixture& f) {
 
 this->add_method("issue213_manyds", [](Fixture& f) {
     matcher::Parser parser;
-    dataset::DataQuery dq(parser.parse("reftime:==13:00"), true);
+    query::Data dq(parser.parse("reftime:==13:00"), true);
     metadata::Collection coll;
     for (unsigned i = 0; i < 2000; ++i)
     {
@@ -390,43 +379,43 @@ this->add_method("issue213_manyds", [](Fixture& f) {
 this->add_method("issue215", [](Fixture& f) {
     unsigned count = 0;
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data("reftime:;area:GRIB: or VM2:", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data("reftime:;area:GRIB: or VM2:", [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 
 this->add_method("progress", [](Fixture& f) {
     auto reader = f.dataset_config()->create_reader();
 
-    struct TestProgress : public dataset::QueryProgress
+    struct TestProgress : public query::Progress
     {
-        using dataset::QueryProgress::count;
-        using dataset::QueryProgress::bytes;
+        using query::Progress::count;
+        using query::Progress::bytes;
         unsigned start_called = 0;
         unsigned update_called = 0;
         unsigned done_called = 0;
 
         void start(size_t expected_count=0, size_t expected_bytes=0) override
         {
-            QueryProgress::start(expected_count, expected_bytes);
+            query::Progress::start(expected_count, expected_bytes);
             ++start_called;
         }
         void update(size_t count, size_t bytes) override
         {
-            QueryProgress::update(count, bytes);
+            query::Progress::update(count, bytes);
             ++update_called;
         }
         void done() override
         {
-            QueryProgress::done();
+            query::Progress::done();
             ++done_called;
         }
     };
     auto progress = make_shared<TestProgress>();
 
-    dataset::DataQuery dq;
+    query::Data dq;
     dq.progress = progress;
     size_t count = 0;
-    reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(dq, [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
     wassert(actual(progress->count) == 3u);
     wassert(actual(progress->bytes) > 90u);
@@ -436,7 +425,7 @@ this->add_method("progress", [](Fixture& f) {
 
 
     progress = make_shared<TestProgress>();
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.progress = progress;
     auto out = StreamOutput::create_discard();
     reader->query_bytes(bq, *out);
@@ -459,7 +448,7 @@ this->add_method("progress", [](Fixture& f) {
     auto progress1 = make_shared<TestProgressThrowing>();
     dq.progress = progress1;
     count = 0;
-    auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { ++count; return true; }));
+    auto e = wassert_throws(std::runtime_error, reader->query_data(dq, [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; }));
     wassert(actual(e.what()) = "Expected error");
 
     progress1 = make_shared<TestProgressThrowing>();

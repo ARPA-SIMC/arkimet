@@ -2,7 +2,7 @@
 #include <sys/time.h>
 #include <sstream>
 
-#if __xlC__
+#ifdef __xlC__
 // From glibc
 #define timersub(a, b, result)                                                \
   do {                                                                        \

@@ -8,6 +8,7 @@
 #include <arki/structured/fwd.h>
 #include <arki/stream/fwd.h>
 #include <memory>
+#include <set>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -58,11 +59,20 @@ std::string formatCode(const Code& c);
 static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return o << formatCode(c); }
 
 /**
+ * Convert a [comma and optional spaces]-separated string with metadata
+ * component names into a set of type codes
+ */
+std::set<Code> parse_code_names(const std::string& names);
+
+/**
  * Base class for implementing arkimet metadata types
  */
 class Type
 {
 public:
+    Type() = default;
+    Type(const Type&) = default;
+    Type(Type&&) = default;
     virtual ~Type() {}
 
     /**

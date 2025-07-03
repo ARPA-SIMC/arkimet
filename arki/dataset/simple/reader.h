@@ -4,44 +4,38 @@
 /// Reader for simple datasets with no duplicate checks
 
 #include <arki/dataset/simple.h>
+#include <arki/dataset/simple/manifest.h>
 #include <arki/dataset/impl.h>
 #include <string>
 
-namespace arki {
-namespace dataset {
-namespace index {
-class Manifest;
-}
-namespace simple {
+namespace arki::dataset::simple {
 
 class Reader : public DatasetAccess<simple::Dataset, segmented::Reader>
 {
 protected:
-    Index* m_idx = nullptr;
-    index::Manifest* m_mft = nullptr;
+    manifest::Reader manifest;
 
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    void query_segments_for_summary(const Matcher& matcher, Summary& summary, std::shared_ptr<core::ReadLock> lock);
+    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:
-    Reader(std::shared_ptr<simple::Dataset> dataset);
+    explicit Reader(std::shared_ptr<simple::Dataset> dataset);
     virtual ~Reader();
 
     std::string type() const override;
 
     core::Interval get_stored_time_interval() override;
 
-    static bool is_dataset(const std::string& dir);
+    static bool is_dataset(const std::filesystem::path& dir);
 
     /**
      * Return true if this dataset has a working index.
      *
      * This method is mostly used for tests.
      */
-    bool hasWorkingIndex() const { return m_idx != 0; }
+    bool hasWorkingIndex() const;
 };
 
-}
-}
 }
 #endif

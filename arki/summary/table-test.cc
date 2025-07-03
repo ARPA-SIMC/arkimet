@@ -29,7 +29,7 @@ void fill_md(Metadata& md)
 
 void fill_with_6_samples(Table& root)
 {
-    metadata::test::Generator gen("grib1");
+    metadata::test::Generator gen(DataFormat::GRIB, 1);
     gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
     gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
     gen.add(TYPE_PRODUCT, "GRIB1(200, 0, 1)");
@@ -43,7 +43,7 @@ void fill_with_6_samples(Table& root)
 
 void fill_with_27_samples(Table& root)
 {
-    metadata::test::Generator gen("grib1");
+    metadata::test::Generator gen(DataFormat::GRIB, 1);
     gen.add(TYPE_ORIGIN, "GRIB1(200, 0, 1)");
     gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 1)");
     gen.add(TYPE_ORIGIN, "GRIB1(98, 0, 2)");

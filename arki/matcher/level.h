@@ -13,7 +13,7 @@ namespace matcher {
 struct MatchLevel : public Implementation
 {
     MatchLevel* clone() const override = 0;
-    std::string name() const;
+    std::string name() const override;
 
     static Implementation* parse(const std::string& pattern);
     static void init();

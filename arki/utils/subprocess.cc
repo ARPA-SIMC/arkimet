@@ -285,7 +285,7 @@ void Child::post_fork_child()
         long max = sysconf(_SC_OPEN_MAX);
         if (errno == 0)
         {
-            for (long i = 3; i < max; ++i)
+            for (int i = 3; i < max; ++i)
             {
                 if (std::find(pass_fds.begin(), pass_fds.end(), i) != pass_fds.end())
                     continue;
@@ -304,7 +304,7 @@ void Child::post_fork_child()
 
     // Honor start_new_session
     if (start_new_session)
-        if (setsid() == (pid_t)-1)
+        if (setsid() == -1)
             throw std::system_error(errno, std::system_category(), "cannot call setsid()");
 }
 
@@ -416,7 +416,7 @@ bool Child::wait(int msecs)
     // this is the old complex logic needed to support old kernels without
     // pidfd_open
 
-    struct timespec timeout = { msecs / 1000, (msecs % 1000) * 1000000 };
+    ::timespec timeout = { msecs / 1000, (msecs % 1000) * 1000000 };
 
     while (true)
     {
@@ -437,7 +437,7 @@ bool Child::wait(int msecs)
 
         // res == 0: child is still running. Wait for completion
 
-        struct timespec remaining;
+        ::timespec remaining;
 
         enable_sigchld es;
         int sres = nanosleep(&timeout, &remaining);
@@ -493,8 +493,8 @@ std::string Child::format_raw_returncode(int raw_returncode)
 }
 
 
-Popen::Popen(std::initializer_list<std::string> args)
-    : args(args)
+Popen::Popen(std::initializer_list<std::string> args_)
+    : args(args_), executable(), env()
 {
 }
 
@@ -547,12 +547,12 @@ int Popen::main() noexcept
                 // We can just store a pointer to the internal strings, since later
                 // we're calling exec and no destructors will be called
                 exec_env[i] = env[i].c_str();
-            exec_env[env.size()] = 0;
+            exec_env[env.size()] = nullptr;
         }
 
         if (exec_env)
         {
-            if (execvpe(path, (char* const*)exec_args, (char* const*)exec_env) == -1)
+            if (execvpe(path, const_cast<char* const*>(exec_args), const_cast<char* const*>(exec_env)) == -1)
             {
                 delete[] exec_args;
                 delete[] exec_env;
@@ -561,7 +561,7 @@ int Popen::main() noexcept
                         "execvpe failed");
             }
         } else {
-            if (execvp(path, (char* const*)exec_args) == -1)
+            if (execvp(path, const_cast<char* const*>(exec_args)) == -1)
             {
                 delete[] exec_args;
                 throw std::system_error(

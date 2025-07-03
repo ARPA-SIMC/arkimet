@@ -19,7 +19,7 @@ namespace dataset {
 namespace outbound {
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : segmented::Dataset(session, cfg)
+    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg), cfg)
 {
 }
 
@@ -31,7 +31,7 @@ Writer::Writer(std::shared_ptr<Dataset> dataset)
     : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 }
 
 Writer::~Writer()
@@ -40,37 +40,26 @@ Writer::~Writer()
 
 std::string Writer::type() const { return "outbound"; }
 
-void Writer::storeBlob(const segment::WriterConfig& writer_config, Metadata& md, const std::string& reldest)
-{
-    // Write using segment::Writer
-    core::Time time = md.get<types::reftime::Position>()->get_Position();
-    std::string relpath = dataset().step()(time) + "." + md.source().format;
-    auto w = dataset().session->segment_writer(writer_config, md.source().format, dataset().path, relpath);
-    w->append(md);
-}
-
-WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
+metadata::Inbound::Result Writer::acquire(Metadata& md, const AcquireConfig& cfg)
 {
     acct::acquire_single_count.incr();
     auto age_check = dataset().check_acquire_age(md);
     if (age_check.first) return age_check.second;
 
     core::Time time = md.get<types::reftime::Position>()->get_Position();
-    string reldest = dataset().step()(time);
-    string dest = dataset().path + "/" + reldest;
-
-    sys::makedirs(str::dirname(dest));
+    auto segment = dataset().segment_session->segment_from_relpath_and_format(dataset().step()(time), md.source().format);
+    std::filesystem::create_directories(segment->abspath().parent_path());
 
     segment::WriterConfig writer_config;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
-    writer_config.eatmydata = dataset().eatmydata;
 
     try {
-        storeBlob(writer_config, md, reldest);
-        return ACQ_OK;
+        auto w = dataset().segment_session->segment_data_writer(segment, writer_config);
+        w->append(md);
+        return metadata::Inbound::Result::OK;
     } catch (std::exception& e) {
         md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return ACQ_ERROR;
+        return metadata::Inbound::Result::ERROR;
     }
 
     // This should never be reached, but we throw an exception to avoid a
@@ -78,40 +67,40 @@ WriterAcquireResult Writer::acquire(Metadata& md, const AcquireConfig& cfg)
     throw std::runtime_error("this code path should never be reached (it is here to appease a compiler warning)");
 }
 
-void Writer::acquire_batch(WriterBatch& batch, const AcquireConfig& cfg)
+void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
     for (auto& e: batch)
     {
-        e->dataset_name.clear();
-        e->result = acquire(e->md, cfg);
-        if (e->result == ACQ_OK)
-            e->dataset_name = name();
+        e->destination.clear();
+        e->result = acquire(*e->md, cfg);
+        if (e->result == metadata::Inbound::Result::OK)
+            e->destination = name();
     }
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     std::shared_ptr<const outbound::Dataset> config(new outbound::Dataset(session, cfg));
     for (auto& e: batch)
     {
-        auto age_check = config->check_acquire_age(e->md);
+        auto age_check = config->check_acquire_age(*e->md);
         if (age_check.first)
         {
             e->result = age_check.second;
-            if (age_check.second == ACQ_OK)
-                e->dataset_name = config->name();
+            if (age_check.second == metadata::Inbound::Result::OK)
+                e->destination = config->name();
             else
-                e->dataset_name.clear();
+                e->destination.clear();
             continue;
         }
 
-        core::Time time = e->md.get<types::reftime::Position>()->get_Position();
+        core::Time time = e->md->get<types::reftime::Position>()->get_Position();
         auto tf = Step::create(cfg.value("step"));
-        string dest = cfg.value("path") + "/" + (*tf)(time) + "." + e->md.source().format;
+        auto dest = std::filesystem::path(cfg.value("path")) / sys::with_suffix((*tf)(time), "."s + format_name(e->md->source().format));
         nag::verbose("Assigning to dataset %s in file %s", cfg.value("name").c_str(), dest.c_str());
-        e->result = ACQ_OK;
-        e->dataset_name = config->name();
+        e->result = metadata::Inbound::Result::OK;
+        e->destination = config->name();
     }
 }
 

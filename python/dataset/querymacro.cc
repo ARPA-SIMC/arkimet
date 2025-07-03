@@ -12,7 +12,7 @@ namespace python {
 
 namespace {
 
-PyObject* instantiate_qmacro_pydataset(const std::string& source, std::shared_ptr<arki::dataset::QueryMacro> dataset)
+PyObject* instantiate_qmacro_pydataset(const std::filesystem::path& source, std::shared_ptr<arki::dataset::QueryMacro> dataset)
 {
     // Check if the qmacro module had already been imported
     std::string module_name = "arki.python.dataset.qmacro." + dataset->name();

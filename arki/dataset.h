@@ -8,6 +8,7 @@
 #include <arki/core/transaction.h>
 #include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/metadata/inbound.h>
 #include <arki/dataset/fwd.h>
 #include <string>
 #include <vector>
@@ -69,6 +70,9 @@ protected:
     /// Dataset name
     std::string m_name;
 
+    /// Dataset intended usage
+    DatasetUse m_use;
+
 public:
     /// Work session
     std::shared_ptr<Session> session;
@@ -83,6 +87,9 @@ public:
 
     /// Return the dataset name
     std::string name() const;
+
+    /// Return the intended dataset use
+    DatasetUse use() const;
 
     virtual std::shared_ptr<Reader> create_reader();
     virtual std::shared_ptr<Writer> create_writer();
@@ -142,7 +149,7 @@ protected:
      * Returns true if dest always returned true, false if iteration stopped
      * because dest returned false.
      */
-    virtual bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool impl_query_data(const query::Data& q, metadata_dest_func dest) = 0;
 
     /**
      * Add to summary the summary of the data that would be extracted with the
@@ -156,7 +163,7 @@ protected:
      *
      * The default implementation in Reader is based on queryData.
      */
-    virtual void impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out);
+    virtual void impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out);
 
 public:
     using Base::Base;
@@ -177,7 +184,7 @@ public:
      * Returns true if dest always returned true, false if iteration stopped
      * because dest returned false.
      */
-    bool query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+    bool query_data(const query::Data& q, metadata_dest_func dest)
     {
         return impl_query_data(q, dest);
     }
@@ -203,7 +210,7 @@ public:
      *
      * The default implementation in Reader is based on queryData.
      */
-    void query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+    void query_bytes(const query::Bytes& q, StreamOutput& out)
     {
         return impl_stream_query_bytes(q, out);
     }
@@ -216,51 +223,10 @@ public:
     virtual core::Interval get_stored_time_interval() = 0;
 };
 
-struct WriterBatchElement
-{
-    /// Metadata to acquire
-    Metadata& md;
-    /// Name of the dataset where it has been acquired (empty when not
-    /// acquired)
-    std::string dataset_name;
-    /// Acquire result
-    WriterAcquireResult result = ACQ_ERROR;
-
-    WriterBatchElement(Metadata& md) : md(md) {}
-    WriterBatchElement(const WriterBatchElement& o) = default;
-    WriterBatchElement(WriterBatchElement&& o) = default;
-    WriterBatchElement& operator=(const WriterBatchElement& o) = default;
-    WriterBatchElement& operator=(WriterBatchElement&& o) = default;
-};
-
-class WriterBatch : public std::vector<std::shared_ptr<WriterBatchElement>>
-{
-public:
-    /**
-     * Set all elements in the batch to ACQ_ERROR
-     */
-    void set_all_error(const std::string& note);
-};
-
-
-enum ReplaceStrategy {
-    /// Default strategy, as configured in the dataset
-    REPLACE_DEFAULT,
-    /// Never replace
-    REPLACE_NEVER,
-    /// Always replace
-    REPLACE_ALWAYS,
-    /**
-     * Replace if update sequence number is higher (do not replace if USN
-     * not available)
-     */
-    REPLACE_HIGHER_USN,
-};
-
 
 struct AcquireConfig
 {
-    ReplaceStrategy replace=REPLACE_DEFAULT;
+    ReplaceStrategy replace=ReplaceStrategy::DEFAULT;
     bool drop_cached_data_on_commit=false;
 
     AcquireConfig() = default;
@@ -278,17 +244,6 @@ public:
     using Base::Base;
 
     /**
-     * Acquire the given metadata item (and related data) in this dataset.
-     *
-     * After acquiring the data successfully, the data can be retrieved from
-     * the dataset.  Also, information such as the dataset name and the id of
-     * the data in the dataset are added to the Metadata object.
-     *
-     * @return The outcome of the operation.
-     */
-    virtual WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) = 0;
-
-    /**
      * Acquire the given metadata items (and related data) in this dataset.
      *
      * After acquiring the data successfully, the data can be retrieved from
@@ -298,7 +253,7 @@ public:
      * @return The outcome of the operation, as a vector with an WriterAcquireResult
      * for each metadata in the collection.
      */
-    virtual void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
+    virtual void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) = 0;
 
     /**
      * Flush pending changes to disk
@@ -319,7 +274,7 @@ public:
      *
      * No change of any kind happens to the dataset.
      */
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 struct CheckerConfig

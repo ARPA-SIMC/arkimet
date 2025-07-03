@@ -5,17 +5,12 @@
 
 #include <arki/dataset.h>
 #include <arki/core/fwd.h>
+#include <arki/metadata/fwd.h>
+#include <arki/matcher/fwd.h>
+#include <filesystem>
 #include <string>
 
-namespace arki {
-class Metadata;
-class Matcher;
-
-namespace dataset {
-class Lock;
-class ReadLock;
-class AppendLock;
-class CheckLock;
+namespace arki::dataset {
 
 namespace archive {
 class Dataset;
@@ -32,7 +27,7 @@ protected:
 
 public:
     /// Root path of the dataset
-    std::string path;
+    std::filesystem::path path;
 
     int archive_age = -1;
     int delete_age = -1;
@@ -48,20 +43,14 @@ public:
      *
      * If it is not, returns false and WriterAcquireResult should be ignored.
      */
-    std::pair<bool, WriterAcquireResult> check_acquire_age(Metadata& md) const;
+    // TODO: change to use a metadata::Inbound
+    std::pair<bool, metadata::Inbound::Result> check_acquire_age(Metadata& md) const;
 
     /// Return the Archives for this dataset
-    std::shared_ptr<archive::Dataset> archive();
+    virtual std::shared_ptr<archive::Dataset> archive();
 
     /// Check if the dataset has archived data
     bool hasArchive() const;
-
-    /**
-     * Create/open a dataset-wide lockfile, returning the Lock instance
-     */
-    std::shared_ptr<dataset::ReadLock> read_lock_segment(const std::string& relpath) const;
-    std::shared_ptr<dataset::AppendLock> append_lock_segment(const std::string& relpath) const;
-    std::shared_ptr<dataset::CheckLock> check_lock_segment(const std::string& relpath) const;
 };
 
 template<typename Parent>
@@ -83,7 +72,7 @@ class Reader : public Base<dataset::Reader>
 
 protected:
     // Base implementations that queries the archives if they exist
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
 
     // Base implementations that queries the archives if they exist
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
@@ -96,9 +85,9 @@ public:
     std::shared_ptr<dataset::Reader> archive();
 
     /// Read the configuration for the given dataset. path must point to a directory
-    static std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
+    static std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
 
-    static std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
 };
 
 class Writer : public Base<dataset::Writer>
@@ -107,7 +96,7 @@ public:
     using Base::Base;
     ~Writer();
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
 class Checker : public Base<dataset::Checker>
@@ -132,7 +121,6 @@ public:
     void state(CheckerConfig& opts) override;
 };
 
-}
 }
 }
 #endif

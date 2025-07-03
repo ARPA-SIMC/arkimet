@@ -51,7 +51,7 @@ std::string List::repr() const
     return res;
 }
 
-core::Time List::as_time(const char* desc) const
+core::Time List::scalar_as_time(const char* desc) const
 {
     if (size() < 6)
         throw std::invalid_argument("cannot decode time: list has " + std::to_string(size()) + " elements instead of 6");
@@ -66,7 +66,7 @@ core::Time List::as_time(const char* desc) const
     return res;
 }
 
-std::unique_ptr<types::Type> List::as_type(unsigned idx, const char* desc, const structured::Keys& keys) const
+std::unique_ptr<types::Type> List::list_as_type(unsigned idx, const char* desc, const structured::Keys& keys) const
 {
     return types::decode_structure(keys, *val[idx]);
 }
@@ -115,7 +115,7 @@ void Mapping::add_val(const memory::Node* n)
     }
 }
 
-bool Mapping::has_key(const std::string& key, NodeType type) const
+bool Mapping::dict_has_key(const std::string& key, NodeType type) const
 {
     auto i = val.find(key);
     if (i == val.end())
@@ -127,7 +127,7 @@ bool Mapping::has_key(const std::string& key, NodeType type) const
     return true;
 }
 
-core::Time Mapping::as_time(const std::string& key, const char* desc) const
+core::Time Mapping::dict_as_time(const std::string& key, const char* desc) const
 {
     auto i = val.find(key);
     if (i == val.end())
@@ -140,7 +140,7 @@ core::Time Mapping::as_time(const std::string& key, const char* desc) const
     return list->as_time(desc);
 }
 
-std::unique_ptr<types::Type> Mapping::as_type(const std::string& key, const char* desc, const structured::Keys& keys) const
+std::unique_ptr<types::Type> Mapping::dict_as_type(const std::string& key, const char* desc, const structured::Keys& keys) const
 {
     auto i = val.find(key);
     if (i == val.end())

@@ -9,34 +9,42 @@ import io
 import sys
 import tempfile
 import logging
+from typing import Optional, Type
+from pathlib import Path
+from arkimet.cmdline.base import App
 
 
 def skip_unless_vm2():
     import unittest
+
     if "vm2" not in arki.features:
         raise unittest.SkipTest("VM2 support not available")
 
 
 def skip_unless_libzip():
     import unittest
+
     if "libzip" not in arki.features:
         raise unittest.SkipTest("libzip support not available")
 
 
 def skip_unless_libarchive():
     import unittest
+
     if "libarchive" not in arki.features:
         raise unittest.SkipTest("libarchive support not available")
 
 
 def skip_unless_geos():
     import unittest
+
     if "geos" not in arki.features:
         raise unittest.SkipTest("GEOS support not available")
 
 
 def skip_unless_arpae_tests():
     import unittest
+
     if "arpae_tests" not in arki.features:
         raise unittest.SkipTest("ARPAE tests disabled")
 
@@ -94,13 +102,13 @@ class Env(contextlib.ExitStack):
             shutil.rmtree("testenv")
         except FileNotFoundError:
             pass
-        os.mkdir("testenv")
-        os.mkdir("testenv/testds")
+        self.dsroot = Path("testenv/testds")
+        self.dsroot.mkdir(parents=True, exist_ok=True)
 
         self.session = self.enter_context(arki.dataset.Session())
 
         kw["name"] = "testds"
-        kw["path"] = os.path.abspath("testenv/testds")
+        kw["path"] = self.dsroot.absolute().as_posix()
         kw.setdefault("step", "daily")
         kw.setdefault("type", "iseg")
         self.ds_cfg = arki.cfg.Section(**kw)
@@ -149,12 +157,14 @@ class Env(contextlib.ExitStack):
 
     def import_file(self, pathname):
         with self.session.dataset_writer(cfg=self.ds_cfg) as dest:
-            with self.session.dataset_reader(cfg={
-                        "format": self.ds_cfg["format"],
-                        "name": os.path.basename(pathname),
-                        "path": pathname,
-                        "type": "file",
-                    }) as source:
+            with self.session.dataset_reader(
+                cfg={
+                    "format": self.ds_cfg["format"],
+                    "name": os.path.basename(pathname),
+                    "path": pathname,
+                    "type": "file",
+                }
+            ) as source:
                 res = source.query_data()
                 for md in res:
                     dest.acquire(md)
@@ -163,14 +173,16 @@ class Env(contextlib.ExitStack):
 
             return res
 
-    def query(self, *args, **kw):
+    def query(self, cfg: Optional[arki.cfg.Section] = None, *args, **kw):
+        if cfg is None:
+            cfg = self.ds_cfg
         res = []
 
         def on_metadata(md):
             res.append(md)
 
         kw["on_metadata"] = on_metadata
-        with self.session.dataset_reader(cfg=self.ds_cfg) as source:
+        with self.session.dataset_reader(cfg=cfg) as source:
             source.query_data(**kw)
             return res
 
@@ -192,7 +204,7 @@ class Env(contextlib.ExitStack):
 
 class CmdlineTestMixin:
     # Class of the Cmdline subclass to be tested
-    command = None
+    command: Type[App]
 
     def runcmd(self, *args):
         try:
@@ -318,7 +330,7 @@ class ServerProcess(multiprocessing.Process):
     def __exit__(self, type, value, traceback):
         self.terminate()
         self.join()
-        if hasattr(self, 'close'):
+        if hasattr(self, "close"):
             # multiprocessing.Process.close() only exists from Python 3.7
             self.close()
         # FIXME: this is never found, given that we're using a multiprocessing.Process

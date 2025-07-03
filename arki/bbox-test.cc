@@ -17,8 +17,7 @@ class Tests : public TestCase
 
 void Tests::register_tests() {
 
-// Experimental UTM areas
-add_method("empty", [] {
+add_method("empty", []() noexcept {
 });
 
 }

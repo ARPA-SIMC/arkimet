@@ -8,6 +8,7 @@
 #include <memory>
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/core/time.h>
 
 namespace arki {
 namespace python {
@@ -93,6 +94,22 @@ struct SharedPtrWrapper
     }
 };
 
+
+/// Convert a Python object to a DataFormat
+DataFormat dataformat_from_python(PyObject* o);
+template<> inline DataFormat from_python<DataFormat>(PyObject* o) { return dataformat_from_python(o); }
+
+/// Convert a DataFormat to a Python object
+PyObject* dataformat_to_python(DataFormat val);
+inline PyObject* to_python(DataFormat val) { return dataformat_to_python(val); }
+
+/// Convert a Python object to a core::Time
+core::Time core_time_from_python(PyObject* o);
+template<> inline core::Time from_python<core::Time>(PyObject* o) { return core_time_from_python(o); }
+
+/// Convert a DataFormat to a Python object
+PyObject* core_time_to_python(const core::Time& time);
+inline PyObject* to_python(const core::Time& val) { return core_time_to_python(val); }
 
 
 /**

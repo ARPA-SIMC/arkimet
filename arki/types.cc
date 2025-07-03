@@ -3,6 +3,7 @@
 #include "types/utils.h"
 #include "utils/sys.h"
 #include "utils/string.h"
+#include "utils/regexp.h"
 #include "structured/emitter.h"
 #include "structured/keys.h"
 #include "structured/reader.h"
@@ -80,6 +81,18 @@ std::string formatCode(const Code& c)
             return res.str();
         }
     }
+}
+
+std::set<types::Code> parse_code_names(const std::string& names)
+{
+    std::set<types::Code> res;
+    Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
+    for (Splitter::const_iterator i = splitter.begin(str::lower(names));
+            i != splitter.end(); ++i)
+    {
+        res.insert(types::parseCodeName(*i));
+    }
+    return res;
 }
 
 int Type::compare(const Type& o) const

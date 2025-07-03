@@ -53,6 +53,14 @@ public:
      */
     std::shared_ptr<Dataset> dataset(const std::string& name);
 
+    /**
+     * Return the appropriate dataset for the given use.
+     *
+     * If the use is DEFAULT or there are multiple datasets defined for the
+     * given use, it throws std::runtime_error
+     */
+    std::shared_ptr<Dataset> dataset_for_use(DatasetUse use);
+
     /// Return how many datasets are in the dataset pool
     size_t size() const;
 
@@ -100,8 +108,12 @@ class DispatchPool
 protected:
     std::shared_ptr<Pool> pool;
 
-    // Dataset cache
+    /// Dataset cache
     std::map<std::string, std::shared_ptr<dataset::Writer>> cache;
+    /// Dataset used for errors detected on import
+    std::shared_ptr<dataset::Writer> error;
+    /// Dataset used for duplicates detected on import
+    std::shared_ptr<dataset::Writer> duplicates;
 
 public:
     DispatchPool(std::shared_ptr<Pool> pool);

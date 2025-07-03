@@ -8,6 +8,7 @@
 #include <arki/matcher/fwd.h>
 #include <arki/stream/fwd.h>
 #include <arki/utils/geosfwd.h>
+#include <filesystem>
 #include <vector>
 #include <set>
 #include <string>
@@ -125,12 +126,12 @@ public:
      *
      * @returns false when end-of-file is reached
      */
-    bool read(core::BinaryDecoder& dec, const std::string& filename);
+    bool read(core::BinaryDecoder& dec, const std::filesystem::path& filename);
 
     /**
      * Decode the summary, without the outer bundle headers, from the given buffer.
      */
-    void read_inner(core::BinaryDecoder& dec, unsigned version, const std::string& filename);
+    void read_inner(core::BinaryDecoder& dec, unsigned version, const std::filesystem::path& filename);
 
     /// Decode from structured data
     void read(const structured::Keys& keys, const structured::Reader& val);
@@ -138,7 +139,7 @@ public:
     /**
      * Read data from the given file
      */
-    void read_file(const std::string& fname);
+    void read_file(const std::filesystem::path& fname);
 
     /**
      * Read a summary document encoded in Yaml from the given file descriptor.
@@ -148,7 +149,7 @@ public:
      *
      * Summary items are read from the file until the end of file is found.
      */
-    bool readYaml(core::LineReader& in, const std::string& filename);
+    bool readYaml(core::LineReader& in, const std::filesystem::path& filename);
 
     /**
      * Write the summary to the given output file.
@@ -168,7 +169,7 @@ public:
 	 *
 	 * \warn The temporary file name will NOT be created securely.
 	 */
-	void writeAtomically(const std::string& filename);
+	void writeAtomically(const std::filesystem::path& filename);
 
     /// Format the summary as a yaml string
     std::string to_yaml(const Formatter* formatter=nullptr) const;

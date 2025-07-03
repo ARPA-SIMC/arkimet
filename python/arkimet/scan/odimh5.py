@@ -1,7 +1,10 @@
+import sys
 from typing import Callable
 import arkimet
+
 try:
     import h5py
+
     HAVE_H5PY = True
 except ImportError:
     HAVE_H5PY = False
@@ -34,12 +37,16 @@ class Scanner:
             import json
             import inspect
             import subprocess
+
             metadata = {}
             for prio, scan in self.scanners:
                 scanner = inspect.getfile(scan)
-                proc = subprocess.Popen(["python", scanner, pathname],
-                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        universal_newlines=True)
+                proc = subprocess.Popen(
+                    [sys.executable, scanner, pathname],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    universal_newlines=True,
+                )
                 stdout, stderr = proc.communicate(input=json.dumps(metadata))
                 if proc.returncode != 0:
                     log.error("scanner %s returned error code %d", scanner, proc.returncode)

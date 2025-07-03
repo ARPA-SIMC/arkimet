@@ -1,5 +1,7 @@
-import unittest
+import json
 import os
+import unittest
+from pathlib import Path
 import arkimet as arki
 from arkimet.cmdline.dump import Dump
 from arkimet.test import daemon, CmdlineTestMixin
@@ -22,9 +24,13 @@ class TestArkiDump(CmdlineTestMixin, unittest.TestCase):
             self.assertEqual(out, "[level]\ng00 = GRIB1,1 or GRIB2S,1,0,0\n")
 
     def test_info(self):
-        import json
+        self.maxDiff = None
         out = self.call_output_success("--info")
-        self.assertEqual(json.loads(out), arki.config())
+        parsed = json.loads(out)
+        for k, v in parsed.items():
+            if "dirs" in v:
+                v["dirs"] = [Path(d) for d in v["dirs"]]
+        self.assertEqual(parsed, arki.config())
 
     def test_bbox(self):
         out = self.call_output_success("--bbox", "inbound/test.grib1.arkimet")

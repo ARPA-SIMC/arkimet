@@ -6,12 +6,12 @@
 #include <cstring>
 #include <exception>
 
-void signal_to_exception(int)
+[[noreturn]] static void signal_to_exception(int)
 {
     throw std::runtime_error("killing signal catched");
 }
 
-int main(int argc,const char* argv[])
+int main(int, const char*[])
 {
     using namespace arki::utils::tests;
 
@@ -24,7 +24,7 @@ int main(int argc,const char* argv[])
 
     std::unique_ptr<FilteringTestController> controller;
 
-    bool verbose = (bool)getenv("TEST_VERBOSE");
+    bool verbose = getenv("TEST_VERBOSE");
 
     if (verbose)
         controller.reset(new VerboseTestController(output));

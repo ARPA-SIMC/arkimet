@@ -1,6 +1,7 @@
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/rocky8.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://simc.arpae.it/moncic-ci/arkimet/rocky9.png)](https://simc.arpae.it/moncic-ci/arkimet/)
-[![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora38.png)](https://simc.arpae.it/moncic-ci/arkimet/)
+[![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora40.png)](https://simc.arpae.it/moncic-ci/arkimet/)
+[![Build Status](https://simc.arpae.it/moncic-ci/arkimet/fedora42.png)](https://simc.arpae.it/moncic-ci/arkimet/)
 [![Build Status](https://copr.fedorainfracloud.org/coprs/simc/stable/package/arkimet/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/simc/stable/package/arkimet/)
 
 # Arkimet
@@ -41,26 +42,18 @@ Arkimet is already packaged in .rpm format.
 For CentOS and Fedora, rpm files are hosted in a copr repo:
 https://copr.fedorainfracloud.org/coprs/simc/stable/
 
-Docker images with arkimet preinstalled are also available:
+If you want to build and install arkimet yourself, you'll need to install
+[Meson](https://mesonbuild.com/) and run the following commands:
 
 ```
-docker run -it arpaesimc/fedora:31 /bin/bash
-docker run -it arpaesimc/centos:8 /bin/bash
+meson setup builddir && cd builddir
+meson compile
+meson test
+meson install
 ```
 
-If you want to build and install arkimet yourself, you'll need to install the
-automake/autoconf/libtool packages then you can proceed as in most other Unix 
-software:
-
-```
-autoreconf -if 
-./configure
-make
-make install
-```
-
-if you're familiar with .rpm and .deb packaging you'll find the packaging 
-files in the `debian` and `fedora` directories
+If you're familiar with .rpm and .deb packaging you'll find the packaging 
+files in the `debian` and `fedora` directories.
 
 ## Features
 

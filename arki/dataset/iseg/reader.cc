@@ -1,14 +1,15 @@
 #include "reader.h"
-#include "index.h"
+#include "arki/segment/iseg/index.h"
 #include "arki/dataset/step.h"
-#include "arki/dataset/progress.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/utils/sys.h"
 #include "arki/summary.h"
 #include <algorithm>
 
 using namespace std;
 using namespace arki::utils;
+using arki::segment::iseg::RIndex;
 
 namespace arki {
 namespace dataset {
@@ -18,7 +19,7 @@ Reader::Reader(std::shared_ptr<iseg::Dataset> dataset)
     : DatasetAccess(dataset), scache(dataset->summary_cache_pathname)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
     scache.openRW();
 }
 
@@ -28,45 +29,45 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "iseg"; }
 
-bool Reader::is_dataset(const std::string& dir)
+bool Reader::is_dataset(const std::filesystem::path& dir)
 {
     return true;
 }
 
-bool Reader::list_segments(const Matcher& matcher, std::function<bool(const std::string& relpath)> dest)
+bool Reader::list_segments(const Matcher& matcher, std::function<bool(std::shared_ptr<arki::Segment>)> dest)
 {
-    vector<string> seg_relpaths;
-    step::SegmentQuery squery(dataset().path, dataset().format, "\\.index$", matcher);
-    dataset().step().list_segments(squery, [&](std::string&& s) {
-        seg_relpaths.emplace_back(move(s));
+    std::vector<filesystem::path> seg_relpaths;
+    step::SegmentQuery squery(dataset().path, dataset().iseg_segment_session->format, "\\.index$", matcher);
+    dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
+        seg_relpaths.emplace_back(std::move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
     for (const auto& relpath: seg_relpaths)
-        if (!dest(relpath))
+        if (!dest(dataset().segment_session->segment_from_relpath_and_format(relpath, dataset().iseg_segment_session->format)))
             return false;
     return true;
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     if (!segmented::Reader::impl_query_data(q, dest))
         return false;
 
-    bool res = list_segments(q.matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
-        return idx.query_data(q, *dataset().session, dest);
+    bool res = list_segments(q.matcher, [&](std::shared_ptr<Segment> segment) {
+        auto reader = segment->reader(dataset().read_lock_segment(segment->relpath()));
+        return reader->query_data(q, dest);
     });
     return track.done(res);
 }
 
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
-    list_segments(matcher, [&](const std::string& relpath) {
-        RIndex idx(m_dataset, relpath, dataset().read_lock_segment(relpath));
-        idx.query_summary_from_db(matcher, summary);
+    list_segments(matcher, [&](std::shared_ptr<Segment> segment) {
+        auto reader = segment->reader(dataset().read_lock_segment(segment->relpath()));
+        reader->query_summary(matcher, summary);
         return true;
     });
 }
@@ -90,7 +91,7 @@ void Reader::summary_for_all(Summary& out)
 
     // Find the datetime extremes in the database
     core::Interval interval;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), interval);
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg_segment_session->format), interval);
 
     // If there is data in the database, get all the involved
     // monthly summaries
@@ -134,7 +135,7 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
     // Amend open ends with the bounds from the database
     core::Interval db_interval;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().format), db_interval);
+    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg_segment_session->format), db_interval);
     // If the database is empty then the result is empty:
     // we are done
     if (!db_interval.begin.is_set())

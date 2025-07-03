@@ -20,6 +20,7 @@ public:
     BufferStreamOutput(std::vector<uint8_t>& out);
 
     std::string name() const override { return "memory buffer"; }
+    std::filesystem::path path() const override { return "memory buffer"; }
 };
 
 }

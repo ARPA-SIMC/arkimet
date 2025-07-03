@@ -17,6 +17,7 @@ public:
     DiscardStreamOutput();
 
     std::string name() const override { return "discard"; }
+    std::filesystem::path path() const override { return "discard"; }
 };
 
 }

@@ -62,12 +62,12 @@ sphinx_doc_sources = [
 # custom_target directly, but through a wrapper script
 
 build_docs = configure_file(output: 'build-docs', input: 'build-docs.in', configuration: {
-    'sphinx_build': sphinx.path(),
+    'sphinx_build': sphinx.full_path(),
     'doc_src': meson.current_source_dir(),
     'doc_build': meson.current_build_dir(),
-    'top_builddir': meson.build_root(),
-    'pythonpath_src': meson.source_root() / 'python',
-    'pythonpath_build': meson.build_root() / 'python',
+    'top_builddir': meson.project_build_root(),
+    'pythonpath_src': meson.project_source_root() / 'python',
+    'pythonpath_build': meson.project_build_root() / 'python',
 })
 
 built_docs = custom_target('built_docs',

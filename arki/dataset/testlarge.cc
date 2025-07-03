@@ -1,7 +1,7 @@
 #include "testlarge.h"
 #include "empty.h"
-#include "query.h"
-#include "progress.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/core/time.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
@@ -37,7 +37,7 @@ bool Reader::generate(const core::Interval& interval, std::function<bool(std::un
         // TODO: set other metadata
 
         std::vector<uint8_t> data(1024 * 1024, 0);
-        md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", move(data)));
+        md->set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, move(data)));
 
         if (!out(move(md)))
             return false;
@@ -49,9 +49,9 @@ bool Reader::generate(const core::Interval& interval, std::function<bool(std::un
     return true;
 }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    dataset::TrackProgress track(q.progress);
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     core::Interval interval;

@@ -2,7 +2,7 @@
 #include "arki/dataset.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/metadata/collection.h"
 #include "arki/matcher/parser.h"
 #include "arki/types/source.h"
@@ -56,23 +56,17 @@ class TestsChecker : public FixtureTestCase<FixtureChecker<Data>>
     void register_tests() override;
 };
 
-TestsChecker<GRIBData> test_checker_grib_simple_plain("arki_dataset_checker_grib_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<GRIBData> test_checker_grib_simple_sqlite("arki_dataset_checker_grib_simple_sqlite", "type=simple\nindex_type=sqlite\n");
+TestsChecker<GRIBData> test_checker_grib_simple("arki_dataset_checker_grib_simple", "type=simple");
 TestsChecker<GRIBData> test_checker_grib_iseg("arki_dataset_checker_grib_iseg", "type=iseg\nformat=grib\n");
-TestsChecker<BUFRData> test_checker_bufr_simple_plain("arki_dataset_checker_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<BUFRData> test_checker_bufr_simple_sqlite("arki_dataset_checker_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<BUFRData> test_checker_bufr_simple("arki_dataset_checker_bufr_simple", "type=simple");
 TestsChecker<BUFRData> test_checker_bufr_iseg("arki_dataset_checker_bufr_iseg", "type=iseg\nformat=bufr\n");
-TestsChecker<VM2Data> test_checker_vm2_simple_plain("arki_dataset_checker_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<VM2Data> test_checker_vm2_simple_sqlite("arki_dataset_checker_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<VM2Data> test_checker_vm2_simple("arki_dataset_checker_vm2_simple", "type=simple");
 TestsChecker<VM2Data> test_checker_vm2_iseg("arki_dataset_checker_vm2_iseg", "type=iseg\nformat=vm2\n");
-TestsChecker<ODIMData> test_checker_odim_simple_plain("arki_dataset_checker_odim_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<ODIMData> test_checker_odim_simple_sqlite("arki_dataset_checker_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<ODIMData> test_checker_odim_simple("arki_dataset_checker_odim_simple", "type=simple");
 TestsChecker<ODIMData> test_checker_odim_iseg("arki_dataset_checker_odim_iseg", "type=iseg\nformat=odimh5\n");
-TestsChecker<NCData> test_checker_nc_simple_plain("arki_dataset_checker_nc_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<NCData> test_checker_nc_simple_sqlite("arki_dataset_checker_nc_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<NCData> test_checker_nc_simple("arki_dataset_checker_nc_simple", "type=simple");
 TestsChecker<NCData> test_checker_nc_iseg("arki_dataset_checker_nc_iseg", "type=iseg\nformat=nc\n");
-TestsChecker<JPEGData> test_checker_jpeg_simple_plain("arki_dataset_checker_jpeg_simple_plain", "type=simple\nindex_type=plain\n");
-TestsChecker<JPEGData> test_checker_jpeg_simple_sqlite("arki_dataset_checker_jpeg_simple_sqlite", "type=simple\nindex_type=sqlite");
+TestsChecker<JPEGData> test_checker_jpeg_simple("arki_dataset_checker_jpeg_simple", "type=simple");
 TestsChecker<JPEGData> test_checker_jpeg_iseg("arki_dataset_checker_jpeg_iseg", "type=iseg\nformat=jpeg\n");
 
 template<class Data>
@@ -106,7 +100,7 @@ this->add_method("check_archives", [](Fixture& f) {
 
     {
         ReporterExpected e;
-        e.archived.emplace_back("testds", "2007/07-07." + f.td.format);
+        e.archived.emplace_back("testds", "2007/07-07." + format_name(f.td.format));
         e.report.emplace_back("testds", "repack", "2 files ok, 1 file archived");
         e.report.emplace_back("testds.archives.last", "repack", "1 file ok");
         wassert(actual(*checker).repack(e, true));
@@ -146,9 +140,9 @@ this->add_method("remove_all", [](Fixture& f) {
         auto checker(f.makeSegmentedChecker());
 
         ReporterExpected e;
-        e.deleted.emplace_back("testds", "2007/07-07." + f.td.format);
-        e.deleted.emplace_back("testds", "2007/07-08." + f.td.format);
-        e.deleted.emplace_back("testds", "2007/10-09." + f.td.format);
+        e.deleted.emplace_back("testds", "2007/07-07." + format_name(f.td.format));
+        e.deleted.emplace_back("testds", "2007/07-08." + format_name(f.td.format));
+        e.deleted.emplace_back("testds", "2007/10-09." + format_name(f.td.format));
         wassert(actual(checker.get()).remove_all(e, true));
     }
 
@@ -156,9 +150,9 @@ this->add_method("remove_all", [](Fixture& f) {
     wassert(actual(state.size()) == 0u);
     wassert(f.query_results({}));
 
-    wassert(actual_file("testds/2007/07-07." + f.td.format).not_exists());
-    wassert(actual_file("testds/2007/07-08." + f.td.format).not_exists());
-    wassert(actual_file("testds/2007/10-09." + f.td.format).not_exists());
+    wassert(actual_file("testds/2007/07-07." + format_name(f.td.format)).not_exists());
+    wassert(actual_file("testds/2007/07-08." + format_name(f.td.format)).not_exists());
+    wassert(actual_file("testds/2007/10-09." + format_name(f.td.format)).not_exists());
 });
 
 this->add_method("remove_all_filtered", [](Fixture& f) {
@@ -169,7 +163,7 @@ this->add_method("remove_all_filtered", [](Fixture& f) {
         auto checker(f.makeSegmentedChecker());
 
         ReporterExpected e;
-        e.deleted.emplace_back("testds", "2007/07-08." + f.td.format);
+        e.deleted.emplace_back("testds", "2007/07-08." + format_name(f.td.format));
         wassert(actual(checker.get()).remove_all_filtered(parser.parse("reftime:=2007-07-08"), e, true));
     }
 
@@ -177,15 +171,15 @@ this->add_method("remove_all_filtered", [](Fixture& f) {
     wassert(actual(state.size()) == 2u);
     wassert(f.query_results({1, 2}));
 
-    wassert(actual_file("testds/2007/07-07." + f.td.format).exists());
-    wassert(actual_file("testds/2007/07-08." + f.td.format).not_exists());
-    wassert(actual_file("testds/2007/10-09." + f.td.format).exists());
+    wassert(actual_file("testds/2007/07-07." + format_name(f.td.format)).exists());
+    wassert(actual_file("testds/2007/07-08." + format_name(f.td.format)).not_exists());
+    wassert(actual_file("testds/2007/10-09." + format_name(f.td.format)).exists());
 });
 
 // Test check_issue51
 this->add_method("check_issue51", [](Fixture& f) {
     f.cfg->set("step", "yearly");
-    if (f.td.format != "grib" && f.td.format != "bufr") return;
+    if (f.td.format != DataFormat::GRIB && f.td.format != DataFormat::BUFR) return;
     wassert(f.import_all_packed(f.td.mds));
 
     // Get metadata for all data in the dataset and corrupt the last character
@@ -223,7 +217,7 @@ this->add_method("check_issue51", [](Fixture& f) {
 
     // Check that the backup files exist
     for (const auto& relpath: destfiles)
-        wassert(actual_file(str::joinpath(f.local_config()->path, relpath) + ".issue51").exists());
+        wassert(actual_file(sys::with_suffix(f.local_config()->path / relpath, ".issue51")).exists());
 
     // Do a thorough check to see if everything is ok
     wassert(actual(checker.get()).check_clean(false, false));

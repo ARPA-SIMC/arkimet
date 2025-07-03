@@ -1,4 +1,5 @@
 #include "arki-dump.h"
+#include "arki/exceptions.h"
 #include "arki/utils/sys.h"
 #include "arki/core/file.h"
 #include "arki/core/binary.h"
@@ -46,7 +47,7 @@ void addToSummary(Input& in, arki::Summary& s)
         {
             if (!bundle.read_data(in)) break;
             arki::core::BinaryDecoder dec(bundle.data);
-            auto md = arki::Metadata::read_binary_inner(dec, bundle.version, in.name());
+            auto md = arki::Metadata::read_binary_inner(dec, bundle.version, in.path());
             if (md->source().style() == arki::types::Source::Style::INLINE)
                 md->read_inline_data(in);
             s.add(*md);
@@ -55,17 +56,17 @@ void addToSummary(Input& in, arki::Summary& s)
         {
             if (!bundle.read_data(in)) break;
             arki::core::BinaryDecoder dec(bundle.data);
-            summary.read_inner(dec, bundle.version, in.name());
+            summary.read_inner(dec, bundle.version, in.path());
             s.add(summary);
         }
         else if (bundle.signature == "MG")
         {
             if (!bundle.read_data(in)) break;
             arki::core::BinaryDecoder dec(bundle.data);
-            arki::Metadata::read_group(dec, bundle.version, in.name(), [&](std::shared_ptr<arki::Metadata> md) { s.add(*md); return true; });
+            arki::Metadata::read_group(dec, bundle.version, in.path(), [&](std::shared_ptr<arki::Metadata> md) { s.add(*md); return true; });
         }
         else
-            throw std::runtime_error(in.name() + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
+            arki::throw_runtime_error(in.path(), ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
     }
 }
 #endif
@@ -137,15 +138,15 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
             ReleaseGIL rg;
 
             std::unique_ptr<arki::core::LineReader> reader;
-            std::string input_name;
+            std::filesystem::path input_name;
             if (input.fd)
             {
-                input_name = input.fd->name();
+                input_name = input.fd->path();
                 reader = arki::core::LineReader::from_fd(*input.fd);
             }
             else
             {
-                input_name = input.abstract->name();
+                input_name = input.abstract->path();
                 reader = arki::core::LineReader::from_abstract(*input.abstract);
             }
             while (auto md = arki::Metadata::read_yaml(*reader, input_name))
@@ -184,12 +185,12 @@ struct reverse_summary : public MethKwargs<reverse_summary, arkipy_ArkiDump>
             std::string input_name;
             if (input.fd)
             {
-                input_name = input.fd->name();
+                input_name = input.fd->path();
                 reader = arki::core::LineReader::from_fd(*input.fd);
             }
             else
             {
-                input_name = input.abstract->name();
+                input_name = input.abstract->path();
                 reader = arki::core::LineReader::from_abstract(*input.abstract);
             }
             while (summary.readYaml(*reader, input_name))
@@ -245,13 +246,13 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
             arki::Summary summary;
 
             arki::types::Bundle bundle;
-            std::string input_name;
+            std::filesystem::path input_name;
             std::function<bool()> read_header;
             std::function<bool()> read_data;
             std::function<void(arki::Metadata& md)> read_inline_data;
             if (input.fd)
             {
-                input_name = input.fd->name();
+                input_name = input.fd->path();
                 read_header = [&bundle, &input] {
                     return bundle.read_header(*input.fd);
                 };
@@ -264,7 +265,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
             }
             else
             {
-                input_name = input.abstract->name();
+                input_name = input.abstract->path();
                 read_header = [&bundle, &input] {
                     return bundle.read_header(*input.abstract);
                 };
@@ -301,7 +302,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                     arki::Metadata::read_group(dec, bundle.version, input_name, [&](std::shared_ptr<arki::Metadata> md) { print_md(*md); return true; });
                 }
                 else
-                    throw std::runtime_error(input_name + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
+                    throw std::runtime_error(input_name.native() + ": metadata entry does not start with 'MD', '!D', 'SU', or 'MG'");
             }
 
             rg.lock();

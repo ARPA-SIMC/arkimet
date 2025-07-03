@@ -41,13 +41,12 @@ class Tests : public FixtureTestCase<Fixture>
 };
 
 Tests test_plain("arki_dataset_simple_reader_plain");
-Tests test_sqlite("arki_dataset_simple_reader_sqlite", "index_type=sqlite");
 
 void Tests::register_tests() {
 
 // Add here only simple-specific tests that are not convered by tests in dataset-reader-test.cc
 
-add_method("empty", [](Fixture& f) {
+add_method("empty", [](Fixture& f) noexcept {
 });
 
 }

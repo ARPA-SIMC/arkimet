@@ -64,6 +64,28 @@ struct size : public Getter<size, arkipy_Summary>
     }
 };
 
+struct reference_time : public Getter<reference_time, arkipy_Summary>
+{
+    constexpr static const char* name = "reference_time";
+    constexpr static const char* doc = "Return a tuple of datetimes with the minimum and maximum known reference times";
+    constexpr static void* closure = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        try {
+            auto interval = self->summary->get_reference_time();
+
+            pyo_unique_ptr begin(to_python(interval.begin));
+            pyo_unique_ptr until(to_python(interval.end));
+
+            pyo_unique_ptr res(throw_ifnull(PyTuple_New(2)));
+            PyTuple_SET_ITEM(res.get(), 0, begin.release());
+            PyTuple_SET_ITEM(res.get(), 1, until.release());
+            return res.release();
+        } ARKI_CATCH_RETURN_PYO;
+    }
+};
+
 
 struct add : public MethKwargs<add, arkipy_Summary>
 {
@@ -328,12 +350,12 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 std::string input_name;
                 if (input.fd)
                 {
-                    input_name = input.fd->name();
+                    input_name = input.fd->path();
                     reader = arki::core::LineReader::from_fd(*input.fd);
                 }
                 else
                 {
-                    input_name = input.abstract->name();
+                    input_name = input.abstract->path();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
 
@@ -346,12 +368,12 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 std::string input_name;
                 if (input.fd)
                 {
-                    input_name = input.fd->name();
+                    input_name = input.fd->path();
                     reader = arki::core::LineReader::from_fd(*input.fd);
                 }
                 else
                 {
-                    input_name = input.abstract->name();
+                    input_name = input.abstract->path();
                     reader = arki::core::LineReader::from_abstract(*input.abstract);
                 }
                 res->readYaml(*reader, input_name);
@@ -439,7 +461,7 @@ Examples::
 
     TODO: add examples
 )";
-    GetSetters<count, size> getsetters;
+    GetSetters<count, size, reference_time> getsetters;
     Methods<add, write, write_short, to_python, get_convex_hull, read_binary, read_yaml, read_json> methods;
 
     static void _dealloc(Impl* self)

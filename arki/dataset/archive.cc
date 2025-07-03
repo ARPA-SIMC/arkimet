@@ -1,9 +1,11 @@
 #include "archive.h"
-#include "index/manifest.h"
+#include "simple/manifest.h"
 #include "simple.h"
 #include "offline.h"
 #include "arki/matcher.h"
+#include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/types.h"
 #include "arki/summary.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -21,18 +23,18 @@ namespace dataset {
 
 namespace archive {
 
-bool is_archive(const std::string& dir)
+bool is_archive(const std::filesystem::path& dir)
 {
-    return index::Manifest::exists(dir);
+    return simple::manifest::exists(dir);
 }
 
 
-static core::cfg::Section make_config(const std::string& dir)
+static core::cfg::Section make_config(const std::filesystem::path& dir, const std::string& step_name)
 {
     core::cfg::Section cfg;
-    cfg.set("name", str::basename(dir));
+    cfg.set("name", dir.filename());
     cfg.set("path", dir);
-    cfg.set("step", "monthly");
+    cfg.set("step", step_name);
     cfg.set("offline", "true");
     cfg.set("smallfiles", "true");
     return cfg;
@@ -42,19 +44,19 @@ static core::cfg::Section make_config(const std::string& dir)
 template<typename Archive>
 struct ArchivesRoot
 {
-    std::string dataset_root;
-    std::string archive_root;
-    std::shared_ptr<dataset::Dataset> parent;
+    std::filesystem::path dataset_root;
+    std::filesystem::path archive_root;
+    std::shared_ptr<archive::Dataset> parent;
 
     std::map<std::string, std::shared_ptr<Archive>> archives;
     std::shared_ptr<Archive> last;
 
-    ArchivesRoot(const std::string& dataset_root, std::shared_ptr<dataset::Dataset> parent)
-        : dataset_root(dataset_root), archive_root(str::joinpath(dataset_root, ".archive")), parent(parent)
+    ArchivesRoot(const std::filesystem::path& dataset_root, std::shared_ptr<archive::Dataset> parent)
+        : dataset_root(dataset_root), archive_root(dataset_root), parent(parent)
           // m_scache_root(str::joinpath(root, ".summaries"))
     {
         // Create the directory if it does not exist
-        sys::makedirs(archive_root);
+        std::filesystem::create_directories(archive_root);
     }
 
     virtual ~ArchivesRoot()
@@ -88,7 +90,7 @@ struct ArchivesRoot
                     names.insert(name.substr(0, name.size() - 8));
             } else {
                 // Add directory with a manifest inside
-                string pathname = str::joinpath(archive_root, i->d_name);
+                auto pathname = archive_root / i->d_name;
                 if (include_invalid || archive::is_archive(pathname))
                 {
                     names.insert(i->d_name);
@@ -134,12 +136,12 @@ struct ArchivesRoot
 
     void invalidate_summary_cache()
     {
-        sys::unlink_ifexists(str::joinpath(dataset_root, ".summaries/archives.summary"));
+        std::filesystem::remove(dataset_root / ".summaries" / "archives.summary");
     }
 
     void rebuild_summary_cache()
     {
-        string sum_file = str::joinpath(dataset_root, ".summaries/archives.summary");
+        auto sum_file = dataset_root / ".summaries" / "archives.summary";
         Summary s;
         Matcher m;
 
@@ -150,22 +152,22 @@ struct ArchivesRoot
         });
 
         // Write back to the cache directory, if allowed
-        if (sys::access(str::joinpath(dataset_root, ".summaries"), W_OK))
+        if (sys::access(dataset_root / ".summaries", W_OK))
             s.writeAtomically(sum_file);
     }
 
     std::shared_ptr<dataset::Reader> instantiate_reader(const std::string& name)
     {
-        string pathname = str::joinpath(archive_root, name);
+        auto pathname = archive_root / name;
         std::shared_ptr<dataset::Dataset> ds;
-        if (sys::exists(pathname + ".summary"))
+        if (std::filesystem::exists(sys::with_suffix(pathname, ".summary")))
         {
-            if (index::Manifest::exists(pathname))
-                ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+            if (simple::manifest::exists(pathname))
+                ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname, parent->step_name));
             else
                 ds = std::make_shared<offline::Dataset>(parent->session, pathname);
         } else
-            ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+            ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname, parent->step_name));
         ds->set_parent(parent.get());
         return ds->create_reader();
     }
@@ -214,18 +216,18 @@ public:
 
     std::shared_ptr<dataset::Checker> instantiate(const std::string& name) override
     {
-        string pathname = str::joinpath(archive_root, name);
-        if (sys::exists(pathname + ".summary"))
+        auto pathname = archive_root / name;
+        if (std::filesystem::exists(sys::with_suffix(pathname, ".summary")))
             return std::shared_ptr<dataset::Checker>();
 
-        auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname));
+        auto ds = std::make_shared<simple::Dataset>(parent->session, make_config(pathname, parent->step_name));
         ds->set_parent(parent.get());
         return ds->create_checker();
     }
 };
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& root)
-    : dataset::Dataset(session, "archives"), root(root)
+Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& root, const std::string& step_name)
+    : dataset::Dataset(session, "archives"), root(root), segment_session(std::make_shared<segment::Session>(root)), step_name(step_name)
 {
 }
 
@@ -253,14 +255,14 @@ Reader::~Reader()
 
 std::string Reader::type() const { return "archives"; }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
     return archives->iter([&](dataset::Reader& r) {
         return r.query_data(q, dest);
     });
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     archives->iter([&](dataset::Reader& r) {
         r.query_bytes(q, out);
@@ -270,7 +272,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
 
 void Reader::summary_for_all(Summary& out)
 {
-    string sum_file = str::joinpath(archives->dataset_root, ".summaries/archives.summary");
+    auto sum_file = archives->dataset_root / ".summaries" / "archives.summary";
     sys::File fd(sum_file);
     if (fd.open_ifexists(O_RDONLY))
         out.read(fd);
@@ -437,54 +439,62 @@ void Checker::state(CheckerConfig& opts)
     });
 }
 
-static std::string poppath(std::string& path)
+static std::string poppath(std::filesystem::path& path)
 {
-	size_t start = 0;
-	while (start < path.size() && path[start] == '/')
-		++start;
-	size_t end = start;
-	while (end < path.size() && path[end] != '/')
-		++end;
-	size_t nstart = end;
-	while (nstart < path.size() && path[nstart] == '/')
-		++nstart;
-	string res = path.substr(start, end-start);
-	path = path.substr(nstart);
-	return res;
+    auto path_iter = path.begin();
+    if (path_iter == path.end())
+        return std::string();
+    std::string res = *path_iter;
+
+    ++path_iter;
+    auto new_path = std::filesystem::path();
+    for ( ; path_iter != path.end(); ++path_iter)
+        new_path /= *path_iter;
+
+    path = new_path;
+    return res;
 }
 
-void Checker::index_segment(const std::string& relpath, metadata::Collection&& mds)
+void Checker::index_segment(const std::filesystem::path& relpath, metadata::Collection&& mds)
 {
-    string path = relpath;
-    string name = poppath(path);
+    auto path = relpath;
+    auto name = poppath(path);
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->index(move(mds));
+        {
+            auto segment = sc->dataset().segment_session->segment_from_relpath(path);
+            sc->segment(segment)->index(std::move(mds));
+        }
         else
-            throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
+            throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }
     else
-        throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " does not exist in " + archives->archive_root);
+        throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " does not exist in " + archives->archive_root.native());
     archives->invalidate_summary_cache();
 }
 
-void Checker::release_segment(const std::string& relpath, const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath)
+arki::metadata::Collection Checker::release_segment(const std::filesystem::path& relpath, std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath)
 {
-    string path = utils::str::normpath(relpath);
-    string name = poppath(path);
-    if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath + ": segment is not in last/ archive");
+    arki::metadata::Collection res;
+    auto path = relpath;
+    auto name = poppath(path);
+    if (name != "last") throw std::runtime_error(this->name() + ": cannot release segment " + relpath.native() + ": segment is not in last/ archive");
 
     if (auto a = archives->lookup(name))
     {
         if (auto sc = dynamic_pointer_cast<segmented::Checker>(a))
-            sc->segment(path)->release(new_root, new_relpath, new_abspath);
+        {
+            auto segment = sc->dataset().segment_session->segment_from_relpath(path);
+            res = sc->segment(segment)->release(segment_session, new_relpath);
+        }
         else
-            throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " is not writable");
+            throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " is not writable");
     }
     else
-        throw std::runtime_error(this->name() + ": cannot acquire " + relpath + ": archive " + name + " does not exist in " + archives->archive_root);
+        throw std::runtime_error(this->name() + ": cannot acquire " + relpath.native() + ": archive " + name + " does not exist in " + archives->archive_root.native());
     archives->invalidate_summary_cache();
+    return res;
 }
 
 unsigned Checker::test_count_archives() const

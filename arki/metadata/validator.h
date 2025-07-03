@@ -35,14 +35,14 @@ namespace validators
     {
     public:
         FailAlways();
-        virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
+        bool operator()(const Metadata& v, std::vector<std::string>& errors) const override;
     };
 
     class DailyImport : public Validator
     {
     public:
         DailyImport();
-        virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const;
+        bool operator()(const Metadata& v, std::vector<std::string>& errors) const override;
     };
 }
 

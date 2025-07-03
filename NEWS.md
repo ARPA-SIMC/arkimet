@@ -1,3 +1,64 @@
+# New in version UNRELEASED
+
+* Restore invalidating iseg summaries on import (#352)
+
+# New in version 1.59
+
+* Deal with files deleted during iteration in PathWalk (#351)
+* Improved error logs in wobble
+
+# New in version 1.58
+
+* Fix synthesizing a segment root path for file datasetes (#350)
+
+# New in version 1.57
+
+* Normalize paths before reading configuration from them (#348)
+* Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
+  allow an error or duplicates dataset to have an arbitrary name (#328)
+* Fixed examples in error and duplicates dataset documentation (#349)
+* Add `Summary.reference_time` python accessor giving a `tuple[datetime, datetime]`
+  with the extremes
+* Python methods that read a config file now also accept a Path to point to the file
+* Correctly invalidate dataset summaries when doing deletion and maintenance of
+  simple datasets (#347)
+* Updated arkiguide (#344)
+
+# New in version 1.56
+
+* Refactored segment writing of metadata+summary in simple segments
+* Optimize repack operation on file segments
+* Fixed builds (#345)
+
+# New in version 1.55
+
+* Implemented segment-specific checking
+
+# New in version 1.54
+
+* Refactoring of segment and dataset implementations:
+
+    * `arki-check --delete` is now supported also for `simple` datasets
+    * it is now possible to open a subdataset inside .archives and query and
+      delete data from it (#344)
+    * archived segments are now enforced to have the same step as the
+      containing dataset
+
+# New in version 1.53
+
+* Prepend prefix to `POSTPROC_DIR` to make it absolute (#341)
+
+# New in version 1.52
+
+* Updated code to use C++17 features and new wreport/dballe
+* Fixed build/test errors (#337, #339)
+* Removed support for CentOS7 in specfile
+
+# New in version 1.51
+
+* Fixed scanning GRIB1 files with missing level parts (#326)
+* Removed docker references, updated build instructions (#329)
+
 # New in version 1.50
 
 * Implemented date/time validation in matcher parser (#324)

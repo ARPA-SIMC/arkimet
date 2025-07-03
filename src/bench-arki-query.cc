@@ -1,7 +1,7 @@
 #include "arki/runtime.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #ifdef USE_GPERFTOOLS
 #include <gperftools/profiler.h>
 #endif
@@ -15,7 +15,7 @@ int main(int argc, const char* argv[])
     auto ds = session->dataset(*cfg);
     auto reader = ds->create_reader();
     size_t count = 0;
-    arki::dataset::DataQuery query(match);
+    arki::query::Data query(match);
 #ifdef USE_GPERFTOOLS
     ProfilerStart("bench-arki-query.log");
 #endif

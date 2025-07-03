@@ -10,6 +10,10 @@
 #include <arki/matcher.h>
 #include <arki/dataset.h>
 #include <arki/dataset/segmented.h>
+#include <arki/dataset/simple.h>
+#include <arki/dataset/simple/writer.h>
+#include <arki/dataset/iseg.h>
+#include <arki/dataset/iseg/writer.h>
 #include <arki/libconfig.h>
 #include <vector>
 #include <string>
@@ -20,10 +24,6 @@ namespace tests {
 // Return the number of days passed from the given date until today
 int days_since(int year, int month, int day);
 
-// Return the file name of the Manifest index
-std::string manifest_idx_fname();
-
-
 /**
  * State of all segments in the dataset
  */
@@ -31,12 +31,25 @@ struct State : public std::map<std::string, dataset::segmented::SegmentState>
 {
     using std::map<std::string, dataset::segmented::SegmentState>::map;
 
-    bool has(const std::string& relpath) const;
+    bool report_on_exit;
+    std::stringstream report;
 
-    const dataset::segmented::SegmentState& get(const std::string& seg) const;
+    explicit State(bool report_on_exit=false);
+    State(const State&) = delete;
+    State(State&&);
+    State& operator=(const State&) = delete;
+    State& operator=(State&&) = delete;
+    ~State();
+
+    bool has(const std::filesystem::path& relpath) const;
+
+    const dataset::segmented::SegmentState& get(const std::filesystem::path& seg) const;
 
     /// Count how many segments have this state
     unsigned count(segment::State state) const;
+
+    /// Cancel report on exit
+    void all_ok();
 
     void dump(FILE* out) const;
 };
@@ -94,8 +107,8 @@ public:
     // Dataset name (always "testds")
     std::string ds_name;
     // Dataset root directory
-    std::string ds_root;
-    std::vector<std::shared_ptr<Metadata>> import_results;
+    std::filesystem::path ds_root;
+    metadata::Collection import_results;
 
     /**
      * @param cfg_tail
@@ -121,12 +134,11 @@ public:
     void set_session(std::shared_ptr<dataset::Session> session);
 
     std::shared_ptr<dataset::Session> session();
+    std::shared_ptr<segment::Session> segment_session();
     dataset::Dataset& config();
     std::shared_ptr<dataset::Dataset> dataset_config();
     std::shared_ptr<dataset::local::Dataset> local_config();
-
-    // Return the file name of the index of the current dataset
-    std::string idxfname(const core::cfg::Section* wcfg = 0) const;
+    std::shared_ptr<dataset::segmented::Dataset> segmented_config();
 
     /**
      * Return the segment pathname in the current dataset where md is expected
@@ -153,10 +165,10 @@ public:
     unsigned count_dataset_files(const metadata::Collection& f) const;
 
     /// Scan the dataset and return its state
-    State scan_state(bool quick=true);
+    State scan_state(bool quick=true, bool report_on_exit=false);
 
     /// Scan the dataset and return its state
-    State scan_state(const Matcher& matcher, bool quick=true);
+    State scan_state(const Matcher& matcher, bool quick=true, bool report_on_exit=false);
 
     std::shared_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::shared_ptr<dataset::segmented::Writer> makeSegmentedWriter();
@@ -172,18 +184,18 @@ public:
     void clean();
 
     // Import a file
-    void import(const std::string& testfile="inbound/test.grib1");
+    void import(const std::filesystem::path& testfile="inbound/test.grib1");
 
     // Import a metadata collection
     void import(metadata::Collection& mds);
 
     // Import a datum
-    void import(Metadata& md, dataset::WriterAcquireResult expected_result=dataset::ACQ_OK);
+    void import(Metadata& md, metadata::Inbound::Result expected_result=metadata::Inbound::Result::OK);
 
     // Recreate the dataset importing data into it
-    void clean_and_import(const std::string& testfile="inbound/test.grib1");
+    void clean_and_import(const std::filesystem::path& testfile="inbound/test.grib1");
 
-    metadata::Collection query(const dataset::DataQuery& q);
+    metadata::Collection query(const query::Data& q);
     metadata::Collection query(const std::string& q);
 
     void ensure_localds_clean(size_t filecount, size_t resultcount, bool quick=true);
@@ -203,20 +215,25 @@ public:
      * the metadata elements in import_results corresponding to the given
      * sequence of indices
      */
-    void query_results(const dataset::DataQuery& q, const std::vector<int>& expected);
+    void query_results(const query::Data& q, const std::vector<int>& expected);
 
     /**
      * Check if the segment exists online on this dataset, with the given
      * extensions. ".metadata" and ".summary" are added in case of "simple"
      * datasets.
      */
-    void online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+    void online_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
 
     /**
      * Check if the segment exists online on this dataset, with the given
      * extensions. ".metadata" and ".summary" are added automatically.
      */
-    void archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions);
+    void archived_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
+
+    /**
+     * Dump spans of each data in each segment to stderr
+     */
+    void dump_data_spans();
 
     /**
      * Raise TestSkipped if the current dataset has type 'simple'
@@ -258,7 +275,7 @@ struct ReporterExpected
         std::string name;
         std::string message;
 
-        SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message=std::string());
+        SegmentMatch(const std::string& dsname, const std::filesystem::path& relpath, const std::string& message=std::string());
         std::string error_unmatched(const std::string& operation) const;
     };
 
@@ -302,8 +319,9 @@ class ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
 public:
     ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
-    void import(Metadata& md);
-    void import(metadata::Collection& mds, dataset::ReplaceStrategy strategy=dataset::REPLACE_DEFAULT);
+    void acquire_ok(std::shared_ptr<Metadata> md, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
+    void acquire_ok(metadata::Collection& mds, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
+    void acquire_duplicate(std::shared_ptr<Metadata> md, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
 };
 
 inline arki::tests::ActualWriter<dataset::local::Writer> actual(arki::dataset::local::Writer* actual)
@@ -312,10 +330,12 @@ inline arki::tests::ActualWriter<dataset::local::Writer> actual(arki::dataset::l
 }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(std::shared_ptr<arki::dataset::Writer> actual) { return arki::tests::ActualWriter<dataset::Writer>(actual.get()); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
 inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>((arki::dataset::segmented::Writer*)&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
+inline arki::tests::ActualWriter<dataset::Writer> actual(std::shared_ptr<arki::dataset::iseg::Writer> actual) { return arki::tests::ActualWriter<dataset::Writer>(actual.get()); }
 
 
 template<typename DatasetChecker>

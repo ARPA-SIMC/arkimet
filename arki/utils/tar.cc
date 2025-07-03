@@ -11,19 +11,19 @@ TarHeader::TarHeader()
     memcpy(data + 100, "0000000\0000000000\0000000000\00000000000000\00000000000000\0        ", 56);
 }
 
-TarHeader::TarHeader(const std::string& name, mode_t mode)
+TarHeader::TarHeader(const std::filesystem::path& name, mode_t mode)
     : TarHeader()
 {
     set_name(name);
     set_mode(mode);
 }
 
-void TarHeader::set_name(const std::string& name)
+void TarHeader::set_name(const std::filesystem::path& name)
 {
-    if (name.size() > 100)
-        throw std::runtime_error("File name " + name + " is too long for this tar writer");
+    if (name.native().size() > 100)
+        throw std::runtime_error("File name " + name.native() + " is too long for this tar writer");
 
-    memcpy(data, name.data(), name.size());
+    memcpy(data, name.native().data(), name.native().size());
 }
 
 void TarHeader::set_mode(mode_t mode)
@@ -150,7 +150,7 @@ void TarOutput::append(const PaxHeader& pax)
     _write(pax.data);
 }
 
-off_t TarOutput::append(const std::string& name, const std::string& data)
+off_t TarOutput::append(const std::filesystem::path& name, const std::string& data)
 {
     TarHeader header(name, 0644);
     header.set_size(data.size());
@@ -160,7 +160,7 @@ off_t TarOutput::append(const std::string& name, const std::string& data)
     return res;
 }
 
-off_t TarOutput::append(const std::string& name, const std::vector<uint8_t>& data)
+off_t TarOutput::append(const std::filesystem::path& name, const std::vector<uint8_t>& data)
 {
     TarHeader header(name, 0644);
     header.set_size(data.size());

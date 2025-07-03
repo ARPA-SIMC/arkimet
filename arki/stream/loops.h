@@ -4,6 +4,7 @@
 #include <arki/stream/fwd.h>
 #include <arki/stream/base.h>
 #include <stdexcept>
+#include <cerrno>
 
 namespace arki {
 namespace stream {
@@ -34,6 +35,13 @@ static const unsigned POLLINFO_FILTER_STDOUT = 1;
 static const unsigned POLLINFO_FILTER_STDERR = 2;
 static const unsigned POLLINFO_DESTINATION = 3;
 
+static inline bool errno_wouldblock()
+{
+    if (errno == EAGAIN) return true;
+    if (errno == EWOULDBLOCK) return true;
+    return false;
+}
+
 /**
  * Event loop used by ConcreteStreamOutputs for sending data to an output file
  * descriptor, without filters
@@ -49,10 +57,10 @@ struct UnfilteredLoop : public Sender
     template<typename ToOutput>
     stream::SendResult loop(ToOutput to_output);
 
-    stream::SendResult send_buffer(const void* data, size_t size) final;
-    stream::SendResult send_line(const void* data, size_t size) final;
-    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) final;
-    stream::SendResult flush() final { return stream::SendResult(); }
+    stream::SendResult send_buffer(const void* data, size_t size) override final;
+    stream::SendResult send_line(const void* data, size_t size) override final;
+    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) override final;
+    stream::SendResult flush() override final { return stream::SendResult(); }
 };
 
 }

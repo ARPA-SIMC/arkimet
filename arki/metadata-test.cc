@@ -112,9 +112,9 @@ void Tests::register_tests() {
 // Test sources
 add_method("sources", [](Fixture& f) {
     Metadata md;
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2));
     wassert(actual(md.source().style()) == Source::Style::BLOB);
-    wassert(actual(md.source().format) == "grib");
+    wassert(actual(md.source().format) == DataFormat::GRIB);
 
     const source::Blob& blob = md.sourceBlob();
     wassert(actual(blob.filename) == "inbound/test.grib1");
@@ -136,10 +136,10 @@ static void dump(const char* name, const std::string& str)
 
 // Test binary encoding and decoding
 add_method("binary", [](Fixture& f) {
-    std::string dir = sys::abspath(".");
+    std::filesystem::path dir = std::filesystem::current_path();
 
     Metadata md;
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     vector<uint8_t> encoded = md.encodeBinary();
@@ -152,8 +152,8 @@ add_method("binary", [](Fixture& f) {
     md1 = wcallchecked(Metadata::read_binary(dec, metadata::ReadContext("(test memory buffer)", dir)));
     wassert_true(md1);
 
-    wassert(actual_type(md1->source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
-    wassert(actual(md1->source().format) == "grib");
+    wassert(actual_type(md1->source()).is_source_blob(DataFormat::GRIB, dir, "inbound/test.grib1", 1, 2));
+    wassert(actual(md1->source().format) == DataFormat::GRIB);
     wassert(f.ensure_md_matches_prefill(*md1));
 
 
@@ -162,12 +162,12 @@ add_method("binary", [](Fixture& f) {
 
     wassert(Metadata::read_file(metadata::ReadContext("test.md", dir), mds.inserter_func()));
     wassert(actual(mds.size()) == 1u);
-    wassert(actual_type(mds[0].source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
+    wassert(actual_type(mds[0].source()).is_source_blob(DataFormat::GRIB, dir, "inbound/test.grib1", 1, 2));
     mds.clear();
 
     wassert(Metadata::read_file("test.md", mds.inserter_func()));
     wassert(actual(mds.size()) == 1u);
-    wassert(actual_type(mds[0].source()).is_source_blob("grib", dir, "inbound/test.grib1", 1, 2));
+    wassert(actual_type(mds[0].source()).is_source_blob(DataFormat::GRIB, dir, "inbound/test.grib1", 1, 2));
 
     /*
     /// Read all metadata from a file into the given consumer
@@ -178,22 +178,22 @@ add_method("binary", [](Fixture& f) {
 // Test Yaml encoding and decoding
 add_method("yaml", [](Fixture& f) {
     Metadata md;
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     string s = md.to_yaml();
     auto reader = LineReader::from_chars(s.data(), s.size());
     auto md1 = Metadata::read_yaml(*reader, "(test memory buffer)");
     wassert_true(md1);
-    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1->source());
-    wassert(actual(md1->source().format) == "grib");
+    wassert(actual(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2)) == md1->source());
+    wassert(actual(md1->source().format) == DataFormat::GRIB);
     wassert(f.ensure_md_matches_prefill(*md1));
 });
 
 // Test JSON encoding and decoding
 add_method("json", [](Fixture& f) {
     Metadata md;
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2));
     f.fill(md);
 
     // Serialise to JSON;
@@ -207,8 +207,8 @@ add_method("json", [](Fixture& f) {
 
     auto md1 = Metadata::read_structure(structured::keys_json, parsed.root());
 
-    wassert(actual(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2)) == md1->source());
-    wassert(actual(md1->source().format) == "grib");
+    wassert(actual(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2)) == md1->source());
+    wassert(actual(md1->source().format) == DataFormat::GRIB);
     wassert(f.ensure_md_matches_prefill(*md1));
 });
 
@@ -217,7 +217,7 @@ add_method("binary_inline", [](Fixture& f) {
     Metadata md;
     // Here is some data
     vector<uint8_t> buf = { 'c', 'i', 'a', 'o' };
-    md.set_source_inline("test", metadata::DataManager::get().to_data("test", vector<uint8_t>(buf)));
+    md.set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, vector<uint8_t>(buf)));
 
     // Encode
     sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -237,7 +237,7 @@ add_method("binary_fd", [](Fixture& f) {
     Metadata md;
     const char* tmpfile = "testmd.tmp";
     f.fill(md);
-    md.set_source(Source::createBlobUnlocked("grib", "", "inbound/test.grib1", 1, 2));
+    md.set_source(Source::createBlobUnlocked(DataFormat::GRIB, "", "inbound/test.grib1", 1, 2));
 
     // Encode
     sys::File out(tmpfile, O_WRONLY | O_CREAT, 0666);
@@ -255,7 +255,7 @@ add_method("binary_fd", [](Fixture& f) {
 // Reproduce decoding error at #24
 add_method("decode_issue_24", [](Fixture& f) {
     unsigned count = 0;
-    Metadata::read_file("inbound/issue24.arkimet", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    Metadata::read_file("inbound/issue24.arkimet", [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 1u);
 });
 
@@ -302,7 +302,7 @@ add_method("stream_odim", [](Fixture& f) {
 add_method("issue107_binary", [](Fixture& f) {
     unsigned count = 0;
     try {
-        Metadata::read_file("inbound/issue107.yaml", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+        Metadata::read_file("inbound/issue107.yaml", [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
         wassert(actual(0) == 1);
     } catch (std::runtime_error& e) {
         wassert(actual(e.what()).contains("metadata entry does not start with "));
@@ -324,7 +324,7 @@ add_method("wrongsize", [](Fixture& f) {
     fd.close();
 
     unsigned count = 0;
-    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 0u);
 });
 
@@ -333,8 +333,8 @@ add_method("read_partial", [](Fixture& f) {
     sys::Tempfile tf;
     metadata::DataManager& data_manager = metadata::DataManager::get();
     Metadata::read_file("inbound/test.grib1.arkimet", [&](std::shared_ptr<Metadata> md) {
-        md->set_source_inline("bufr",
-                data_manager.to_data("bufr",
+        md->set_source_inline(DataFormat::BUFR,
+                data_manager.to_data(DataFormat::BUFR,
                     std::vector<uint8_t>(md->sourceBlob().size)));
         md->write(tf);
         return true;
@@ -375,7 +375,7 @@ add_method("read_partial", [](Fixture& f) {
     sys::NamedFileDescriptor in(child.get_stdout(), "child pipe");
 
     unsigned count = 0;
-    Metadata::read_file(in, [&](std::shared_ptr<Metadata>) { ++count; return true; });
+    wassert(Metadata::read_file(in, [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; }));
     wassert(actual(count) == 3u);
 
     wassert(actual(child.wait()) == 0);

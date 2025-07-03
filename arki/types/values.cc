@@ -170,12 +170,7 @@ void encode_int(core::BinaryEncoder& enc, int value)
     {
         // If it's a small one, encode in the remaining 6 bits
         uint8_t lead = { ENC_SINT6 << 6 };
-        if (value < 0)
-        {
-            lead |= ((~(-value) + 1) & 0x3f);
-        } else {
-            lead |= (value & 0x3f);
-        }
+        lead |= (value & 0x3f);
         enc.add_byte(lead);
     }
     else
@@ -505,7 +500,7 @@ protected:
     /// Size of the data buffer
     virtual unsigned encoded_size() const = 0;
 
-    values::string_view name() const
+    values::string_view name() const override
     {
         unsigned size = static_cast<unsigned>(data[0]);
         return values::string_view(reinterpret_cast<const char*>(data) + 1, size);
@@ -525,7 +520,7 @@ public:
     /**
      * Encode into a compact binary representation
      */
-    void encode(core::BinaryEncoder& enc) const
+    void encode(core::BinaryEncoder& enc) const override
     {
         enc.add_raw(data, encoded_size());
     }

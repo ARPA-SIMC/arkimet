@@ -1,9 +1,9 @@
 #include "arki/dataset.h"
-#include "arki/dataset/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/outbound.h"
 #include "arki/dataset/empty.h"
+#include "arki/query.h"
 #include "arki/metadata.h"
 #include "arki/metadata/postprocess.h"
 #include "arki/metadata/data.h"
@@ -19,12 +19,57 @@ using namespace arki::utils;
 namespace arki {
 namespace dataset {
 
+namespace {
+
+DatasetUse compute_use(const std::string& name, const core::cfg::Section& cfg = core::cfg::Section())
+{
+    auto cfg_use = cfg.value("use");
+    auto cfg_type = cfg.value("type");
+    if (cfg_use == "error" or cfg_use == "errors")
+    {
+        if (name == "duplicates")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot be called " + name);
+        if (cfg_type == "duplicates")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot have type=" + cfg_type);
+        return DatasetUse::ERRORS;
+    } else if (cfg_use == "duplicates") {
+        if (name == "error" or name == "errors")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot be called " + name);
+        if (cfg_type == "error" or cfg_type == "errors")
+            throw std::runtime_error("dataset with use=" + cfg_use + " cannot have type=" + cfg_type);
+        return DatasetUse::DUPLICATES;
+    } else if (cfg_use.empty()) {
+        if (cfg_type == "error" or cfg_type == "errors")
+        {
+            if (name == "duplicates")
+                throw std::runtime_error("dataset with type=" + cfg_type + " cannot be called " + name);
+            return DatasetUse::ERRORS;
+        } else if (cfg_type == "duplicates") {
+            if (name == "error" or name == "errors")
+                throw std::runtime_error("dataset with type=" + cfg_type + " cannot be called " + name);
+            return DatasetUse::DUPLICATES;
+        } else {
+            if (name == "error" or name == "errors")
+                return DatasetUse::ERRORS;
+            else if (name == "duplicates")
+                return DatasetUse::DUPLICATES;
+        }
+        return DatasetUse::DEFAULT;
+    } else {
+        throw std::runtime_error("invalid use '" + cfg_use + "' for dataset " + name);
+    }
+
+    // TODO: type=error, type=duplicates
+}
+
+}
+
 Dataset::Dataset(std::shared_ptr<Session> session) : session(session) {}
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), session(session) {}
+Dataset::Dataset(std::shared_ptr<Session> session, const std::string& name) : m_name(name), m_use(compute_use(name)), session(session) {}
 
 Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : m_name(cfg.value("name")), session(session), config(std::make_shared<core::cfg::Section>(cfg))
+    : m_name(cfg.value("name")), m_use(compute_use(m_name, cfg)), session(session), config(std::make_shared<core::cfg::Section>(cfg))
 {
 }
 
@@ -34,6 +79,11 @@ std::string Dataset::name() const
         return m_parent->name() + "." + m_name;
     else
         return m_name;
+}
+
+DatasetUse Dataset::use() const
+{
+    return m_use;
 }
 
 void Dataset::set_parent(const Dataset* parent)
@@ -48,21 +98,21 @@ std::shared_ptr<Checker> Dataset::create_checker() { throw std::runtime_error("c
 
 void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
-    query_data(DataQuery(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
+    query_data(query::Data(matcher), [&](std::shared_ptr<Metadata> md) { summary.add(*md); return true; });
 }
 
-void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& out)
+void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
 {
     switch (q.type)
     {
-        case dataset::ByteQuery::BQ_DATA: {
+        case query::Bytes::BQ_DATA: {
             query_data(q, [&](std::shared_ptr<Metadata> md) {
                 auto res = md->stream_data(out);
                 return !(res.flags & stream::SendResult::SEND_PIPE_EOF_DEST);
             });
             break;
         }
-        case dataset::ByteQuery::BQ_POSTPROCESS: {
+        case query::Bytes::BQ_POSTPROCESS: {
             std::vector<std::string> args = metadata::Postprocess::validate_command(q.postprocessor, *dataset().config);
             out.start_filter(args);
             try {
@@ -88,7 +138,7 @@ void Reader::impl_stream_query_bytes(const dataset::ByteQuery& q, StreamOutput& 
 
 bool Reader::query_data(const std::string& q, metadata_dest_func dest)
 {
-    dataset::DataQuery dq(dataset().session->matcher(q));
+    query::Data dq(dataset().session->matcher(q));
     return impl_query_data(dq, dest);
 }
 
@@ -98,22 +148,12 @@ void Reader::query_summary(const std::string& matcher, Summary& summary)
 }
 
 
-void WriterBatch::set_all_error(const std::string& note)
-{
-    for (auto& e: *this)
-    {
-        e->dataset_name.clear();
-        e->md.add_note(note);
-        e->result = ACQ_ERROR;
-    }
-}
-
 
 void Writer::flush() {}
 
 Pending Writer::test_writelock() { return Pending(); }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
 {
     string type = str::lower(cfg.value("type"));
     if (type == "remote")

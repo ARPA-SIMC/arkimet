@@ -1,8 +1,8 @@
 #include "tests.h"
-#include "arki/segment/tests.h"
+#include "arki/segment/data/tests.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/local.h"
 #include "arki/dataset/simple/reader.h"
 #include "arki/dataset/simple/writer.h"
@@ -10,7 +10,6 @@
 #include "arki/dataset/iseg/reader.h"
 #include "arki/dataset/iseg/writer.h"
 #include "arki/dataset/iseg/checker.h"
-#include "arki/dataset/index/manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/session.h"
 #include "arki/scan/grib.h"
@@ -22,9 +21,10 @@
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/segment/dir.h"
+#include "arki/segment/data/dir.h"
 #include "arki/nag.h"
 #include <algorithm>
+#include <iostream>
 #include <cstring>
 #include <limits.h>
 #include <sys/time.h>
@@ -52,16 +52,35 @@ int days_since(int year, int month, int day)
 }
 
 
-bool State::has(const std::string& relpath) const
+State::State(bool report_on_exit)
+    : report_on_exit(report_on_exit)
+{
+}
+
+State::State(State&& o)
+    : std::map<std::string, dataset::segmented::SegmentState>(std::move(o)),
+      report_on_exit(o.report_on_exit),
+      report(std::move(o.report))
+{
+    o.report_on_exit = false;
+}
+
+State::~State()
+{
+    if (report_on_exit)
+        dump(stderr);
+}
+
+bool State::has(const std::filesystem::path& relpath) const
 {
     return find(relpath) != end();
 }
 
-const segmented::SegmentState& State::get(const std::string& seg) const
+const segmented::SegmentState& State::get(const std::filesystem::path& seg) const
 {
     auto res = find(seg);
     if (res == end())
-        throw std::runtime_error("segment " + seg + " not found in state");
+        throw std::runtime_error("segment " + seg.native() + " not found in state");
     return res->second;
 }
 
@@ -74,6 +93,11 @@ unsigned State::count(segment::State state) const
     return res;
 }
 
+void State::all_ok()
+{
+    report_on_exit = false;
+}
+
 void State::dump(FILE* out) const
 {
     for (const auto& i: *this)
@@ -82,11 +106,17 @@ void State::dump(FILE* out) const
                 i.second.state.to_string().c_str(),
                 i.second.interval.begin.to_iso8601(' ').c_str(),
                 i.second.interval.end.to_iso8601(' ').c_str());
+    fprintf(out, "Check report:\n");
+    fprintf(out, "%s\n", report.str().c_str());
 }
 
 
 DatasetTest::DatasetTest(const std::string& cfg_instance, TestVariant variant)
-    : variant(variant), cfg(std::make_shared<core::cfg::Section>()), cfg_instance(cfg_instance), ds_name("testds"), ds_root(sys::abspath("testds"))
+    : variant(variant), cfg(std::make_shared<core::cfg::Section>()),
+      cfg_instance(cfg_instance), ds_name("testds"),
+      // `./` is needed because of the way weakly_canonical is defined: it
+      // needs a prefix that exists to ensure the resulting path is absolute
+      ds_root(std::filesystem::weakly_canonical("./testds"))
 {
     //if (default_datasettest_config)
         //cfg = *default_datasettest_config;
@@ -101,7 +131,7 @@ void DatasetTest::test_setup(const std::string& cfg_default)
     cfg = core::cfg::Section::parse(cfg_all);
     cfg->set("path", ds_root);
     cfg->set("name", ds_name);
-    if (sys::exists(ds_root))
+    if (std::filesystem::exists(ds_root))
         sys::rmtree(ds_root);
 }
 
@@ -133,29 +163,42 @@ void DatasetTest::set_session(std::shared_ptr<dataset::Session> session)
 std::shared_ptr<dataset::Session> DatasetTest::session()
 {
     if (!m_session.get())
-    {
-        switch (variant)
-        {
-            case TEST_NORMAL:
-                m_session = std::make_shared<dataset::Session>();
-                break;
-            case TEST_FORCE_DIR:
-                m_session = std::make_shared<DirSegmentsSession>();
-                break;
-        }
-    }
+        m_session = std::make_shared<dataset::Session>();
     return m_session;
+}
+
+std::shared_ptr<segment::Session> DatasetTest::segment_session()
+{
+    config();
+    auto dataset = std::dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
+    if (!dataset)
+        throw std::runtime_error("Test dataset is not a segmented dataset");
+    return dataset->segment_session;
 }
 
 Dataset& DatasetTest::config()
 {
     if (!m_dataset)
     {
-        sys::mkdir_ifmissing(ds_root);
-        sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        std::filesystem::create_directory(ds_root);
+        sys::File out(ds_root / "config", O_WRONLY | O_CREAT | O_TRUNC, 0666);
         auto s = cfg->to_string();
         out.write_all_or_retry(s.data(), s.size());
         m_dataset = session()->dataset(*cfg);
+
+        switch (variant)
+        {
+            case TEST_NORMAL:
+                break;
+            case TEST_FORCE_DIR:
+            {
+                auto dataset = std::dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
+                if (!dataset)
+                    throw std::runtime_error("TEST_FORCE_DIR used on a non-segmented dataset");
+                dataset->segment_session->default_file_segment = segment::DefaultFileSegment::SEGMENT_DIR;
+                break;
+            }
+        }
     }
     return *m_dataset;
 }
@@ -172,15 +215,10 @@ std::shared_ptr<dataset::local::Dataset> DatasetTest::local_config()
     return dynamic_pointer_cast<dataset::local::Dataset>(m_dataset);
 }
 
-std::string DatasetTest::idxfname(const core::cfg::Section* wcfg) const
+std::shared_ptr<dataset::segmented::Dataset> DatasetTest::segmented_config()
 {
-    // TODO: is this still needed after ondisk2 dismissal?
-    if (!wcfg) wcfg = cfg.get();
-
-    if (wcfg->value("index_type") == "sqlite")
-        return "index.sqlite";
-    else
-        return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
+    config();
+    return dynamic_pointer_cast<dataset::segmented::Dataset>(m_dataset);
 }
 
 std::string DatasetTest::destfile(const Metadata& md) const
@@ -189,9 +227,9 @@ std::string DatasetTest::destfile(const Metadata& md) const
     auto time = rt->get_Position();
     char buf[32];
     if (cfg->value("shard").empty())
-        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d-%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     else
-        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+        snprintf(buf, 32, "%04d/%02d/%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     return buf;
 }
 
@@ -200,7 +238,7 @@ std::string DatasetTest::archive_destfile(const Metadata& md) const
     const auto* rt = md.get<types::reftime::Position>();
     auto time = rt->get_Position();
     char buf[64];
-    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, md.source().format.c_str());
+    snprintf(buf, 64, ".archive/last/%04d/%02d-%02d.%s", time.ye, time.mo, time.da, format_name(md.source().format).c_str());
     return buf;
 }
 
@@ -217,30 +255,42 @@ unsigned DatasetTest::count_dataset_files(const metadata::Collection& mds) const
     return destfiles(mds).size();
 }
 
-std::string manifest_idx_fname()
+State DatasetTest::scan_state(bool quick, bool report_on_exit)
 {
-    return dataset::index::Manifest::get_force_sqlite() ? "index.sqlite" : "MANIFEST";
-}
-
-State DatasetTest::scan_state(bool quick)
-{
+    State res(report_on_exit);
     CheckerConfig opts;
-    //opts.reporter = make_shared<OstreamReporter>(cerr);
+    opts.reporter = std::make_shared<OstreamReporter>(res.report);
     auto checker = makeSegmentedChecker();
-    State res;
     checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
-        res.insert(make_pair(checker.name() + ":" + segment.path_relative(), segment.scan(*opts.reporter, quick)));
+        res.insert(make_pair(checker.name() + ":" + segment.path_relative().native(), segment.fsck(*opts.reporter, quick)));
     });
     return res;
 }
 
-State DatasetTest::scan_state(const Matcher& matcher, bool quick)
+void DatasetTest::dump_data_spans()
 {
-    CheckerConfig opts;
-    opts.segment_filter = matcher;
     auto checker = makeSegmentedChecker();
     State res;
-    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.scan(*opts.reporter, quick))); });
+    CheckerConfig opts;
+    checker->segments_recursive(opts, [&](segmented::Checker& checker, segmented::CheckerSegment& segment) {
+        metadata::Collection mds = segment.segment_checker->scan();
+        fprintf(stderr, " * %s:\n", segment.segment->relpath().c_str());
+        for (const auto& md: mds)
+        {
+            const auto& blob = md->sourceBlob();
+            fprintf(stderr, "   %s %zu+%zu=%zu\n", md->get(TYPE_REFTIME)->to_string().c_str(), (size_t)blob.offset, (size_t)blob.size, (size_t)(blob.offset + blob.size));
+        }
+    });
+}
+
+State DatasetTest::scan_state(const Matcher& matcher, bool quick, bool report_on_exit)
+{
+    State res(report_on_exit);
+    CheckerConfig opts;
+    opts.reporter = std::make_shared<OstreamReporter>(res.report);
+    opts.segment_filter = matcher;
+    auto checker = makeSegmentedChecker();
+    checker->segments(opts, [&](segmented::CheckerSegment& segment) { res.insert(make_pair(segment.path_relative(), segment.fsck(*opts.reporter, quick))); });
     return res;
 }
 
@@ -309,9 +359,9 @@ std::shared_ptr<dataset::iseg::Checker> DatasetTest::makeIsegChecker()
 
 void DatasetTest::clean()
 {
-    if (sys::exists(ds_root)) sys::rmtree(ds_root);
-    sys::mkdir_ifmissing(ds_root);
-    sys::File out(str::joinpath(ds_root, "config"), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (std::filesystem::exists(ds_root)) sys::rmtree(ds_root);
+    std::filesystem::create_directory(ds_root);
+    sys::File out(ds_root / "config", O_WRONLY | O_CREAT | O_TRUNC, 0666);
     auto s = cfg->to_string();
     out.write_all_or_retry(s.data(), s.size());
     import_results.clear();
@@ -321,14 +371,15 @@ void DatasetTest::import(metadata::Collection& mds)
 {
     {
         auto writer(config().create_writer());
-        auto batch = mds.make_import_batch();
+        auto batch = mds.make_batch();
         writer->acquire_batch(batch);
         for (const auto& e: batch)
         {
-            wassert(actual(e->dataset_name) == config().name());
-            wassert(actual(e->result) == ACQ_OK);
-            import_results.emplace_back(e->md.clone());
-            import_results.back()->sourceBlob().unlock();
+            wassert(actual(e->destination) == config().name());
+            wassert(actual(e->result) == metadata::Inbound::Result::OK);
+            auto newmd = e->md->clone();
+            import_results.acquire(newmd, true);
+            newmd->sourceBlob().unlock();
             //fprintf(stderr, "IDX %s %zd: %s\n", testfile.c_str(), import_results.size(), e->md.sourceBlob().to_string().c_str());
         }
     }
@@ -336,27 +387,30 @@ void DatasetTest::import(metadata::Collection& mds)
     utils::files::removeDontpackFlagfile(ds_root);
 }
 
-void DatasetTest::import(const std::string& testfile)
+void DatasetTest::import(const std::filesystem::path& testfile)
 {
     metadata::TestCollection data(testfile);
     import(data);
 }
 
-void DatasetTest::import(Metadata& md, dataset::WriterAcquireResult expected_result)
+void DatasetTest::import(Metadata& md, metadata::Inbound::Result expected_result)
 {
-    import_results.emplace_back(md.clone());
+    auto newmd = md.clone();
+    import_results.acquire(newmd, true);
     auto writer(config().create_writer());
-    WriterAcquireResult res = writer->acquire(*import_results.back());
-    wassert(actual(res) == expected_result);
+    metadata::InboundBatch batch;
+    batch.add(newmd);
+    writer->acquire_batch(batch);
+    wassert(actual(batch[0]->result) == expected_result);
 }
 
-void DatasetTest::clean_and_import(const std::string& testfile)
+void DatasetTest::clean_and_import(const std::filesystem::path& testfile)
 {
     clean();
     import(testfile);
 }
 
-metadata::Collection DatasetTest::query(const dataset::DataQuery& q)
+metadata::Collection DatasetTest::query(const query::Data& q)
 {
     return metadata::Collection(*config().create_reader(), q);
 }
@@ -379,7 +433,7 @@ void DatasetTest::ensure_localds_clean(size_t filecount, size_t resultcount, boo
     wassert(actual(mdc.size()) == resultcount);
 
     if (filecount > 0 && reader->type() != "iseg")
-        wassert(actual_file(str::joinpath(reader->dataset().path, idxfname())).exists());
+        wassert(actual_file(reader->dataset().path / "MANIFEST").exists());
     tc.clear();
 }
 
@@ -401,12 +455,18 @@ void DatasetTest::import_all(const metadata::Collection& mds)
     clean();
 
     auto writer = config().create_writer();
-    for (const auto& md: mds)
+
+    auto newmds = mds.clone();
+    for (auto& md: newmds)
+        import_results.acquire(md, true);
+
+    auto batch = newmds.make_batch();
+    writer->acquire_batch(batch);
+
+    for (const auto& el: batch)
     {
-        import_results.emplace_back(md->clone());
-        WriterAcquireResult res = writer->acquire(*import_results.back());
-        wassert(actual(res) == ACQ_OK);
-        import_results.back()->sourceBlob().unlock();
+        wassert(actual(el->result) == metadata::Inbound::Result::OK);
+        el->md->sourceBlob().unlock();
     }
 
     utils::files::removeDontpackFlagfile(cfg->value("path"));
@@ -429,17 +489,17 @@ void DatasetTest::repack()
 
 void DatasetTest::query_results(const std::vector<int>& expected)
 {
-    query_results(DataQuery(Matcher(), true), expected);
+    query_results(query::Data(Matcher(), true), expected);
 }
 
-void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<int>& expected)
+void DatasetTest::query_results(const query::Data& q, const std::vector<int>& expected)
 {
     vector<int> found;
 
     config().create_reader()->query_data(q, [&](std::shared_ptr<Metadata>&& md) {
         unsigned idx;
         for (idx = 0; idx < import_results.size(); ++idx)
-            if (import_results[idx]->items_equal(*md))
+            if (import_results[idx].items_equal(*md))
                 break;
         if (idx == import_results.size())
             found.push_back(-1);
@@ -453,7 +513,7 @@ void DatasetTest::query_results(const dataset::DataQuery& q, const std::vector<i
     wassert(actual(str::join(", ", found)) == str::join(", ", expected));
 }
 
-void DatasetTest::online_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
+void DatasetTest::online_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions)
 {
     auto cfg = local_config();
     if (std::dynamic_pointer_cast<const simple::Dataset>(cfg))
@@ -461,18 +521,18 @@ void DatasetTest::online_segment_exists(const std::string& relpath, const std::v
         std::vector<std::string> exts(extensions);
         exts.push_back(".metadata");
         exts.push_back(".summary");
-        actual_segment(str::joinpath(cfg->path, relpath)).exists(exts);
+        actual_segment(cfg->path / relpath).exists(exts);
     } else
-        actual_segment(str::joinpath(cfg->path, relpath)).exists(extensions);
+        actual_segment(cfg->path / relpath).exists(extensions);
 }
 
-void DatasetTest::archived_segment_exists(const std::string& relpath, const std::vector<std::string>& extensions)
+void DatasetTest::archived_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions)
 {
     auto cfg = local_config();
     std::vector<std::string> exts(extensions);
     exts.push_back(".metadata");
     exts.push_back(".summary");
-    actual_segment(str::joinpath(cfg->path, ".archive", relpath)).exists(exts);
+    actual_segment(cfg->path / ".archive" / relpath).exists(exts);
 }
 
 void DatasetTest::skip_if_type_simple()
@@ -504,8 +564,8 @@ ReporterExpected::ReporterExpected(unsigned flags)
 }
 
 
-ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::string& relpath, const std::string& message)
-    : name(dsname + ":" + relpath), message(message)
+ReporterExpected::SegmentMatch::SegmentMatch(const std::string& dsname, const std::filesystem::path& relpath, const std::string& message)
+    : name(dsname + ":" + relpath.native()), message(message)
 {
 }
 
@@ -735,52 +795,52 @@ struct CollectReporter : public dataset::Reporter
         op_results.emplace_back("report", ds, operation, message);
     }
 
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_info(ds, relpath, message);
-        seg_results.store_extra_info(ds + ":" + relpath, message);
+        seg_results.store_extra_info(ds + ":" + relpath.native(), message);
     }
-    void segment_repack(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_repack(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_repack(ds, relpath, message);
         seg_results.emplace_back("repacked", ds, relpath, message);
     }
-    void segment_archive(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_archive(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_archive(ds, relpath, message);
         seg_results.emplace_back("archived", ds, relpath, message);
     }
-    void segment_delete(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_remove(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
-        recorder.segment_delete(ds, relpath, message);
+        recorder.segment_remove(ds, relpath, message);
         seg_results.emplace_back("deleted", ds, relpath, message);
     }
-    void segment_deindex(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_deindex(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_deindex(ds, relpath, message);
         seg_results.emplace_back("deindexed", ds, relpath, message);
     }
-    void segment_rescan(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_rescan(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_rescan(ds, relpath, message);
         seg_results.emplace_back("rescanned", ds, relpath, message);
     }
-    void segment_tar(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_tar(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_tar(ds, relpath, message);
         seg_results.emplace_back("tarred", ds, relpath, message);
     }
-    void segment_compress(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_compress(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_compress(ds, relpath, message);
         seg_results.emplace_back("compressed", ds, relpath, message);
     }
-    void segment_issue51(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_issue51(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_issue51(ds, relpath, message);
         seg_results.emplace_back("issue51", ds, relpath, message);
     }
-    void segment_manual_intervention(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_manual_intervention(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         recorder.segment_manual_intervention(ds, relpath, message);
         seg_results.emplace_back("manual_intervention", ds, relpath, message);
@@ -843,67 +903,58 @@ struct CollectReporter : public dataset::Reporter
     }
 };
 
+namespace {
+void format_fail_inbound(std::ostream& o, const metadata::Inbound& inbound)
+{
+    o << "Unexpected import result " << inbound.result << ". Notes:" << endl;
+    auto notes = inbound.md->notes();
+    for (auto n = notes.first; n != notes.second; ++n)
+        o << "\t" << **n << endl;
+}
+}
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(Metadata& md)
+void ActualWriter<Dataset>::acquire_ok(std::shared_ptr<Metadata> md, ReplaceStrategy strategy)
 {
-    auto res = wcallchecked(this->_actual->acquire(md));
-    if (res != dataset::ACQ_OK)
+    metadata::InboundBatch batch;
+    batch.add(md);
+    wassert(this->_actual->acquire_batch(batch, strategy));
+    if (batch[0]->result != metadata::Inbound::Result::OK)
     {
-        std::stringstream ss;
-        switch (res)
-        {
-            case ACQ_ERROR_DUPLICATE:
-                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
-                break;
-            case ACQ_ERROR:
-                ss << "ACQ_ERROR when importing data. notes:" << endl;
-                break;
-            default:
-                ss << "Error " << (int)res << " when importing data. notes:" << endl;
-                break;
-        }
-
-        auto notes = md.notes();
-        for (auto n = notes.first; n != notes.second; ++n)
-            ss << "\t" << **n << endl;
-
-        throw TestFailed(ss.str());
+        std::stringstream buf;
+        format_fail_inbound(buf, *batch[0]);
+        throw TestFailed(buf.str());
     }
 }
 
 template<typename Dataset>
-void ActualWriter<Dataset>::import(metadata::Collection& mds, dataset::ReplaceStrategy strategy)
+void ActualWriter<Dataset>::acquire_ok(metadata::Collection& mds, ReplaceStrategy strategy)
 {
-    WriterBatch batch;
-    batch.reserve(mds.size());
-    for (auto& md: mds)
-        batch.emplace_back(make_shared<WriterBatchElement>(*md));
+    metadata::InboundBatch batch = mds.make_batch();
     wassert(this->_actual->acquire_batch(batch, strategy));
 
-    std::stringstream ss;
+    std::stringstream buf;
     for (const auto& e: batch)
     {
-        if (e->result == dataset::ACQ_OK) continue;
-        switch (e->result)
-        {
-            case ACQ_ERROR_DUPLICATE:
-                ss << "ACQ_ERROR_DUPLICATE when importing data. notes:" << endl;
-                break;
-            case ACQ_ERROR:
-                ss << "ACQ_ERROR when importing data. notes:" << endl;
-                break;
-            default:
-                ss << "Error " << (int)e->result << " when importing data. notes:" << endl;
-                break;
-        }
-
-        auto notes = e->md.notes();
-        for (auto n = notes.first; n != notes.second; ++n)
-            ss << "\t" << **n << endl;
+        if (e->result == metadata::Inbound::Result::OK) continue;
+        format_fail_inbound(buf, *e);
     }
-    if (!ss.str().empty())
-        throw TestFailed(ss.str());
+    if (!buf.str().empty())
+        throw TestFailed(buf.str());
+}
+
+template<typename Dataset>
+void ActualWriter<Dataset>::acquire_duplicate(std::shared_ptr<Metadata> md, ReplaceStrategy strategy)
+{
+    metadata::InboundBatch batch;
+    batch.add(md);
+    wassert(this->_actual->acquire_batch(batch, strategy));
+    if (batch[0]->result != metadata::Inbound::Result::DUPLICATE)
+    {
+        std::stringstream buf;
+        format_fail_inbound(buf, *batch[0]);
+        throw TestFailed(buf.str());
+    }
 }
 
 

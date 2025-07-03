@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.50
+Version: 1.60
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -16,15 +16,6 @@ Source3: https://github.com/arpa-simc/%{name}/raw/v%{version}-%{release}/fedora/
 # On fedora, we don't need systemd to build. But we do on centos.
 # https://fedoraproject.org/wiki/Packaging:Systemd#Filesystem_locations
 BuildRequires: systemd
-
-# Python 3 package names
-%if 0%{?rhel} == 7
-%define python3_vers python36
-# to have python 3.6 interpreter
-BuildRequires: python3-rpm-macros >= 3-23
-%else
-%define python3_vers python3
-%endif
 
 BuildRequires: meson
 BuildRequires: gcc-c++
@@ -47,43 +38,35 @@ BuildRequires: libwreport-devel >= 3.0
 BuildRequires: flex
 BuildRequires: bison
 BuildRequires: meteo-vm2-devel >= 0.12
-BuildRequires: %{python3_vers}
-BuildRequires: %{python3_vers}-devel
-BuildRequires: %{python3_vers}-werkzeug
-BuildRequires: %{python3_vers}-setproctitle
-BuildRequires: %{python3_vers}-jinja2
-BuildRequires: %{python3_vers}-requests
-BuildRequires: %{python3_vers}-wreport3
-BuildRequires: %{python3_vers}-dballe >= 9.0
-BuildRequires: %{python3_vers}-netcdf4
-BuildRequires: %{python3_vers}-pillow
-%if ! 0%{?el7}
-BuildRequires: %{python3_vers}-h5py
-BuildRequires: %{python3_vers}-sphinx
-%else
-BuildRequires: h5py
-%endif
+BuildRequires: python3
+BuildRequires: python3-devel
+BuildRequires: python3-werkzeug
+BuildRequires: python3-setproctitle
+BuildRequires: python3-jinja2
+BuildRequires: python3-requests
+BuildRequires: python3-wreport3
+BuildRequires: python3-dballe >= 9.0
+BuildRequires: python3-netcdf4
+BuildRequires: python3-pillow
+BuildRequires: python3-h5py
+BuildRequires: python3-sphinx
 BuildRequires: libzip-devel
 BuildRequires: libarchive-devel
 BuildRequires: bzip2-devel
-BuildRequires: %{python3_vers}-shapely
+BuildRequires: python3-shapely
 
 Requires: meteo-vm2 >= 0.12
 Requires: eccodes
-Requires: %{python3_vers}
-Requires: %{python3_vers}-werkzeug
-Requires: %{python3_vers}-setproctitle
-Requires: %{python3_vers}-dballe >= 9.0
-Requires: %{python3_vers}-netcdf4
-Requires: %{python3_vers}-pillow
-Requires: %{python3_vers}-shapely
+Requires: python3
+Requires: python3-werkzeug
+Requires: python3-setproctitle
+Requires: python3-dballe >= 9.0
+Requires: python3-netcdf4
+Requires: python3-pillow
+Requires: python3-shapely
 Requires: libdballe9
 Requires: systemd
-%if ! 0%{?el7}
-Requires: %{python3_vers}-h5py
-%else
-Requires: h5py
-%endif
+Requires: python3-h5py
 
 Conflicts: arkimet-devel
 
@@ -116,12 +99,6 @@ currently offline.
 
 %build
 
-# CentOS 7 known limitations
-# - disabled syscall splice()
-# - disabled nosetests that were hanging (see #217)
-# - disabled netcdf v5 support (see #243)
-# - disabled doc building for issues with sphinx
-
 # enabling arpae tests on almost all builds
 %{?fedora:%define arpae_tests 1}
 %{?rhel:%define arpae_tests 1}
@@ -133,7 +110,9 @@ source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %else
 %meson
 %endif
-%meson_build
+# Try to limit parallel building based on system load
+# This mitigates building on CI systems designed for mostly non-parallel builds
+%meson_build -l$(( %{_smp_build_ncpus} * 2 ))
 
 
 %install
@@ -149,12 +128,7 @@ echo 'Enabling ARPAE tests'
 source %{_sysconfdir}/profile.d/eccodes-simc.sh
 %endif
 
-%if 0%{?el7}
-# See https://github.com/ARPA-SIMC/arkimet/issues/217
-%meson_test ISSUE217=1
-%else
-%meson_test
-%endif
+%meson_test --num-processes 1
 
 
 %clean
@@ -203,6 +177,56 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Jul  3 2025 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.60-1
+- Restore invalidating iseg summaries on import (#352)
+
+* Tue Jun 17 2025 Daniele Branchini <dbranchini@arpae.it> - 1.59-1
+- Deal with files deleted during iteration in PathWalk (#351)
+- Improved error logs in wobble
+
+* Fri Jun 13 2025 Daniele Branchini <dbranchini@arpae.it> - 1.58-2
+- Updated wobble (shows offending file in fstatat/lstatat error messages) (#351)
+
+* Mon May 26 2025 Daniele Branchini <dbranchini@arpae.it> - 1.58-1
+- Fix synthesizing a segment root path for file datasetes (#350)
+
+* Fri May 16 2025 Daniele Branchini <dbranchini@arpae.it> - 1.57-1
+- Normalize paths before reading configuration from them (#348)
+- Allow to specify `use=error` or `use=duplicates` in dataset configuration, to
+  allow an error or duplicates dataset to have an arbitrary name (#328)
+- Fixed examples in error and duplicates dataset documentation (#349)
+- Add `Summary.reference_time` python accessor giving a `tuple[datetime, datetime]`
+  with the extremes
+- Python methods that read a config file now also accept a Path to point to the file
+- Correctly invalidate dataset summaries when doing deletion and maintenance of
+  simple datasets (#347)
+- Updated arkiguide (#344)
+
+* Mon Jan 27 2025 Daniele Branchini <dbranchini@arpae.it> - 1.56-1
+- Refactored segment writing of metadata+summary in simple segments
+- Optimize repack operation on file segments
+- Fixed builds (#345)
+
+* Wed Jan 22 2025 Daniele Branchini <dbranchini@arpae.it> - 1.55-1
+- Implemented segment-specific checking
+
+* Tue Jan 21 2025 Daniele Branchini <dbranchini@arpae.it> - 1.54-1
+- Refactoring of segment and dataset implementations
+- `arki-check --delete` is now supported also for `simple` datasets
+- it is now possible to open a subdataset inside .archives and query and delete data from it (#344)
+
+* Mon Dec 16 2024 Daniele Branchini <dbranchini@arpae.it> - 1.53-1
+- Prepend prefix to POSTPROC_DIR to make it absolute (#341)
+
+* Thu Dec  5 2024 Daniele Branchini <dbranchini@arpae.it> - 1.52-1
+- Updated code to use C++17 features and new wreport/dballe
+- Fixed build/test errors (#337, #339)
+- Removed support for CentOS7 in specfile
+
+* Mon Jun 24 2024 Daniele Branchini <dbranchini@arpae.it> - 1.51-1
+- Fixed scanning GRIB1 files with missing level parts (#326)
+- Removed docker references, updated build instructions (#329)
+
 * Fri May 10 2024 Daniele Branchini <dbranchini@arpae.it> - 1.50-1
 - Implemented date/time validation in matcher parser (#324)
 - Add a formatter for annotating cosmo model local variables (#300)

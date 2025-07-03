@@ -115,21 +115,21 @@ DatasetSessionTimeOverrideDef* session_time_override_def = nullptr;
 struct read_config : public MethKwargs<read_config, PyObject>
 {
     constexpr static const char* name = "read_config";
-    constexpr static const char* signature = "pathname: str";
+    constexpr static const char* signature = "pathname: str | Path";
     constexpr static const char* returns = "arki.cfg.Section";
     constexpr static const char* summary = "Read the configuration of a dataset at the given path or URL";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "pathname", nullptr };
-        const char* pathname;
-        Py_ssize_t pathname_len;
+        PyObject* arg_path = nullptr;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &pathname, &pathname_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_path))
             return nullptr;
 
         try {
-            auto section = arki::dataset::Session::read_config(std::string(pathname, pathname_len));
+            auto path = from_python<std::filesystem::path>(arg_path);
+            auto section = arki::dataset::Session::read_config(path);
             return to_python(section);
         } ARKI_CATCH_RETURN_PYO
     }
@@ -138,21 +138,21 @@ struct read_config : public MethKwargs<read_config, PyObject>
 struct read_configs : public MethKwargs<read_configs, PyObject>
 {
     constexpr static const char* name = "read_configs";
-    constexpr static const char* signature = "pathname: str";
+    constexpr static const char* signature = "pathname: str | Path";
     constexpr static const char* returns = "arki.cfg.Sections";
     constexpr static const char* summary = "Read the merged dataset configuration at the given path or URL";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = { "pathname", nullptr };
-        const char* pathname;
-        Py_ssize_t pathname_len;
+        PyObject* arg_path = nullptr;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s#", const_cast<char**>(kwlist), &pathname, &pathname_len))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", const_cast<char**>(kwlist), &arg_path))
             return nullptr;
 
         try {
-            auto sections = arki::dataset::Session::read_configs(std::string(pathname, pathname_len));
+            auto path = from_python<std::filesystem::path>(arg_path);
+            auto sections = arki::dataset::Session::read_configs(path);
             return to_python(sections);
         } ARKI_CATCH_RETURN_PYO
     }

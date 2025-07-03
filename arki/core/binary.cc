@@ -47,7 +47,7 @@ std::string BinaryDecoder::pop_line(const std::string& sep)
 
     if (!size) return res;
 
-    const uint8_t* pos = std::search(buf, buf + size, (uint8_t*)sep.data(), (uint8_t*)sep.data() + sep.size());
+    const uint8_t* pos = std::search(buf, buf + size, sep.data(), sep.data() + sep.size());
     if (pos == buf + size)
     {
         res.assign(buf, buf + size);

@@ -5,11 +5,15 @@
 
 #include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/types/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <arki/segment/fwd.h>
 #include <arki/stream/fwd.h>
 #include <vector>
+#include <filesystem>
 #include <string>
+#include <set>
 
 namespace arki {
 class Summary;
@@ -30,9 +34,9 @@ public:
     Collection(const Collection& o) = default;
     Collection(Collection&& o) = default;
     /// Construct a collection filled by the results of query_data
-    Collection(dataset::Dataset& ds, const dataset::DataQuery& q);
+    Collection(dataset::Dataset& ds, const query::Data& q);
     Collection(dataset::Dataset& ds, const std::string& q);
-    Collection(dataset::Reader& ds, const dataset::DataQuery& q);
+    Collection(dataset::Reader& ds, const query::Data& q);
     Collection(dataset::Reader& ds, const std::string& q);
     ~Collection();
 
@@ -58,8 +62,11 @@ public:
 
     // TODO: make an iterator adapter that iterates on Metadata references, to make the interface consistent
     typedef std::vector<std::shared_ptr<Metadata>>::const_iterator const_iterator;
+    typedef std::vector<std::shared_ptr<Metadata>>::iterator iterator;
     const_iterator begin() const { return vals.begin(); }
     const_iterator end() const { return vals.end(); }
+    iterator begin() { return vals.begin(); }
+    iterator end() { return vals.end(); }
 
     const Metadata& operator[](unsigned idx) const { return *vals[idx]; }
     Metadata& operator[](unsigned idx) { return *vals[idx]; }
@@ -75,19 +82,19 @@ public:
     /**
      * Create a batch for acquire_batch with the contents of this collection
      */
-    dataset::WriterBatch make_import_batch() const;
+    InboundBatch make_batch() const;
 
     /// Return a metadata_dest_func that inserts into this collection
     metadata_dest_func inserter_func();
 
     /// Append results from a query_data
-    void add(dataset::Dataset& ds, const dataset::DataQuery& q);
+    void add(dataset::Dataset& ds, const query::Data& q);
 
     /// Append results from a query_data
     void add(dataset::Dataset& ds, const std::string& q);
 
     /// Append results from a query_data
-    void add(dataset::Reader& reader, const dataset::DataQuery& q);
+    void add(dataset::Reader& reader, const query::Data& q);
 
     /// Append results from a query_data
     void add(dataset::Reader& reader, const std::string& q);
@@ -95,15 +102,22 @@ public:
     /// Append md
     void acquire(std::shared_ptr<Metadata> md, bool with_data=false);
 
-	/**
-	 * Write all the metadata to a file, atomically, using AtomicWriter
-	 */
-	void writeAtomically(const std::string& fname) const;
+    /**
+     * Write all the metadata to a file, atomically
+     */
+    void writeAtomically(const std::filesystem::path& fname) const;
 
-	/**
-	 * Append all metadata to the given file
-	 */
-	void appendTo(const std::string& fname) const;
+    /**
+     * Write all the metadata to a file, atomically.
+     *
+     * The file timestamp is left unchanged.
+     */
+    void writeAtomicallyPreservingTimestamp(const std::filesystem::path& fname) const;
+
+    /**
+     * Append all metadata to the given file
+     */
+    void appendTo(const std::filesystem::path& fname) const;
 
     /// Write all metadata to the given output file
     void write_to(core::NamedFileDescriptor& out) const;
@@ -115,7 +129,7 @@ public:
     void read_from_file(const metadata::ReadContext& rc);
 
     /// Read metadata from \a pathname and append them to this collection
-    void read_from_file(const std::string& pathname);
+    void read_from_file(const std::filesystem::path& pathname);
 
     /// Read metadata from a file descriptor and append them to this collection
     void read_from_file(core::NamedFileDescriptor& fd);
@@ -133,20 +147,21 @@ public:
      * This is useful to prepare a Metadata bundle for being written next to
      * the file(s) that it describes.
      */
-    void strip_source_paths();
+    void prepare_for_segment_metadata();
 
-	/**
-	 * Ensure that all metadata point to data in the same file and that
-	 * they completely cover the file.
-	 *
-	 * @returns the data file name
-	 */
-	std::string ensureContiguousData(const std::string& source = std::string("metadata")) const;
+    /**
+     * Ensure that all metadata point to data in the same file and that
+     * they completely cover the file.
+     *
+     * @returns the data file name
+     */
+    std::filesystem::path ensureContiguousData(const std::string& source = std::string("metadata")) const;
 
-	/// Sort with the given order
-	void sort(const sort::Compare& cmp);
-	void sort(const std::string& cmp);
-	void sort(); // Sort by reftime
+    /// Sort with the given order
+    void sort(const sort::Compare& cmp);
+    void sort(const std::string& cmp);
+    void sort(); // Sort by reftime
+    void sort_segment(); // Sort by reftime and offset
 
     /**
      * Expand the given begin and end ranges to include the datetime extremes
@@ -162,25 +177,47 @@ public:
 
     /// Call drop_cached_data on all metadata in the collection
     void drop_cached_data();
+
+    /**
+     * Return a copy of this collection without duplicates.
+     *
+     * @param unique_components metadata to consider in searching for duplicates
+     *
+     * All data for which the metadata items listed in \a unique_components are
+     * the same will be removed from the result, except for the last one.
+     */
+    Collection without_duplicates(const std::set<types::Code>& unique_components) const;
+
+    /**
+     * Return a copy of this collection without the data at the given offsets.
+     */
+    Collection without_data(const std::set<uint64_t>& offsets) const;
+
+    /**
+     * Print the contents of the collection
+     */
+    void dump(FILE* out, const std::set<types::Code>& extra_items = std::set<types::Code>()) const;
 };
 
 struct TestCollection : public Collection
 {
     using Collection::Collection;
 
+    std::shared_ptr<segment::Session> session;
+
     TestCollection() = default;
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    TestCollection(const std::string& pathname, bool with_data=false);
+    TestCollection(const std::filesystem::path& path, bool with_data=false);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::string& pathname, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, bool with_data);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::string& pathname, const std::string& format, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data);
 };
 
 }

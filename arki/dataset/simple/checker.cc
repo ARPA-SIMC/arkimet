@@ -1,5 +1,5 @@
-#include "arki/dataset/simple/checker.h"
-#include "arki/dataset/index/manifest.h"
+#include "checker.h"
+#include "manifest.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
@@ -31,407 +31,178 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-namespace {
-
-struct RepackSort : public metadata::sort::Compare
-{
-    int compare(const Metadata& a, const Metadata& b) const override
-    {
-        const types::Type* rta = a.get(TYPE_REFTIME);
-        const types::Type* rtb = b.get(TYPE_REFTIME);
-        if (rta && !rtb) return 1;
-        if (!rta && rtb) return -1;
-        if (rta && rtb)
-            if (int res = rta->compare(*rtb)) return res;
-        if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
-        if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
-        return 0;
-    }
-
-    std::string toString() const override { return "reftime,offset"; }
-};
-
-}
-
-
 class CheckerSegment : public segmented::CheckerSegment
 {
 public:
-    Checker& checker;
+    Checker& dataset_checker;
 
-    CheckerSegment(Checker& checker, const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
-        : segmented::CheckerSegment(lock), checker(checker)
+    CheckerSegment(Checker& checker, std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
+        : segmented::CheckerSegment(segment, lock), dataset_checker(checker)
     {
-        segment = checker.dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
+        if (auto hooks = dataset().test_hooks)
+            hooks->on_check_lock(*segment);
     }
 
-    std::string path_relative() const override { return segment->segment().relpath; }
-    const simple::Dataset& dataset() const override { return checker.dataset(); }
-    simple::Dataset& dataset() override { return checker.dataset(); }
-    std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(checker.archive()); }
+    std::filesystem::path path_relative() const override { return segment_data_checker->segment().relpath(); }
+    const simple::Dataset& dataset() const override { return dataset_checker.dataset(); }
+    simple::Dataset& dataset() override { return dataset_checker.dataset(); }
+    std::shared_ptr<dataset::archive::Checker> archives() override { return dynamic_pointer_cast<dataset::archive::Checker>(dataset_checker.archive()); }
 
-    void get_metadata(std::shared_ptr<core::Lock> lock, metadata::Collection& mds) override
+    /// Delete the dataset summary (if present)
+    void invalidate_dataset_summary()
     {
-        auto reader = segment->segment().reader(lock);
-        reader->scan(mds.inserter_func());
+        std::filesystem::remove(dataset().path / "summary");
     }
 
-    segmented::SegmentState scan(dataset::Reporter& reporter, bool quick=true) override
+    segmented::SegmentState fsck(dataset::Reporter& reporter, bool quick=true) override
     {
-        if (!segment->exists_on_disk())
+        segmented::SegmentState res;
+
+        // Get the allowed time interval from the segment name
+        if (!dataset().step().path_timespan(segment->relpath(), res.interval))
         {
-            reporter.segment_info(checker.name(), segment->segment().relpath, "segment found in index but not on disk");
-            return segmented::SegmentState(segment::SEGMENT_MISSING);
+            reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), "segment name does not fit the step of this dataset");
+            res.state += segment::SEGMENT_CORRUPTED;
+            return res;
         }
 
-        if (!checker.m_idx->has_segment(segment->segment().relpath))
+        // Run segment-specific scan
+        auto segment_reporter = reporter.segment_reporter(dataset_checker.name());
+        auto segment_fsck = segment_checker->fsck(*segment_reporter, quick);
+        res.state += segment_fsck.state;
+        if (res.state.has_any(segment::SEGMENT_MISSING + segment::SEGMENT_DELETED + segment::SEGMENT_UNALIGNED))
+            return res;
+
+        // At this point we know the segment is consistent and contains data
+
+        const auto* segment_info = dataset_checker.manifest.segment(segment->relpath());
+        if (!segment_info)
         {
-            if (segment->is_empty())
-            {
-                reporter.segment_info(checker.name(), segment->segment().relpath, "empty segment found on disk with no associated index data");
-                return segmented::SegmentState(segment::SEGMENT_DELETED);
-            } else {
-                //bool untrusted_index = files::hasDontpackFlagfile(checker.dataset().path);
-                reporter.segment_info(checker.name(), segment->segment().relpath, "segment found on disk with no associated index data");
-                //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
-                return segmented::SegmentState(segment::SEGMENT_UNALIGNED);
-            }
+            //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment found on disk with no associated MANIFEST data");
+            //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
+            res.state += segment::SEGMENT_UNOPTIMIZED;
+        } else if (segment_info->mtime != segment_fsck.mtime) {
+            //bool untrusted_index = files::hasDontpackFlagfile(dataset_checker.dataset().path);
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment mtime does not match MANIFEST information");
+            //return segmented::SegmentState(untrusted_index ? segment::SEGMENT_UNALIGNED : segment::SEGMENT_DELETED);
+            res.state += segment::SEGMENT_UNOPTIMIZED;
+        } else if (segment_info->time != segment_fsck.interval) {
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment data interval does not match MANIFEST information");
+            res.state += segment::SEGMENT_UNOPTIMIZED;
         }
 
-        // TODO: replace with a method of Segment
-        time_t ts_data = segment->segment().timestamp();
-        time_t ts_md = sys::timestamp(segment->segment().abspath + ".metadata", 0);
-        time_t ts_sum = sys::timestamp(segment->segment().abspath + ".summary", 0);
-        time_t ts_idx = checker.m_mft->segment_mtime(segment->segment().relpath);
-
-        segment::State state = segment::SEGMENT_OK;
-
-        // Check timestamp consistency
-        if (ts_idx != ts_data || ts_md < ts_data || ts_sum < ts_md)
+        if (!res.interval.contains(segment_fsck.interval))
         {
-            if (ts_idx != ts_data)
-                nag::verbose("%s: %s has a timestamp (%ld) different than the one in the index (%ld)",
-                        checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_idx);
-            if (ts_md < ts_data)
-                nag::verbose("%s: %s has a timestamp (%ld) newer that its metadata (%ld)",
-                        checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_data, (long int)ts_md);
-            if (ts_md < ts_data)
-                nag::verbose("%s: %s metadata has a timestamp (%ld) newer that its summary (%ld)",
-                        checker.dataset().path.c_str(), segment->segment().relpath.c_str(), (long int)ts_md, (long int)ts_sum);
-            state = segment::SEGMENT_UNALIGNED;
+            reporter.segment_info(dataset_checker.name(), segment->relpath(), "segment contents do not fit inside the step of this dataset");
+            res.state += segment::SEGMENT_CORRUPTED;
+            return res;
         }
 
-        // Read metadata of segment contents
+        res.check_age(segment_data_checker->segment().relpath(), dataset(), reporter);
 
-        //scan_file(m_path, i.file, state, v);
-        //void scan_file(const std::string& root, const std::string& relpath, segment::State state, segment::contents_func dest)
-
-        // TODO: turn this into a Segment::exists/Segment::scan
-        metadata::Collection contents;
-        if (sys::exists(segment->segment().abspath + ".metadata"))
-        {
-            Metadata::read_file(metadata::ReadContext(segment->segment().abspath + ".metadata", checker.dataset().path), [&](std::shared_ptr<Metadata> md) {
-                // Tweak Blob sources replacing the file name with segment->relpath
-                if (const source::Blob* s = md->has_source_blob())
-                    md->set_source(Source::createBlobUnlocked(s->format, checker.dataset().path, segment->segment().relpath, s->offset, s->size));
-                contents.acquire(md);
-                return true;
-            });
-        }
-        else
-            // The index knows about the file, so instead of saying segment::SEGMENT_DELETED
-            // because we have data without metadata, we say segment::SEGMENT_UNALIGNED
-            // because the metadata needs to be regenerated
-            state += segment::SEGMENT_UNALIGNED;
-
-        RepackSort cmp;
-        contents.sort(cmp); // Sort by reftime and by offset
-
-        // Compute the span of reftimes inside the segment
-        core::Interval segment_interval;
-        if (contents.empty())
-        {
-            reporter.segment_info(checker.name(), segment->segment().relpath, "index knows of this segment but contains no data for it");
-            state = segment::SEGMENT_UNALIGNED;
-        } else {
-            if (!contents.expand_date_range(segment_interval))
-            {
-                reporter.segment_info(checker.name(), segment->segment().relpath, "index data for this segment has no reference time information");
-                state = segment::SEGMENT_CORRUPTED;
-            } else {
-                // Ensure that the reftime span fits inside the segment step
-                core::Interval interval;
-                if (checker.dataset().step().path_timespan(segment->segment().relpath, interval))
-                {
-                    if (segment_interval.begin < interval.begin || segment_interval.end > interval.end)
-                    {
-                        reporter.segment_info(checker.name(), segment->segment().relpath, "segment contents do not fit inside the step of this dataset");
-                        state = segment::SEGMENT_CORRUPTED;
-                    }
-                    // Expand segment timespan to the full possible segment timespan
-                    segment_interval = interval;
-                } else {
-                    reporter.segment_info(checker.name(), segment->segment().relpath, "segment name does not fit the step of this dataset");
-                    state = segment::SEGMENT_CORRUPTED;
-                }
-            }
-        }
-
-        if (state.is_ok())
-            state = segment->check([&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); }, contents, quick);
-
-        auto res = segmented::SegmentState(state, segment_interval);
-        res.check_age(segment->segment().relpath, checker.dataset(), reporter);
         return res;
     }
 
-    size_t repack(unsigned test_flags) override
+    void post_remove_data(std::shared_ptr<segment::Fixer>, segment::Fixer::MarkRemovedResult& res) override
     {
-        auto lock = checker.lock->write_lock();
-
-        // Read the metadata
-        metadata::Collection mds;
-        get_metadata(lock, mds);
-
-        // Sort by reference time and offset
-        RepackSort cmp;
-        mds.sort(cmp);
-
-        return reorder(mds, test_flags);
-    }
-
-    size_t reorder(metadata::Collection& mds, unsigned test_flags) override
-    {
-        // Write out the data with the new order
-        segment::RepackConfig repack_config;
-        repack_config.gz_group_size = dataset().gz_group_size;
-        repack_config.test_flags = test_flags;
-        auto p_repack = segment->repack(checker.dataset().path, mds, repack_config);
-
-        // Strip paths from mds sources
-        mds.strip_source_paths();
-
-        // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
-
-        size_t size_pre = segment->size();
-
-        p_repack.commit();
-
-        size_t size_post = segment->size();
-
-        // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-
-        // Regenerate the summary. It is unchanged, really, but its timestamp
-        // has become obsolete by now
-        Summary sum;
-        mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
-
-
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
-
-        return size_pre - size_post;
+        dataset_checker.manifest.set(segment->relpath(), res.segment_mtime, res.data_timespan);
+        dataset_checker.manifest.flush();
+        invalidate_dataset_summary();
     }
 
-    size_t remove(bool with_data) override
+    void post_repack(std::shared_ptr<segment::Fixer>, segment::Fixer::ReorderResult& res) override
     {
-        checker.m_mft->remove(segment->segment().relpath);
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
-        if (!with_data) return 0;
-        return segment->remove();
-    }
-
-    void tar() override
-    {
-        if (sys::exists(segment->segment().abspath + ".tar"))
-            return;
-
-        auto lock = checker.lock->write_lock();
-
-        metadata::Collection mds;
-        get_metadata(lock, mds);
-
-        // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
-
-        // Create the .tar segment
-        segment = segment->tar(mds);
-
-        // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-
-        // Regenerate the summary. It is unchanged, really, but its timestamp
-        // has become obsolete by now
-        Summary sum;
-        mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
-
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
+        dataset_checker.manifest.set_mtime(segment->relpath(), res.segment_mtime);
+        dataset_checker.manifest.flush();
     }
 
-    void zip() override
+    void pre_remove(std::shared_ptr<segment::Fixer>) override
     {
-        if (sys::exists(segment->segment().abspath + ".zip"))
-            return;
-
-        auto lock = checker.lock->write_lock();
-
-        metadata::Collection mds;
-        get_metadata(lock, mds);
-
-        // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
-
-        // Create the .tar segment
-        segment = segment->zip(mds);
-
-        // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-
-        // Regenerate the summary. It is unchanged, really, but its timestamp
-        // has become obsolete by now
-        Summary sum;
-        mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
-
-        // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
+        dataset_checker.manifest.remove(segment->relpath());
+        dataset_checker.manifest.flush();
     }
 
-    size_t compress(unsigned groupsize) override
+    void post_convert(std::shared_ptr<segment::Fixer>, segment::Fixer::ConvertResult& res) override
     {
-        if (sys::exists(segment->segment().abspath + ".gz") || sys::exists(segment->segment().abspath + ".gz.idx"))
-            return 0;
-
-        auto lock = checker.lock->write_lock();
-
-        metadata::Collection mds;
-        get_metadata(lock, mds);
-
-        // Remove existing cached metadata, since we scramble their order
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
-
-        // Create the .tar segment
-        size_t old_size = segment->size();
-        segment = segment->compress(mds, groupsize);
-        size_t new_size = segment->size();
-
-        // Write out the new metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-
-        // Regenerate the summary. It is unchanged, really, but its timestamp
-        // has become obsolete by now
-        Summary sum;
-        mds.add_to_summary(sum);
-        sum.writeAtomically(segment->segment().abspath + ".summary");
-
         // Reindex with the new file information
-        time_t mtime = segment->segment().timestamp();
-        checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
-
-        if (old_size > new_size)
-            return old_size - new_size;
-        else
-            return 0;
+        dataset_checker.manifest.set_mtime(segment_data_checker->segment().relpath(), res.segment_mtime);
+        dataset_checker.manifest.flush();
     }
 
     void index(metadata::Collection&& mds) override
     {
-        time_t mtime = segment->segment().timestamp();
+        auto fixer = segment_checker->fixer();
+        fixer->reindex(mds);
 
-        // Iterate the metadata, computing the summary and making the data
-        // paths relative
-        mds.strip_source_paths();
-        Summary sum;
-        mds.add_to_summary(sum);
-
-        // Regenerate .metadata
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-
-        // Regenerate .summary
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        time_t mtime = segment_data->timestamp().value();
+        core::Interval interval;
+        mds.expand_date_range(interval);
 
         // Add to manifest
-        checker.m_mft->acquire(segment->segment().relpath, mtime, sum);
-        checker.m_mft->flush();
+        dataset_checker.manifest.set(segment->relpath(), mtime, interval);
+        dataset_checker.manifest.flush();
+
+        std::filesystem::remove(segment->abspath_iseg_index());
+        invalidate_dataset_summary();
     }
 
     void rescan(dataset::Reporter& reporter) override
     {
-        // Delete cached info to force a full rescan
-        sys::unlink_ifexists(segment->segment().abspath + ".metadata");
-        sys::unlink_ifexists(segment->segment().abspath + ".summary");
-
-        std::string dirname(str::dirname(segment->segment().abspath));
-        std::string basename(str::basename(segment->segment().abspath));
+        auto path_metadata = segment->abspath_metadata();
 
         metadata::Collection mds;
-        segment->rescan_data(
-                [&](const std::string& msg) { reporter.segment_info(checker.name(), segment->segment().relpath, msg); },
-                lock, [&](std::shared_ptr<Metadata> md) {
-                    auto& source = md->sourceBlob();
-                    md->set_source(Source::createBlobUnlocked(segment->segment().format, dirname, basename, source.offset, source.size));
-                    mds.acquire(md);
-                    return true;
-                });
+        segment_data_checker->rescan_data(
+                [&](const std::string& msg) { reporter.segment_info(dataset_checker.name(), segment_data_checker->segment().relpath(), msg); },
+                lock, mds.inserter_func());
 
-        Summary sum;
-        for (const auto& md: mds)
-            sum.add(*md);
+        time_t mtime = segment_data->timestamp().value();
+        core::Interval interval;
+        mds.expand_date_range(interval);
 
-        // Regenerate .metadata and .summary
-        mds.writeAtomically(segment->segment().abspath + ".metadata");
-        sum.writeAtomically(segment->segment().abspath + ".summary");
+        auto fixer = segment_checker->fixer();
+        fixer->reindex(mds);
 
         // Add to manifest
-        checker.m_mft->acquire(segment->segment().relpath, segment->segment().timestamp(), sum);
-        checker.m_mft->flush();
+        dataset_checker.manifest.set(segment->relpath(), mtime, interval);
+        dataset_checker.manifest.flush();
+        invalidate_dataset_summary();
     }
 
-    void release(const std::string& new_root, const std::string& new_relpath, const std::string& new_abspath) override
+    arki::metadata::Collection release(std::shared_ptr<const segment::Session> new_segment_session, const std::filesystem::path& new_relpath) override
     {
-        checker.m_mft->remove(segment->segment().relpath);
-        segment = segment->move(new_root, new_relpath, new_abspath);
+        // TODO: get a fixer lock
+        metadata::Collection mds = segment_checker->scan();
+        segment_data_checker->move(new_segment_session, new_relpath);
+        dataset_checker.manifest.remove(segment_data_checker->segment().relpath());
+        dataset_checker.manifest.flush();
+        invalidate_dataset_summary();
+        return mds;
     }
 };
 
 
 Checker::Checker(std::shared_ptr<simple::Dataset> dataset)
-    : DatasetAccess(dataset), m_mft(0)
+    : DatasetAccess(dataset), manifest(dataset->path, dataset->eatmydata)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
+    std::filesystem::create_directories(dataset->path);
 
     lock = dataset->check_lock_dataset();
 
     // If the index is missing, take note not to perform a repack until a
     // check is made
-    if (!index::Manifest::exists(dataset->path))
+    if (!manifest::exists(dataset->path))
         files::createDontpackFlagfile(dataset->path);
 
-    unique_ptr<index::Manifest> mft = index::Manifest::create(dataset, dataset->index_type);
-    m_mft = mft.release();
-    m_mft->lock = lock;
-    m_mft->openRW();
-    m_idx = m_mft;
+    manifest.reread();
 }
 
 Checker::~Checker()
 {
-    m_mft->flush();
-    delete m_idx;
+    manifest.flush();
 }
 
 std::string Checker::type() const { return "simple"; }
@@ -439,56 +210,53 @@ std::string Checker::type() const { return "simple"; }
 void Checker::repack(CheckerConfig& opts, unsigned test_flags)
 {
     segmented::Checker::repack(opts, test_flags);
-    m_mft->flush();
+    manifest.flush();
 }
 
 void Checker::check(CheckerConfig& opts)
 {
     segmented::Checker::check(opts);
-    m_mft->flush();
+    manifest.flush();
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment(const std::string& relpath)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment(std::shared_ptr<const Segment> segment)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, segment, lock));
 }
 
-std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(const std::string& relpath, std::shared_ptr<dataset::CheckLock> lock)
+std::unique_ptr<segmented::CheckerSegment> Checker::segment_prelocked(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock)
 {
-    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, relpath, lock));
+    return unique_ptr<segmented::CheckerSegment>(new CheckerSegment(*this, segment, lock));
 }
 
 void Checker::segments_tracked(std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    std::vector<std::string> names;
-    m_idx->list_segments([&](const std::string& relpath) { names.push_back(relpath); });
-
-    for (const auto& relpath: names)
+    auto files = manifest.file_list();
+    for (const auto& info: files)
     {
-        CheckerSegment segment(*this, relpath, lock);
-        dest(segment);
+        auto segment = dataset().segment_session->segment_from_relpath(info.relpath);
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     }
 }
 
 void Checker::segments_tracked_filtered(const Matcher& matcher, std::function<void(segmented::CheckerSegment& segment)> dest)
 {
-    // TODO: implement filtering
-    std::vector<std::string> names;
-    m_idx->list_segments_filtered(matcher, [&](const std::string& relpath) { names.push_back(relpath); });
-
-    for (const auto& relpath: names)
+    auto files = manifest.file_list(matcher);
+    for (const auto& info: files)
     {
-        CheckerSegment segment(*this, relpath, lock);
-        dest(segment);
+        auto segment = dataset().segment_session->segment_from_relpath(info.relpath);
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     }
 }
 
 void Checker::segments_untracked(std::function<void(segmented::CheckerSegment& relpath)> dest)
 {
-    scan_dir(dataset().path, [&](const std::string& relpath) {
-        if (m_idx->has_segment(relpath)) return;
-        CheckerSegment segment(*this, relpath, lock);
-        dest(segment);
+    scan_dir([&](std::shared_ptr<const Segment> segment) {
+        if (manifest.segment(segment->relpath())) return;
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     });
 }
 
@@ -498,43 +266,42 @@ void Checker::segments_untracked_filtered(const Matcher& matcher, std::function<
     auto m = matcher.get(TYPE_REFTIME);
     if (!m) return segments_untracked(dest);
 
-    scan_dir(dataset().path, [&](const std::string& relpath) {
-        if (m_idx->has_segment(relpath)) return;
-        if (!dataset().step().pathMatches(relpath, *m)) return;
-        CheckerSegment segment(*this, relpath, lock);
-        dest(segment);
+    scan_dir([&](std::shared_ptr<const Segment> segment) {
+        if (manifest.segment(segment->relpath())) return;
+        if (!dataset().step().pathMatches(segment->relpath(), *m)) return;
+        CheckerSegment csegment(*this, segment, lock);
+        dest(csegment);
     });
 }
 
 size_t Checker::vacuum(dataset::Reporter& reporter)
 {
-    reporter.operation_progress(name(), "repack", "running VACUUM ANALYZE on the dataset index, if applicable");
-    return m_mft->vacuum();
+    return 0;
 }
 
-void Checker::test_delete_from_index(const std::string& relpath)
+void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 {
-    m_idx->test_deindex(relpath);
-    string pathname = str::joinpath(dataset().path, relpath);
-    sys::unlink_ifexists(pathname + ".metadata");
-    sys::unlink_ifexists(pathname + ".summary");
+    segmented::Checker::test_delete_from_index(relpath);
+    manifest.remove(relpath);
+    manifest.flush();
 }
 
-void Checker::test_invalidate_in_index(const std::string& relpath)
+void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
-    m_idx->test_deindex(relpath);
-    sys::touch(str::joinpath(dataset().path, relpath + ".metadata"), 1496167200);
+    manifest.remove(relpath);
+    manifest.flush();
 }
 
-std::shared_ptr<Metadata> Checker::test_change_metadata(const std::string& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
+metadata::Collection Checker::test_change_metadata(const std::filesystem::path& relpath, std::shared_ptr<Metadata> md, unsigned data_idx)
 {
-    string md_pathname = str::joinpath(dataset().path, relpath) + ".metadata";
-    metadata::Collection mds;
-    mds.read_from_file(md_pathname);
-    md->set_source(std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    mds.replace(data_idx, md);
-    mds.writeAtomically(md_pathname);
-    return md;
+    auto mds = segmented::Checker::test_change_metadata(relpath, md, data_idx);
+    core::Interval interval;
+    mds.expand_date_range(interval);
+
+    if (const auto* mseg = manifest.segment(relpath))
+        manifest.set(relpath, mseg->mtime, interval);
+
+    return mds;
 }
 
 
@@ -550,11 +317,13 @@ void Checker::check_issue51(CheckerConfig& opts)
     std::map<string, metadata::Collection> broken_mds;
 
     // Iterate all segments
-    m_idx->list_segments([&](const std::string& relpath) {
-        metadata::Collection mds;
-        m_idx->query_segment(relpath, mds.inserter_func());
+    const auto& files = manifest.file_list();
+    for (const auto& info: files)
+    {
+        auto csegment = segment_from_relpath(info.relpath);
+        metadata::Collection mds = csegment->segment_checker->scan();
         if (mds.empty()) return;
-        File datafile(str::joinpath(dataset().path, relpath), O_RDONLY);
+        File datafile(csegment->segment->abspath(), O_RDONLY);
         // Iterate all metadata in the segment
         unsigned count_otherformat = 0;
         unsigned count_ok = 0;
@@ -563,7 +332,7 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& md: mds) {
             const auto& blob = md->sourceBlob();
             // Keep only segments with grib or bufr files
-            if (blob.format != "grib" && blob.format != "bufr")
+            if (blob.format != DataFormat::GRIB && blob.format != DataFormat::BUFR)
             {
                 ++count_otherformat;
                 continue;
@@ -572,7 +341,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             char tail[4];
             if (datafile.pread(tail, 4, blob.offset + blob.size - 4) != 4)
             {
-                opts.reporter->segment_info(name(), relpath, "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), csegment->segment->relpath(), "cannot read 4 bytes at position " + std::to_string(blob.offset + blob.size - 4));
                 return;
             }
             // Check if it ends with 7777
@@ -585,14 +354,14 @@ void Checker::check_issue51(CheckerConfig& opts)
             if (memcmp(tail, "777", 3) == 0)
             {
                 ++count_issue51;
-                broken_mds[relpath].push_back(*md);
+                broken_mds[csegment->segment->relpath()].push_back(*md);
             } else {
                 ++count_corrupted;
-                opts.reporter->segment_info(name(), relpath, "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
+                opts.reporter->segment_info(name(), csegment->segment->relpath(), "end marker 7777 or 777? not found at position " + std::to_string(blob.offset + blob.size - 4));
             }
         }
-        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), relpath.c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
-    });
+        nag::verbose("Checked %s:%s: %u ok, %u other formats, %u issue51, %u corrupted", name().c_str(), csegment->segment->relpath().c_str(), count_ok, count_otherformat, count_issue51, count_corrupted);
+    }
 
     if (opts.readonly)
     {
@@ -602,10 +371,10 @@ void Checker::check_issue51(CheckerConfig& opts)
         for (const auto& i: broken_mds)
         {
             // Make a backup copy with .issue51 extension, if it doesn't already exist
-            std::string abspath = str::joinpath(dataset().path, i.first);
+            auto abspath = dataset().path / i.first;
             utils::files::PreserveFileTimes pf(abspath);
-            std::string backup = abspath + ".issue51";
-            if (!sys::exists(backup))
+            auto backup = sys::with_suffix(abspath, ".issue51");
+            if (!std::filesystem::exists(backup))
             {
                 File src(abspath, O_RDONLY);
                 File dst(backup, O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -623,7 +392,7 @@ void Checker::check_issue51(CheckerConfig& opts)
             for (const auto& md: i.second) {
                 const auto& blob = md->sourceBlob();
                 // Keep only segments with grib or bufr files
-                if (blob.format != "grib" && blob.format != "bufr")
+                if (blob.format != DataFormat::GRIB && blob.format != DataFormat::BUFR)
                     return;
                 datafile.pwrite("7", 1, blob.offset + blob.size - 1);
             }
@@ -634,50 +403,24 @@ void Checker::check_issue51(CheckerConfig& opts)
     return segmented::Checker::check_issue51(opts);
 }
 
-void Checker::test_make_overlap(const std::string& relpath, unsigned overlap_size, unsigned data_idx)
+void Checker::test_rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_overlap(mds, overlap_size, data_idx);
-    m_idx->test_make_overlap(relpath, overlap_size, data_idx);
+    segmented::Checker::test_rename(relpath, new_relpath);
+
+    manifest.rename(relpath, new_relpath);
+    manifest.flush();
 }
 
-void Checker::test_make_hole(const std::string& relpath, unsigned hole_size, unsigned data_idx)
+void Checker::test_touch_contents(time_t timestamp)
 {
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_make_hole(mds, hole_size, data_idx);
-    m_idx->test_make_hole(relpath, hole_size, data_idx);
-}
+    segmented::Checker::test_touch_contents(timestamp);
 
-void Checker::test_corrupt_data(const std::string& relpath, unsigned data_idx)
-{
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_corrupt(mds, data_idx);
-}
+    const auto& files = manifest.file_list();
+    for (const auto& f: files)
+        manifest.set_mtime(f.relpath, timestamp);
+    manifest.flush();
 
-void Checker::test_truncate_data(const std::string& relpath, unsigned data_idx)
-{
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
-    dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath)->test_truncate(mds, data_idx);
-}
-
-void Checker::test_swap_data(const std::string& relpath, unsigned d1_idx, unsigned d2_idx)
-{
-    metadata::Collection mds;
-    m_idx->query_segment(relpath, mds.inserter_func());
-    mds.swap(d1_idx, d2_idx);
-
-    segment(relpath)->reorder(mds);
-}
-
-void Checker::test_rename(const std::string& relpath, const std::string& new_relpath)
-{
-    auto segment = dataset().session->segment_checker(scan::Scanner::format_from_filename(relpath), dataset().path, relpath);
-    m_idx->test_rename(relpath, new_relpath);
-    segment->move(dataset().path, new_relpath, str::joinpath(dataset().path, new_relpath));
+    sys::touch(manifest.root() / "MANIFEST", timestamp);
 }
 
 }

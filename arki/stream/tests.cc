@@ -67,12 +67,12 @@ MockConcreteSyscalls::~MockConcreteSyscalls()
 
 DisableSendfileSplice::DisableSendfileSplice()
 {
-    TestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) -> ssize_t {
+    TestingBackend::sendfile = [](int out_fd, int in_fd, off_t *offset, size_t count) noexcept -> ssize_t {
         errno = EINVAL;
         return -1;
     };
     TestingBackend::splice = [](int fd_in, loff_t *off_in, int fd_out,
-                                        loff_t *off_out, size_t len, unsigned int flags) -> ssize_t {
+                                        loff_t *off_out, size_t len, unsigned int flags) noexcept -> ssize_t {
         errno = EINVAL;
         return -1;
     };

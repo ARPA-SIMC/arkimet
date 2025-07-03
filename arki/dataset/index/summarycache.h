@@ -4,15 +4,15 @@
 /// dataset/index/summarycache - Cache precomputed summaries
 
 #include <arki/core/time.h>
-#include <string>
+#include <arki/metadata/fwd.h>
+#include <arki/dataset/fwd.h>
+#include <filesystem>
 
 namespace arki {
-class Metadata;
 class Summary;
 
 namespace dataset {
 class Base;
-class Reporter;
 
 namespace index {
 
@@ -20,13 +20,13 @@ class SummaryCache
 {
 protected:
     /// Absolute path to the summary cache directory
-    std::string m_scache_root;
+    std::filesystem::path m_scache_root;
 
     /// Return the pathname for the summary file for a given year and month
-    std::string summary_pathname(int year, int month) const;
+    std::filesystem::path summary_pathname(int year, int month) const;
 
 public:
-    SummaryCache(const std::string& root);
+    explicit SummaryCache(const std::filesystem::path& root);
     ~SummaryCache();
 
     void openRO();
@@ -53,14 +53,18 @@ public:
     /// Remove cache contents for the period found in the given metadata
     void invalidate(const Metadata& md);
 
+    /**
+     * Remove cache contents for the period found in successfully imported
+     * metadata in the batch
+     */
+    void invalidate(const metadata::InboundBatch& batch);
+
     /// Remove cache contents for all dates from tmin and tmax (inclusive)
     void invalidate(const core::Time& tmin, const core::Time& tmax);
 
     /// Run consistency checks on the summary cache
     bool check(const dataset::Base& ds, Reporter& reporter) const;
 };
-
-
 
 }
 }

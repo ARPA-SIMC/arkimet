@@ -45,7 +45,7 @@ void init()
     if (!Config::get().file_iotrace_output.empty())
     {
         FILE* out = fopen(Config::get().file_iotrace_output.c_str(), "at");
-        if (!out) throw_system_error("cannot open " + Config::get().file_iotrace_output + " for appending");
+        if (!out) throw_system_error("cannot open " + Config::get().file_iotrace_output.native() + " for appending");
         Logger* logger = new Logger(out);
         add_listener(*logger);
         // Lose references, effectively creating garbage; never mind, as we log
@@ -53,7 +53,7 @@ void init()
     }
 }
 
-void trace_file(const std::string& name, off_t offset, size_t size, const char* desc)
+void trace_file(const std::filesystem::path& name, off_t offset, size_t size, const char* desc)
 {
     if (listeners)
     {
@@ -84,7 +84,7 @@ void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const 
     if (listeners)
     {
         Event ev;
-        ev.filename = fd.name();
+        ev.filename = fd.path();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -97,7 +97,7 @@ void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const ch
     if (listeners)
     {
         Event ev;
-        ev.filename = fd.name();
+        ev.filename = fd.path();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -110,7 +110,7 @@ void trace_file(StreamOutput& out, off_t offset, size_t size, const char* desc)
     if (listeners)
     {
         Event ev;
-        ev.filename = out.name();
+        ev.filename = out.path();
         ev.offset = offset;
         ev.size = size;
         ev.desc = desc;
@@ -155,7 +155,7 @@ void Collector::dump(std::ostream& out) const
 {
     for (vector<Event>::const_iterator i = events.begin();
             i != events.end(); ++i)
-        out << i->filename << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
+        out << i->filename.native() << ":" << i->offset << ":" << i->size << ": " << i->desc << endl;
 }
 
 void Logger::operator()(const Event& e)

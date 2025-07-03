@@ -8,6 +8,9 @@ namespace geos {
 static thread_local Context context;
 static thread_local std::string last_error;
 
+static void geos_notice_handler(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+static void geos_error_handler(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+
 static void geos_notice_handler(const char* fmt, ...)
 {
     va_list ap;

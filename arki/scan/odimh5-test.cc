@@ -22,7 +22,7 @@ class Tests : public TestCase
 void Tests::register_tests() {
 
 // TODO: check the validator
-add_method("empty", [] {
+add_method("empty", []() noexcept {
 });
 
 }

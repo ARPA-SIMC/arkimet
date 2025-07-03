@@ -1,6 +1,57 @@
-project('arkimet', 'cpp', version: '1.50', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++11'])
+project('arkimet', 'cpp', version: '1.60', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++17'], meson_version: '>= 0.58')
+# TODO: use warning_level=everything from meson 1.0
 
-add_global_arguments('-Wextra', '-Wno-unused-parameter', language : 'cpp')
+cpp = meson.get_compiler('cpp')
+
+warning_control = [
+  # Turn some warning classes to errors
+  '-Werror=format',
+  '-Werror=suggest-override',
+  '-Werror=deprecated-copy-dtor',
+  '-Werror=missing-declarations',
+  '-Werror=overloaded-virtual',
+  '-Werror=cast-qual',
+  '-Werror=duplicated-branches',
+  '-Werror=logical-op',
+  '-Werror=catch-value',
+  '-Werror=conditionally-supported',
+  '-Werror=noexcept',
+  '-Werror=c++23-extensions',
+  '-Werror=dangling-else',
+  '-Werror=switch',
+  # '-Werror=suggest-attribute=format',
+  # '-Werror=deprecated-declarations',
+
+  '-Wno-padded',
+  '-Wno-abi-tag',
+  '-Wno-unused-macros',
+  '-Wno-missing-include-dirs',
+  '-Wno-multiple-inheritance',
+  '-Wno-sign-promo',
+  '-Wno-effc++',
+
+  # TODO: remove the following ones over time
+  '-Wno-shadow',
+  '-Wno-zero-as-null-pointer-constant',
+  '-Wno-mismatched-tags',
+  '-Wno-unused-const-variable',
+  '-Wno-redundant-tags',
+  '-Wno-useless-cast',
+  '-Wno-switch-default',
+  '-Wno-old-style-cast',
+  '-Wno-unused-parameter',
+
+  # These ones can be activated from time to time
+  '-Wno-float-equal',
+  '-Wno-suggest-attribute=noreturn',
+  '-Wno-format-truncation',
+  '-Wno-arith-conversion',
+  '-Wno-conversion',
+]
+
+add_project_arguments(
+  cpp.get_supported_arguments(warning_control),
+  language : 'cpp')
 
 conf_dir = get_option('sysconfdir') / 'arkimet'
 doc_dir = get_option('datadir') / 'doc' / 'arkimet'
@@ -9,7 +60,7 @@ conf_data = configuration_data()
 conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
 conf_data.set('ARKI_IOTRACE', true)
 conf_data.set_quoted('CONF_DIR', conf_dir)
-conf_data.set_quoted('POSTPROC_DIR', get_option('libdir') / 'arkimet')
+conf_data.set_quoted('POSTPROC_DIR', get_option('prefix') / get_option('libdir') / 'arkimet')
 if get_option('arpae-tests')
   conf_data.set('ARPAE_TESTS', true)
 endif
@@ -28,9 +79,15 @@ endif
 
 # Dependencies
 
+# std::filesystem library needs to be explicitly linked with g++ < 9.0
+if cpp.find_library('stdc++fs').found()
+  # without this, std::filesystem is not present for some compilers
+  add_project_link_arguments(['-lstdc++fs'], language : 'cpp')
+endif
+
 compiler = meson.get_compiler('cpp')
 if compiler.has_function('splice', prefix : '#include <fcntl.h>')
-    conf_data.set('HAVE_SPLICE', true)
+    conf_data.set('ARKI_HAVE_SPLICE', true)
 endif
 
 flex = find_program('flex')
@@ -132,8 +189,8 @@ configure_file(output: 'config.h', configuration: conf_data)
 
 # Generate the builddir's version of run-local
 run_local_cfg = configure_file(output: 'run-local', input: 'run-local.in', configuration: {
-    'top_srcdir': meson.source_root(),
-    'top_builddir': meson.build_root(),
+    'top_srcdir': meson.project_source_root(),
+    'top_builddir': meson.project_build_root(),
 })
 # Just using the configure_file object in a custom_target command gives:
 #   'AttributeError: 'File' object has no attribute 'replace'

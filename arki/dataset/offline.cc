@@ -1,5 +1,6 @@
 #include "offline.h"
 #include "arki/core/time.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -8,8 +9,8 @@ namespace arki {
 namespace dataset {
 namespace offline {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const std::string& pathname)
-    : dataset::Dataset(session), summary_pathname(pathname + ".summary")
+Dataset::Dataset(std::shared_ptr<Session> session, const std::filesystem::path& pathname)
+    : dataset::Dataset(session), summary_pathname(sys::with_suffix(pathname, ".summary"))
 {
 }
 
@@ -27,7 +28,7 @@ Reader::Reader(std::shared_ptr<Dataset> dataset)
 
 std::string Reader::type() const { return "offline"; }
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func)
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func)
 {
     // TODO: if the matcher would match the summary, output some kind of note about it
     return true;

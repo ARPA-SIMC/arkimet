@@ -1,74 +1,150 @@
 #include "reader.h"
-#include "arki/dataset/index.h"
 #include "arki/dataset/lock.h"
-#include "arki/dataset/query.h"
-#include "arki/dataset/progress.h"
-#include "arki/dataset/index/manifest.h"
+#include "arki/dataset/simple/manifest.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
+#include "arki/types/source.h"
+#include "arki/types/source/blob.h"
+#include "arki/metadata.h"
+#include "arki/metadata/sort.h"
 #include "arki/utils/sys.h"
+#include <algorithm>
 
 using namespace std;
 using namespace arki::utils;
 
-namespace arki {
-namespace dataset {
-namespace simple {
+namespace arki::dataset::simple {
 
-bool Reader::impl_query_data(const dataset::DataQuery& q, metadata_dest_func dest)
+bool Reader::hasWorkingIndex() const
 {
-    dataset::TrackProgress track(q.progress);
+    return manifest::exists(dataset().path);
+}
+
+bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
+{
+    query::TrackProgress track(q.progress);
     dest = track.wrap(dest);
 
     auto lock = dataset().read_lock_dataset();
+
+    // Query archives first
     if (!local::Reader::impl_query_data(q, dest))
         return false;
-    if (!m_idx) return true;
-    m_idx->lock = lock;
-    return track.done(m_idx->query_data(q, dest));
+
+    // Get list of segments matching the query
+    manifest.reread();
+    auto segmentinfos = manifest.file_list(q.matcher);
+
+    // segmentinfos is sorted by relpath: resort by time
+    std::sort(segmentinfos.begin(), segmentinfos.end(), [](const auto& a, const auto& b) { return a.time.begin < b.time.begin; });
+
+    // TODO: do we need to sort individual results, or can we rely on checker to warn if
+    //       segments overlap or if a segment is not sorted?
+    //       (note that a segment not being sorted can be common; however
+    //       if they don't overlap then we can just sort metadata on a
+    //       segment-by-segment basis)
+
+    // TODO: we can also rely on checker to only archive segments if they are
+    // properly repacked, removing the need for a sorter by reftime below
+    // And since sorter works on segment granularity anyway, we might not need
+    // a sorter at all in that case
+
+    std::shared_ptr<metadata::sort::Compare> compare;
+    if (q.sorter)
+        compare = q.sorter;
+    else
+        // If no sorter is provided, sort by reftime in case segment files have
+        // not been sorted before archiving
+        compare = metadata::sort::Compare::parse("reftime");
+
+    metadata::sort::Stream sorter(*compare, dest);
+    for (const auto& segmentinfo: segmentinfos)
+    {
+        auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
+        auto reader = segment->reader(lock);
+        reader->query_data(q, [&](std::shared_ptr<Metadata> md) {
+            return sorter.add(md);
+        });
+        if (!sorter.flush())
+            return track.done(false);
+    }
+
+    return track.done(true);
+}
+
+void Reader::query_segments_for_summary(const Matcher& matcher, Summary& summary, std::shared_ptr<core::ReadLock> lock)
+{
+    manifest.reread();
+    auto segmentinfos = manifest.file_list(matcher);
+    for (const auto& segmentinfo: segmentinfos)
+    {
+        auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
+        auto reader = segment->reader(lock);
+        reader->query_summary(matcher, summary);
+    }
 }
 
 void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 {
     auto lock = dataset().read_lock_dataset();
+
     // Query the archives first
     local::Reader::impl_query_summary(matcher, summary);
-    if (!m_idx) return;
-    m_idx->lock = lock;
-    // FIXME: this is cargo culted from the old ondisk2 reader: what is the use case for this?
-    if (!m_idx->query_summary(matcher, summary))
-        throw std::runtime_error("cannot query " + dataset().path + ": index could not be used");
+
+    // If the matcher discriminates on reference times, query the individual segments
+    if (matcher.get(TYPE_REFTIME))
+    {
+        query_segments_for_summary(matcher, summary, lock);
+        return;
+    }
+
+    // The matcher does not contain reftime, we can work with a
+    // global summary
+    auto cache_pathname = dataset().path / "summary";
+
+    if (sys::access(cache_pathname, R_OK))
+    {
+        Summary s;
+        s.read_file(cache_pathname);
+        s.filter(matcher, summary);
+    } else if (sys::access(dataset().path, W_OK)) {
+        // Rebuild the cache
+        Summary s;
+        query_segments_for_summary(Matcher(), s, lock);
+
+        // Save the summary
+        s.writeAtomically(cache_pathname);
+
+        // Query the newly generated summary that we still have
+        // in memory
+        s.filter(matcher, summary);
+    } else
+        query_segments_for_summary(matcher, summary, lock);
 }
 
 Reader::Reader(std::shared_ptr<simple::Dataset> dataset)
-    : DatasetAccess(dataset)
+    : DatasetAccess(dataset), manifest(dataset->path)
 {
     // Create the directory if it does not exist
-    sys::makedirs(dataset->path);
-
-    if (index::Manifest::exists(dataset->path))
-    {
-        unique_ptr<index::Manifest> mft = index::Manifest::create(m_dataset);
-        mft->openRO();
-        m_idx = m_mft = mft.release();
-    }
+    std::filesystem::create_directories(dataset->path);
 }
 
 Reader::~Reader()
 {
-    delete m_idx;
 }
 
 std::string Reader::type() const { return "simple"; }
 
-bool Reader::is_dataset(const std::string& dir)
+bool Reader::is_dataset(const std::filesystem::path& dir)
 {
-    return index::Manifest::exists(dir);
+    return manifest::exists(dir);
 }
 
 core::Interval Reader::get_stored_time_interval()
 {
-    return m_mft->get_stored_time_interval();
+    auto lock = dataset().read_lock_dataset();
+    manifest.reread();
+    return manifest.get_stored_time_interval();
 }
 
-}
-}
 }

@@ -49,24 +49,24 @@ void Dispatcher::add_validator(const metadata::Validator& v)
     validators.push_back(&v);
 }
 
-void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
+void Dispatcher::dispatch(metadata::InboundBatch& batch, bool drop_cached_data_on_commit)
 {
-    dataset::WriterBatch error_batch;
-    dataset::WriterBatch duplicate_batch;
-    std::map<std::string, dataset::WriterBatch> by_dataset;
-    std::map<std::string, dataset::WriterBatch> outbound_by_dataset;
+    metadata::InboundBatch error_batch;
+    metadata::InboundBatch duplicate_batch;
+    std::map<std::string, metadata::InboundBatch> by_dataset;
+    std::map<std::string, metadata::InboundBatch> outbound_by_dataset;
 
     // Choose the target dataset(s) for each element in the batch
     for (auto& e: batch)
     {
         // Ensure that we have a reference time
-        const reftime::Position* rt = e->md.get<types::reftime::Position>();
+        const reftime::Position* rt = e->md->get<types::reftime::Position>();
         if (!rt)
         {
             using namespace arki::types;
-            e->md.add_note("Validation error: reference time is missing, using today");
+            e->md->add_note("Validation error: reference time is missing, using today");
             // Set today as a dummy reference time, and import into the error dataset
-            e->md.set(Reftime::createPosition(Time::create_now()));
+            e->md->set(Reftime::createPosition(Time::create_now()));
             error_batch.push_back(e);
             continue;
         }
@@ -79,11 +79,11 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 
             // Run validators
             for (const auto& v: validators)
-                validates_ok = validates_ok && (*v)(e->md, errors);
+                validates_ok = validates_ok && (*v)(*e->md, errors);
 
             // Annotate with the validation errors
             for (const auto& error: errors)
-                e->md.add_note("Validation error: " + error);
+                e->md->add_note("Validation error: " + error);
 
             if (!validates_ok)
             {
@@ -94,27 +94,27 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 
         // See what outbound datasets match this metadata
         for (auto& d: outbounds)
-            if (d.second(e->md))
+            if (d.second(*e->md))
                 outbound_by_dataset[d.first].push_back(e);
 
         // See what regular datasets match this metadata
         vector<string> found;
         for (auto& d: datasets)
-            if (d.second(e->md))
+            if (d.second(*e->md))
                 found.push_back(d.first);
 
         // If we found only one dataset, acquire it in that dataset; else,
         // acquire it in the error dataset
         if (found.empty())
         {
-            e->md.add_note("Message could not be assigned to any dataset");
+            e->md->add_note("Message could not be assigned to any dataset");
             error_batch.push_back(e);
             continue;
         }
 
         if (found.size() > 1)
         {
-            e->md.add_note("Message matched multiple datasets: " + str::join(", ", found));
+            e->md->add_note("Message matched multiple datasets: " + str::join(", ", found));
             error_batch.push_back(e);
             continue;
         }
@@ -127,7 +127,7 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
     {
         raw_dispatch_dataset(b.first, b.second, false);
         for (const auto& e: b.second)
-            if (e->result != dataset::ACQ_OK)
+            if (e->result != metadata::Inbound::Result::OK)
                 // What do we do in case of error?
                 // The dataset will already have added a note to the metadata
                 // explaining what was wrong.  The best we can do is keep a
@@ -142,13 +142,13 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
         for (auto& e: b.second)
             switch (e->result)
             {
-                case dataset::ACQ_OK: break;
-                case dataset::ACQ_ERROR_DUPLICATE:
+                case metadata::Inbound::Result::OK: break;
+                case metadata::Inbound::Result::DUPLICATE:
                     // If insertion in the designed dataset failed, insert in the
                     // error dataset
                     duplicate_batch.push_back(e);
                     break;
-                case dataset::ACQ_ERROR:
+                case metadata::Inbound::Result::ERROR:
                 default:
                     // If insertion in the designed dataset failed, insert in the
                     // error dataset
@@ -160,7 +160,7 @@ void Dispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_
 
     raw_dispatch_dataset("duplicates", duplicate_batch, drop_cached_data_on_commit);
     for (auto& e: duplicate_batch)
-        if (e->result != dataset::ACQ_OK)
+        if (e->result != metadata::Inbound::Result::OK)
             // If insertion in the duplicates dataset failed, insert in the
             // error dataset
             error_batch.push_back(e);
@@ -178,7 +178,7 @@ RealDispatcher::~RealDispatcher()
 {
 }
 
-void RealDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
+void RealDispatcher::raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit)
 {
     if (batch.empty()) return;
     dataset::AcquireConfig cfg;
@@ -198,14 +198,14 @@ TestDispatcher::TestDispatcher(std::shared_ptr<dataset::Pool> pool)
 }
 TestDispatcher::~TestDispatcher() {}
 
-void TestDispatcher::raw_dispatch_dataset(const std::string& name, dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
+void TestDispatcher::raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit)
 {
     if (batch.empty()) return;
     // TODO: forward drop_cached_data_on_commit
     dataset::Writer::test_acquire(pool->session(), *pool->dataset(name)->config, batch);
 }
 
-void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data_on_commit)
+void TestDispatcher::dispatch(metadata::InboundBatch& batch, bool drop_cached_data_on_commit)
 {
     Dispatcher::dispatch(batch, drop_cached_data_on_commit);
 
@@ -214,13 +214,13 @@ void TestDispatcher::dispatch(dataset::WriterBatch& batch, bool drop_cached_data
 
     for (const auto& e: batch)
     {
-        if (e->dataset_name.empty())
-            nag::verbose("Message %s: not imported", e->md.source().to_string().c_str());
+        if (e->destination.empty())
+            nag::verbose("Message %s: not imported", e->md->source().to_string().c_str());
         else
-            nag::verbose("Message %s: imported into %s", e->md.source().to_string().c_str(), e->dataset_name.c_str());
+            nag::verbose("Message %s: imported into %s", e->md->source().to_string().c_str(), e->destination.c_str());
         nag::verbose("  Notes:");
         // TODO: find a more elegant way of iterating notes that doesn't lose in efficiency
-        auto notes = e->md.notes();
+        auto notes = e->md->notes();
         for (auto n = notes.first; n != notes.second; ++n)
         {
             core::Time time;

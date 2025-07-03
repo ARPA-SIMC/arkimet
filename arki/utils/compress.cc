@@ -42,11 +42,11 @@ std::vector<uint8_t> lzo(const void* in, size_t in_size)
     std::vector<uint8_t> out(in_size + in_size / 16 + 64 + 3);
     lzo_uint out_len = out.size();
 
-	// Compress
-	int r = lzo1x_1_compress(
-			(lzo_bytep)in, in_size,
-			(lzo_bytep)out.data(), &out_len,
-			(lzo_bytep)wrkmem.data());
+    // Compress
+    int r = lzo1x_1_compress(
+            static_cast<const lzo_bytep>(in), in_size,
+            static_cast<lzo_bytep>(out.data()), &out_len,
+            static_cast<lzo_bytep>(wrkmem.data()));
     if (r != LZO_E_OK)
     {
         stringstream ss;
@@ -70,7 +70,7 @@ std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size)
 
     std::vector<uint8_t> out(out_size);
     lzo_uint new_len = out_size;
-    int r = lzo1x_decompress_safe((lzo_bytep)in, in_size, (lzo_bytep)out.data(), &new_len, NULL);
+    int r = lzo1x_decompress_safe(static_cast<const lzo_bytep>(in), in_size, (lzo_bytep)out.data(), &new_len, NULL);
     if (r != LZO_E_OK || new_len != out_size)
     {
         stringstream ss;
@@ -105,7 +105,7 @@ ZlibCompressor::~ZlibCompressor()
 void ZlibCompressor::feed_data(const void* buf, size_t len)
 {
     strm->avail_in = len;
-    strm->next_in = (Bytef*)buf;
+    strm->next_in = const_cast<Bytef*>(static_cast<const Bytef*>(buf));
 }
 
 size_t ZlibCompressor::get(void* buf, size_t len, bool flush)
@@ -130,7 +130,7 @@ void ZlibCompressor::restart()
         throw runtime_error("zlib deflate stream reset error");
 }
 
-void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize)
+void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd, const std::filesystem::path& wrfname, size_t bufsize)
 {
     // (Re)open the compressed file
     int rdfd1 = dup(rdfd);
@@ -147,7 +147,7 @@ void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& w
     // Let the caller close file rdfd and wrfd
 }
 
-std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize)
+std::vector<uint8_t> gunzip(const std::filesystem::path& abspath, size_t bufsize)
 {
     gzip::File gzfd(abspath, "rb");
     vector<uint8_t> buf(bufsize);
@@ -162,11 +162,11 @@ std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize)
     return res;
 }
 
-TempUnzip::TempUnzip(const std::string& fname)
+TempUnzip::TempUnzip(const std::filesystem::path& fname)
     : fname(fname)
 {
     // zcat gzfname > fname
-    string gzfname = fname + ".gz";
+    auto gzfname = sys::with_suffix(fname, ".gz");
     sys::File rdfd(gzfname, O_RDONLY);
 
     sys::File wrfd(fname, O_WRONLY | O_CREAT | O_EXCL, 0666);
@@ -202,7 +202,7 @@ size_t SeekIndex::lookup(size_t unc) const
 	return i - ofs_unc.begin() - 1;
 }
 
-bool SeekIndex::read(const std::string& fname)
+bool SeekIndex::read(const std::filesystem::path& fname)
 {
     sys::File fd(fname);
     if (!fd.open_ifexists(O_RDONLY)) return false;
@@ -246,7 +246,7 @@ std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
 
         // Open the compressed chunk
         int fd1 = fd.dup();
-        utils::gzip::File gzfd(fd.name(), fd1, "rb");
+        utils::gzip::File gzfd(fd.path(), fd1, "rb");
         last_group_offset = idx.ofs_unc[block];
         acct::gzip_idx_reposition_count.incr();
 

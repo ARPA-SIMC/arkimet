@@ -41,6 +41,14 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_dataset_pool");
 
+std::shared_ptr<core::cfg::Section> cfg(const std::string& config)
+{
+    auto cfg = core::cfg::Section::parse(config);
+    cfg->set("step", "daily");
+    cfg->set("format", "grib");
+    return cfg;
+}
+
 void Tests::register_tests() {
 
 add_method("add_local", [] {
@@ -158,6 +166,49 @@ add_method("instantiate", [] {
         dpool.get("duplicates");
         throw TestFailed("looking up nonexisting dataset should throw runtime_error");
     } catch (runtime_error&) {
+    }
+});
+
+add_method("dataset_for_use", [] {
+    {
+        auto session = std::make_shared<dataset::Session>();
+        auto pool = std::make_shared<dataset::Pool>(session);
+        pool->add_dataset(*cfg("name=a\nuse=errors\ntype=simple\n"), false);
+        wassert(actual(pool->dataset_for_use(DatasetUse::ERRORS)->name()) == "a");
+        wassert(actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) == "a");
+    }
+
+    {
+        auto session = std::make_shared<dataset::Session>();
+        auto pool = std::make_shared<dataset::Pool>(session);
+        pool->add_dataset(*cfg("name=a\nuse=errors\ntype=simple\n"), false);
+        pool->add_dataset(*cfg("name=b\nuse=duplicates\ntype=simple\n"), false);
+        wassert(actual(pool->dataset_for_use(DatasetUse::ERRORS)->name()) == "a");
+        wassert(actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) == "b");
+    }
+
+    {
+        auto session = std::make_shared<dataset::Session>();
+        auto pool = std::make_shared<dataset::Pool>(session);
+        pool->add_dataset(*cfg("name=b\nuse=duplicates\ntype=simple\n"), false);
+        auto e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::ERRORS));
+        wassert(actual(e.what()) == "no error dataset found in configuration");
+        wassert(actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) == "b");
+    }
+
+    {
+        auto session = std::make_shared<dataset::Session>();
+        auto pool = std::make_shared<dataset::Pool>(session);
+        pool->add_dataset(*cfg("name=a\ntype=simple\n"), false);
+
+        auto e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::ERRORS));
+        wassert(actual(e.what()) == "no error dataset found in configuration");
+
+        e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::DUPLICATES));
+        wassert(actual(e.what()) == "no error dataset found in configuration");
+
+        e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::DEFAULT));
+        wassert(actual(e.what()) == "cannot select a dataset for use=DEFAULT");
     }
 });
 

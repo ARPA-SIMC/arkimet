@@ -9,6 +9,7 @@
 #include <arki/metadata/fwd.h>
 #include <arki/matcher/fwd.h>
 #include <arki/summary/stats.h>
+#include <filesystem>
 #include <vector>
 #include <array>
 #include <cstring>
@@ -104,7 +105,7 @@ public:
     void merge(const Row& row);
 
     /// Merge rows read from a yaml input stream
-    bool merge_yaml(core::LineReader& in, const std::string& filename);
+    bool merge_yaml(core::LineReader& in, const std::filesystem::path& filename);
 
     void dump(std::ostream& out);
 

@@ -13,35 +13,48 @@
 // Note also that changing one of the included headers will trigger a rebuild
 // of everything.
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <sstream>
-#include <cstring>
 #include <algorithm>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <stdexcept>
-#include <set>
-#include <sys/stat.h>
-#include <map>
-#include <system_error>
-#include <functional>
+#include <array>
+#include <cassert>
+#include <cctype>
+#include <cerrno>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cerrno>
-#include <iomanip>
+#include <cstring>
 #include <ctime>
-#include <sys/uio.h>
-#include <sys/time.h>
-#include <signal.h>
-#include <iostream>
+#include <exception>
+#include <fcntl.h>
+#include <filesystem>
+#include <functional>
+#include <iomanip>
 #include <iosfwd>
-#include <sys/fcntl.h>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <memory>
 #include <ostream>
-#include <cstddef>
-#include <cctype>
+#include <set>
+#include <signal.h>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <sysexits.h>
+#include <sys/fcntl.h>
+#include <sys/stat.h>
+#include <system_error>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <type_traits>
+#include <unistd.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <utime.h>
+#include <vector>
+
 
 // #include "arki/core/cfg.h"
 // #include "arki/core/file.h"

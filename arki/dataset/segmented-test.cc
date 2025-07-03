@@ -1,12 +1,13 @@
 #include "tests.h"
-#include "arki/segment/tests.h"
+#include "arki/segment/data/tests.h"
 #include "segmented.h"
 #include "maintenance.h"
 #include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/stream.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/metadata.h"
@@ -55,8 +56,7 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 };
 
-Tests test_simple_plain("arki_dataset_segmented_simple_plain", "type=simple\nindex_type=plain\n");
-Tests test_simple_sqlite("arki_dataset_segmented_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests test_simple_plain("arki_dataset_segmented_simple", "type=simple");
 Tests test_iseg("arki_dataset_segmented_iseg", "type=iseg\nformat=grib");
 
 void Tests::register_tests() {
@@ -85,9 +85,9 @@ add_method("gz", [](Fixture& f) {
     {
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::SEGMENT_OK);
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -164,9 +164,9 @@ add_method("gzidx", [](Fixture& f) {
     {
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::SEGMENT_OK);
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -233,9 +233,9 @@ add_method("tarred", [](Fixture& f) {
     {
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::SEGMENT_OK);
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -305,9 +305,9 @@ add_method("zipped", [](Fixture& f) {
     {
         auto state = f.scan_state();
         wassert(actual(state.size()) == 3u);
-        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::State(segment::SEGMENT_ARCHIVE_AGE));
-        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::State(segment::SEGMENT_OK));
+        wassert(actual(state.get("testds:2007/07-07.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/07-08.grib").state) == segment::SEGMENT_ARCHIVE_AGE);
+        wassert(actual(state.get("testds:2007/10-09.grib").state) == segment::SEGMENT_OK);
     }
 
     // Perform packing and check that things are still ok afterwards
@@ -371,7 +371,7 @@ add_method("query_archived", [](Fixture& f) {
     wassert(actual(mdc.size()) == 3u);
 
     mdc.clear();
-    mdc.add(*reader, dataset::DataQuery(parser.parse("origin:GRIB1,200"), true));
+    mdc.add(*reader, query::Data(parser.parse("origin:GRIB1,200"), true));
     wassert(actual(mdc.size()) == 1u);
 
     // Check that the source record that comes out is ok
@@ -398,7 +398,7 @@ add_method("query_archived", [](Fixture& f) {
     {
         std::vector<uint8_t> buf;
         auto out(StreamOutput::create(buf));
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(Matcher());
         reader->query_bytes(bq, *out);
         wassert(actual(buf.size()) == 44412u);
@@ -407,7 +407,7 @@ add_method("query_archived", [](Fixture& f) {
     {
         std::vector<uint8_t> buf;
         auto out(StreamOutput::create(buf));
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(parser.parse("origin:GRIB1,200"));
         reader->query_bytes(bq, *out);
         wassert(actual(buf.size()) == 7218u);
@@ -416,7 +416,7 @@ add_method("query_archived", [](Fixture& f) {
     {
         std::vector<uint8_t> buf;
         auto out(StreamOutput::create(buf));
-        dataset::ByteQuery bq;
+        query::Bytes bq;
         bq.setData(parser.parse("reftime:=2007-07-08"));
         reader->query_bytes(bq, *out);
         wassert(actual(buf.size()) == 7218u);
@@ -462,7 +462,7 @@ add_method("empty_dirs", [](Fixture& f) {
 
     std::vector<uint8_t> buf;
     auto out(StreamOutput::create(buf));
-    dataset::ByteQuery bq;
+    query::Bytes bq;
     bq.setData(parser.parse(""));
     reader->query_bytes(bq, *out);
     wassert(actual(buf.size()) == 0u);
@@ -488,7 +488,7 @@ add_method("query_lots", [](Fixture& f) {
                             char buf[40];
                             int len = snprintf(buf, 40, "2013%02d%02d%02d00,%d,%d,%d,,,000000000",
                                     month, day, hour, station, varid, value);
-                            md->set_source_inline("vm2", metadata::DataManager::get().to_data("vm2", vector<uint8_t>(buf, buf+len)));
+                            md->set_source_inline(DataFormat::VM2, metadata::DataManager::get().to_data(DataFormat::VM2, vector<uint8_t>(buf, buf+len)));
                             md->add_note("Generated from memory");
                             md->test_set(Reftime::createPosition(Time(2013, month, day, hour, 0, 0)));
                             md->test_set<area::VM2>(station);
@@ -523,7 +523,7 @@ add_method("query_lots", [](Fixture& f) {
 
     struct CheckReftimeSortOrder : public CheckSortOrder
     {
-        virtual uint64_t make_key(const Metadata& md) const
+        uint64_t make_key(const Metadata& md) const override
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             auto time = rt->get_Position();
@@ -533,7 +533,7 @@ add_method("query_lots", [](Fixture& f) {
 
     struct CheckAllSortOrder : public CheckSortOrder
     {
-        virtual uint64_t make_key(const Metadata& md) const
+        uint64_t make_key(const Metadata& md) const override
         {
             const reftime::Position* rt = md.get<types::reftime::Position>();
             auto time = rt->get_Position();
@@ -557,7 +557,7 @@ add_method("query_lots", [](Fixture& f) {
     {
         auto reader = f.config().create_reader();
         CheckAllSortOrder cso;
-        dataset::DataQuery dq(parser.parse(""));
+        query::Data dq(parser.parse(""));
         dq.sorter = metadata::sort::Compare::parse("reftime,area,product");
         reader->query_data(dq, [&](std::shared_ptr<Metadata> md) { return cso.eat(md); });
         wassert(actual(cso.seen) == 16128u);
@@ -574,7 +574,7 @@ add_method("archive_age", [](Fixture& f) {
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     metadata::TestCollection mds("inbound/test.grib1");
-    wassert(actual(*f.makeSegmentedWriter()).import(mds[0]));
+    wassert(actual(*f.makeSegmentedWriter()).acquire_ok(mds.get(0)));
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
@@ -606,7 +606,7 @@ add_method("delete_age", [](Fixture& f) {
     // Import a file with a known reftime
     // Reftime: 2007-07-08T13:00:00Z
     metadata::TestCollection mds("inbound/test.grib1");
-    wassert(actual(*f.makeSegmentedWriter()).import(mds[0]));
+    wassert(actual(*f.makeSegmentedWriter()).acquire_ok(mds.get(0)));
     wassert(actual(f.makeSegmentedChecker().get()).check_clean(true));
 
     // TZ=UTC date --date="2008-01-01 00:00:00" +%s
@@ -666,7 +666,9 @@ add_method("unarchive_segment", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.grib").exists());
 
     {
-        f.makeSegmentedChecker()->segment("2007/07-07.grib")->unarchive();
+        auto checker = f.makeSegmentedChecker();
+        auto segment = checker->dataset().segment_session->segment_from_relpath("2007/07-07.grib");
+        wassert(checker->segment(segment)->unarchive());
     }
 
     wassert(actual_file("testds/.archive/last/2007/07-07.grib").not_exists());
@@ -683,61 +685,145 @@ add_method("unarchive_segment", [](Fixture& f) {
     wassert(actual_file("testds/2007/10-09.grib").exists());
 });
 
-add_method("unarchive_segment_lastonly", [](Fixture& f) {
-    // Import a file with a known reftime
-    // Reftime: 2007-07-08T13:00:00Z
-    // Reftime: 2007-07-07T00:00:00Z
-    // Reftime: 2007-10-09T00:00:00Z
+// Test scan_dir on an empty directory
+add_method("scan_dir_empty", [](Fixture& f) {
+    sys::rmtree_ifexists("testds");
+    mkdir("testds", 0777);
+
+    auto checker(f.makeSegmentedChecker());
+    std::vector<std::string> res;
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
+    wassert(actual(res.size()) == 0u);
+});
+
+// Test scan_dir on a populated directory
+add_method("scan_dir_dir1", [](Fixture& f) {
+    sys::rmtree_ifexists("testds");
+    mkdir("testds", 0777);
+    sys::write_file("testds/MANIFEST", "");
+    mkdir("testds/2007", 0777);
+    mkdir("testds/2008", 0777);
+    sys::write_file("testds/2008/a.grib", "");
+    sys::write_file("testds/2008/b.grib", "");
+    sys::write_file("testds/2008/c.grib.gz", "");
+    sys::write_file("testds/2008/d.grib.tar", "");
+    sys::write_file("testds/2008/e.grib.zip", "");
+    mkdir("testds/2008/temp", 0777);
+    mkdir("testds/2009", 0777);
+    sys::write_file("testds/2009/a.grib", "");
+    sys::write_file("testds/2009/b.grib", "");
+    mkdir("testds/2009/temp", 0777);
+    mkdir("testds/.archive", 0777);
+    sys::write_file("testds/.archive/z.grib", "");
+
+    auto checker(wcallchecked(f.makeSegmentedChecker()));
+    std::vector<std::string> res;
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
+    wassert(actual(res.size()) == 7u);
+    std::sort(res.begin(), res.end());
+
+    wassert(actual(res[0]) == "2008/a.grib");
+    wassert(actual(res[1]) == "2008/b.grib");
+    wassert(actual(res[2]) == "2008/c.grib");
+    wassert(actual(res[3]) == "2008/d.grib");
+    wassert(actual(res[4]) == "2008/e.grib");
+    wassert(actual(res[5]) == "2009/a.grib");
+    wassert(actual(res[6]) == "2009/b.grib");
+});
+
+// Test file names interspersed with directory names
+add_method("scan_dir_dir2", [](Fixture& f) {
+    sys::rmtree_ifexists("testds");
+    mkdir("testds", 0777);
+    sys::write_file("testds/MANIFEST", "");
+    mkdir("testds/2008", 0777);
+    sys::write_file("testds/2008/a.grib", "");
+    sys::write_file("testds/2008/b.grib", "");
+    mkdir("testds/2008/a", 0777);
+    sys::write_file("testds/2008/a/a.grib", "");
+    mkdir("testds/2009", 0777);
+    sys::write_file("testds/2009/a.grib", "");
+    sys::write_file("testds/2009/b.grib", "");
+
+    auto checker(wcallchecked(f.makeSegmentedChecker()));
+    std::vector<std::string> res;
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
+    wassert(actual(res.size()) == 5u);
+    std::sort(res.begin(), res.end());
+
+    wassert(actual(res[0]) == "2008/a.grib");
+    wassert(actual(res[1]) == "2008/a/a.grib");
+    wassert(actual(res[2]) == "2008/b.grib");
+    wassert(actual(res[3]) == "2009/a.grib");
+    wassert(actual(res[4]) == "2009/b.grib");
+});
+
+// odimh5 files are not considered segments
+add_method("scan_dir_dir2", [](Fixture& f) {
+    sys::rmtree_ifexists("testds");
+    mkdir("testds", 0777);
+    mkdir("testds/2008", 0777);
+    sys::write_file("testds/2008/01.odimh5", "");
+
+    auto checker(f.makeSegmentedChecker());
+    std::vector<std::string> res;
+    wassert(checker->scan_dir([&](auto segment) { res.push_back(segment->relpath()); }));
+    wassert(actual(res.size()) == 0u);
+});
+
+add_method("no_writes_when_repacking", [](Fixture& f) {
+    matcher::Parser parser;
+    std::filesystem::path relpath("2007/07-07.grib");
     f.clean_and_import();
+    // Make a hole so the segment needs repack
+    f.makeSegmentedChecker()->test_make_hole(relpath, 10, 0);
 
-    // TZ=UTC date --date="2007-07-09 00:00:00" +%s
-    time_t now = 1183939200;
-    f.cfg->set("archive age", "1");
+    auto dataset = f.segmented_config();
 
-    f.test_reread_config();
+    // Install hooks
+    bool on_check_lock_triggered = false;
+    bool on_repack_write_lock_triggered = false;
+    auto test_hooks = std::make_shared<segmented::TestHooks>();
+    test_hooks->on_check_lock = [&](const Segment& segment) {
+        if (segment.relpath() != relpath)
+            return;
+        on_check_lock_triggered = true;
 
-    // Archive one segment
-    {
-        auto o = dataset::SessionTime::local_override(now);
-        ReporterExpected e;
-        e.archived.emplace_back("testds", "2007/07-07.grib");
-        wassert(actual(f.makeSegmentedChecker().get()).repack(e, true));
-    }
+        // When repack is still checking, we can still query
+        auto reader = dataset->create_reader();
+        unsigned count = 0;
+        reader->query_data(parser.parse("reftime:=2007-07-07"), [&](const auto&) noexcept { ++count; return true; });
+        wassert(actual(count) == 1u);
 
-    // Check that segments are where we expect them
-    sys::rename("testds/.archive/last/2007", "testds/.archive/testds-2007");
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib").exists());
-    wassert(actual_file("testds/2007/10-09.grib").exists());
+        // When repack is still checking, we cannot append
+        auto writer = dataset->create_writer();
+        metadata::InboundBatch batch;
+        batch.add(f.import_results.get(1));
+        wassert_throws(lock::locked_error, writer->acquire_batch(batch));
+    };
+    test_hooks->on_repack_write_lock = [&](const Segment& segment) {
+        if (segment.relpath() != relpath)
+            return;
+        on_repack_write_lock_triggered = true;
 
-    try {
-        f.makeSegmentedChecker()->segment("../test-ds/2007/07-07.grib")->unarchive();
-        wassert(throw std::runtime_error("unarchive_segment should have thrown at this point"));
-    } catch (std::exception& e) {
-        wassert(actual(e.what()).contains("segment is not in last/ archive"));
-    }
+        // When repack is fixing, reading fails
+        auto reader = dataset->create_reader();
+        wassert_throws(lock::locked_error, reader->query_data(parser.parse("reftime:=2007-07-07"), [&](const auto&) noexcept {return true;}));
 
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.metadata").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-07.grib.summary").exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/07-08.grib.summary").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.metadata").not_exists());
-    wassert(actual_file("testds/.archive/testds-2007/10-09.grib.summary").not_exists());
-    wassert(actual_file("testds/2007/07-07.grib").not_exists());
-    wassert(actual_file("testds/2007/07-08.grib").exists());
-    wassert(actual_file("testds/2007/10-09.grib").exists());
+        // When repack is fixing, appending fails
+        auto writer = dataset->create_writer();
+        metadata::InboundBatch batch;
+        batch.add(f.import_results.get(1));
+        wassert_throws(lock::locked_error, writer->acquire_batch(batch));
+    };
+    dataset->test_hooks = test_hooks;
+
+    auto checker = dataset->create_checker();
+    CheckerConfig checker_config;
+    checker_config.readonly = false;
+    checker->repack(checker_config);
+    wassert_true(on_check_lock_triggered);
+    wassert_true(on_repack_write_lock_triggered);
 });
 
 }
@@ -763,10 +849,8 @@ class Tests103 : public FixtureTestCase<Issue103Fixture>
     void register_tests() override;
 };
 
-Tests103 test103_simple_plain("arki_dataset_segmented_issue103_simple_plain", "type=simple\nindex_type=plain\n");
-Tests103 test103_simple_plain_dir("arki_dataset_segmented_issue103_simple_plain_dir", "type=simple\nindex_type=plain\n", DatasetTest::TEST_FORCE_DIR);
-Tests103 test103_simple_sqlite("arki_dataset_segmented_issue103_simple_sqlite", "type=simple\nindex_type=sqlite\n");
-Tests103 test103_simple_sqlite_dir("arki_dataset_segmented_issue103_simple_sqlite_dir", "type=simple\nindex_type=sqlite\n", DatasetTest::TEST_FORCE_DIR);
+Tests103 test103_simple("arki_dataset_segmented_issue103_simple", "type=simple");
+Tests103 test103_simple_dir("arki_dataset_segmented_issue103_simple_dir", "type=simple", DatasetTest::TEST_FORCE_DIR);
 Tests103 test103_iseg("arki_dataset_segmented_issue103_iseg", "type=iseg\nformat=vm2\n");
 Tests103 test103_iseg_dir("arki_dataset_segmented_issue103_iseg_dir", "type=iseg\nformat=vm2\n", DatasetTest::TEST_FORCE_DIR);
 
@@ -814,7 +898,7 @@ add_method("issue103", [](Fixture& f) {
     wassert(actual(mdc[0].sourceBlob().reader).isfalse());
 
     // Query with data, without storing all the results on a collection
-    dataset::DataQuery dq(parser.parse(""), true);
+    query::Data dq(parser.parse(""), true);
     unsigned count = 0;
     wassert(reader->query_data(dq, [&](std::shared_ptr<Metadata> md) {
         wassert(actual(md->sourceBlob().reader).istrue());
@@ -830,112 +914,6 @@ add_method("issue103", [](Fixture& f) {
         ++count; return true;
     }));
     wassert(actual(count) == max_files + 1);
-});
-
-}
-
-class ScanDirTests : public TestCase
-{
-    using TestCase::TestCase;
-    void register_tests() override;
-} test("arki_dataset_segmented_scan_dir");
-
-void ScanDirTests::register_tests() {
-
-// Test scan_dir on an empty directory
-add_method("scan_dir_empty", [] {
-    system("rm -rf dirscanner");
-    mkdir("dirscanner", 0777);
-
-    {
-        std::vector<std::string> res;
-        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 0u);
-    }
-});
-
-// Test scan_dir on a populated directory
-add_method("scan_dir_dir1", [] {
-    system("rm -rf dirscanner");
-    mkdir("dirscanner", 0777);
-    sys::write_file("dirscanner/index.sqlite", "");
-    mkdir("dirscanner/2007", 0777);
-    mkdir("dirscanner/2008", 0777);
-    sys::write_file("dirscanner/2008/a.grib", "");
-    sys::write_file("dirscanner/2008/b.grib", "");
-    sys::write_file("dirscanner/2008/c.grib.gz", "");
-    sys::write_file("dirscanner/2008/d.grib.tar", "");
-    sys::write_file("dirscanner/2008/e.grib.zip", "");
-    mkdir("dirscanner/2008/temp", 0777);
-    mkdir("dirscanner/2009", 0777);
-    sys::write_file("dirscanner/2009/a.grib", "");
-    sys::write_file("dirscanner/2009/b.grib", "");
-    mkdir("dirscanner/2009/temp", 0777);
-    mkdir("dirscanner/.archive", 0777);
-    sys::write_file("dirscanner/.archive/z.grib", "");
-
-    {
-        std::vector<std::string> res;
-        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 7u);
-        std::sort(res.begin(), res.end());
-
-        wassert(actual(res[0]) == "2008/a.grib");
-        wassert(actual(res[1]) == "2008/b.grib");
-        wassert(actual(res[2]) == "2008/c.grib");
-        wassert(actual(res[3]) == "2008/d.grib");
-        wassert(actual(res[4]) == "2008/e.grib");
-        wassert(actual(res[5]) == "2009/a.grib");
-        wassert(actual(res[6]) == "2009/b.grib");
-    }
-});
-
-// Test file names interspersed with directory names
-add_method("scan_dir_dir2", [] {
-    system("rm -rf dirscanner");
-    mkdir("dirscanner", 0777);
-    sys::write_file("dirscanner/index.sqlite", "");
-    mkdir("dirscanner/2008", 0777);
-    sys::write_file("dirscanner/2008/a.grib", "");
-    sys::write_file("dirscanner/2008/b.grib", "");
-    mkdir("dirscanner/2008/a", 0777);
-    sys::write_file("dirscanner/2008/a/a.grib", "");
-    mkdir("dirscanner/2009", 0777);
-    sys::write_file("dirscanner/2009/a.grib", "");
-    sys::write_file("dirscanner/2009/b.grib", "");
-
-    {
-        std::vector<std::string> res;
-        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 5u);
-        std::sort(res.begin(), res.end());
-
-        wassert(actual(res[0]) == "2008/a.grib");
-        wassert(actual(res[1]) == "2008/a/a.grib");
-        wassert(actual(res[2]) == "2008/b.grib");
-        wassert(actual(res[3]) == "2009/a.grib");
-        wassert(actual(res[4]) == "2009/b.grib");
-    }
-});
-
-// odimh5 files are not considered segments
-add_method("scan_dir_dir2", [] {
-    system("rm -rf dirscanner");
-    mkdir("dirscanner", 0777);
-    mkdir("dirscanner/2008", 0777);
-    sys::write_file("dirscanner/2008/01.odimh5", "");
-
-    {
-        std::vector<std::string> res;
-        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 0u);
-    }
-
-    {
-        std::vector<std::string> res;
-        segmented::Checker::scan_dir("dirscanner", [&](const std::string& relpath) { res.push_back(relpath); });
-        wassert(actual(res.size()) == 0u);
-    }
 });
 
 }

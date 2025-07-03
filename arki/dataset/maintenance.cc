@@ -70,13 +70,13 @@ void MockRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     }
     if (state.has(segment::SEGMENT_DELETE_AGE))
     {
-        reporter.segment_delete(w.name(), segment.path_relative(), "should be deleted and removed from the index");
+        reporter.segment_remove(w.name(), segment.path_relative(), "should be deleted and removed from the index");
         ++m_count_deleted;
         ++m_count_deindexed;
     }
     if (state.has(segment::SEGMENT_DELETED))
     {
-        reporter.segment_delete(w.name(), segment.path_relative(), "should be deleted");
+        reporter.segment_remove(w.name(), segment.path_relative(), "should be deleted");
         ++m_count_deleted;
     }
     if (state.has(segment::SEGMENT_MISSING))
@@ -113,6 +113,11 @@ void MockFixer::operator()(segmented::CheckerSegment& segment, segment::State st
         reporter.segment_repack(w.name(), segment.path_relative(), "should be packed");
         ++m_count_packed;
     }
+    if (state.has(segment::SEGMENT_CORRUPTED))
+    {
+        reporter.segment_manual_intervention(w.name(), segment.path_relative(), "segment is CORRUPTED and requires fixing manually");
+        ++m_count_manual_intervention;
+    }
     if (state.has(segment::SEGMENT_UNALIGNED))
     {
         reporter.segment_rescan(w.name(), segment.path_relative(), "should be rescanned");
@@ -140,12 +145,13 @@ void MockFixer::end()
 
 void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State state)
 {
-    if (test_flags & segment::RepackConfig::TEST_MISCHIEF_MOVE_DATA) state = state + segment::SEGMENT_DIRTY;
+    if (test_flags & segment::data::RepackConfig::TEST_MISCHIEF_MOVE_DATA) state += segment::SEGMENT_DIRTY;
 
     if (state.has(segment::SEGMENT_DIRTY) && !state.has(segment::SEGMENT_DELETE_AGE))
     {
         // Repack the file
-        size_t saved = segment.repack(test_flags);
+        auto repack_result = segment.repack(test_flags);
+        size_t saved = repack_result.size_pre - repack_result.size_post;
         reporter.segment_repack(w.name(), segment.path_relative(), "repacked (" + std::to_string(saved) + " freed)");
         ++m_count_packed;
         m_count_freed += saved;
@@ -163,7 +169,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     {
         // Delete obsolete files
         size_t size = segment.remove(true);
-        reporter.segment_delete(w.name(), segment.path_relative(), "deleted (" + std::to_string(size) + " freed)");
+        reporter.segment_remove(w.name(), segment.path_relative(), "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         ++m_count_deindexed;
         m_count_freed += size;
@@ -173,7 +179,7 @@ void RealRepacker::operator()(segmented::CheckerSegment& segment, segment::State
     {
         // Delete all files not indexed
         size_t size = segment.remove(true);
-        reporter.segment_delete(w.name(), segment.path_relative(), "deleted (" + std::to_string(size) + " freed)");
+        reporter.segment_remove(w.name(), segment.path_relative(), "deleted (" + std::to_string(size) + " freed)");
         ++m_count_deleted;
         m_count_freed += size;
     }

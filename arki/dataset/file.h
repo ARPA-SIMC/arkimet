@@ -5,6 +5,7 @@
 
 #include <arki/defs.h>
 #include <arki/core/file.h>
+#include <arki/segment.h>
 #include <arki/dataset.h>
 #include <arki/dataset/impl.h>
 #include <string>
@@ -13,29 +14,40 @@ namespace arki {
 namespace dataset {
 namespace file {
 
-std::shared_ptr<core::cfg::Section> read_config(const std::string& path);
-std::shared_ptr<core::cfg::Sections> read_configs(const std::string& path);
+std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Section> read_config(const std::string& prefix, const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Sections> read_configs(const std::string& prefix, const std::filesystem::path& path);
 
 /// Dataset on a single file
 class Dataset : public dataset::Dataset
 {
 public:
-    std::string pathname;
-    std::string format;
-
     Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
 
-    virtual bool scan(const dataset::DataQuery& q, metadata_dest_func dest) = 0;
+    virtual bool scan(const query::Data& q, metadata_dest_func dest) = 0;
 
     static std::shared_ptr<Dataset> from_config(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
 };
 
+class SegmentDataset : public Dataset
+{
+public:
+    std::shared_ptr<segment::Session> segment_session;
+    std::shared_ptr<Segment> segment;
+
+    SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
+
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
+};
+
+
 class Reader : public DatasetAccess<file::Dataset, dataset::Reader>
 {
 protected:
-    bool impl_query_data(const dataset::DataQuery& q, metadata_dest_func) override;
+    bool impl_query_data(const query::Data& q, metadata_dest_func) override;
 
 public:
     using DatasetAccess::DatasetAccess;
@@ -51,6 +63,8 @@ protected:
     core::File fd;
 
 public:
+    std::filesystem::path path;
+
     FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~FdFile();
 };
@@ -62,7 +76,7 @@ public:
 
     virtual ~ArkimetFile();
 
-    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };
 
 class YamlFile : public FdFile
@@ -75,15 +89,7 @@ public:
     YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg);
     virtual ~YamlFile();
 
-    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
-};
-
-class RawFile : public Dataset
-{
-public:
-    using Dataset::Dataset;
-
-    bool scan(const dataset::DataQuery& q, metadata_dest_func consumer) override;
+    bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };
 
 }

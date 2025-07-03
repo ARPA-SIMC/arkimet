@@ -8,18 +8,18 @@ namespace arki {
 namespace utils {
 namespace gzip {
 
-File::File(const std::string& pathname)
+File::File(const std::filesystem::path& pathname)
     : pathname(pathname)
 {
 }
 
-File::File(const std::string& pathname, int fd, const char* mode)
+File::File(const std::filesystem::path& pathname, int fd, const char* mode)
     : pathname(pathname)
 {
     fdopen(fd, mode);
 }
 
-File::File(const std::string& pathname, const char* mode)
+File::File(const std::filesystem::path& pathname, const char* mode)
     : pathname(pathname)
 {
     // Open the new file

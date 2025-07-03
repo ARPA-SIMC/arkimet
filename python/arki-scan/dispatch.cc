@@ -8,7 +8,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
 #include "arki/types/source/blob.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/scan.h"
 #include "python/dataset.h"
 
@@ -32,7 +32,7 @@ MetadataDispatch::~MetadataDispatch()
         delete dispatcher;
 }
 
-DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string& name)
+DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesystem::path& name)
 {
     DispatchResults stats;
     stats.name = name;
@@ -41,13 +41,13 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
 
     copyok_stream.reset();
     if (!dir_copyok.empty())
-        copyok = std::make_shared<core::File>(str::joinpath(dir_copyok, str::basename(name)));
+        copyok = std::make_shared<core::File>(dir_copyok / name.filename());
     else
         copyok.reset();
 
     copyko_stream.reset();
     if (!dir_copyko.empty())
-        copyko = std::make_shared<core::File>(str::joinpath(dir_copyko, str::basename(name)));
+        copyko = std::make_shared<core::File>(dir_copyko / name.filename());
     else
         copyko.reset();
 
@@ -81,12 +81,12 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::string
     return stats;
 }
 
-void MetadataDispatch::process_partial_batch(const std::string& name, DispatchResults& stats)
+void MetadataDispatch::process_partial_batch(const std::filesystem::path& name, DispatchResults& stats)
 {
     bool drop_cached_data_on_commit = !(copyok || copyko);
 
     // Dispatch
-    auto batch = partial_batch->make_import_batch();
+    auto batch = partial_batch->make_batch();
     try {
         dispatcher->dispatch(batch, drop_cached_data_on_commit);
     } catch (std::exception& e) {
@@ -98,28 +98,28 @@ void MetadataDispatch::process_partial_batch(const std::string& name, DispatchRe
     // Evaluate results
     for (auto& e: batch)
     {
-        if (e->dataset_name.empty())
+        if (e->destination.empty())
         {
-            do_copyko(e->md);
+            do_copyko(*e->md);
             // If dispatching failed, add a big note about it.
-            e->md.add_note("WARNING: The data has not been imported in ANY dataset");
+            e->md->add_note("WARNING: The data has not been imported in ANY dataset");
             ++stats.not_imported;
-        } else if (e->dataset_name == "error") {
-            do_copyko(e->md);
+        } else if (e->destination == "error") {
+            do_copyko(*e->md);
             ++stats.in_error_dataset;
-        } else if (e->dataset_name == "duplicates") {
-            do_copyko(e->md);
+        } else if (e->destination == "duplicates") {
+            do_copyko(*e->md);
             ++stats.duplicates;
-        } else if (e->result == dataset::ACQ_OK) {
-            do_copyok(e->md);
+        } else if (e->result == metadata::Inbound::Result::OK) {
+            do_copyok(*e->md);
             ++stats.successful;
         } else {
-            do_copyko(e->md);
+            do_copyko(*e->md);
             // If dispatching failed, add a big note about it.
-            e->md.add_note("WARNING: The data failed to be imported into dataset " + e->dataset_name);
+            e->md->add_note("WARNING: The data failed to be imported into dataset " + e->destination);
             ++stats.not_imported;
         }
-        e->md.drop_cached_data();
+        e->md->drop_cached_data();
     }
 
     // Process the resulting annotated metadata as a dataset

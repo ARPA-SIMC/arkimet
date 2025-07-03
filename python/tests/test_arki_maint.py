@@ -51,15 +51,7 @@ class TestArkiMaintIseg(ArkiMaintTestsBase, unittest.TestCase):
         return kw
 
 
-class TestArkiMaintSimplePlain(ArkiMaintTestsBase, unittest.TestCase):
+class TestArkiMaintSimple(ArkiMaintTestsBase, unittest.TestCase):
     def dataset_config(self, **kw):
         kw["type"] = "simple"
-        kw["index_type"] = "plain"
-        return kw
-
-
-class TestArkiMaintSimpleSqlite(ArkiMaintTestsBase, unittest.TestCase):
-    def dataset_config(self, **kw):
-        kw["type"] = "simple"
-        kw["index_type"] = "sqlite"
         return kw

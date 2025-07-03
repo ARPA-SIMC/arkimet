@@ -1,13 +1,13 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset/maintenance-test.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/maintenance.h"
 #include "arki/dataset/segmented.h"
 #include "arki/dataset/reporter.h"
 #include "arki/dataset/time.h"
 #include "arki/metadata/collection.h"
 #include "arki/types/source/blob.h"
-#include "arki/segment/seqfile.h"
+#include "arki/segment/data/seqfile.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include "arki/exceptions.h"
@@ -74,18 +74,18 @@ Fixture::Fixture(const std::string& format, const std::string& cfg_instance, Dat
     }
 }
 
-void Fixture::state_is(unsigned segment_count, unsigned test_relpath_state)
+void Fixture::state_is(unsigned segment_count, const segment::State& test_relpath_state)
 {
     auto state = scan_state();
     wassert(actual(state.size()) == segment_count);
-    wassert(actual(state.get("testds:" + test_relpath).state) == test_relpath_state);
+    wassert(actual(state.get("testds:" + test_relpath.native()).state) == test_relpath_state);
 }
 
-void Fixture::accurate_state_is(unsigned segment_count, unsigned test_relpath_state)
+void Fixture::accurate_state_is(unsigned segment_count, const segment::State& test_relpath_state)
 {
     auto state = scan_state(false);
     wassert(actual(state.size()) == segment_count);
-    wassert(actual(state.get("testds:" + test_relpath).state) == test_relpath_state);
+    wassert(actual(state.get("testds:" + test_relpath.native()).state) == test_relpath_state);
 }
 
 void Fixture::test_setup()
@@ -97,6 +97,8 @@ void Fixture::test_setup()
 
     for (const auto& pathname : import_files)
         import(pathname);
+
+    makeSegmentedChecker()->test_touch_contents(time(NULL) - 1);
 }
 
 void Fixture::make_hole_start()
@@ -135,19 +137,19 @@ void Fixture::make_hugefile()
 
     // Pretend that the test segment is 6G already
     {
-        utils::files::PreserveFileTimes pt("testds/" + test_relpath);
-        sys::File fd("testds/" + test_relpath, O_RDWR);
+        utils::files::PreserveFileTimes pt("testds" / test_relpath);
+        sys::File fd("testds" / test_relpath, O_RDWR);
         fd.ftruncate(6000000000LLU);
     }
 
     // Import a new datum, that will get appended to it
     {
-        std::shared_ptr<Metadata> md(import_results[0]->clone());
+        std::shared_ptr<Metadata> md(import_results[0].clone());
         md->test_set("reftime", "2007-07-07 06:00:00");
-        md->makeInline();
+        wassert(md->makeInline());
 
         auto writer(makeSegmentedWriter());
-        wassert(actual(*writer).import(*md));
+        wassert(actual(*writer).acquire_ok(md));
 
         wassert(actual(md->sourceBlob().offset) == 6000000000LLU);
     }
@@ -175,14 +177,14 @@ void Fixture::delete_all_in_segment()
 void Fixture::reset_seqfile()
 {
     // FIXME: unlink instead?
-    segment::SequenceFile sf("testds/" + test_relpath);
+    segment::SequenceFile sf("testds" / test_relpath);
     sf.open();
     sf.write_sequence(0u);
 }
 
 void Fixture::remove_segment()
 {
-    std::string pathname = "testds/" + test_relpath;
+    auto pathname = "testds" / test_relpath;
     delete_if_exists(pathname);
 }
 
@@ -195,6 +197,11 @@ void FixtureConcat::make_overlap()
 void FixtureDir::make_overlap()
 {
     makeSegmentedChecker()->test_make_overlap(test_relpath, 1, 1);
+}
+
+std::filesystem::path FixtureZip::test_relpath_ondisk() const
+{
+    return sys::with_suffix(test_relpath, ".zip");
 }
 
 void FixtureZip::test_setup()
@@ -211,7 +218,7 @@ void FixtureZip::test_setup()
 
 void FixtureZip::remove_segment()
 {
-    std::string pathname = "testds/" + test_relpath + ".zip";
+    auto pathname = "testds" / sys::with_suffix(test_relpath, ".zip");
     delete_if_exists(pathname);
 }
 
@@ -245,15 +252,19 @@ void CheckTest<Fixture>::register_tests_concat()
         - the segment must be a file
     )", [&](Fixture& f) {
         f.remove_segment();
-        sys::makedirs("testds/" + f.test_relpath);
+        std::filesystem::create_directories("testds" / f.test_relpath);
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("does not exist in directory segment"));
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        wassert(f.query_results({0, 2}));
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-07\\.\\w+: segment data is not available"));
+        nag_messages.clear();
     });
 
     this->add_method("check_hugefile", [&](Fixture& f) {
-        f.make_hugefile();
+        wassert(f.make_hugefile());
         wassert(f.state_is(3, segment::SEGMENT_DIRTY));
         wassert(f.query_results({1, -1, 3, 0, 2}));
     });
@@ -264,16 +275,16 @@ void CheckTest<Fixture>::register_tests_dir()
 {
     this->add_method("check_isdir", R"(
         - the segment must be a directory [unaligned]
-    )", [](Fixture& f) {
-        wassert(actual_file("testds/" + f.test_relpath).exists());
-        wassert_true(sys::isdir("testds/" + f.test_relpath));
+    )", [](const Fixture& f) {
+        wassert(actual_file("testds" / f.test_relpath).exists());
+        wassert_true(std::filesystem::is_directory("testds" / f.test_relpath));
     });
 
     this->add_method("check_datasize", R"(
         - the size of each data file must match the data size exactly [corrupted]
     )", [](Fixture& f) {
         {
-            sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
+            sys::File df("testds" / f.test_relpath / ("000000."s + f.format), O_RDWR);
             df.ftruncate(f.test_datum_size + 1);
         }
 
@@ -286,7 +297,7 @@ void CheckTest<Fixture>::register_tests_dir()
          so it is ignored. The modification time of the sequence file is used
          instead.
     )", [&](Fixture& f) {
-        sys::touch("testds/" + f.test_relpath, time(NULL) + 86400);
+        sys::touch("testds" / f.test_relpath, time(NULL) + 86400);
         wassert(f.all_clean(3));
         wassert(f.query_results({1, 3, 0, 2}));
     });
@@ -311,8 +322,8 @@ void CheckTest<Fixture>::register_tests_zip()
     this->add_method("check_iszip", R"(
         - the segment must be a zip file [unaligned]
     )", [](Fixture& f) {
-        wassert(actual_file("testds/" + f.test_relpath + ".zip").exists());
-        wassert(actual_file("testds/" + f.test_relpath).not_exists());
+        wassert(actual_file("testds" / sys::with_suffix(f.test_relpath, ".zip")).exists());
+        wassert(actual_file("testds" / f.test_relpath).not_exists());
     });
 }
 
@@ -346,8 +357,12 @@ void CheckTest<TestFixture>::register_tests()
         f.remove_segment();
 
         wassert(f.state_is(3, segment::SEGMENT_MISSING));
-        auto e = wassert_throws(std::runtime_error, f.query_results({1, 3, 0, 2}));
-        wassert(actual(e.what()).contains("the segment has disappeared"));
+        nag::CollectHandler nag_messages(false, false);
+        nag_messages.install();
+        wassert(f.query_results({0, 2}));
+        wassert(actual(nag_messages.collected.size()) == 1u);
+        wassert(actual(nag_messages.collected[0]).matches("W:.+2007/07-07\\.\\w+: segment data is not available"));
+        nag_messages.clear();
     });
 
     this->add_method("check_unknown_empty", R"(
@@ -363,11 +378,11 @@ void CheckTest<TestFixture>::register_tests()
     });
 
     this->add_method("empty_dir_segment", R"(
-	- a directory segment without a .sequence file is not considered a
-	  segment, only a spurious empty directory
+        - a directory segment without a .sequence file is not considered a
+          segment, only a spurious empty directory
     )", [&](Fixture& f) {
         // See #279
-        sys::makedirs(f.test_relpath);
+        std::filesystem::create_directories(f.test_relpath);
 
         {
             auto checker(f.makeSegmentedChecker());
@@ -400,7 +415,7 @@ void CheckTest<TestFixture>::register_tests()
             - segments that only contain data that has been removed are
               identified as fully deleted [deleted]
         )", [&](Fixture& f) {
-            f.delete_all_in_segment();
+            wassert(f.delete_all_in_segment());
             wassert(f.state_is(3, segment::SEGMENT_DELETED));
             wassert(f.query_results({0, 2}));
         });
@@ -494,9 +509,9 @@ void CheckTest<TestFixture>::register_tests()
       implied by the segment file name (FIXME: should this be disabled for
       archives, to deal with datasets that had a change of step in their lifetime?) [corrupted]
     )", [&](Fixture& f) {
-        std::shared_ptr<Metadata> md(f.import_results[1]->clone());
+        std::shared_ptr<Metadata> md(f.import_results[1].clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
-        md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
+        f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
         wassert(f.query_results({-1, 3, 0, 2}));
@@ -512,7 +527,7 @@ void CheckTest<TestFixture>::register_tests()
 
             auto state = f.scan_state();
             wassert(actual(state.size()) == 3u);
-            wassert(actual(state.get("testds:" + f.test_relpath_wrongstep).state) == segment::SEGMENT_CORRUPTED);
+            wassert(actual(state.get("testds:" + f.test_relpath_wrongstep.native()).state) == segment::SEGMENT_CORRUPTED);
 
             // We are breaking the invariant that segments sorted by file name
             // are in the same sequence of segments sorted by time of file
@@ -555,7 +570,7 @@ template<typename Fixture>
 void FixTest<Fixture>::register_tests_concat()
 {
     this->add_method("fix_hugefile", [&](Fixture& f) {
-        f.make_hugefile();
+        wassert(f.make_hugefile());
         wassert(f.state_is(3, segment::SEGMENT_DIRTY));
 
         {
@@ -598,7 +613,7 @@ void FixTest<Fixture>::register_tests_dir()
         f.makeSegmentedChecker()->test_invalidate_in_index(f.test_relpath);
         f.reset_seqfile();
         {
-            sys::File df("testds/" + f.test_relpath + "/000000." + f.format, O_RDWR);
+            sys::File df("testds" / f.test_relpath / ("000000."s + f.format), O_RDWR);
             df.ftruncate(f.test_datum_size / 2);
         }
 
@@ -724,9 +739,9 @@ void FixTest<TestFixture>::register_tests()
         - [corrupted] segments can only be fixed by manual intervention. They
           are reported and left untouched
     )", [&](Fixture& f) {
-        std::shared_ptr<Metadata> md(f.import_results[1]->clone());
+        std::shared_ptr<Metadata> md(f.import_results[1].clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
-        md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
+        f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         {
             auto checker(f.makeSegmentedChecker());
@@ -782,7 +797,7 @@ template<typename Fixture>
 void RepackTest<Fixture>::register_tests_concat()
 {
     this->add_method("repack_hugefile", [&](Fixture& f) {
-        f.make_hugefile();
+        wassert(f.make_hugefile());
         wassert(f.state_is(3, segment::SEGMENT_DIRTY));
 
         {
@@ -801,10 +816,12 @@ void RepackTest<Fixture>::register_tests_concat()
         // Set the segment to a past timestamp and rescan it, making it as if
         // it were imported a long time ago
         {
-            sys::touch("testds/" + f.test_relpath, 199926000);
+            sys::touch("testds" / f.test_relpath, 199926000);
 
             NullReporter reporter;
-            f.makeSegmentedChecker()->segment(f.test_relpath)->rescan(reporter);
+            auto checker = f.makeSegmentedChecker();
+            auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
+            checker->segment(segment)->rescan(reporter);
         }
 
         // Ensure that the archive is still clean
@@ -813,7 +830,9 @@ void RepackTest<Fixture>::register_tests_concat()
         // Do a repack, it should change the timestamp
         {
             auto checker(f.makeSegmentedChecker());
-            wassert(actual(checker->segment(f.test_relpath)->repack()) == 0u);
+            auto segment = checker->dataset().segment_session->segment_from_relpath(f.test_relpath);
+            auto repack_result = wcallchecked(checker->segment(segment)->repack());
+            wassert(actual(repack_result.size_pre) == repack_result.size_post);
         }
 
         // Ensure that the archive is still clean
@@ -915,9 +934,9 @@ void RepackTest<TestFixture>::register_tests()
     this->add_method("repack_corrupted", R"(
         - [corrupted] segments are not touched
     )", [&](Fixture& f) {
-        std::shared_ptr<Metadata> md(f.import_results[1]->clone());
+        std::shared_ptr<Metadata> md(f.import_results[1].clone());
         md->test_set("reftime", "2007-07-06 00:00:00");
-        md = f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
+        f.makeSegmentedChecker()->test_change_metadata(f.test_relpath, md, 0);
 
         {
             auto checker(f.makeSegmentedChecker());
@@ -950,10 +969,10 @@ void RepackTest<TestFixture>::register_tests()
         wassert(f.ensure_localds_clean(3, 4));
 
         // Check that the files have been moved to the archive
-        wassert(actual_file("testds/" + f.test_relpath).not_exists());
-        wassert(actual_file("testds/.archive/last/" + f.test_relpath_ondisk()).exists());
-        wassert(actual_file("testds/.archive/last/" + f.test_relpath + ".metadata").exists());
-        wassert(actual_file("testds/.archive/last/" + f.test_relpath + ".summary").exists());
+        wassert(actual_file("testds" / f.test_relpath).not_exists());
+        wassert(actual_file("testds/.archive/last" / f.test_relpath_ondisk()).exists());
+        wassert(actual_file("testds/.archive/last" / sys::with_suffix(f.test_relpath, ".metadata")).exists());
+        wassert(actual_file("testds/.archive/last" / sys::with_suffix(f.test_relpath, ".summary")).exists());
 
         wassert(f.query_results({1, 3, 0, 2}));
     });
@@ -991,7 +1010,7 @@ void RepackTest<TestFixture>::register_tests()
         // State knows of a segment both to repack and to delete
         {
             auto state = f.scan_state();
-            wassert(actual(state.get("testds:" + f.test_relpath).state) == segment::State(segment::SEGMENT_DIRTY | segment::SEGMENT_DELETE_AGE));
+            wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::SEGMENT_DIRTY + segment::SEGMENT_DELETE_AGE);
             wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
             wassert(actual(state.size()) == 3u);
         }
@@ -1020,10 +1039,11 @@ void RepackTest<TestFixture>::register_tests()
 
         // State knows of a segment both to repack and to delete
         {
-            auto state = f.scan_state();
-            wassert(actual(state.get("testds:" + f.test_relpath).state) == segment::State(segment::SEGMENT_DIRTY | segment::SEGMENT_ARCHIVE_AGE));
+            auto state = f.scan_state(true, true);
+            wassert(actual(state.get("testds:" + f.test_relpath.native()).state) == segment::SEGMENT_DIRTY + segment::SEGMENT_ARCHIVE_AGE);
             wassert(actual(state.count(segment::SEGMENT_OK)) == 2u);
             wassert(actual(state.size()) == 3u);
+            state.all_ok();
         }
 
         // Perform packing and check that things are still ok afterwards

@@ -17,40 +17,6 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-OverrideEnvironment::OverrideEnvironment(const std::string& name)
-    : name(name)
-{
-    char* old_val = getenv(name.c_str());
-    if (old_val)
-    {
-        was_set = true;
-        orig_value = old_val;
-    }
-    if (::unsetenv(name.c_str()) == -1)
-        throw_system_error("unsetenv " + name + " failed");
-}
-
-OverrideEnvironment::OverrideEnvironment(const std::string& name, const std::string& value)
-    : name(name)
-{
-    char* old_val = getenv(name.c_str());
-    if (old_val)
-    {
-        was_set = true;
-        orig_value = old_val;
-    }
-    if (::setenv(name.c_str(), value.c_str(), 1) == -1)
-        throw_system_error("setenv " + name + "=" + value + " failed");
-}
-
-OverrideEnvironment::~OverrideEnvironment()
-{
-    if (was_set)
-        setenv(name.c_str(), orig_value.c_str(), 1);
-    else
-        unsetenv(name.c_str());
-}
-
 void ActualTime::operator==(const std::string& expected) const
 {
     operator==(Time::create_iso8601(expected));
@@ -162,7 +128,7 @@ void skip_unless_geos()
 }
 void skip_unless_splice()
 {
-#ifndef HAVE_SPLICE
+#ifndef ARKI_HAVE_SPLICE
     throw TestSkipped("splice() syscall is not available");
 #endif
 }
@@ -181,9 +147,9 @@ void skip_unless_filesystem_has_ofd_locks(const std::string& path)
 
 void delete_if_exists(const std::string& name)
 {
-    if (sys::isdir(name))
+    if (std::filesystem::is_directory(name))
         sys::rmtree(name);
-    else if (sys::exists(name))
+    else if (std::filesystem::exists(name))
         sys::unlink(name);
 }
 

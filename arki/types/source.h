@@ -3,6 +3,7 @@
 
 /// Represent where the data for a metadata can be found
 
+#include <filesystem>
 #include <arki/types.h>
 #include <arki/segment/fwd.h>
 
@@ -39,7 +40,9 @@ This is what allows to fetch the actual data given its metadata.
 )";
 
 public:
-    std::string format;
+    using Type::Type;
+
+    DataFormat format;
 
     types::Code type_code() const override { return traits<Source>::type_code; }
     size_t serialisationSizeLength() const override { return traits<Source>::type_sersize_bytes; }
@@ -62,7 +65,7 @@ public:
     /// CODEC functions
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     static std::unique_ptr<Source> decode(core::BinaryDecoder& dec, bool reuse_buffer);
-    static std::unique_ptr<Source> decodeRelative(core::BinaryDecoder& dec, const std::string& basedir);
+    static std::unique_ptr<Source> decodeRelative(core::BinaryDecoder& dec, const std::filesystem::path& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source> decode_structure(const structured::Keys& keys, const structured::Reader& val);
     void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
@@ -72,11 +75,11 @@ public:
     // Register this type with the type system
     static void init();
 
-    static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createBlob(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::Reader> reader);
-    static std::unique_ptr<Source> createBlobUnlocked(const std::string& format, const std::string& basedir, const std::string& filename, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createInline(const std::string& format, uint64_t size);
-    static std::unique_ptr<Source> createURL(const std::string& format, const std::string& url);
+    static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createBlob(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
+    static std::unique_ptr<Source> createBlobUnlocked(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
+    static std::unique_ptr<Source> createInline(DataFormat format, uint64_t size);
+    static std::unique_ptr<Source> createURL(DataFormat format, const std::string& url);
 
     static void write_documentation(stream::Text& out, unsigned heading_level);
 };

@@ -24,7 +24,7 @@ Tests test("arki_stream");
 
 void Tests::register_tests() {
 
-add_method("empty", [] {
+add_method("empty", []() noexcept {
 });
 
 }

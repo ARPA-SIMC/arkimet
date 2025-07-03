@@ -5,14 +5,13 @@
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 
-namespace arki {
-namespace tests {
+namespace arki::tests {
 
 struct TestData
 {
-    std::string format;
+    DataFormat format;
     metadata::TestCollection mds;
-    TestData(const std::string& format);
+    explicit TestData(DataFormat format);
 };
 
 struct GRIBData : TestData
@@ -45,13 +44,13 @@ struct JPEGData : TestData
     JPEGData();
 };
 
-std::shared_ptr<Metadata> make_large_mock(const std::string& format, size_t size, unsigned month, unsigned day, unsigned hour=0);
+std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size, unsigned month, unsigned day, unsigned hour=0);
 
 void fill(Metadata& md);
 
 struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 {
-    ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
+    explicit ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
 
     void operator==(std::shared_ptr<Metadata> expected) const { return operator==(*expected); }
     void operator!=(std::shared_ptr<Metadata> expected) const { return operator!=(*expected); }
@@ -82,8 +81,8 @@ struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 };
 
 inline arki::tests::ActualMetadata actual(const arki::Metadata& actual) { return arki::tests::ActualMetadata(actual); }
+inline arki::tests::ActualMetadata actual(std::shared_ptr<const arki::Metadata> actual) { return arki::tests::ActualMetadata(*actual); }
 
-}
 }
 
 #endif

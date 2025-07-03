@@ -1,6 +1,7 @@
 #ifndef ARKI_PYTHON_ARKISCAN_RESULTS_H
 #define ARKI_PYTHON_ARKISCAN_RESULTS_H
 
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -10,7 +11,7 @@ namespace arki_scan {
 struct DispatchResults
 {
     /// Name of source that was imported
-    std::string name;
+    std::filesystem::path name;
 
     // Used for timings. Read with gettimeofday at the beginning of a task,
     // and summary_so_far will report the elapsed time

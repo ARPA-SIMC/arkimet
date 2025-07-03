@@ -142,13 +142,13 @@ bool Summary::read(core::NamedFileDescriptor& in)
 
     // Ensure first 2 bytes are SU
     if (bundle.signature != "SU")
-        throw_consistency_error("parsing file " + in.name(), "summary entry does not start with 'SU'");
+        throw_consistency_error("parsing file " + in.path().native(), "summary entry does not start with 'SU'");
 
     if (!bundle.read_data(in))
         return false;
 
     core::BinaryDecoder dec(bundle.data);
-    read_inner(dec, bundle.version, in.name());
+    read_inner(dec, bundle.version, in.path());
 
     return true;
 }
@@ -163,18 +163,18 @@ bool Summary::read(core::AbstractInputFile& in)
 
     // Ensure first 2 bytes are SU
     if (bundle.signature != "SU")
-        throw_consistency_error("parsing file " + in.name(), "summary entry does not start with 'SU'");
+        throw_consistency_error("parsing file " + in.path().native(), "summary entry does not start with 'SU'");
 
     if (!bundle.read_data(in))
         return false;
 
     core::BinaryDecoder dec(bundle.data);
-    read_inner(dec, bundle.version, in.name());
+    read_inner(dec, bundle.version, in.path());
 
     return true;
 }
 
-bool Summary::read(core::BinaryDecoder& dec, const std::string& filename)
+bool Summary::read(core::BinaryDecoder& dec, const std::filesystem::path& filename)
 {
     string signature;
     unsigned version;
@@ -182,14 +182,14 @@ bool Summary::read(core::BinaryDecoder& dec, const std::string& filename)
 
     // Ensure first 2 bytes are SU
     if (signature != "SU")
-        throw std::runtime_error("cannot parse file " + filename + ": summary entry does not start with 'SU'");
+        throw std::runtime_error("cannot parse file "s + filename.native() + ": summary entry does not start with 'SU'");
 
     read_inner(inner, version, filename);
 
     return true;
 }
 
-void Summary::read_inner(core::BinaryDecoder& dec, unsigned version, const std::string& filename)
+void Summary::read_inner(core::BinaryDecoder& dec, unsigned version, const std::filesystem::path& filename)
 {
     using namespace summary;
     summary::decode(dec, version, filename, *root);
@@ -264,7 +264,7 @@ stream::SendResult Summary::write(StreamOutput& out) const
     return out.send_buffer(encoded.data(), encoded.size());
 }
 
-void Summary::writeAtomically(const std::string& fname)
+void Summary::writeAtomically(const std::filesystem::path& fname)
 {
     vector<uint8_t> enc = encode(true);
     iotrace::trace_file(fname, 0, enc.size(), "write summary");
@@ -279,7 +279,7 @@ struct YamlPrinter : public Visitor
     const Formatter* f;
 
     YamlPrinter(ostream& out, size_t indent, const Formatter* f = 0) : out(out), indent(indent, ' '), f(f) {}
-    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
+    bool operator()(const std::vector<const Type*>& md, const Stats& stats) override
     {
         // Write the metadata items
         out << "SummaryItem:" << endl;
@@ -349,7 +349,7 @@ void Summary::serialise(structured::Emitter& e, const structured::Keys& keys, co
 
             Serialiser(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) : e(e), keys(keys), f(f) {}
 
-            virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
+            bool operator()(const std::vector<const Type*>& md, const Stats& stats) override
             {
                 e.start_mapping();
                 for (std::vector<const Type*>::const_iterator i = md.begin();
@@ -392,7 +392,7 @@ void Summary::read(const structured::Keys& keys, const structured::Reader& val)
     });
 }
 
-void Summary::read_file(const std::string& fname)
+void Summary::read_file(const std::filesystem::path& fname)
 {
     // Read all the metadata
     sys::File in(fname, O_RDONLY);
@@ -400,7 +400,7 @@ void Summary::read_file(const std::string& fname)
     in.close();
 }
 
-bool Summary::readYaml(LineReader& in, const std::string& filename)
+bool Summary::readYaml(LineReader& in, const std::filesystem::path& filename)
 {
     return root->merge_yaml(in, filename);
 }
@@ -422,7 +422,7 @@ struct SummaryMerger : public Visitor
     Table& root;
 
     SummaryMerger(Table& root) : root(root) {}
-    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
+    bool operator()(const std::vector<const Type*>& md, const Stats& stats) override
     {
         root.merge(md, stats);
         return true;
@@ -436,7 +436,7 @@ struct PruningSummaryMerger : public Visitor
     PruningSummaryMerger(const vector<unsigned>& positions, Table& root)
         : positions(positions), root(root) {}
 
-    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
+    bool operator()(const std::vector<const Type*>& md, const Stats& stats) override
     {
         root.merge(md, stats, positions);
         return true;
@@ -471,7 +471,7 @@ struct MatchVisitor : public Visitor
 {
     bool res;
     MatchVisitor() : res(false) {}
-    virtual bool operator()(const std::vector<const Type*>& md, const Stats& stats)
+    bool operator()(const std::vector<const Type*>& md, const Stats& stats) override
     {
         res = true;
         // Stop iteration

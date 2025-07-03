@@ -47,12 +47,12 @@ struct PathMatch
 {
     std::set<FSPos> parents;
 
-    PathMatch(const std::string& pathname)
+    PathMatch(const std::filesystem::path& pathname)
     {
         fill_parents(pathname);
     }
 
-    void fill_parents(const std::string& pathname)
+    void fill_parents(const std::filesystem::path& pathname)
     {
         struct stat st;
         sys::stat(pathname, st);
@@ -61,10 +61,10 @@ struct PathMatch
         // top or a loop
         if (i.second == false) return;
         // Otherwise, go up a level and scan again
-        fill_parents(str::normpath(str::joinpath(pathname, "..")));
+        fill_parents(pathname.parent_path());
     }
 
-    bool is_under(const std::string& pathname)
+    bool is_under(const std::filesystem::path& pathname)
     {
         struct stat st;
         sys::stat(pathname, st);
@@ -119,6 +119,57 @@ std::shared_ptr<Dataset> Pool::dataset(const std::string& name)
         throw std::runtime_error("dataset " + name + " not found in session pool");
     return res->second;
 }
+
+std::shared_ptr<Dataset> Pool::dataset_for_use(DatasetUse use)
+{
+    switch (use)
+    {
+        case DatasetUse::DEFAULT:
+            throw std::runtime_error("cannot select a dataset for use=DEFAULT");
+        case DatasetUse::ERRORS:
+        {
+            std::shared_ptr<Dataset> result;
+            for (const auto& ds: dataset_pool)
+            {
+                if (ds.second->use() == DatasetUse::ERRORS)
+                {
+                    if (!result)
+                        result = ds.second;
+                    else
+                        throw std::runtime_error("multiple datasets defined as error datasets: " + result->name() + " and " + ds.first);
+                }
+            }
+            if (!result)
+                throw std::runtime_error("no error dataset found in configuration");
+            return result;
+        }
+        case DatasetUse::DUPLICATES:
+        {
+            std::shared_ptr<Dataset> result;
+            for (const auto& ds: dataset_pool)
+            {
+                if (ds.second->use() == DatasetUse::DUPLICATES)
+                {
+                    if (!result)
+                        result = ds.second;
+                    else
+                        throw std::runtime_error("multiple datasets defined as duplicates datasets: " + result->name() + " and " + ds.first);
+                }
+            }
+            // If not found, fall back on errors
+            if (!result)
+                return dataset_for_use(DatasetUse::ERRORS);
+            return result;
+        }
+        default:
+        {
+            std::stringstream buf;
+            buf << "unsupported dataset use: " << use;
+            throw std::runtime_error(buf.str());
+        }
+    }
+}
+
 
 size_t Pool::size() const
 {
@@ -229,15 +280,24 @@ std::shared_ptr<dataset::Writer> DispatchPool::get(const std::string& name)
 
 std::shared_ptr<dataset::Writer> DispatchPool::get_error()
 {
-    return get("error");
+    if (!error)
+    {
+        auto ds = pool->dataset_for_use(DatasetUse::ERRORS);
+        error = get(ds->name());
+        return error;
+    }
+    return error;
 }
 
 std::shared_ptr<dataset::Writer> DispatchPool::get_duplicates()
 {
-    if (pool->has_dataset("duplicates"))
-        return get("duplicates");
-    else
-        return get_error();
+    if (!error)
+    {
+        auto ds = pool->dataset_for_use(DatasetUse::DUPLICATES);
+        error = get(ds->name());
+        return error;
+    }
+    return error;
 }
 
 void DispatchPool::flush()
@@ -303,7 +363,7 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
     if (simulate)
     {
         for (const auto& i: by_dataset)
-            arki::nag::warning("%s: %zd data would be deleted", i.first.c_str(), i.second.size());
+            arki::nag::warning("%s: %zu data would be deleted", i.first.c_str(), i.second.size());
         return;
     }
 
@@ -316,12 +376,12 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
             ds->remove(i.second);
             removed = true;
         } catch (std::exception& e) {
-            arki::nag::warning("Cannot remove %zd messages from dataset %s: %s",
+            arki::nag::warning("Cannot remove %zu messages from dataset %s: %s",
                     i.second.size(), i.first.c_str(), e.what());
         }
 
         if (removed)
-            arki::nag::verbose("%s: %zd data marked as deleted", i.first.c_str(), i.second.size());
+            arki::nag::verbose("%s: %zu data marked as deleted", i.first.c_str(), i.second.size());
     }
 }
 

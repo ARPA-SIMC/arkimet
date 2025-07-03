@@ -4,23 +4,19 @@
 /// dataset/simple/writer - Writer for simple datasets with no duplicate checks
 
 #include <arki/dataset/simple.h>
+#include <arki/dataset/simple/manifest.h>
 #include <arki/dataset/impl.h>
 #include <string>
 
-namespace arki {
-namespace dataset {
-
-namespace simple {
-class AppendSegment;
+namespace arki::dataset::simple {
 
 class Writer : public DatasetAccess<simple::Dataset, segmented::Writer>
 {
 protected:
+    manifest::Writer manifest;
     std::shared_ptr<simple::Dataset> m_config;
 
-    /// Return a (shared) instance of the Datafile for the given relative pathname
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const Metadata& md, const std::string& format);
-    std::unique_ptr<AppendSegment> file(const segment::WriterConfig& writer_config, const std::string& relpath);
+    void invalidate_summary();
 
 public:
     Writer(std::shared_ptr<simple::Dataset> dataset);
@@ -28,13 +24,10 @@ public:
 
     std::string type() const override;
 
-    WriterAcquireResult acquire(Metadata& md, const AcquireConfig& cfg=AcquireConfig()) override;
-    void acquire_batch(WriterBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, WriterBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
 };
 
-}
-}
 }
 #endif

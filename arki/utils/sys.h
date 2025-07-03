@@ -11,6 +11,7 @@
 #include <string>
 #include <memory>
 #include <iterator>
+#include <filesystem>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -24,11 +25,40 @@ namespace utils {
 namespace sys {
 
 /**
+ * Return the path with suffix appended to its filename.
+ *
+ * path needs to have a filename, otherwise the function will throw
+ * std::invalid_argument
+ */
+std::filesystem::path with_suffix(const std::filesystem::path& path, const std::string& suffix);
+
+
+/**
+ * stat() the given file and return the struct stat with the results.
+ * If the file does not exist, return NULL.
+ * Raises exceptions in case of errors.
+ */
+std::unique_ptr<struct stat> stat(const char* pathname);
+
+/**
  * stat() the given file and return the struct stat with the results.
  * If the file does not exist, return NULL.
  * Raises exceptions in case of errors.
  */
 std::unique_ptr<struct stat> stat(const std::string& pathname);
+
+/**
+ * stat() the given file and return the struct stat with the results.
+ * If the file does not exist, return NULL.
+ * Raises exceptions in case of errors.
+ */
+std::unique_ptr<struct stat> stat(const std::filesystem::path& path);
+
+/**
+ * stat() the given file filling in the given structure.
+ * Raises exceptions in case of errors, including if the file does not exist.
+ */
+void stat(const char* pathname, struct stat& st);
 
 /**
  * stat() the given file filling in the given structure.
@@ -37,68 +67,76 @@ std::unique_ptr<struct stat> stat(const std::string& pathname);
 void stat(const std::string& pathname, struct stat& st);
 
 /**
+ * stat() the given file filling in the given structure.
+ * Raises exceptions in case of errors, including if the file does not exist.
+ */
+void stat(const std::filesystem::path& path, struct stat& st);
+
+/**
  * Returns true if the given pathname is a directory, else false.
  *
  * It also returns false if the pathname does not exist.
  */
-bool isdir(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_directory")]] bool isdir(const std::string& pathname);
 
 /// Same as isdir but checks for block devices
-bool isblk(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_block_file")]] bool isblk(const std::string& pathname);
 
 /// Same as isdir but checks for character devices
-bool ischr(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_character_file")]] bool ischr(const std::string& pathname);
 
 /// Same as isdir but checks for FIFOs
-bool isfifo(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_fifo")]] bool isfifo(const std::string& pathname);
 
 /// Same as isdir but checks for symbolic links
-bool islnk(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_symlink")]] bool islnk(const std::string& pathname);
 
 /// Same as isdir but checks for regular files
-bool isreg(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_regular_file")]] bool isreg(const std::string& pathname);
 
 /// Same as isdir but checks for sockets
-bool issock(const std::string& pathname);
+[[deprecated("Use std::filesystem::is_socket")]] bool issock(const std::string& pathname);
 
 /// File mtime
-time_t timestamp(const std::string& file);
+time_t timestamp(const std::filesystem::path& file);
 
 /// File mtime (or def if the file does not exist)
-time_t timestamp(const std::string& file, time_t def);
+time_t timestamp(const std::filesystem::path& file, time_t def);
 
 /// File size
-size_t size(const std::string& file);
+size_t size(const std::filesystem::path& file);
 
 /// File size (or def if the file does not exist)
-size_t size(const std::string& file, size_t def);
+size_t size(const std::filesystem::path& file, size_t def);
 
 /// File inode number
-ino_t inode(const std::string& file);
+ino_t inode(const std::filesystem::path& file);
 
 /// File inode number (or 0 if the file does not exist)
-ino_t inode(const std::string& file, ino_t def);
+ino_t inode(const std::filesystem::path& file, ino_t def);
 
 /// access() a filename
-bool access(const std::string& s, int m);
+bool access(const std::filesystem::path& s, int m);
 
 /// Same as access(s, F_OK);
-bool exists(const std::string& s);
+[[deprecated("Use std::filesystem::exists")]] bool exists(const std::string& s);
 
 /// Get the absolute path of the current working directory
-std::string getcwd();
+[[deprecated("Use std::filesystem::current_path")]] std::string getcwd();
 
 /// Change working directory
-void chdir(const std::string& dir);
+[[deprecated("Use std::filesystem::current_path")]] void chdir(const std::string& dir);
 
 /// Change root directory
-void chroot(const std::string& dir);
+void chroot(const std::filesystem::path& dir);
 
 /// Change umask (always succeeds and returns the previous umask)
 mode_t umask(mode_t mask);
 
 /// Get the absolute path of a file
-std::string abspath(const std::string& pathname);
+std::filesystem::path abspath(const std::filesystem::path& path);
+[[deprecated("Use abspath(const std::filesystem::path&)")]] std::string abspath(const std::string& pathname);
+std::filesystem::path abspath(const char* path);
 
 /**
  * Wraps a mmapped memory area, unmapping it on destruction.
@@ -149,7 +187,7 @@ protected:
 public:
     FileDescriptor();
     FileDescriptor(FileDescriptor&& o);
-    FileDescriptor(int fd);
+    explicit FileDescriptor(int fd);
     virtual ~FileDescriptor();
 
     // We can copy at the FileDescriptor level because the destructor does not
@@ -165,6 +203,15 @@ public:
      * messages.
      */
     [[noreturn]] virtual void throw_error(const char* desc);
+
+    /**
+     * Throw an exception based on errno and the given message.
+     *
+     * This can be overridden by subclasses that may have more information
+     * about the file descriptor, so that they can generate more descriptive
+     * messages.
+     */
+    [[noreturn]] virtual void throw_error_string(const std::string& desc);
 
     /**
      * Throw a runtime_error unrelated from errno.
@@ -188,7 +235,7 @@ public:
     void fstat(struct stat& st);
     void fchmod(mode_t mode);
 
-    void futimens(const struct ::timespec ts[2]);
+    void futimens(const ::timespec ts[2]);
 
     void fsync();
     void fdatasync();
@@ -262,7 +309,7 @@ public:
      * Returns true if the lock was obtained, false if acquiring the lock
      * failed.
      */
-    bool ofd_setlk(struct ::flock&);
+    bool ofd_setlk(::flock&);
 
     /**
      * Open file description locks F_OFD_SETLKW operation.
@@ -273,14 +320,14 @@ public:
      * If retry_on_signal is true, acquiring the lock is automatically retried
      * in case of signals, and the function always returns true.
      */
-    bool ofd_setlkw(struct ::flock&, bool retry_on_signal=true);
+    bool ofd_setlkw(::flock&, bool retry_on_signal=true);
 
     /**
      * Open file description locks F_OFD_GETLK operation.
      *
      * Returns true if the lock would have been obtainable, false if not.
      */
-    bool ofd_getlk(struct ::flock&);
+    bool ofd_getlk(::flock&);
 
     /// Get open flags for the file
     int getfl();
@@ -299,10 +346,10 @@ class PreserveFileTimes
 {
 protected:
     FileDescriptor fd;
-    struct ::timespec ts[2];
+    ::timespec ts[2];
 
 public:
-    PreserveFileTimes(FileDescriptor fd);
+    explicit PreserveFileTimes(FileDescriptor fd);
     ~PreserveFileTimes();
 };
 
@@ -314,10 +361,10 @@ public:
 class NamedFileDescriptor : public FileDescriptor
 {
 protected:
-    std::string pathname;
+    std::filesystem::path path_;
 
 public:
-    NamedFileDescriptor(int fd, const std::string& pathname);
+    NamedFileDescriptor(int fd, const std::filesystem::path& path);
     NamedFileDescriptor(NamedFileDescriptor&&);
     NamedFileDescriptor& operator=(NamedFileDescriptor&&);
 
@@ -326,11 +373,13 @@ public:
     NamedFileDescriptor(const NamedFileDescriptor& o) = default;
     NamedFileDescriptor& operator=(const NamedFileDescriptor& o) = default;
 
-    [[noreturn]] virtual void throw_error(const char* desc);
-    [[noreturn]] virtual void throw_runtime_error(const char* desc);
+    [[noreturn]] virtual void throw_error(const char* desc) override;
+    [[noreturn]] virtual void throw_error_string(const std::string& desc) override;
+    [[noreturn]] virtual void throw_runtime_error(const char* desc) override;
 
     /// Return the file pathname
-    const std::string& name() const { return pathname; }
+    [[deprecated("use path() instead")]] std::string name() const { return path_.string(); }
+    const std::filesystem::path& path() const { return path_; }
 };
 
 
@@ -369,19 +418,19 @@ struct Path : public ManagedNamedFileDescriptor
     struct iterator
     {
         using iterator_category = std::input_iterator_tag;
-        using value_type = struct dirent;
+        using value_type = ::dirent;
         using difference_type = int;
-        using pointer = struct dirent*;
-        using reference = struct dirent&;
+        using pointer = ::dirent*;
+        using reference = ::dirent&;
 
         Path* path = nullptr;
         DIR* dir = nullptr;
-        struct dirent* cur_entry = nullptr;
+        ::dirent* cur_entry = nullptr;
 
         // End iterator
         iterator();
         // Start iteration on dir
-        iterator(Path& dir);
+        explicit iterator(Path& dir);
         iterator(iterator&) = delete;
         iterator(iterator&& o)
             : dir(o.dir), cur_entry(o.cur_entry)
@@ -395,9 +444,9 @@ struct Path : public ManagedNamedFileDescriptor
 
         bool operator==(const iterator& i) const;
         bool operator!=(const iterator& i) const;
-        struct dirent& operator*() const { return *cur_entry; }
-        struct dirent* operator->() const { return cur_entry; }
-        void operator++();
+        ::dirent& operator*() const { return *cur_entry; }
+        ::dirent* operator->() const { return cur_entry; }
+        iterator& operator++();
 
         /// @return true if we refer to a directory, else false
         bool isdir() const;
@@ -429,11 +478,7 @@ struct Path : public ManagedNamedFileDescriptor
     /**
      * Open the given pathname with flags | O_PATH.
      */
-    Path(const char* pathname, int flags=0, mode_t mode=0777);
-    /**
-     * Open the given pathname with flags | O_PATH.
-     */
-    Path(const std::string& pathname, int flags=0, mode_t mode=0777);
+    explicit Path(const std::filesystem::path& pathname, int flags=0, mode_t mode=0777);
     /**
      * Open the given pathname calling parent.openat, with flags | O_PATH
      */
@@ -490,7 +535,8 @@ struct Path : public ManagedNamedFileDescriptor
      */
     void rmtree();
 
-    static std::string mkdtemp(const std::string& prefix);
+    static std::string mkdtemp(const std::filesystem::path& prefix);
+    [[deprecated("Use mkdtemp(const std::filesystem::path&)")]] static std::string mkdtemp(const std::string& prefix);
     static std::string mkdtemp(const char* prefix);
     static std::string mkdtemp(char* pathname_template);
 };
@@ -510,10 +556,12 @@ public:
     /**
      * Create an unopened File object for the given pathname
      */
-    File(const std::string& pathname);
+    explicit File(const std::filesystem::path& path);
+    explicit File(const char* path);
+    [[deprecated("Use File(const std::filesystem::path&)")]] explicit File(const std::string& path);
 
     /// Wrapper around open(2)
-    File(const std::string& pathname, int flags, mode_t mode=0777);
+    File(const std::filesystem::path& path, int flags, mode_t mode=0777);
 
     File& operator=(const File&) = delete;
     File& operator=(File&&) = default;
@@ -527,7 +575,8 @@ public:
      */
     bool open_ifexists(int flags, mode_t mode=0777);
 
-    static File mkstemp(const std::string& prefix);
+    static File mkstemp(const std::filesystem::path& prefix);
+    [[deprecated("Use mkstemp(const std::filesysten::path&)")]] static File mkstemp(const std::string& prefix);
     static File mkstemp(const char* prefix);
     static File mkstemp(char* pathname_template);
 };
@@ -545,8 +594,9 @@ protected:
 
 public:
     Tempfile();
-    Tempfile(const std::string& prefix);
-    Tempfile(const char* prefix);
+    explicit Tempfile(const std::filesystem::path& prefix);
+    [[deprecated("Use Tempfile(const std::string&)")]] explicit Tempfile(const std::string& prefix);
+    explicit Tempfile(const char* prefix);
     ~Tempfile();
 
     /// Change the unlink-on-exit behaviour
@@ -570,17 +620,19 @@ protected:
 
 public:
     Tempdir();
-    Tempdir(const std::string& prefix);
-    Tempdir(const char* prefix);
+    explicit Tempdir(const std::filesystem::path& prefix);
+    [[deprecated("Use Tempdir(const std::filesystem::path&)")]] explicit Tempdir(const std::string& prefix);
+    explicit Tempdir(const char* prefix);
     ~Tempdir();
 
     /// Change the rmtree-on-exit behaviour
     void rmtree_on_exit(bool val);
 };
 
-
 /// Read whole file into memory. Throws exceptions on failure.
-std::string read_file(const std::string &file);
+std::string read_file(const std::filesystem::path& file);
+[[deprecated("Use read_file(const std::filesystem::path&)")]] std::string read_file(const std::string& file);
+std::string read_file(const char* file);
 
 /**
  * Write \a data to \a file, replacing existing contents if it already exists.
@@ -588,7 +640,9 @@ std::string read_file(const std::string &file);
  * New files are created with the given permission mode, honoring umask.
  * Permissions of existing files do not change.
  */
-void write_file(const std::string& file, const std::string& data, mode_t mode=0777);
+void write_file(const std::filesystem::path& file, const std::string& data, mode_t mode=0777);
+[[deprecated("Use write_file(const std::filesystem::path&, …)")]] void write_file(const std::string& file, const std::string& data, mode_t mode=0777);
+void write_file(const char* file, const std::string& data, mode_t mode=0777);
 
 /**
  * Write \a data to \a file, replacing existing contents if it already exists.
@@ -596,7 +650,9 @@ void write_file(const std::string& file, const std::string& data, mode_t mode=07
  * New files are created with the given permission mode, honoring umask.
  * Permissions of existing files do not change.
  */
-void write_file(const std::string& file, const void* data, size_t size, mode_t mode=0777);
+void write_file(const std::filesystem::path& file, const void* data, size_t size, mode_t mode=0777);
+[[deprecated("Use write_file(const std::filesystem::path&, …)")]] void write_file(const std::string& file, const void* data, size_t size, mode_t mode=0777);
+void write_file(const char* file, const void* data, size_t size, mode_t mode=0777);
 
 /**
  * Write \a data to \a file, replacing existing contents if it already exists.
@@ -607,7 +663,9 @@ void write_file(const std::string& file, const void* data, size_t size, mode_t m
  * Data is written to a temporary file, then moved to its final destination, to
  * ensure an atomic operation.
  */
-void write_file_atomically(const std::string& file, const std::string& data, mode_t mode=0777);
+void write_file_atomically(const std::filesystem::path& file, const std::string& data, mode_t mode=0777);
+[[deprecated("Use write_file_atomically(const std::filesystem::path&, …)")]] void write_file_atomically(const std::string& file, const std::string& data, mode_t mode=0777);
+void write_file_atomically(const char* file, const std::string& data, mode_t mode=0777);
 
 /**
  * Write \a data to \a file, replacing existing contents if it already exists.
@@ -618,7 +676,8 @@ void write_file_atomically(const std::string& file, const std::string& data, mod
  * Data is written to a temporary file, then moved to its final destination, to
  * ensure an atomic operation.
  */
-void write_file_atomically(const std::string& file, const void* data, size_t size, mode_t mode=0777);
+void write_file_atomically(const std::filesystem::path& file, const void* data, size_t size, mode_t mode=0777);
+[[deprecated("Use write_file_atomically(const std::filesystem::path&, …)")]] void write_file_atomically(const std::string& file, const void* data, size_t size, mode_t mode=0777);
 
 #if 0
 // Create a temporary directory based on a template.
@@ -634,14 +693,16 @@ void mkFilePath(const std::string& file);
  *
  * @return true if the file was deleted, false if it did not exist
  */
-bool unlink_ifexists(const std::string& file);
+[[deprecated("use std::filesystem::remove")]] bool unlink_ifexists(const char* file);
+[[deprecated("use std::filesystem::remove")]] bool unlink_ifexists(const std::string& file);
+[[deprecated("use std::filesystem::remove")]] bool unlink_ifexists(const std::filesystem::path& file);
 
 /**
  * Move \a src to \a dst, without raising exception if \a src does not exist
  *
  * @return true if the file was renamed, false if it did not exist
  */
-bool rename_ifexists(const std::string& src, const std::string& dst);
+bool rename_ifexists(const std::filesystem::path& src, const std::filesystem::path& dst);
 
 /**
  * Create the given directory, if it does not already exists.
@@ -651,9 +712,7 @@ bool rename_ifexists(const std::string& src, const std::string& dst);
  *
  * @returns true if the directory was created, false if it already existed.
  */
-bool mkdir_ifmissing(const char* pathname, mode_t mode=0777);
-
-bool mkdir_ifmissing(const std::string& pathname, mode_t mode=0777);
+[[deprecated("use std::filesystem::create_directory")]] bool mkdir_ifmissing(const std::filesystem::path& path);
 
 /**
  * Create all the component of the given directory, including the directory
@@ -661,7 +720,7 @@ bool mkdir_ifmissing(const std::string& pathname, mode_t mode=0777);
  *
  * @returns true if the directory was created, false if it already existed.
  */
-bool makedirs(const std::string& pathname, mode_t=0777);
+[[deprecated("use std::filesystem::create_directories")]] bool makedirs(const std::filesystem::path& path);
 
 /**
  * Compute the absolute path of an executable.
@@ -670,23 +729,25 @@ bool makedirs(const std::string& pathname, mode_t=0777);
  * If \a name is not specified as a path, it looks for the executable in $PATH
  * and return its absolute pathname.
  */
-std::string which(const std::string& name);
+std::filesystem::path which(const std::string& name);
 
 /// Delete the file using unlink()
-void unlink(const std::string& pathname);
+void unlink(const std::filesystem::path& pathname);
 
 /// Remove the directory using rmdir(2)
-void rmdir(const std::string& pathname);
+void rmdir(const std::filesystem::path& pathname);
 
 /// Delete the directory \a pathname and all its contents.
-void rmtree(const std::string& pathname);
+void rmtree(const std::filesystem::path& pathname);
 
 /**
  * Delete the directory \a pathname and all its contents.
  *
  * If the directory does not exist, it returns false, else true.
  */
-bool rmtree_ifexists(const std::string& pathname);
+bool rmtree_ifexists(const std::filesystem::path& pathname);
+[[deprecated("use rmtree_ifexists(const std::filesystem::path&)")]] bool rmtree_ifexists(const std::string& pathname);
+bool rmtree_ifexists(const char* pathname);
 
 /**
  * Rename src_pathname into dst_pathname.
@@ -694,22 +755,31 @@ bool rmtree_ifexists(const std::string& pathname);
  * This is just a wrapper to the rename(2) system call: source and destination
  * must be on the same file system.
  */
-void rename(const std::string& src_pathname, const std::string& dst_pathname);
+[[deprecated("use std::filesystem::rename")]] void rename(const std::string& src_pathname, const std::string& dst_pathname);
 
 /**
- * Set mtime and atime for the file
+ * Set mtime and atime for the file.
+ *
+ * Throws an error if the file does not exist.
  */
-void touch(const std::string& pathname, time_t ts);
+void touch(const std::filesystem::path& pathname, time_t ts);
+
+/**
+ * Set mtime and atime for the file.
+ *
+ * Returns false if the file does not exist.
+ */
+bool touch_ifexists(const std::filesystem::path& pathname, time_t ts);
 
 /**
  * Call clock_gettime, raising an exception if it fails
  */
-void clock_gettime(::clockid_t clk_id, struct ::timespec& ts);
+void clock_gettime(::clockid_t clk_id, ::timespec& ts);
 
 /**
  * Return the time elapsed between two timesec structures, in nanoseconds
  */
-unsigned long long timesec_elapsed(const struct ::timespec& begin, const struct ::timespec& until);
+unsigned long long timesec_elapsed(const ::timespec& begin, const ::timespec& until);
 
 /**
  * Access to clock_gettime
@@ -717,12 +787,12 @@ unsigned long long timesec_elapsed(const struct ::timespec& begin, const struct 
 struct Clock
 {
     ::clockid_t clk_id;
-    struct ::timespec ts;
+    ::timespec ts;
 
     /**
      * Initialize ts with the value of the given clock
      */
-    Clock(::clockid_t clk_id);
+    explicit Clock(::clockid_t clk_id);
 
     /**
      * Return the number of nanoseconds elapsed since the last time ts was
@@ -736,16 +806,16 @@ struct Clock
  */
 
 /// Call getrlimit, raising an exception if it fails
-void getrlimit(int resource, struct ::rlimit& rlim);
+void getrlimit(int resource, ::rlimit& rlim);
 
 /// Call setrlimit, raising an exception if it fails
-void setrlimit(int resource, const struct ::rlimit& rlim);
+void setrlimit(int resource, const ::rlimit& rlim);
 
 /// Override a soft resource limit during the lifetime of the object
 struct OverrideRlimit
 {
     int resource;
-    struct ::rlimit orig;
+    ::rlimit orig;
 
     OverrideRlimit(int resource, rlim_t rlim);
     ~OverrideRlimit();
@@ -753,6 +823,51 @@ struct OverrideRlimit
     /// Change the limit value again
     void set(rlim_t rlim);
 };
+
+
+/// Override an environment variable for the duration of this object
+struct OverrideEnvironment
+{
+    std::string name;
+    bool was_set = false;
+    std::string orig_value;
+
+    // Unset the variable
+    explicit OverrideEnvironment(const std::string& name);
+    // Set the variable to the given value
+    OverrideEnvironment(const std::string& name, const std::string& value);
+    ~OverrideEnvironment();
+};
+
+
+/// RAII local memory buffer
+template<typename T = char>
+class TempBuffer
+{
+    T* buffer = nullptr;
+
+public:
+    explicit TempBuffer(size_t size)
+        : buffer(new T[size])
+    {
+    }
+    ~TempBuffer()
+    {
+        delete[] buffer;
+    }
+    TempBuffer(const TempBuffer&) = delete;
+    TempBuffer(TempBuffer&&) = delete;
+    TempBuffer& operator=(const TempBuffer&) = delete;
+    TempBuffer& operator=(TempBuffer&&) = delete;
+
+    T* data() { return buffer; }
+    const T* data() const { return buffer; }
+    operator T*() { return buffer; }
+    operator const T*() const { return buffer; }
+};
+
+/// Set a breakpoint at this code location
+void breakpoint();
 
 }
 }

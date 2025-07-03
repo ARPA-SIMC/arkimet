@@ -47,7 +47,7 @@ void Tests::register_tests() {
 
 // Add here only iseg-specific tests that are not convered by tests in dataset-reader-test.cc
 
-add_method("empty", [](Fixture& f) {
+add_method("empty", [](Fixture& f) noexcept {
 });
 
 }

@@ -18,12 +18,14 @@ class Env(arki.test.Env):
     def build_config(self):
         config = super().build_config()
 
-        error_cfg = arki.cfg.Section({
-            "name": "error",
-            "path": os.path.abspath("testenv/error"),
-            "type": "error",
-            "step": "daily",
-        })
+        error_cfg = arki.cfg.Section(
+            {
+                "name": "error",
+                "path": os.path.abspath("testenv/error"),
+                "type": "error",
+                "step": "daily",
+            }
+        )
         config["error"] = error_cfg
 
         with open("testenv/testds/error", "wt") as fd:
@@ -108,7 +110,7 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
 
         with self.assertRaises(RuntimeError) as e:
             out, err, res = self.call_output("--json", "bufr:-")
-        self.assertRegex(str(e.exception), "file - does not exist")
+        self.assertRegex(str(e.exception), 'file "-" does not exist')
 
         out, err, res = self.call_output("--dispatch=/dev/null", "-")
         self.assertRegex(err, "use --stdin to read data from standard input")
@@ -136,8 +138,9 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             arki.counters.acquire_single_count.reset()
             arki.counters.acquire_batch_count.reset()
 
-            out = self.call_output_success("--dispatch=testenv/config", "--flush-threshold=8k", "inbound/test.grib1",
-                                           binary=True)
+            out = self.call_output_success(
+                "--dispatch=testenv/config", "--flush-threshold=8k", "inbound/test.grib1", binary=True
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
@@ -151,13 +154,13 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
     def test_dispatch_copyok_copyko(self):
         with self.datasets(filter="origin:GRIB1,200 or GRIB1,80"):
             out = self.call_output_success(
-                    "--copyok=testenv/copyok",
-                    "--copyko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "inbound/test.grib1",
-                    returncode=posix.EX_DATAERR,
-                    binary=True
-                )
+                "--copyok=testenv/copyok",
+                "--copyko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "inbound/test.grib1",
+                returncode=posix.EX_DATAERR,
+                binary=True,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
@@ -195,13 +198,13 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
     def test_dispatch_copyko(self):
         with self.datasets(filter="origin:GRIB2"):
             out = self.call_output_success(
-                    "--copyok=testenv/copyok",
-                    "--copyko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "inbound/test.grib1",
-                    returncode=posix.EX_DATAERR,
-                    binary=True
-                )
+                "--copyok=testenv/copyok",
+                "--copyko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "inbound/test.grib1",
+                returncode=posix.EX_DATAERR,
+                binary=True,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
@@ -240,13 +243,13 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
         with self.datasets(filter="origin:GRIB2"):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
             out = self.call_output_success(
-                    "--moveok=testenv/copyok",
-                    "--moveko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "testenv/test.grib1",
-                    binary=True,
-                    returncode=posix.EX_DATAERR,
-                )
+                "--moveok=testenv/copyok",
+                "--moveko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "testenv/test.grib1",
+                binary=True,
+                returncode=posix.EX_DATAERR,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
@@ -263,13 +266,13 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
         with self.datasets(filter="origin:GRIB1,200 or GRIB1,80"):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
             out = self.call_output_success(
-                    "--moveok=testenv/copyok",
-                    "--moveko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "testenv/test.grib1",
-                    binary=True,
-                    returncode=posix.EX_DATAERR,
-                )
+                "--moveok=testenv/copyok",
+                "--moveko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "testenv/test.grib1",
+                binary=True,
+                returncode=posix.EX_DATAERR,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
@@ -290,13 +293,13 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             shutil.copyfile("inbound/test.grib1", "testenv/test.grib1")
             with self.assertLogs():
                 out = self.call_output_success(
-                        "--moveok=testenv/copyok",
-                        "--moveko=testenv/copyko",
-                        "--dispatch=testenv/config",
-                        "testenv/test.grib1",
-                        binary=True,
-                        returncode=posix.EX_CANTCREAT,
-                    )
+                    "--moveok=testenv/copyok",
+                    "--moveko=testenv/copyko",
+                    "--dispatch=testenv/config",
+                    "testenv/test.grib1",
+                    binary=True,
+                    returncode=posix.EX_CANTCREAT,
+                )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 3)
 
@@ -314,13 +317,13 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
 
         with self.datasets(filter="area:VM2,1", format="vm2"):
             out = self.call_output_success(
-                    "--copyok=testenv/copyok",
-                    "--copyko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "inbound/issue68.vm2",
-                    binary=True,
-                    returncode=posix.EX_DATAERR,
-                )
+                "--copyok=testenv/copyok",
+                "--copyko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "inbound/issue68.vm2",
+                binary=True,
+                returncode=posix.EX_DATAERR,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 5)
 
@@ -328,30 +331,36 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             self.assertTrue(os.path.exists("testenv/copyko/issue68.vm2"))
 
             with open("testenv/copyok/issue68.vm2", "rt") as fd:
-                self.assertEqual(fd.readlines(), [
-                    "198710310000,1,227,1.2,,,000000000\n",
-                    "19871031000030,1,228,.5,,,000000000\n",
-                ])
+                self.assertEqual(
+                    fd.readlines(),
+                    [
+                        "198710310000,1,227,1.2,,,000000000\n",
+                        "19871031000030,1,228,.5,,,000000000\n",
+                    ],
+                )
 
             with open("testenv/copyko/issue68.vm2", "rt") as fd:
-                self.assertEqual(fd.readlines(), [
-                    "201101010000,12,1,800,,,000000000\n",
-                    "201101010100,12,2,50,,,000000000\n",
-                    "201101010300,12,2,50,,,000000000\n",
-                ])
+                self.assertEqual(
+                    fd.readlines(),
+                    [
+                        "201101010000,12,1,800,,,000000000\n",
+                        "201101010100,12,2,50,,,000000000\n",
+                        "201101010300,12,2,50,,,000000000\n",
+                    ],
+                )
 
     def test_dispatch_issue154(self):
         skip_unless_vm2()
 
         with self.datasets(filter="area:VM2,42", format="vm2"):
             out = self.call_output_success(
-                    "--copyok=testenv/copyok",
-                    "--copyko=testenv/copyko",
-                    "--dispatch=testenv/config",
-                    "inbound/issue68.vm2",
-                    binary=True,
-                    returncode=posix.EX_DATAERR,
-                )
+                "--copyok=testenv/copyok",
+                "--copyko=testenv/copyko",
+                "--dispatch=testenv/config",
+                "inbound/issue68.vm2",
+                binary=True,
+                returncode=posix.EX_DATAERR,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 5)
 
@@ -359,42 +368,46 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             self.assertTrue(os.path.exists("testenv/copyko/issue68.vm2"))
 
             with open("testenv/copyko/issue68.vm2", "rt") as fd:
-                self.assertEqual(fd.readlines(), [
-                    "198710310000,1,227,1.2,,,000000000\n",
-                    "19871031000030,1,228,.5,,,000000000\n",
-                    "201101010000,12,1,800,,,000000000\n",
-                    "201101010100,12,2,50,,,000000000\n",
-                    "201101010300,12,2,50,,,000000000\n",
-                ])
+                self.assertEqual(
+                    fd.readlines(),
+                    [
+                        "198710310000,1,227,1.2,,,000000000\n",
+                        "19871031000030,1,228,.5,,,000000000\n",
+                        "201101010000,12,1,800,,,000000000\n",
+                        "201101010100,12,2,50,,,000000000\n",
+                        "201101010300,12,2,50,,,000000000\n",
+                    ],
+                )
 
     def test_dispatch_issue237(self):
         # Test VM2 normalisation in dispatching
         skip_unless_vm2()
         with self.datasets(filter="area:VM2", format="vm2", smallfiles="no"):
             out = self.call_output_success(
-                    "--dispatch=testenv/config",
-                    "inbound/issue237.vm2",
-                    binary=True,
-                )
+                "--dispatch=testenv/config",
+                "inbound/issue237.vm2",
+                binary=True,
+            )
             mds = parse_metadata(out)
             self.assertEqual(len(mds), 1)
 
             # After import, the size shrinks from 36 to 34
-            self.assertEqual(mds[0].to_python("source"), {
-                "type": "source",
-                "style": "BLOB",
-                "basedir": "",
-                "file": os.path.abspath("testenv/testds/2020/10-31.vm2"),
-                "format": "vm2",
-                "offset": 0,
-                "size": 34,
-            })
+            self.assertEqual(
+                mds[0].to_python("source"),
+                {
+                    "type": "source",
+                    "style": "BLOB",
+                    "basedir": "",
+                    "file": os.path.abspath("testenv/testds/2020/10-31.vm2"),
+                    "format": "vm2",
+                    "offset": 0,
+                    "size": 34,
+                },
+            )
 
             # In the dataset, the extra 00 seconds are gone
             with open("testenv/testds/2020/10-31.vm2", "rt") as fd:
-                self.assertEqual(fd.readlines(), [
-                    "202010312300,12865,158,9.409990,,,\n"
-                ])
+                self.assertEqual(fd.readlines(), ["202010312300,12865,158,9.409990,,,\n"])
 
     def test_files(self):
         # Reproduce https://github.com/ARPA-SIMC/arkimet/issues/19
@@ -405,17 +418,20 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
                 print("[error]\ntype=discard\nname=error\n", file=fd)
             with self.assertLogs() as log:
                 out = self.call_output_success(
-                        "--dispatch=testenv/config",
-                        "--dump", "--status", "--summary",
-                        "--files=testenv/import.lst",
-                        binary=True,
-                        returncode=posix.EX_DATAERR,
-                    )
+                    "--dispatch=testenv/config",
+                    "--dump",
+                    "--status",
+                    "--summary",
+                    "--files=testenv/import.lst",
+                    binary=True,
+                    returncode=posix.EX_DATAERR,
+                )
             self.assertRegex(
-                    log.output[0],
-                    r"WARNING:arkimet:inbound/test.grib1:"
-                    r" some problems: 0 ok, 0 duplicates, 3 in error dataset"
-                    r" in [0-9.]+ seconds")
+                log.output[0],
+                r"WARNING:arkimet:inbound/test.grib1:"
+                r" some problems: 0 ok, 0 duplicates, 3 in error dataset"
+                r" in [0-9.]+ seconds",
+            )
             self.assertEqual(log.output[1:], [])
 
             self.assertRegex(out, b"^SummaryItem:")

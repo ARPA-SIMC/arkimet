@@ -8,7 +8,7 @@
 #include "arki/utils/sys.h"
 #include "arki/scan/validator.h"
 #include "arki/scan/mock.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include <cstring>
 #include <unistd.h>
 
@@ -90,7 +90,7 @@ GribScanner::GribScanner()
     grib_multi_support_off(context);
 }
 
-void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::Reader> reader, FILE* in, Metadata& md)
+void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::data::Reader> reader, FILE* in, Metadata& md)
 {
     // Get the encoded GRIB buffer from the GRIB handle
     const uint8_t* vbuf;
@@ -106,10 +106,10 @@ void GribScanner::set_source_blob(grib_handle* gh, std::shared_ptr<segment::Read
     offset -= size;
 
     md.set_source(Source::createBlob(reader, offset, size));
-    md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format, vector<uint8_t>(vbuf, vbuf + size)));
+    md.set_cached_data(metadata::DataManager::get().to_data(reader->segment().format(), vector<uint8_t>(vbuf, vbuf + size)));
 
     stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath) << ":" << offset << "+" << size;
+    note << "Scanned from " << reader->segment().relpath().filename().native() << ":" << offset << "+" << size;
     md.add_note(note.str());
 }
 
@@ -119,16 +119,16 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
     const uint8_t* vbuf;
     size_t size;
     check_grib_error(grib_get_message(gh, (const void **)&vbuf, &size), "cannot access the encoded GRIB data");
-    md.set_source_inline("grib", metadata::DataManager::get().to_data("grib", vector<uint8_t>(vbuf, vbuf + size)));
+    md.set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, vector<uint8_t>(vbuf, vbuf + size)));
 }
 
 std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    GribHandle gh(grib_handle_new_from_message(context, (void*)data.data(), data.size()));
+    GribHandle gh(grib_handle_new_from_message(context, data.data(), data.size()));
     if (!gh) throw std::runtime_error("GRIB memory buffer failed to scan");
 
     std::shared_ptr<Metadata> md = scan(gh);
-    md->set_source_inline("grib", metadata::DataManager::get().to_data("grib", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::GRIB, metadata::DataManager::get().to_data(DataFormat::GRIB, std::vector<uint8_t>(data)));
 
 
     gh.close();
@@ -136,9 +136,9 @@ std::shared_ptr<Metadata> GribScanner::scan_data(const std::vector<uint8_t>& dat
     return md;
 }
 
-bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool GribScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
-    files::RAIIFILE in(reader->segment().abspath, "rb");
+    files::RAIIFILE in(reader->segment().abspath(), "rb");
     while (true)
     {
         GribHandle gh(context, in);
@@ -152,23 +152,21 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata
     return true;
 }
 
-std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> GribScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
     {
         GribHandle gh(context, in);
-        if (!gh) throw std::runtime_error(abspath + " contains no GRIB data");
+        if (!gh) throw std::runtime_error(abspath.native() + " contains no GRIB data");
         md = scan(gh);
-        stringstream note;
-        note << "Scanned from " << str::basename(abspath);
-        md->add_note(note.str());
+        md->add_note_scanned_from(abspath);
         gh.close();
     }
 
     {
         GribHandle gh(context, in);
-        if (gh) throw std::runtime_error(abspath + " contains more than one GRIB data");
+        if (gh) throw std::runtime_error(abspath.native() + " contains more than one GRIB data");
         gh.close();
     }
 
@@ -217,7 +215,7 @@ namespace grib {
 
 struct GribValidator : public Validator
 {
-    std::string format() const override { return "GRIB"; }
+    DataFormat format() const override { return DataFormat::GRIB; }
 
     // Validate data found in a file
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override

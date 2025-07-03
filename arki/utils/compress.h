@@ -5,6 +5,7 @@
 #include <arki/utils/sys.h>
 #include <arki/core/binary.h>
 #include <sys/types.h>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -76,12 +77,12 @@ public:
 /**
  * Gunzip the file opened at \a rdfd sending data to the file opened at \a wrfd
  */
-void gunzip(int rdfd, const std::string& rdfname, int wrfd, const std::string& wrfname, size_t bufsize=4096);
+void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd, const std::filesystem::path& wrfname, size_t bufsize=4096);
 
 /**
  * Gunzip the file decompressing it to memory
  */
-std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize=4096);
+std::vector<uint8_t> gunzip(const std::filesystem::path& abspath, size_t bufsize=4096);
 
 /**
  * At constructor time, create an uncompressed version of the given file
@@ -90,14 +91,14 @@ std::vector<uint8_t> gunzip(const std::string& abspath, size_t bufsize=4096);
  */
 struct TempUnzip
 {
-	std::string fname;
+    std::filesystem::path fname;
 
-	/**
-	 * @param fname
-	 *   Refers to the uncompressed file name (i.e. without the trailing .gz)
-	 */
-	TempUnzip(const std::string& fname);
-	~TempUnzip();
+    /**
+     * @param fname
+     *   Refers to the uncompressed file name (i.e. without the trailing .gz)
+     */
+    TempUnzip(const std::filesystem::path& fname);
+    ~TempUnzip();
 };
 
 struct SeekIndex
@@ -107,20 +108,20 @@ struct SeekIndex
 
     SeekIndex();
 
-	/// Return the index of the block containing the given uncompressed
-	/// offset
-	size_t lookup(size_t unc) const;
+    /// Return the index of the block containing the given uncompressed
+    /// offset
+    size_t lookup(size_t unc) const;
 
     /// Read the index from the given file descriptor
     void read(core::File& fd);
 
-	/**
-	 * Read the index from the given file
-	 *
-	 * @returns true if the index was read, false if the index does not
-	 * exists, throws an exception in case of other errors
-	 */
-	bool read(const std::string& fname);
+    /**
+     * Read the index from the given file
+     *
+     * @returns true if the index was read, false if the index does not
+     * exists, throws an exception in case of other errors
+     */
+    bool read(const std::filesystem::path& fname);
 };
 
 struct SeekIndexReader

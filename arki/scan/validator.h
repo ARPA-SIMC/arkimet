@@ -1,8 +1,10 @@
 #ifndef ARKI_SCAN_VALIDATOR_H
 #define ARKI_SCAN_VALIDATOR_H
 
+#include <arki/defs.h>
 #include <arki/core/fwd.h>
 #include <arki/metadata/fwd.h>
+#include <filesystem>
 #include <string>
 
 namespace arki {
@@ -17,7 +19,7 @@ public:
     virtual ~Validator() {}
 
     /// Return the format checked by this validator
-    virtual std::string format() const = 0;
+    virtual DataFormat format() const = 0;
 
     // Validate data found in a file
     virtual void validate_file(core::NamedFileDescriptor& fd, off_t offset, size_t size) const = 0;
@@ -34,7 +36,7 @@ public:
 	 * @returns
 	 *   a pointer to a static object, which should not be deallocated.
 	 */
-	static const Validator& by_filename(const std::string& filename);
+	static const Validator& by_filename(const std::filesystem::path& filename);
 
     /**
      * Get the validator for a given foramt
@@ -42,7 +44,7 @@ public:
      * @returns
      *   a pointer to a static object, which should not be deallocated.
      */
-    static const Validator& by_format(const std::string& format);
+    static const Validator& by_format(DataFormat format);
 
 protected:
     [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const;

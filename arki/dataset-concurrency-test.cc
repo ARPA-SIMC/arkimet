@@ -1,7 +1,7 @@
 #include "arki/dataset/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/time.h"
-#include "arki/dataset/query.h"
+#include "arki/query.h"
 #include "arki/dataset/reporter.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
@@ -9,7 +9,7 @@
 #include "arki/types/source/blob.h"
 #include "arki/types/reftime.h"
 #include "arki/types/note.h"
-#include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -131,10 +131,12 @@ struct ConcurrentImporter : public subprocess::Child
                 else
                     md->test_set(types::Reftime::createPosition(core::Time(2000, 6, 1, 0, 0, i)));
                 //fprintf(stderr, "%d: %d\n", (int)getpid(), i);
-                auto res = ds->acquire(*md);
-                if (res != dataset::ACQ_OK)
+                metadata::InboundBatch batch;
+                batch.add(md);
+                ds->acquire_batch(batch);
+                if (batch[0]->result != metadata::Inbound::Result::OK)
                 {
-                    fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)res);
+                    fprintf(stderr, "ConcurrentImporter: Acquire result: %d\n", (int)batch[0]->result);
                     auto notes = md->notes();
                     for (auto n = notes.first; n != notes.second; ++n)
                     {
@@ -159,7 +161,7 @@ struct ReadHang : public TestSubprocess
 {
     std::shared_ptr<dataset::Dataset> dataset;
 
-    ReadHang(std::shared_ptr<dataset::Dataset> dataset) : dataset(dataset) {}
+    explicit ReadHang(std::shared_ptr<dataset::Dataset> dataset) : dataset(dataset) {}
 
     bool eat(std::shared_ptr<Metadata> md)
     {
@@ -188,9 +190,9 @@ struct HungReporter : public dataset::NullReporter
 {
     TestSubprocess& sp;
 
-    HungReporter(TestSubprocess& sp) : sp(sp) {}
+    explicit HungReporter(TestSubprocess& sp) : sp(sp) {}
 
-    void segment_info(const std::string& ds, const std::string& relpath, const std::string& message) override
+    void segment_info(const std::string& ds, const std::filesystem::path& relpath, const std::string& message) override
     {
         sp.notify_ready();
         while (true)
@@ -230,14 +232,15 @@ struct RepackForever : public TestSubprocess
     int main() noexcept override
     {
         try {
-            string segment = "2007/07-07." + fixture.td.format;
+            std::filesystem::path relpath = "2007/07-07." + format_name(fixture.td.format);
             notify_ready();
 
             while (true)
             {
                 auto ds(fixture.makeSegmentedChecker());
-                auto seg = ds->segment(segment);
-                seg->repack();
+                auto segment = ds->dataset().segment_session->segment_from_relpath(relpath);
+                auto cseg = ds->segment(segment);
+                cseg->repack();
             }
             return 0;
         } catch (std::exception& e) {
@@ -255,17 +258,13 @@ class Tests : public FixtureTestCase<FixtureWriter<Data>>
     void register_tests() override;
 };
 
-Tests<GRIBData> test_concurrent_grib_simple_plain("arki_dataset_concurrent_grib_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<GRIBData> test_concurrent_grib_simple_sqlite("arki_dataset_concurrent_grib_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<GRIBData> test_concurrent_grib_simple("arki_dataset_concurrent_grib_simple", "type=simple");
 Tests<GRIBData> test_concurrent_grib_iseg("arki_dataset_concurrent_grib_iseg", "type=iseg\nformat=grib\n");
-Tests<BUFRData> test_concurrent_bufr_simple_plain("arki_dataset_concurrent_bufr_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<BUFRData> test_concurrent_bufr_simple_sqlite("arki_dataset_concurrent_bufr_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<BUFRData> test_concurrent_bufr_simple("arki_dataset_concurrent_bufr_simple", "type=simple");
 Tests<BUFRData> test_concurrent_bufr_iseg("arki_dataset_concurrent_bufr_iseg", "type=iseg\nformat=bufr\n");
-Tests<VM2Data> test_concurrent_vm2_simple_plain("arki_dataset_concurrent_vm2_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<VM2Data> test_concurrent_vm2_simple_sqlite("arki_dataset_concurrent_vm2_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<VM2Data> test_concurrent_vm2_simple("arki_dataset_concurrent_vm2_simple", "type=simple");
 Tests<VM2Data> test_concurrent_vm2_iseg("arki_dataset_concurrent_vm2_iseg", "type=iseg\nformat=vm2\n");
-Tests<ODIMData> test_concurrent_odim_simple_plain("arki_dataset_concurrent_odim_simple_plain", "type=simple\nindex_type=plain\n");
-Tests<ODIMData> test_concurrent_odim_simple_sqlite("arki_dataset_concurrent_odim_simple_sqlite", "type=simple\nindex_type=sqlite");
+Tests<ODIMData> test_concurrent_odim_simple("arki_dataset_concurrent_odim_simple", "type=simple");
 Tests<ODIMData> test_concurrent_odim_iseg("arki_dataset_concurrent_odim_iseg", "type=iseg\nformat=odimh5\n");
 
 template<class Data>
@@ -293,7 +292,7 @@ this->add_method("read_write", [](Fixture& f) {
     // Import one grib in the dataset
     {
         auto ds = f.config().create_writer();
-        wassert(actual(*ds).import(f.td.mds[0]));
+        wassert(actual(*ds).acquire_ok(f.td.mds.get(0)));
         ds->flush();
     }
 
@@ -303,7 +302,7 @@ this->add_method("read_write", [](Fixture& f) {
         // Import another grib in the dataset
         {
             auto ds = f.config().create_writer();
-            wassert(actual(*ds).import(f.td.mds[1]));
+            wassert(actual(*ds).acquire_ok(f.td.mds.get(1)));
             ds->flush();
         }
     });
@@ -318,7 +317,7 @@ this->add_method("read_write1", [](Fixture& f) {
     // Import one
     {
         auto writer = f.dataset_config()->create_writer();
-        wassert(actual(*writer).import(f.td.mds[0]));
+        wassert(actual(*writer).acquire_ok(f.td.mds.get(0)));
     }
 
     // Query it and import during query
@@ -331,8 +330,8 @@ this->add_method("read_write1", [](Fixture& f) {
             wassert(actual(count) == 0u);
 
             auto writer = f.dataset_config()->create_writer();
-            wassert(actual(*writer).import(f.td.mds[1]));
-            wassert(actual(*writer).import(f.td.mds[2]));
+            wassert(actual(*writer).acquire_ok(f.td.mds.get(1)));
+            wassert(actual(*writer).acquire_ok(f.td.mds.get(2)));
         }
         ++count;
         return true;
@@ -341,7 +340,7 @@ this->add_method("read_write1", [](Fixture& f) {
 
     // Querying again returns all imported data
     count = 0;
-    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) noexcept { ++count; return true; });
     wassert(actual(count) == 3u);
 });
 
@@ -398,26 +397,26 @@ this->add_method("write_write_different_segments", [](Fixture& f) {
 this->add_method("read_repack", [](Fixture& f) {
     skip_unless_filesystem_has_ofd_locks(".");
 
-    auto orig_data = f.td.mds[1].get_data().read();
+    auto orig_data = wcallchecked(f.td.mds[1].get_data().read());
 
-    f.reset_test("step=single");
-    f.import_all(f.td.mds);
+    wassert(f.reset_test("step=single"));
+    wassert(f.import_all(f.td.mds));
 
     auto reader = f.dataset_config()->create_reader();
-    reader->query_data(dataset::DataQuery(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
+    wassert(reader->query_data(query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
         {
             auto checker = f.dataset_config()->create_checker();
             auto e = wassert_throws(std::runtime_error, {
                 dataset::CheckerConfig opts;
                 opts.readonly = false;
-                checker->repack(opts, segment::RepackConfig::TEST_MISCHIEF_MOVE_DATA);
+                checker->repack(opts, segment::data::RepackConfig::TEST_MISCHIEF_MOVE_DATA);
             });
             wassert(actual(e.what()).contains("a read lock is already held"));
         }
 
         wassert(actual(md->get_data().read()) == orig_data);
         return false;
-    });
+    }));
 });
 
 // Test parallel check and write
@@ -429,7 +428,7 @@ this->add_method("write_check", [](Fixture& f) {
     {
         auto writer = f.config().create_writer();
         type = writer->type();
-        wassert(actual(*writer).import(f.td.mds[0]));
+        wassert(actual(*writer).acquire_ok(f.td.mds.get(0)));
         writer->flush();
 
         // Create an error to trigger a call to the reporter that then hangs
@@ -441,38 +440,37 @@ this->add_method("write_check", [](Fixture& f) {
     cf.during([&]{
         if (type == "simple") {
             auto writer = wcallchecked(f.config().create_writer());
-            try {
-                writer->acquire(f.td.mds[2]);
-                wassert(actual(0) == 1);
-            } catch (std::runtime_error& e) {
-                wassert(actual(e.what()).contains("a write lock is already held"));
-            }
+            metadata::InboundBatch batch;
+            batch.add(f.td.mds.get(2));
+            auto e = wassert_throws(std::runtime_error, writer->acquire_batch(batch));
+            wassert(actual(e.what()).contains("a write lock is already held"));
         } else if (type == "iseg") {
             auto writer = wcallchecked(f.makeSegmentedWriter());
-            wassert(actual(*writer).import(f.td.mds[2]));
+            wassert(actual(*writer).acquire_ok(f.td.mds.get(2)));
 
-            try {
-                writer->acquire(f.td.mds[0]);
-                wassert(actual(0) == 1);
-            } catch (std::runtime_error& e) {
-                wassert(actual(e.what()).contains("a write lock is already held"));
-            }
+            metadata::InboundBatch batch;
+            batch.add(f.td.mds.get(0));
+            auto e = wassert_throws(std::runtime_error, writer->acquire_batch(batch));
+            wassert(actual(e.what()).contains("a write lock is already held"));
         } else
             throw std::runtime_error("untested segment type " + type);
     });
 });
 
 this->add_method("read_repack2", [](Fixture& f) {
-    f.import_all(f.td.mds);
+    wassert(f.import_all(f.td.mds));
 
     core::lock::TestWait lock_wait;
 
     metadata::Collection mdc;
     RepackForever<Fixture> rf(f);
-    rf.during([&]{
+    wassert(rf.during([&]{
         for (unsigned i = 0; i < 60; ++i)
-            mdc.add(*f.config().create_reader(), Matcher());
-    });
+        {
+            auto reader = wcallchecked(f.config().create_reader());
+            wassert(mdc.add(*reader, Matcher()));
+        }
+    }));
 
     wassert(actual(mdc.size()) == 60u * 3);
 });
@@ -487,7 +485,7 @@ this->add_method("write_repack", [](Fixture& f) {
     // Import a first metadata to create a segment to repack
     {
         auto writer = f.config().create_writer();
-        wassert(actual(*writer).import(*md));
+        wassert(actual(*writer).acquire_ok(md));
     }
 
     RepackForever<Fixture> rf(f);
@@ -496,13 +494,15 @@ this->add_method("write_repack", [](Fixture& f) {
         {
             md->test_set(types::Reftime::createPosition(Time(2007, 7, 7, 1, minute, 0)));
             auto writer = f.config().create_writer();
-            wassert(actual(*writer).import(*md));
+            wassert(actual(*writer).acquire_ok(md));
         }
     });
 
+    wassert(f.all_clean(1));
+
     auto reader = f.config().create_reader();
     unsigned count = 0;
-    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata> md) { ++count; return true; });
+    reader->query_data(Matcher(), [&](std::shared_ptr<Metadata>) noexcept { ++count; return true; });
     wassert(actual(count) == 61u);
 });
 
@@ -510,7 +510,7 @@ this->add_method("nolock_read", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
     core::lock::TestCount count;
-    wassert(f.query_results(dataset::DataQuery(Matcher(), true), {1, 0, 2}));
+    wassert(f.query_results(query::Data(Matcher(), true), {1, 0, 2}));
     count.measure();
     wassert(actual(count.ofd_setlk) == 0u);
     wassert(actual(count.ofd_setlkw) == 0u);
@@ -530,7 +530,7 @@ this->add_method("nolock_write", [](Fixture& f) {
 this->add_method("nolock_rescan", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
-    string test_segment = "2007/07-08." + f.td.format;
+    string test_segment = "2007/07-08." + format_name(f.td.format);
     f.makeSegmentedChecker()->test_invalidate_in_index(test_segment);
 
     core::lock::TestCount count;
@@ -550,7 +550,7 @@ this->add_method("nolock_rescan", [](Fixture& f) {
 this->add_method("nolock_repack", [](Fixture& f) {
     f.reset_test("locking=no");
     f.import_all(f.td.mds);
-    string test_segment = "2007/07-08." + f.td.format;
+    string test_segment = "2007/07-08." + format_name(f.td.format);
     f.makeSegmentedChecker()->test_make_hole(test_segment, 10, 1);
 
     core::lock::TestCount count;

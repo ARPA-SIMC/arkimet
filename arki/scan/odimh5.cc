@@ -1,7 +1,7 @@
 #include "odimh5.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/segment.h"
+#include "arki/segment/data.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -28,7 +28,7 @@ static const unsigned char hdf5sign[8] = { 0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0
 
 struct OdimH5Validator : public Validator
 {
-    std::string format() const override { return "ODIMH5"; }
+    DataFormat format() const override { return DataFormat::ODIMH5; }
 
     void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
     {
@@ -68,13 +68,11 @@ const Validator& validator() { return odimh5_validator; }
  * OdimScanner
  */
 
-void OdimScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader)
+void OdimScanner::set_blob_source(Metadata& md, std::shared_ptr<segment::data::Reader> reader)
 {
     struct stat st;
-    sys::stat(reader->segment().abspath, st);
-    stringstream note;
-    note << "Scanned from " << str::basename(reader->segment().relpath);
-    md.add_note(note.str());
+    sys::stat(reader->segment().abspath(), st);
+    md.add_note_scanned_from(reader->segment().relpath());
     md.set_source(Source::createBlob(reader, 0, st.st_size));
 }
 
@@ -82,31 +80,31 @@ std::shared_ptr<Metadata> OdimScanner::scan_h5_data(const std::vector<uint8_t>& 
 {
     sys::Tempfile tmpfd;
     tmpfd.write_all_or_throw(data.data(), data.size());
-    return scan_h5_file(tmpfd.name());
+    return scan_h5_file(tmpfd.path());
 }
 
 std::shared_ptr<Metadata> OdimScanner::scan_data(const std::vector<uint8_t>& data)
 {
     std::shared_ptr<Metadata> md = scan_h5_data(data);
-    md->set_source_inline("odimh5", metadata::DataManager::get().to_data("odimh5", std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::ODIMH5, metadata::DataManager::get().to_data(DataFormat::ODIMH5, std::vector<uint8_t>(data)));
     return md;
 }
 
-std::shared_ptr<Metadata> OdimScanner::scan_singleton(const std::string& abspath)
+std::shared_ptr<Metadata> OdimScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     return scan_h5_file(abspath);
 }
 
-bool OdimScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+bool OdimScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
 {
     // If the file is empty, skip it
-    auto st = sys::stat(reader->segment().abspath);
+    auto st = sys::stat(reader->segment().abspath());
     if (!st) return true;
     if (S_ISDIR(st->st_mode))
         throw std::runtime_error("OdimH5::scan_segment cannot be called on directory segments");
     if (!st->st_size) return true;
 
-    auto md = scan_h5_file(reader->segment().abspath);
+    auto md = scan_h5_file(reader->segment().abspath());
     set_blob_source(*md, reader);
     return dest(md);
 }
@@ -145,7 +143,7 @@ MockOdimScanner::~MockOdimScanner()
     delete engine;
 }
 
-std::shared_ptr<Metadata> MockOdimScanner::scan_h5_file(const std::string& pathname)
+std::shared_ptr<Metadata> MockOdimScanner::scan_h5_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
     return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
@@ -159,7 +157,7 @@ std::shared_ptr<Metadata> MockOdimScanner::scan_h5_data(const std::vector<uint8_
 
 void register_odimh5_scanner()
 {
-    Scanner::register_factory("odimh5", [] {
+    Scanner::register_factory(DataFormat::ODIMH5, [] {
         return std::make_shared<scan::MockOdimScanner>();
     });
 }

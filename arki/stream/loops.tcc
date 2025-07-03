@@ -2,6 +2,7 @@
 #define ARKI_STREAM_LOOPS_TCC
 
 #include "loops.h"
+#include "arki/exceptions.h"
 #include "filter.h"
 #include "concrete.h"
 #include "concrete-parts.tcc"
@@ -49,9 +50,9 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
         int res = Backend::poll(&pollinfo, 1, stream.timeout_ms);
         trace_streaming("UnfilteredLoop.POLL: %d %d:%d\n", res, pollinfo.fd, pollinfo.revents);
         if (res < 0)
-            throw std::system_error(errno, std::system_category(), "poll failed on " + stream.out->name());
+            throw_system_error(errno, "poll failed on ", stream.out->path());
         if (res == 0)
-            throw TimedOut("write on " + stream.out->name() + " timed out");
+            throw TimedOut("write on " + stream.out->path().native() + " timed out");
         if (pollinfo.revents & (POLLERR | POLLHUP))
             return SendResult::SEND_PIPE_EOF_DEST;
         if (pollinfo.revents & POLLOUT)
@@ -71,7 +72,7 @@ stream::SendResult UnfilteredLoop<Backend>::loop(ToOutput to_output)
             }
         }
         else
-            throw std::runtime_error("unsupported revents values when polling " + stream.out->name());
+            throw_runtime_error("unsupported revents values when polling ", stream.out->path());
     }
 }
 
@@ -114,17 +115,17 @@ struct FilterLoop : public Sender
 
     }
 
-    stream::SendResult send_buffer(const void* data, size_t size) final
+    stream::SendResult send_buffer(const void* data, size_t size) override final
     {
         return send(BufferToPipe<Backend>(data, size));
     }
 
-    stream::SendResult send_line(const void* data, size_t size) final
+    stream::SendResult send_line(const void* data, size_t size) override final
     {
         return send(LineToPipe<Backend>(data, size));
     }
 
-    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) final
+    stream::SendResult send_file_segment(core::NamedFileDescriptor& src_fd, off_t offset, size_t size) override final
     {
         try {
             return send(FileToPipeSendfile<Backend>(src_fd, offset, size));
@@ -133,7 +134,7 @@ struct FilterLoop : public Sender
         }
     }
 
-    stream::SendResult flush() final
+    stream::SendResult flush() override final
     {
         return loop(Flusher<Backend>(stream));
     }

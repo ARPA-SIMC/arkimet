@@ -8,6 +8,7 @@
 #include <arki/metadata/fwd.h>
 #include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -24,13 +25,13 @@ struct ReadContext
      * Absolute path of the root directory for relative paths in the Metadata's
      * source filenames
      */
-    std::string basedir;
+    std::filesystem::path basedir;
 
     /**
      * Absolute path of the file to read if basedir is empty, else relative
      * path rooted on basedir.
      */
-    std::string pathname;
+    std::filesystem::path pathname;
 
     ReadContext();
 
@@ -38,13 +39,13 @@ struct ReadContext
      * A file to read, with metadata source filenames rooted in
      * dirname(pathname)
      */
-    ReadContext(const std::string& pathname);
+    ReadContext(const std::filesystem::path& pathname);
 
     /**
      * A file to read, with metadata source filenames rooted in the given
      * directory.
      */
-    ReadContext(const std::string& pathname, const std::string& basedir);
+    ReadContext(const std::filesystem::path& pathname, const std::filesystem::path& basedir);
 };
 
 
@@ -190,7 +191,11 @@ class Formatter;
 class Metadata
 {
 protected:
-    /// Buffer pointing to the encoded version of this metadata, to reuse for items
+    /**
+     * Buffer pointing to the encoded version of this metadata, to reuse for items
+     *
+     * This holds the storage for types::Encoded items
+     */
     const uint8_t* m_encoded = nullptr;
 
     /// Size of the m_encoded buffer
@@ -278,13 +283,15 @@ public:
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source> s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(const std::string& format, std::shared_ptr<metadata::Data> data);
+    void set_source_inline(DataFormat format, std::shared_ptr<metadata::Data> data);
     /// Unsets the source
     void unset_source();
     /// Read the data and inline them in the metadata
     void makeInline();
     /// Make all source blobs absolute
     void make_absolute();
+    /// Preprocess to be efficiently stored as segment metadata alongside the data
+    void prepare_for_segment_metadata();
 
     /*
      * Notes access and manipulation
@@ -295,6 +302,7 @@ public:
     void encode_notes(core::BinaryEncoder& enc) const;
     void set_notes_encoded(const uint8_t* data, unsigned size);
     void add_note(const std::string& note);
+    void add_note_scanned_from(const std::filesystem::path& source);
     const types::Note& get_last_note() const;
 
     /// Check if the items match, ignoring Source, Notes, and Value items
@@ -374,7 +382,7 @@ public:
     void read_inline_data(core::AbstractInputFile& fd);
 
     /// Read the inline data from the given memory buffer
-    void readInlineData(core::BinaryDecoder& dec, const std::string& filename);
+    void readInlineData(core::BinaryDecoder& dec, const std::filesystem::path& filename);
 
     /**
      * Read a metadata document encoded in Yaml from the given file descriptor.
@@ -384,7 +392,7 @@ public:
      *
      * @returns an empty shared_ptr when end-of-file is reached
      */
-    static std::shared_ptr<Metadata> read_yaml(core::LineReader& in, const std::string& filename);
+    static std::shared_ptr<Metadata> read_yaml(core::LineReader& in, const std::filesystem::path& filename);
 
     /**
      * Write the metadata to the given output stream.
@@ -453,7 +461,7 @@ public:
     static bool read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(const std::string& fname, metadata_dest_func dest);
+    static bool read_file(const std::filesystem::path& fname, metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
     static bool read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
