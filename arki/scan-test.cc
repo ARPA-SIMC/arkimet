@@ -127,9 +127,9 @@ for (auto td: {TestData("inbound/ship.bufr"), TestData("inbound/oddunits.grib"),
     });
 }
 
+#ifdef HAVE_DBALLE
 // Test reading update sequence numbers
 add_method("usn", [] {
-#ifdef HAVE_DBALLE
     {
         // Gribs don't have update sequence numbrs, and the usn parameter must
         // be left untouched
@@ -152,8 +152,8 @@ add_method("usn", [] {
         wassert_true(scan::Scanner::update_sequence_number(mdc[0], usn));
         wassert(actual(usn) == 2);
     }
-#endif
 });
+#endif
 
 }
 
