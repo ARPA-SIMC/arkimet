@@ -63,6 +63,7 @@ void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& c
         std::shared_ptr<core::AppendLock> lock(dataset().append_lock_segment(segment->relpath()));
         auto writer = segment->writer(lock);
         writer->acquire(s.second, writer_config);
+        scache.invalidate(s.second);
     }
 }
 

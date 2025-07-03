@@ -159,8 +159,12 @@ add_method("acquire_invalidates_summary", [](Fixture& f) {
         f.import_results.acquire(md1->clone());
     }
 
-    wassert(f.query_results({0}));
-    wassert(f.all_clean(1));
+    wassert(f.query_results({2, 0, 1}));
+    wassert(f.all_clean(3));
+    {
+        Summary summary;
+        f.makeIsegReader()->query_summary(Matcher(), summary);
+    }
 
     wassert(actual_file("testds/.summaries/2007-07.summary").exists());
     wassert(actual_file("testds/.summaries/all.summary").exists());
