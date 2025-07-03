@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.60
 
 * Restore invalidating iseg summaries on import (#352)
 
