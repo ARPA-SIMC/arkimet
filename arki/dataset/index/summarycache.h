@@ -26,7 +26,7 @@ protected:
     std::filesystem::path summary_pathname(int year, int month) const;
 
 public:
-    SummaryCache(const std::filesystem::path& root);
+    explicit SummaryCache(const std::filesystem::path& root);
     ~SummaryCache();
 
     void openRO();

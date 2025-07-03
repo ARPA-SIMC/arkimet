@@ -57,7 +57,6 @@ void Tests::register_tests() {
 
 // Add here only iseg-specific tests that are not convered by tests in dataset-writer-test.cc
 
-// Test acquiring data
 add_method("acquire", [](Fixture& f) {
     metadata::TestCollection mdc("inbound/test.grib1");
     auto md = mdc.get(0);
@@ -84,6 +83,8 @@ add_method("acquire", [](Fixture& f) {
     wassert(actual_file("testds/2007/07-08.grib.index").exists());
     wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
     wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/.summaries/2007-08.summary").not_exists());
+    wassert(actual_file("testds/.summaries/all.summary").not_exists());
     wassert(actual_file("testds/MANIFEST").not_exists());
     wassert(actual(sys::timestamp("testds/2007/07-08.grib")) <= sys::timestamp("testds/2007/07-08.grib.index"));
     wassert_false(files::hasDontpackFlagfile("testds"));
@@ -92,6 +93,77 @@ add_method("acquire", [](Fixture& f) {
 
     wassert(f.query_results({0}));
     wassert(f.all_clean(1));
+});
+
+add_method("acquire_invalidates_summary", [](Fixture& f) {
+    metadata::TestCollection mdc("inbound/test.grib1");
+    // Import an item and query the whole summary: summaries are generated
+    {
+        auto md0 = mdc.get(0);
+        auto md2 = mdc.get(2);
+        auto writer = f.makeIsegWriter();
+        wassert(actual(*writer).acquire_ok(md0));
+        wassert(actual(*writer).acquire_ok(md2));
+        writer->flush();
+        f.import_results.acquire(md0->clone());
+        f.import_results.acquire(md2->clone());
+    }
+    wassert(f.query_results({0, 1}));
+    wassert(f.all_clean(2));
+    {
+        Summary summary;
+        f.makeIsegReader()->query_summary(Matcher(), summary);
+    }
+
+    wassert(actual_file("testds/2007/07-08.grib").exists());
+    wassert(actual_file("testds/2007/07-08.grib.index").exists());
+    wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
+    wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+    wassert(actual_file("testds/2007/10-09.grib").exists());
+    wassert(actual_file("testds/2007/10-09.grib.index").exists());
+    wassert(actual_file("testds/2007/10-09.grib.metadata").not_exists());
+    wassert(actual_file("testds/2007/10-09.grib.summary").not_exists());
+    wassert(actual_file("testds/.summaries/2007-07.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-08.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-09.summary").exists());
+    wassert(actual_file("testds/.summaries/2007-10.summary").exists());
+    wassert(actual_file("testds/.summaries/all.summary").exists());
+    wassert(actual_file("testds/MANIFEST").not_exists());
+
+    // Import a second item: summaries are invalidated
+    {
+        auto md1 = mdc.get(1);
+        auto writer = f.makeIsegWriter();
+        wassert(actual(*writer).acquire_ok(md1));
+
+        wassert(actual_file("testds/2007/07-07.grib").exists());
+        wassert(actual_file("testds/2007/07-07.grib.index").exists());
+        wassert(actual_file("testds/2007/07-07.grib.metadata").not_exists());
+        wassert(actual_file("testds/2007/07-07.grib.summary").not_exists());
+        wassert(actual_file("testds/2007/07-08.grib").exists());
+        wassert(actual_file("testds/2007/07-08.grib.index").exists());
+        wassert(actual_file("testds/2007/07-08.grib.metadata").not_exists());
+        wassert(actual_file("testds/2007/07-08.grib.summary").not_exists());
+        wassert(actual_file("testds/2007/10-09.grib").exists());
+        wassert(actual_file("testds/2007/10-09.grib.index").exists());
+        wassert(actual_file("testds/2007/10-09.grib.metadata").not_exists());
+        wassert(actual_file("testds/2007/10-09.grib.summary").not_exists());
+        wassert(actual_file("testds/.summaries/2007-07.summary").not_exists());
+        wassert(actual_file("testds/.summaries/2007-08.summary").exists());
+        wassert(actual_file("testds/.summaries/2007-09.summary").exists());
+        wassert(actual_file("testds/.summaries/2007-10.summary").exists());
+        wassert(actual_file("testds/.summaries/all.summary").not_exists());
+        wassert(actual_file("testds/MANIFEST").not_exists());
+
+        writer->flush();
+        f.import_results.acquire(md1->clone());
+    }
+
+    wassert(f.query_results({0}));
+    wassert(f.all_clean(1));
+
+    wassert(actual_file("testds/.summaries/2007-07.summary").exists());
+    wassert(actual_file("testds/.summaries/all.summary").exists());
 });
 
 add_method("testacquire", [](Fixture& f) {
