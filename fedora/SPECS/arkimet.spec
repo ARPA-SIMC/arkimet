@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.59
+Version: 1.60
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Thu Jul  3 2025 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.60-1
+- Restore invalidating iseg summaries on import (#352)
+
 * Tue Jun 17 2025 Daniele Branchini <dbranchini@arpae.it> - 1.59-1
 - Deal with files deleted during iteration in PathWalk (#351)
 - Improved error logs in wobble
