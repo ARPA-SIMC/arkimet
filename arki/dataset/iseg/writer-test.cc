@@ -96,6 +96,7 @@ add_method("acquire", [](Fixture& f) {
 });
 
 add_method("acquire_invalidates_summary", [](Fixture& f) {
+    f.import_results.clear();
     metadata::TestCollection mdc("inbound/test.grib1");
     // Import an item and query the whole summary: summaries are generated
     {
