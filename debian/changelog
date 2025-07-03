@@ -1,3 +1,9 @@
+arkimet (1.60-1) unstable; urgency=medium
+
+  * Clear import results before test (#352)
+
+ -- Emanuele Di Giacomo <edigiacomo@arpae.it>  Thu,  3 Jul 2025 17:12:10 +0200
+
 arkimet (1.50-1) unstable; urgency=medium
 
   * Implemented date/time validation in matcher parser (#324)
