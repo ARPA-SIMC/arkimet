@@ -1,10 +1,10 @@
-#include "tests.h"
-#include "testrunner.h"
 #include "term.h"
-#include <signal.h>
+#include "testrunner.h"
+#include "tests.h"
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <signal.h>
 
 [[noreturn]] static void signal_to_exception(int)
 {
@@ -44,7 +44,8 @@ int main(int, const char*[])
     auto all_results = tests.run_tests(*controller);
     TestResultStats rstats(all_results);
     rstats.print_results(output);
-    if (verbose) rstats.print_stats(output);
+    if (verbose)
+        rstats.print_stats(output);
     rstats.print_summary(output);
     return rstats.success ? 0 : 1;
 }

@@ -1,16 +1,15 @@
 #ifndef ARKI_UTILS_SUBPROCESS_H
 #define ARKI_UTILS_SUBPROCESS_H
 
-#include <vector>
 #include <string>
 #include <sys/types.h>
+#include <vector>
 
 namespace arki {
 namespace utils {
 namespace subprocess {
 
-enum class Redirect
-{
+enum class Redirect {
     /** Redirect the file descriptor to a pipe. The variabile will be set to the
      * parent end of the pipe after fork.
      */
@@ -29,17 +28,16 @@ enum class Redirect
     UNCHANGED,
 };
 
-
 class Child
 {
 protected:
-    pid_t m_pid = 0;
-    int m_returncode = 0;
-    bool m_terminated = false;
-    int m_stdin[2] = { -1, -1 };
-    int m_stdout[2] = { -1, -1 };
-    int m_stderr[2] = { -1, -1 };
-    Redirect m_stdin_action = Redirect::UNCHANGED;
+    pid_t m_pid              = 0;
+    int m_returncode         = 0;
+    bool m_terminated        = false;
+    int m_stdin[2]           = {-1, -1};
+    int m_stdout[2]          = {-1, -1};
+    int m_stderr[2]          = {-1, -1};
+    Redirect m_stdin_action  = Redirect::UNCHANGED;
     Redirect m_stdout_action = Redirect::UNCHANGED;
     Redirect m_stderr_action = Redirect::UNCHANGED;
 
@@ -75,11 +73,14 @@ public:
     /// If true, call setsid() in the child process
     bool start_new_session = false;
 
-    /// Return the file descriptor to the stdin pipe to the child process, if configured, else -1
+    /// Return the file descriptor to the stdin pipe to the child process, if
+    /// configured, else -1
     int get_stdin() const;
-    /// Return the file descriptor to the stdout pipe from the child process, if configured, else -1
+    /// Return the file descriptor to the stdout pipe from the child process, if
+    /// configured, else -1
     int get_stdout() const;
-    /// Return the file descriptor to the stderr pipe from the child process, if configured, else -1
+    /// Return the file descriptor to the stderr pipe from the child process, if
+    /// configured, else -1
     int get_stderr() const;
 
     /// Request to redirect the child stdin to this given file descriptor
@@ -102,13 +103,13 @@ public:
     /// Close the pipe from the child process stderr
     void close_stderr();
 
-    Child() = default;
+    Child()             = default;
     Child(const Child&) = delete;
-    Child(Child&&) = delete;
+    Child(Child&&)      = delete;
     virtual ~Child();
 
     Child& operator=(const Child&) = delete;
-    Child& operator=(Child&&) = delete;
+    Child& operator=(Child&&)      = delete;
 
     /// Start the child process
     void fork();
@@ -160,7 +161,6 @@ public:
     static std::string format_raw_returncode(int raw_returncode);
 };
 
-
 class Popen : public Child
 {
 protected:
@@ -169,7 +169,8 @@ protected:
 public:
     /// argv of the child process
     std::vector<std::string> args;
-    /// pathname to the executable of the child process, defaults to args[0] if empty
+    /// pathname to the executable of the child process, defaults to args[0] if
+    /// empty
     std::string executable;
     /// environment variables to use for the child process
     std::vector<std::string> env;
@@ -185,9 +186,7 @@ public:
     void setenv(const std::string& key, const std::string& val);
 };
 
-
-}
-}
-}
+} // namespace subprocess
+} // namespace arki::utils
 
 #endif

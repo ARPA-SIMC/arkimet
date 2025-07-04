@@ -8,10 +8,10 @@
  * Copyright (C) 2007--2015  Enrico Zini <enrico@debian.org>
  */
 
-#include <string>
+#include <cctype>
 #include <functional>
 #include <sstream>
-#include <cctype>
+#include <string>
 
 namespace arki {
 namespace utils {
@@ -36,7 +36,7 @@ inline bool endswith(const std::string& str, const std::string& part)
 /**
  * Stringify and join a sequence of objects
  */
-template<typename ITER>
+template <typename ITER>
 std::string join(const std::string& sep, const ITER& begin, const ITER& end)
 {
     std::stringstream res;
@@ -55,12 +55,12 @@ std::string join(const std::string& sep, const ITER& begin, const ITER& end)
 /**
  * Stringify and join an iterable container
  */
-template<typename ITEMS>
+template <typename ITEMS>
 std::string join(const std::string& sep, const ITEMS& items)
 {
     std::stringstream res;
     bool first = true;
-    for (const auto& i: items)
+    for (const auto& i : items)
     {
         if (first)
             first = false;
@@ -107,20 +107,25 @@ inline std::string lower(const std::string& str)
 }
 
 /// Given a pathname, return the file name without its path
-[[deprecated("Use path.filename")]] std::string basename(const std::string& pathname);
+[[deprecated("Use path.filename")]] std::string
+basename(const std::string& pathname);
 
 /// Given a pathname, return the directory name without the file name
-[[deprecated("Use path.parent_path")]] std::string dirname(const std::string& pathname);
+[[deprecated("Use path.parent_path")]] std::string
+dirname(const std::string& pathname);
 
 /// Append path2 to path1, adding slashes when appropriate
-[[deprecated("Use path / path")]] void appendpath(std::string& dest, const char* path2);
+[[deprecated("Use path / path")]] void appendpath(std::string& dest,
+                                                  const char* path2);
 
 /// Append path2 to path1, adding slashes when appropriate
-[[deprecated("Use path / path")]] void appendpath(std::string& dest, const std::string& path2);
+[[deprecated("Use path / path")]] void appendpath(std::string& dest,
+                                                  const std::string& path2);
 
 /// Append an arbitrary number of path components to \a dest
-template<typename S1, typename S2, typename... Args>
-[[deprecated("Use path / path")]] void appendpath(std::string& dest, S1 first, S2 second, Args... next)
+template <typename S1, typename S2, typename... Args>
+[[deprecated("Use path / path")]] void appendpath(std::string& dest, S1 first,
+                                                  S2 second, Args... next)
 {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -130,7 +135,7 @@ template<typename S1, typename S2, typename... Args>
 }
 
 /// Join two or more paths, adding slashes when appropriate
-template<typename... Args>
+template <typename... Args>
 [[deprecated("Use path / path")]] std::string joinpath(Args... components)
 {
 #pragma GCC diagnostic push
@@ -146,7 +151,9 @@ template<typename... Args>
  *
  * For example, A//B, A/./B and A/foo/../B all become A/B.
  */
-[[deprecated("use path::lexically_normal or std::filesystem::canonical")]] std::string normpath(const std::string& pathname);
+[[deprecated(
+    "use path::lexically_normal or std::filesystem::canonical")]] std::string
+normpath(const std::string& pathname);
 
 /**
  * Split a string where a given substring is found
@@ -172,8 +179,11 @@ struct Split
      */
     bool skip_empty;
 
-    Split(const std::string& str_, const std::string& sep_, bool skip_empty_=false)
-        : str(str_), sep(sep_), skip_empty(skip_empty_) {}
+    Split(const std::string& str_, const std::string& sep_,
+          bool skip_empty_ = false)
+        : str(str_), sep(sep_), skip_empty(skip_empty_)
+    {
+    }
 
     class const_iterator
     {
@@ -184,15 +194,16 @@ struct Split
         /// Position of the first character of the next token
         size_t end = 0;
 
-        /// Move end past all the consecutive separators that start at its position
+        /// Move end past all the consecutive separators that start at its
+        /// position
         void skip_separators();
 
     public:
         using iterator_category = std::input_iterator_tag;
-        using value_type = std::string;
-        using difference_type = int;
-        using pointer = std::string*;
-        using reference = std::string&;
+        using value_type        = std::string;
+        using difference_type   = int;
+        using pointer           = std::string*;
+        using reference         = std::string&;
 
         /// Begin iterator
         const_iterator(const Split& split);
@@ -248,7 +259,6 @@ std::string encode_base64(const void* data, size_t size);
 /// Decode a string encoded in Base64
 std::string decode_base64(const std::string& str);
 
-}
-}
-}
+} // namespace str
+} // namespace arki::utils
 #endif

@@ -51,8 +51,7 @@ struct Terminal
     operator FILE*() { return out; }
 };
 
-}
-}
-}
+} // namespace term
+} // namespace arki::utils
 
 #endif

@@ -1,6 +1,6 @@
 #include "string.h"
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 using namespace std;
 
@@ -14,7 +14,7 @@ namespace {
  * Return the substring of 'str' without all leading characters for which
  * 'classifier' returns true.
  */
-template<typename FUN>
+template <typename FUN>
 std::string lstrip(const std::string& str, const FUN& classifier)
 {
     if (str.empty())
@@ -31,7 +31,7 @@ std::string lstrip(const std::string& str, const FUN& classifier)
  * Return the substring of 'str' without all trailing characters for which
  * 'classifier' returns true.
  */
-template<typename FUN>
+template <typename FUN>
 std::string rstrip(const std::string& str, const FUN& classifier)
 {
     if (str.empty())
@@ -51,7 +51,7 @@ std::string rstrip(const std::string& str, const FUN& classifier)
  * Return the substring of 'str' without all leading and trailing characters
  * for which 'classifier' returns true.
  */
-template<typename FUN>
+template <typename FUN>
 std::string strip(const std::string& str, const FUN& classifier)
 {
     if (str.empty())
@@ -67,23 +67,13 @@ std::string strip(const std::string& str, const FUN& classifier)
     return str.substr(beg, end - beg);
 }
 
-}
+} // namespace
 
+std::string lstrip(const std::string& str) { return lstrip(str, ::isspace); }
 
-std::string lstrip(const std::string& str)
-{
-    return lstrip(str, ::isspace);
-}
+std::string rstrip(const std::string& str) { return rstrip(str, ::isspace); }
 
-std::string rstrip(const std::string& str)
-{
-    return rstrip(str, ::isspace);
-}
-
-std::string strip(const std::string& str)
-{
-    return strip(str, ::isspace);
-}
+std::string strip(const std::string& str) { return strip(str, ::isspace); }
 
 std::string basename(const std::string& pathname)
 {
@@ -91,12 +81,13 @@ std::string basename(const std::string& pathname)
     if (pos == std::string::npos)
         return pathname;
     else
-        return pathname.substr(pos+1);
+        return pathname.substr(pos + 1);
 }
 
 std::string dirname(const std::string& pathname)
 {
-    if (pathname.empty()) return ".";
+    if (pathname.empty())
+        return ".";
 
     // Skip trailing separators
     size_t end = pathname.size();
@@ -104,7 +95,8 @@ std::string dirname(const std::string& pathname)
         --end;
 
     // If the result is empty again, then the string was only / characters
-    if (!end) return "/";
+    if (!end)
+        return "/";
 
     // Find the previous separator
     end = pathname.rfind("/", end - 1);
@@ -116,7 +108,8 @@ std::string dirname(const std::string& pathname)
     {
         while (end > 0 && pathname[end - 1] == '/')
             --end;
-        if (!end) return "/";
+        if (!end)
+            return "/";
         return pathname.substr(0, end);
     }
 }
@@ -137,14 +130,13 @@ void appendpath(std::string& dest, const char* path2)
             dest += (path2 + 1);
         else
             dest += path2;
+    else if (path2[0] == '/')
+        dest += path2;
     else
-        if (path2[0] == '/')
-            dest += path2;
-        else
-        {
-            dest += '/';
-            dest += path2;
-        }
+    {
+        dest += '/';
+        dest += path2;
+    }
 }
 
 void appendpath(std::string& dest, const std::string& path2)
@@ -163,14 +155,13 @@ void appendpath(std::string& dest, const std::string& path2)
             dest += path2.substr(1);
         else
             dest += path2;
+    else if (path2[0] == '/')
+        dest += path2;
     else
-        if (path2[0] == '/')
-            dest += path2;
-        else
-        {
-            dest += '/';
-            dest += path2;
-        }
+    {
+        dest += '/';
+        dest += path2;
+    }
 }
 
 std::string normpath(const std::string& pathname)
@@ -180,9 +171,10 @@ std::string normpath(const std::string& pathname)
         st.push_back("/");
 
     Split split(pathname, "/");
-    for (const auto& i: split)
+    for (const auto& i : split)
     {
-        if (i == "." || i.empty()) continue;
+        if (i == "." || i.empty())
+            continue;
         if (i == "..")
             if (st.back() == "..")
                 st.emplace_back(i);
@@ -200,7 +192,7 @@ std::string normpath(const std::string& pathname)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     string res;
-    for (const auto& i: st)
+    for (const auto& i : st)
         appendpath(res, i);
     return res;
 #pragma GCC diagnostic pop
@@ -214,14 +206,13 @@ Split::const_iterator::const_iterator(const Split& split_)
     else
     {
         // Ignore leading separators if skip_end is true
-        if (split_.skip_empty) skip_separators();
+        if (split_.skip_empty)
+            skip_separators();
         ++*this;
     }
 }
 
-Split::const_iterator::~const_iterator()
-{
-}
+Split::const_iterator::~const_iterator() {}
 
 std::string Split::const_iterator::remainder() const
 {
@@ -239,7 +230,7 @@ void Split::const_iterator::skip_separators()
     while (end + sep.size() <= str.size())
     {
         unsigned i = 0;
-        for ( ; i < sep.size(); ++i)
+        for (; i < sep.size(); ++i)
             if (str[end + i] != sep[i])
                 break;
         if (i < sep.size())
@@ -251,11 +242,12 @@ void Split::const_iterator::skip_separators()
 
 Split::const_iterator& Split::const_iterator::operator++()
 {
-    if (!split) return *this;
+    if (!split)
+        return *this;
 
     const std::string& str = split->str;
     const std::string& sep = split->sep;
-    bool skip_empty = split->skip_empty;
+    bool skip_empty        = split->skip_empty;
 
     /// Convert into an end iterator
     if (end == std::string::npos)
@@ -317,37 +309,45 @@ const std::string* Split::const_iterator::operator->() const { return &cur; }
 
 bool Split::const_iterator::operator==(const const_iterator& ti) const
 {
-    if (!split && !ti.split) return true;
-    if (split != ti.split) return false;
+    if (!split && !ti.split)
+        return true;
+    if (split != ti.split)
+        return false;
     return end == ti.end;
 }
 
 bool Split::const_iterator::operator!=(const const_iterator& ti) const
 {
-    if (!split && !ti.split) return false;
-    if (split != ti.split) return true;
+    if (!split && !ti.split)
+        return false;
+    if (split != ti.split)
+        return true;
     return end != ti.end;
 }
 
 static const char* hex_byte_table[256] = {
-    "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f",
-    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b", "1c", "1d", "1e", "1f",
-    "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "2a", "2b", "2c", "2d", "2e", "2f",
-    "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "3a", "3b", "3c", "3d", "3e", "3f",
-    "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "4a", "4b", "4c", "4d", "4e", "4f",
-    "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "5a", "5b", "5c", "5d", "5e", "5f",
-    "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "6a", "6b", "6c", "6d", "6e", "6f",
-    "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "7a", "7b", "7c", "7d", "7e", "7f",
-    "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "8a", "8b", "8c", "8d", "8e", "8f",
-    "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "9a", "9b", "9c", "9d", "9e", "9f",
-    "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "aa", "ab", "ac", "ad", "ae", "af",
-    "b0", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "ba", "bb", "bc", "bd", "be", "bf",
-    "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "ca", "cb", "cc", "cd", "ce", "cf",
-    "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "da", "db", "dc", "dd", "de", "df",
-    "e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "ea", "eb", "ec", "ed", "ee", "ef",
-    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb", "fc", "fd", "fe", "ff"
-};
-
+    "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b",
+    "0c", "0d", "0e", "0f", "10", "11", "12", "13", "14", "15", "16", "17",
+    "18", "19", "1a", "1b", "1c", "1d", "1e", "1f", "20", "21", "22", "23",
+    "24", "25", "26", "27", "28", "29", "2a", "2b", "2c", "2d", "2e", "2f",
+    "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "3a", "3b",
+    "3c", "3d", "3e", "3f", "40", "41", "42", "43", "44", "45", "46", "47",
+    "48", "49", "4a", "4b", "4c", "4d", "4e", "4f", "50", "51", "52", "53",
+    "54", "55", "56", "57", "58", "59", "5a", "5b", "5c", "5d", "5e", "5f",
+    "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "6a", "6b",
+    "6c", "6d", "6e", "6f", "70", "71", "72", "73", "74", "75", "76", "77",
+    "78", "79", "7a", "7b", "7c", "7d", "7e", "7f", "80", "81", "82", "83",
+    "84", "85", "86", "87", "88", "89", "8a", "8b", "8c", "8d", "8e", "8f",
+    "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "9a", "9b",
+    "9c", "9d", "9e", "9f", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+    "a8", "a9", "aa", "ab", "ac", "ad", "ae", "af", "b0", "b1", "b2", "b3",
+    "b4", "b5", "b6", "b7", "b8", "b9", "ba", "bb", "bc", "bd", "be", "bf",
+    "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "ca", "cb",
+    "cc", "cd", "ce", "cf", "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
+    "d8", "d9", "da", "db", "dc", "dd", "de", "df", "e0", "e1", "e2", "e3",
+    "e4", "e5", "e6", "e7", "e8", "e9", "ea", "eb", "ec", "ed", "ee", "ef",
+    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb",
+    "fc", "fd", "fe", "ff"};
 
 std::string encode_cstring(const std::string& str)
 {
@@ -376,29 +376,30 @@ std::string decode_cstring(const std::string& str, size_t& lenParsed)
 {
     string res;
     string::const_iterator i = str.begin();
-    for ( ; i != str.end() && *i != '"'; ++i)
-        if (*i == '\\' && (i+1) != str.end())
+    for (; i != str.end() && *i != '"'; ++i)
+        if (*i == '\\' && (i + 1) != str.end())
         {
-            switch (*(i+1))
+            switch (*(i + 1))
             {
                 case 'n': res += '\n'; break;
                 case 't': res += '\t'; break;
                 case 'x': {
-                              size_t j;
-                              char buf[5] = "0x\0\0";
-                              // Read up to 2 extra hex digits
-                              for (j = 0; j < 2 && i+2+j != str.end() && isxdigit(*(i+2+j)); ++j)
-                                  buf[2+j] = *(i+2+j);
-                              i += j;
-                              res += static_cast<char>(atoi(buf));
-                              break;
-                          }
-                default:
-                          res += *(i+1);
-                          break;
+                    size_t j;
+                    char buf[5] = "0x\0\0";
+                    // Read up to 2 extra hex digits
+                    for (j = 0; j < 2 && i + 2 + j != str.end() &&
+                                isxdigit(*(i + 2 + j));
+                         ++j)
+                        buf[2 + j] = *(i + 2 + j);
+                    i += j;
+                    res += static_cast<char>(atoi(buf));
+                    break;
+                }
+                default: res += *(i + 1); break;
             }
             ++i;
-        } else
+        }
+        else
             res += *i;
     if (i != str.end() && *i == '"')
         ++i;
@@ -411,13 +412,15 @@ std::string encode_url(const std::string& str)
     string res;
     for (string::const_iterator i = str.begin(); i != str.end(); ++i)
     {
-        if ( (*i >= '0' && *i <= '9') || (*i >= 'A' && *i <= 'Z')
-          || (*i >= 'a' && *i <= 'z') || *i == '-' || *i == '_'
-          || *i == '!' || *i == '*' || *i == '\'' || *i == '(' || *i == ')')
+        if ((*i >= '0' && *i <= '9') || (*i >= 'A' && *i <= 'Z') ||
+            (*i >= 'a' && *i <= 'z') || *i == '-' || *i == '_' || *i == '!' ||
+            *i == '*' || *i == '\'' || *i == '(' || *i == ')')
             res += *i;
-        else {
+        else
+        {
             char buf[4];
-            snprintf(buf, 4, "%%%02x", static_cast<unsigned>(static_cast<unsigned char>(*i)));
+            snprintf(buf, 4, "%%%02x",
+                     static_cast<unsigned>(static_cast<unsigned char>(*i)));
             res += buf;
         }
     }
@@ -434,7 +437,8 @@ std::string decode_url(const std::string& str)
             // If there's a partial %something at the end, ignore it
             if (i >= str.size() - 2)
                 return res;
-            res += static_cast<char>(strtoul(str.substr(i+1, 2).c_str(), nullptr, 16));
+            res += static_cast<char>(
+                strtoul(str.substr(i + 1, 2).c_str(), nullptr, 16));
             i += 2;
         }
         else
@@ -443,14 +447,21 @@ std::string decode_url(const std::string& str)
     return res;
 }
 
-static const char* base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char* base64 =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-template<typename T>
-static char invbase64(const T& idx)
+template <typename T> static char invbase64(const T& idx)
 {
-    static const char data[] = {62,0,0,0,63,52,53,54,55,56,57,58,59,60,61,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,0,0,0,0,0,0,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51};
-    if (idx < 43) return 0;
-    if (static_cast<unsigned>(idx) > 43 + (sizeof(data)/sizeof(data[0]))) return 0;
+    static const char data[] = {
+        62, 0,  0,  0,  63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0,
+        0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+        10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        0,  0,  0,  0,  0,  0,  26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+        36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
+    if (idx < 43)
+        return 0;
+    if (static_cast<unsigned>(idx) > 43 + (sizeof(data) / sizeof(data[0])))
+        return 0;
     return data[idx - 43];
 }
 
@@ -501,20 +512,20 @@ std::string decode_base64(const std::string& str)
     {
         // Pack every quadruplet into 24 bits
         unsigned int enc;
-        if (i+4 < str.size())
+        if (i + 4 < str.size())
         {
-            enc = (invbase64(str[i]) << 18)
-                + (invbase64(str[i+1]) << 12)
-                + (invbase64(str[i+2]) << 6)
-                + (invbase64(str[i+3]));
-        } else {
+            enc = (invbase64(str[i]) << 18) + (invbase64(str[i + 1]) << 12) +
+                  (invbase64(str[i + 2]) << 6) + (invbase64(str[i + 3]));
+        }
+        else
+        {
             enc = (invbase64(str[i]) << 18);
-            if (i+1 < str.size())
-                enc += (invbase64(str[i+1]) << 12);
-            if (i+2 < str.size())
-                enc += (invbase64(str[i+2]) << 6);
-            if (i+3 < str.size())
-                enc += (invbase64(str[i+3]));
+            if (i + 1 < str.size())
+                enc += (invbase64(str[i + 1]) << 12);
+            if (i + 2 < str.size())
+                enc += (invbase64(str[i + 2]) << 6);
+            if (i + 3 < str.size())
+                enc += (invbase64(str[i + 3]));
         }
 
         // Divide in 3 8-bit values and append them to the result
@@ -529,14 +540,12 @@ std::string decode_base64(const std::string& str)
         {
             if (res.size() > 0)
                 res.resize(res.size() - 1);
-            if (i == 0 || res.size() == 0 )
+            if (i == 0 || res.size() == 0)
                 break;
         }
 
     return res;
 }
 
-
-}
-}
-}
+} // namespace str
+} // namespace arki::utils

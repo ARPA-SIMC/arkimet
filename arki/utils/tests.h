@@ -2,20 +2,21 @@
 #define ARKI_UTILS_TESTS_H
 
 /**
- * @author Enrico Zini <enrico@enricozini.org>, Peter Rockai (mornfall) <me@mornfall.net>
+ * @author Enrico Zini <enrico@enricozini.org>, Peter Rockai (mornfall)
+ * <me@mornfall.net>
  * @brief Utility functions for the unit tests
  *
  * Copyright (C) 2006--2007  Peter Rockai (mornfall) <me@mornfall.net>
  * Copyright (C) 2003--2025  Enrico Zini <enrico@debian.org>
  */
 
-#include <string>
-#include <sstream>
+#include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <functional>
+#include <sstream>
+#include <string>
 #include <vector>
-#include <cstdint>
 
 namespace arki {
 namespace utils {
@@ -23,7 +24,7 @@ namespace tests {
 struct LocationInfo;
 }
 }
-}
+} // namespace arki::utils
 
 /*
  * These global arguments will be shadowed by local variables in functions that
@@ -79,7 +80,8 @@ struct TestStackFrame
     {
     }
 
-    TestStackFrame(const char* file_, int line_, const char* call_, const LocationInfo& local_info_)
+    TestStackFrame(const char* file_, int line_, const char* call_,
+                   const LocationInfo& local_info_)
         : file(file_), line(line_), call(call_), local_info(local_info_.str())
     {
     }
@@ -111,16 +113,15 @@ struct TestFailed : public std::exception
 
     explicit TestFailed(const std::exception& e);
 
-    template<typename ...Args>
-    TestFailed(const std::exception& e, Args&&... args)
-        : TestFailed(e)
+    template <typename... Args>
+    TestFailed(const std::exception& e, Args&&... args) : TestFailed(e)
     {
         add_stack_info(std::forward<Args>(args)...);
     }
 
     explicit TestFailed(const std::string& message_) : message(message_) {}
 
-    template<typename ...Args>
+    template <typename... Args>
     TestFailed(const std::string& message_, Args&&... args)
         : TestFailed(message_)
     {
@@ -129,8 +130,10 @@ struct TestFailed : public std::exception
 
     const char* what() const noexcept override { return message.c_str(); }
 
-    template<typename ...Args>
-    void add_stack_info(Args&&... args) { stack.emplace_back(std::forward<Args>(args)...); }
+    template <typename... Args> void add_stack_info(Args&&... args)
+    {
+        stack.emplace_back(std::forward<Args>(args)...);
+    }
 };
 
 /**
@@ -148,10 +151,9 @@ struct TestSkipped : public std::exception
  * Use this to declare a local variable with the given name that will be
  * picked up by tests as extra local info
  */
-#define ARKI_UTILS_TEST_INFO(name) \
-    arki::utils::tests::LocationInfo arki_utils_test_location_info; \
+#define ARKI_UTILS_TEST_INFO(name)                                                 \
+    arki::utils::tests::LocationInfo arki_utils_test_location_info;                     \
     arki::utils::tests::LocationInfo& name = arki_utils_test_location_info
-
 
 /**
  * The following assert_* functions throw TestFailed without capturing
@@ -161,10 +163,10 @@ struct TestSkipped : public std::exception
  */
 
 /// Test function that ensures that the actual value is true
-template<typename A>
-void assert_true(const A& actual)
+template <typename A> void assert_true(const A& actual)
 {
-    if (actual) return;
+    if (actual)
+        return;
     std::stringstream ss;
     ss << "actual value " << actual << " is not true";
     throw TestFailed(ss.str());
@@ -173,10 +175,10 @@ void assert_true(const A& actual)
 [[noreturn]] void assert_true(std::nullptr_t actual);
 
 /// Test function that ensures that the actual value is false
-template<typename A>
-void assert_false(const A& actual)
+template <typename A> void assert_false(const A& actual)
 {
-    if (!actual) return;
+    if (!actual)
+        return;
     std::stringstream ss;
     ss << "actual value " << actual << " is not false";
     throw TestFailed(ss.str());
@@ -184,11 +186,12 @@ void assert_false(const A& actual)
 
 void assert_false(std::nullptr_t actual);
 
-template<typename LIST>
-static inline void _format_list(std::ostream& o, const LIST& list) {
+template <typename LIST>
+static inline void _format_list(std::ostream& o, const LIST& list)
+{
     bool first = true;
     o << "[";
-    for (const auto& v: list)
+    for (const auto& v : list)
     {
         if (first)
             first = false;
@@ -199,10 +202,11 @@ static inline void _format_list(std::ostream& o, const LIST& list) {
     o << "]";
 }
 
-template<typename T>
+template <typename T>
 void assert_equal(const std::vector<T>& actual, const std::vector<T>& expected)
 {
-    if (actual == expected) return;
+    if (actual == expected)
+        return;
     std::stringstream ss;
     ss << "value ";
     _format_list(ss, actual);
@@ -211,10 +215,12 @@ void assert_equal(const std::vector<T>& actual, const std::vector<T>& expected)
     throw TestFailed(ss.str());
 }
 
-template<typename T>
-void assert_equal(const std::vector<T>& actual, const std::initializer_list<T>& expected)
+template <typename T>
+void assert_equal(const std::vector<T>& actual,
+                  const std::initializer_list<T>& expected)
 {
-    if (actual == expected) return;
+    if (actual == expected)
+        return;
     std::stringstream ss;
     ss << "value ";
     _format_list(ss, actual);
@@ -227,12 +233,14 @@ void assert_equal(const std::vector<T>& actual, const std::initializer_list<T>& 
  * Test function that ensures that the actual value is the same as a reference
  * one
  */
-template<typename A, typename E>
+template <typename A, typename E>
 void assert_equal(const A& actual, const E& expected)
 {
-    if (actual == expected) return;
+    if (actual == expected)
+        return;
     std::stringstream ss;
-    ss << "value '" << actual << "' is different than the expected '" << expected << "'";
+    ss << "value '" << actual << "' is different than the expected '"
+       << expected << "'";
     throw TestFailed(ss.str());
 }
 
@@ -240,52 +248,63 @@ void assert_equal(const A& actual, const E& expected)
  * Test function that ensures that the actual value is different than a
  * reference one
  */
-template<typename A, typename E>
+template <typename A, typename E>
 void assert_not_equal(const A& actual, const E& expected)
 {
-    if (actual != expected) return;
+    if (actual != expected)
+        return;
     std::stringstream ss;
-    ss << "value '" << actual << "' is not different than the expected '" << expected << "'";
+    ss << "value '" << actual << "' is not different than the expected '"
+       << expected << "'";
     throw TestFailed(ss.str());
 }
 
 /// Ensure that the actual value is less than the reference value
-template<typename A, typename E>
+template <typename A, typename E>
 void assert_less(const A& actual, const E& expected)
 {
-    if (actual < expected) return;
+    if (actual < expected)
+        return;
     std::stringstream ss;
-    ss << "value '" << actual << "' is not less than the expected '" << expected << "'";
+    ss << "value '" << actual << "' is not less than the expected '" << expected
+       << "'";
     throw TestFailed(ss.str());
 }
 
 /// Ensure that the actual value is less or equal than the reference value
-template<typename A, typename E>
+template <typename A, typename E>
 void assert_less_equal(const A& actual, const E& expected)
 {
-    if (actual <= expected) return;
+    if (actual <= expected)
+        return;
     std::stringstream ss;
-    ss << "value '" << actual << "' is not less than or equals to the expected '" << expected << "'";
+    ss << "value '" << actual
+       << "' is not less than or equals to the expected '" << expected << "'";
     throw TestFailed(ss.str());
 }
 
 /// Ensure that the actual value is greater than the reference value
-template<typename A, typename E>
+template <typename A, typename E>
 void assert_greater(const A& actual, const E& expected)
 {
-    if (actual > expected) return;
+    if (actual > expected)
+        return;
     std::stringstream ss;
-    ss << "value '" << actual << "' is not greater than the expected '" << expected << "'";
+    ss << "value '" << actual << "' is not greater than the expected '"
+       << expected << "'";
     throw TestFailed(ss.str());
 }
 
 /// Ensure that the actual value is greather or equal than the reference value
-template<typename A, typename E>
+template <typename A, typename E>
 void assert_greater_equal(const A& actual, const E& expected)
 {
-    if (actual >= expected) return;
+    if (actual >= expected)
+        return;
     std::stringstream ss;
-    ss << "value '" << actual << "' is not greater than or equals to the expected '" << expected << "'";
+    ss << "value '" << actual
+       << "' is not greater than or equals to the expected '" << expected
+       << "'";
     throw TestFailed(ss.str());
 }
 
@@ -299,7 +318,8 @@ void assert_endswith(const std::string& actual, const std::string& expected);
 void assert_contains(const std::string& actual, const std::string& expected);
 
 /// Ensure that the string \a actual does not contain \a expected
-void assert_not_contains(const std::string& actual, const std::string& expected);
+void assert_not_contains(const std::string& actual,
+                         const std::string& expected);
 
 /**
  * Ensure that the string \a actual matches the extended regular expression
@@ -315,28 +335,45 @@ void assert_re_matches(const std::string& actual, const std::string& expected);
  *
  * The syntax is that of extended regular expression (see man regex(7) ).
  */
-void assert_not_re_matches(const std::string& actual, const std::string& expected);
+void assert_not_re_matches(const std::string& actual,
+                           const std::string& expected);
 
-
-template<class A>
-struct Actual
+template <class A> struct Actual
 {
     A _actual;
     Actual(const A& actual) : _actual(actual) {}
-    Actual(const Actual&) = default;
-    Actual(Actual&&) = default;
-    ~Actual() = default;
+    Actual(const Actual&)            = default;
+    Actual(Actual&&)                 = default;
+    ~Actual()                        = default;
     Actual& operator=(const Actual&) = delete;
-    Actual& operator=(Actual&&) = delete;
+    Actual& operator=(Actual&&)      = delete;
 
     void istrue() const { assert_true(_actual); }
     void isfalse() const { assert_false(_actual); }
-    template<typename E> void operator==(const E& expected) const { assert_equal(_actual, expected); }
-    template<typename E> void operator!=(const E& expected) const { assert_not_equal(_actual, expected); }
-    template<typename E> void operator<(const E& expected) const { return assert_less(_actual, expected); }
-    template<typename E> void operator<=(const E& expected) const { return assert_less_equal(_actual, expected); }
-    template<typename E> void operator>(const E& expected) const { return assert_greater(_actual, expected); }
-    template<typename E> void operator>=(const E& expected) const { return assert_greater_equal(_actual, expected); }
+    template <typename E> void operator==(const E& expected) const
+    {
+        assert_equal(_actual, expected);
+    }
+    template <typename E> void operator!=(const E& expected) const
+    {
+        assert_not_equal(_actual, expected);
+    }
+    template <typename E> void operator<(const E& expected) const
+    {
+        return assert_less(_actual, expected);
+    }
+    template <typename E> void operator<=(const E& expected) const
+    {
+        return assert_less_equal(_actual, expected);
+    }
+    template <typename E> void operator>(const E& expected) const
+    {
+        return assert_greater(_actual, expected);
+    }
+    template <typename E> void operator>=(const E& expected) const
+    {
+        return assert_greater_equal(_actual, expected);
+    }
 };
 
 struct ActualCString
@@ -380,14 +417,18 @@ struct ActualStdString : public Actual<std::string>
 
 struct ActualPath : public Actual<std::filesystem::path>
 {
-    explicit ActualPath(const std::filesystem::path& p) : Actual<std::filesystem::path>(p) {}
+    explicit ActualPath(const std::filesystem::path& p)
+        : Actual<std::filesystem::path>(p)
+    {
+    }
 
     using Actual<std::filesystem::path>::operator==;
     using Actual<std::filesystem::path>::operator!=;
 
     // Check if the normalized paths match
     void is(const std::filesystem::path& expected) const;
-    [[deprecated("Use path_startswith")]] void startswith(const std::string& data) const;
+    [[deprecated("Use path_startswith")]] void
+    startswith(const std::string& data) const;
 
     void path_startswith(const std::filesystem::path& expected) const;
     void path_endswith(const std::filesystem::path& expected) const;
@@ -404,7 +445,8 @@ struct ActualPath : public Actual<std::filesystem::path>
     void contents_equal(const std::vector<uint8_t>& data) const;
     void contents_equal(const std::initializer_list<std::string>& lines) const;
     void contents_match(const std::string& data_re) const;
-    void contents_match(const std::initializer_list<std::string>& lines_re) const;
+    void
+    contents_match(const std::initializer_list<std::string>& lines_re) const;
 };
 
 struct ActualDouble : public Actual<double>
@@ -415,13 +457,27 @@ struct ActualDouble : public Actual<double>
     void not_almost_equal(double expected, unsigned places) const;
 };
 
-template<typename A>
-inline Actual<A> actual(const A& actual) { return Actual<A>(actual); }
-inline ActualCString actual(const char* actual) { return ActualCString(actual); }
+template <typename A> inline Actual<A> actual(const A& actual)
+{
+    return Actual<A>(actual);
+}
+inline ActualCString actual(const char* actual)
+{
+    return ActualCString(actual);
+}
 inline ActualCString actual(char* actual) { return ActualCString(actual); }
-inline ActualStdString actual(const std::string& actual) { return ActualStdString(actual); }
-inline ActualStdString actual(const std::vector<uint8_t>& actual) { return ActualStdString(std::string(actual.begin(), actual.end())); }
-inline ActualPath actual(const std::filesystem::path& actual) { return ActualPath(actual); }
+inline ActualStdString actual(const std::string& actual)
+{
+    return ActualStdString(actual);
+}
+inline ActualStdString actual(const std::vector<uint8_t>& actual)
+{
+    return ActualStdString(std::string(actual.begin(), actual.end()));
+}
+inline ActualPath actual(const std::filesystem::path& actual)
+{
+    return ActualPath(actual);
+}
 inline ActualDouble actual(double actual) { return ActualDouble(actual); }
 
 struct ActualFunction : public Actual<std::function<void()>>
@@ -431,12 +487,27 @@ struct ActualFunction : public Actual<std::function<void()>>
     void throws(const std::string& what_match) const;
 };
 
-inline ActualFunction actual_function(std::function<void()> actual) { return ActualFunction(actual); }
+inline ActualFunction actual_function(std::function<void()> actual)
+{
+    return ActualFunction(actual);
+}
 
-inline ActualPath actual_path(const char* pathname) { return ActualPath(pathname); }
-inline ActualPath actual_path(const std::string& pathname) { return ActualPath(pathname); }
-inline ActualPath actual_file(const char* pathname) { return ActualPath(pathname); }
-inline ActualPath actual_file(const std::string& pathname) { return ActualPath(pathname); }
+inline ActualPath actual_path(const char* pathname)
+{
+    return ActualPath(pathname);
+}
+inline ActualPath actual_path(const std::string& pathname)
+{
+    return ActualPath(pathname);
+}
+inline ActualPath actual_file(const char* pathname)
+{
+    return ActualPath(pathname);
+}
+inline ActualPath actual_file(const std::string& pathname)
+{
+    return ActualPath(pathname);
+}
 
 /**
  * Run the given command, raising TestFailed with the appropriate backtrace
@@ -445,15 +516,26 @@ inline ActualPath actual_file(const std::string& pathname) { return ActualPath(p
  * If the command raises TestFailed, it adds the current stack to its stack
  * information.
  */
-#define wassert(...) \
-    do { try { \
-        __VA_ARGS__ ; \
-    } catch (arki::utils::tests::TestFailed& e1) { \
-        e1.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
-        throw; \
-    } catch (std::exception& e2) { \
-        throw arki::utils::tests::TestFailed(e2, __FILE__, __LINE__, #__VA_ARGS__, arki_utils_test_location_info); \
-    } } while(0)
+#define wassert(...)                                                           \
+    do                                                                         \
+    {                                                                          \
+        try                                                                    \
+        {                                                                      \
+            __VA_ARGS__;                                                       \
+        }                                                                      \
+        catch (arki::utils::tests::TestFailed & e1)                                 \
+        {                                                                      \
+            e1.add_stack_info(__FILE__, __LINE__, #__VA_ARGS__,                \
+                              arki_utils_test_location_info);                      \
+            throw;                                                             \
+        }                                                                      \
+        catch (std::exception & e2)                                            \
+        {                                                                      \
+            throw arki::utils::tests::TestFailed(e2, __FILE__, __LINE__,            \
+                                            #__VA_ARGS__,                      \
+                                            arki_utils_test_location_info);        \
+        }                                                                      \
+    } while (0)
 
 /// Shortcut to check that a given expression returns true
 #define wassert_true(...) wassert(actual(__VA_ARGS__).istrue())
@@ -466,20 +548,30 @@ inline ActualPath actual_file(const std::string& pathname) { return ActualPath(p
  *
  * Returns a copy of the exception, which can be used for further evaluation.
  */
-#define wassert_throws(exc, ...) \
-    [&]() { try { \
-        __VA_ARGS__ ; \
-        wfail_test(#__VA_ARGS__ " did not throw " #exc); \
-    } catch (TestFailed& e1) { \
-        throw; \
-    } catch (exc& e2) { \
-        return e2; \
-    } catch (std::exception& e3) { \
-        std::string msg(#__VA_ARGS__ " did not throw " #exc " but threw "); \
-        msg += typeid(e3).name(); \
-        msg += " instead"; \
-        wfail_test(msg); \
-    } }()
+#define wassert_throws(exc, ...)                                               \
+    [&]() {                                                                    \
+        try                                                                    \
+        {                                                                      \
+            __VA_ARGS__;                                                       \
+            wfail_test(#__VA_ARGS__ " did not throw " #exc);                   \
+        }                                                                      \
+        catch (TestFailed & e1)                                                \
+        {                                                                      \
+            throw;                                                             \
+        }                                                                      \
+        catch (exc & e2)                                                       \
+        {                                                                      \
+            return e2;                                                         \
+        }                                                                      \
+        catch (std::exception & e3)                                            \
+        {                                                                      \
+            std::string msg(#__VA_ARGS__ " did not throw " #exc                \
+                                         " but threw ");                       \
+            msg += typeid(e3).name();                                          \
+            msg += " instead";                                                 \
+            wfail_test(msg);                                                   \
+        }                                                                      \
+    }()
 
 /**
  * Call a function returning its result, and raising TestFailed with the
@@ -488,15 +580,24 @@ inline ActualPath actual_file(const std::string& pathname) { return ActualPath(p
  * If the function raises TestFailed, it adds the current stack to its stack
  * information.
  */
-#define wcallchecked(func) \
-    [&]() { try { \
-        return func; \
-    } catch (arki::utils::tests::TestFailed& e) { \
-        e.add_stack_info(__FILE__, __LINE__, #func, arki_utils_test_location_info); \
-        throw; \
-    } catch (std::exception& e) { \
-        throw arki::utils::tests::TestFailed(e, __FILE__, __LINE__, #func, arki_utils_test_location_info); \
-    } }()
+#define wcallchecked(func)                                                     \
+    [&]() {                                                                    \
+        try                                                                    \
+        {                                                                      \
+            return func;                                                       \
+        }                                                                      \
+        catch (arki::utils::tests::TestFailed & e)                                  \
+        {                                                                      \
+            e.add_stack_info(__FILE__, __LINE__, #func,                        \
+                             arki_utils_test_location_info);                       \
+            throw;                                                             \
+        }                                                                      \
+        catch (std::exception & e)                                             \
+        {                                                                      \
+            throw arki::utils::tests::TestFailed(e, __FILE__, __LINE__, #func,      \
+                                            arki_utils_test_location_info);        \
+        }                                                                      \
+    }()
 
 /**
  * Fail a test with an error message
@@ -509,7 +610,6 @@ struct TestRegistry;
 struct TestCaseResult;
 struct TestMethod;
 struct TestMethodResult;
-
 
 /**
  * Test method information
@@ -529,13 +629,13 @@ struct TestMethod
      */
     std::function<void()> test_function;
 
-    TestMethod(const std::string& name_)
-        : name(name_), test_function() {}
+    TestMethod(const std::string& name_) : name(name_), test_function() {}
 
     TestMethod(const std::string& name_, std::function<void()> test_function_)
-        : name(name_), test_function(test_function_) {}
+        : name(name_), test_function(test_function_)
+    {
+    }
 };
-
 
 /**
  * Test case collecting several test methods, and self-registering with the
@@ -551,7 +651,6 @@ struct TestCase
 
     /// Set to true the first time register_tests_once is run
     bool tests_registered = false;
-
 
     TestCase(const std::string& name);
     virtual ~TestCase() {}
@@ -621,7 +720,8 @@ struct TestCase
      * Exceptions in method_setup() and method_teardown() are caught and
      * reported in TestMethodResult.
      */
-    virtual TestMethodResult run_test(TestController& controller, TestMethod& method);
+    virtual TestMethodResult run_test(TestController& controller,
+                                      TestMethod& method);
 
     /**
      * Register a new test method, with the actual test function to be added
@@ -636,8 +736,9 @@ struct TestCase
     /**
      * Register a new test method
      */
-    template<typename ...Args>
-    TestMethod& add_method(const std::string& name_, std::function<void()> test_function)
+    template <typename... Args>
+    TestMethod& add_method(const std::string& name_,
+                           std::function<void()> test_function)
     {
         methods.emplace_back(name_, test_function);
         return methods.back();
@@ -646,15 +747,15 @@ struct TestCase
     /**
      * Register a new test method, including documentation
      */
-    template<typename ...Args>
-    TestMethod& add_method(const std::string& name_, const std::string& doc, std::function<void()> test_function)
+    template <typename... Args>
+    TestMethod& add_method(const std::string& name_, const std::string& doc,
+                           std::function<void()> test_function)
     {
         methods.emplace_back(name_, test_function);
         methods.back().doc = doc;
         return methods.back();
     }
 };
-
 
 /**
  * Base class for test fixtures.
@@ -675,7 +776,7 @@ struct Fixture
     void test_teardown() {}
 };
 
-template<typename Fixture, typename... Args>
+template <typename Fixture, typename... Args>
 static inline Fixture* fixture_factory(Args... args)
 {
     return new Fixture(args...);
@@ -684,8 +785,7 @@ static inline Fixture* fixture_factory(Args... args)
 /**
  * Test case that includes a fixture
  */
-template<typename FIXTURE>
-class FixtureTestCase : public TestCase
+template <typename FIXTURE> class FixtureTestCase : public TestCase
 {
 public:
     typedef FIXTURE Fixture;
@@ -693,16 +793,15 @@ public:
     Fixture* fixture = nullptr;
     std::function<Fixture*()> make_fixture;
 
-    template<typename... Args>
-    FixtureTestCase(const std::string& name_, Args... args)
-        : TestCase(name_)
+    template <typename... Args>
+    FixtureTestCase(const std::string& name_, Args... args) : TestCase(name_)
     {
         make_fixture = std::bind(fixture_factory<FIXTURE, Args...>, args...);
     }
-    FixtureTestCase(const FixtureTestCase&) = delete;
-    FixtureTestCase(FixtureTestCase&&) = delete;
+    FixtureTestCase(const FixtureTestCase&)            = delete;
+    FixtureTestCase(FixtureTestCase&&)                 = delete;
     FixtureTestCase& operator=(const FixtureTestCase&) = delete;
-    FixtureTestCase& operator=(FixtureTestCase&) = delete;
+    FixtureTestCase& operator=(FixtureTestCase&)       = delete;
 
     void setup() override
     {
@@ -720,12 +819,14 @@ public:
     void method_setup(TestMethodResult& mr) override
     {
         TestCase::method_setup(mr);
-        if (fixture) fixture->test_setup();
+        if (fixture)
+            fixture->test_setup();
     }
 
     void method_teardown(TestMethodResult& mr) override
     {
-        if (fixture) fixture->test_teardown();
+        if (fixture)
+            fixture->test_teardown();
         TestCase::method_teardown(mr);
     }
 
@@ -733,8 +834,9 @@ public:
      * Register a new test method that takes a reference to the fixture as
      * argument.
      */
-    template<typename ...Args>
-    TestMethod& add_method(const std::string& name_, std::function<void(FIXTURE&)> test_function)
+    template <typename... Args>
+    TestMethod& add_method(const std::string& name_,
+                           std::function<void(FIXTURE&)> test_function)
     {
         return TestCase::add_method(name_, [=]() { test_function(*fixture); });
     }
@@ -743,14 +845,15 @@ public:
      * Register a new test method that takes a reference to the fixture as
      * argument, including documentation
      */
-    template<typename ...Args>
-    TestMethod& add_method(const std::string& name_, const std::string& doc, std::function<void(FIXTURE&)> test_function)
+    template <typename... Args>
+    TestMethod& add_method(const std::string& name_, const std::string& doc,
+                           std::function<void(FIXTURE&)> test_function)
     {
-        return TestCase::add_method(name_, doc, [=]() { test_function(*fixture); });
+        return TestCase::add_method(name_, doc,
+                                    [=]() { test_function(*fixture); });
     }
 };
 
-}
-}
-}
+} // namespace tests
+} // namespace arki::utils
 #endif

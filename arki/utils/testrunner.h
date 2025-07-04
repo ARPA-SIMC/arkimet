@@ -1,10 +1,10 @@
 #ifndef ARKI_UTILS_TESTSRUNNER_H
 #define ARKI_UTILS_TESTSRUNNER_H
 
-#include <string>
-#include <vector>
 #include <functional>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace utils {
@@ -19,7 +19,6 @@ struct TestFailed;
 struct TestStack;
 struct TestCase;
 struct TestMethod;
-
 
 /**
  * Result of running a test method.
@@ -50,9 +49,11 @@ struct TestMethodResult
     /// Time in nanoseconds it took the test to run
     unsigned long long elapsed_ns = 0;
 
-
-    TestMethodResult(const std::string& test_case_, const std::string& test_method_)
-        : test_case(test_case_), test_method(test_method_) {}
+    TestMethodResult(const std::string& test_case_,
+                     const std::string& test_method_)
+        : test_case(test_case_), test_method(test_method_)
+    {
+    }
 
     void set_failed(TestFailed& e);
 
@@ -60,14 +61,12 @@ struct TestMethodResult
     {
         error_message = e.what();
         if (error_message.empty())
-            error_message = "test threw an exception with an empty error message";
+            error_message =
+                "test threw an exception with an empty error message";
         exception_typeid = typeid(e).name();
     }
 
-    void set_unknown_exception()
-    {
-        error_message = "unknown exception caught";
-    }
+    void set_unknown_exception() { error_message = "unknown exception caught"; }
 
     void set_setup_exception(std::exception& e)
     {
@@ -83,10 +82,7 @@ struct TestMethodResult
         error_message += "]";
     }
 
-    bool is_success() const
-    {
-        return error_message.empty();
-    }
+    bool is_success() const { return error_message.empty(); }
 
     void print_failure_details(FILE* out) const;
 };
@@ -108,7 +104,10 @@ struct TestCaseResult
     /// Set to true if this test case has been skipped
     bool skipped = false;
 
-    explicit TestCaseResult(const std::string& test_case_) : test_case(test_case_) {}
+    explicit TestCaseResult(const std::string& test_case_)
+        : test_case(test_case_)
+    {
+    }
 
     void set_setup_failed()
     {
@@ -139,8 +138,9 @@ struct TestCaseResult
 
     bool is_success() const
     {
-        if (!fail_setup.empty() || !fail_teardown.empty()) return false;
-        for (const auto& m: methods)
+        if (!fail_setup.empty() || !fail_teardown.empty())
+            return false;
+        for (const auto& m : methods)
             if (!m.is_success())
                 return false;
         return true;
@@ -148,7 +148,6 @@ struct TestCaseResult
 
     unsigned long long elapsed_ns() const;
 };
-
 
 /**
  * Abstract interface for the objects that supervise test execution.
@@ -163,9 +162,13 @@ struct TestController
     /**
      * Called before running a test case.
      *
-     * @returns true if the test case should be run, false if it should be skipped
+     * @returns true if the test case should be run, false if it should be
+     * skipped
      */
-    virtual bool test_case_begin(const TestCase&, const TestCaseResult&) { return true; }
+    virtual bool test_case_begin(const TestCase&, const TestCaseResult&)
+    {
+        return true;
+    }
 
     /**
      * Called after running a test case.
@@ -175,9 +178,13 @@ struct TestController
     /**
      * Called before running a test method.
      *
-     * @returns true if the test method should be run, false if it should be skipped
+     * @returns true if the test method should be run, false if it should be
+     * skipped
      */
-    virtual bool test_method_begin(const TestMethod&, const TestMethodResult&) { return true; }
+    virtual bool test_method_begin(const TestMethod&, const TestMethodResult&)
+    {
+        return true;
+    }
 
     /**
      * Called after running a test method.
@@ -200,7 +207,6 @@ struct FilteringTestController : public TestController
     bool test_method_should_run(const std::string& fullname) const;
 };
 
-
 /**
  * Simple default implementation of TestController.
  *
@@ -213,12 +219,15 @@ struct SimpleTestController : public FilteringTestController
 
     SimpleTestController(arki::utils::term::Terminal& output);
 
-    bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) override;
-    void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) override;
-    bool test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
-    void test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
+    bool test_case_begin(const TestCase& test_case,
+                         const TestCaseResult& test_case_result) override;
+    void test_case_end(const TestCase& test_case,
+                       const TestCaseResult& test_case_result) override;
+    bool test_method_begin(const TestMethod& test_method,
+                           const TestMethodResult& test_method_result) override;
+    void test_method_end(const TestMethod& test_method,
+                         const TestMethodResult& test_method_result) override;
 };
-
 
 /**
  * Verbose implementation of TestController.
@@ -232,12 +241,15 @@ struct VerboseTestController : public FilteringTestController
 
     VerboseTestController(arki::utils::term::Terminal& output);
 
-    bool test_case_begin(const TestCase& test_case, const TestCaseResult& test_case_result) override;
-    void test_case_end(const TestCase& test_case, const TestCaseResult& test_case_result) override;
-    bool test_method_begin(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
-    void test_method_end(const TestMethod& test_method, const TestMethodResult& test_method_result) override;
+    bool test_case_begin(const TestCase& test_case,
+                         const TestCaseResult& test_case_result) override;
+    void test_case_end(const TestCase& test_case,
+                       const TestCaseResult& test_case_result) override;
+    bool test_method_begin(const TestMethod& test_method,
+                           const TestMethodResult& test_method_result) override;
+    void test_method_end(const TestMethod& test_method,
+                         const TestMethodResult& test_method_result) override;
 };
-
 
 /**
  * Test registry.
@@ -264,7 +276,8 @@ struct TestRegistry
      * This method does not change the tests, but it cannot be const because it
      * calls register_tests_once on each TestCase.
      */
-    void iterate_test_methods(std::function<void(const TestCase&, const TestMethod&)>);
+    void iterate_test_methods(
+        std::function<void(const TestCase&, const TestMethod&)>);
 
     /**
      * Run all the registered tests using the given controller
@@ -275,17 +288,16 @@ struct TestRegistry
     static TestRegistry& get();
 };
 
-
 struct TestResultStats
 {
     const std::vector<TestCaseResult>& results;
-    unsigned methods_ok = 0;
-    unsigned methods_failed = 0;
-    unsigned methods_skipped = 0;
-    unsigned test_cases_ok = 0;
+    unsigned methods_ok        = 0;
+    unsigned methods_failed    = 0;
+    unsigned methods_skipped   = 0;
+    unsigned test_cases_ok     = 0;
     unsigned test_cases_failed = 0;
-    bool success = false;
-    bool skipped = false;
+    bool success               = false;
+    bool skipped               = false;
 
     TestResultStats(const std::vector<TestCaseResult>& results);
 
@@ -294,7 +306,6 @@ struct TestResultStats
     void print_summary(arki::utils::term::Terminal& out);
 };
 
-}
-}
-}
+} // namespace tests
+} // namespace arki::utils
 #endif
