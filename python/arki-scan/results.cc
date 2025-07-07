@@ -1,20 +1,21 @@
 #include "results.h"
-#include <sys/time.h>
 #include <sstream>
+#include <sys/time.h>
 
 #ifdef __xlC__
 // From glibc
-#define timersub(a, b, result)                                                \
-  do {                                                                        \
-    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;                             \
-    (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;                          \
-    if ((result)->tv_usec < 0) {                                              \
-      --(result)->tv_sec;                                                     \
-      (result)->tv_usec += 1000000;                                           \
-    }                                                                         \
-  } while (0)
+#define timersub(a, b, result)                                                 \
+    do                                                                         \
+    {                                                                          \
+        (result)->tv_sec  = (a)->tv_sec - (b)->tv_sec;                         \
+        (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;                       \
+        if ((result)->tv_usec < 0)                                             \
+        {                                                                      \
+            --(result)->tv_sec;                                                \
+            (result)->tv_usec += 1000000;                                      \
+        }                                                                      \
+    } while (0)
 #endif
-
 
 namespace arki {
 namespace python {
@@ -26,10 +27,7 @@ DispatchResults::DispatchResults()
     timerclear(&end_time);
 }
 
-void DispatchResults::end()
-{
-    gettimeofday(&end_time, NULL);
-}
+void DispatchResults::end() { gettimeofday(&end_time, NULL); }
 
 bool DispatchResults::success(bool ignore_duplicates) const
 {
@@ -48,7 +46,8 @@ std::string DispatchResults::summary() const
         struct timeval diff;
         timersub(&end_time, &start_time, &diff);
         char buf[32];
-        snprintf(buf, 32, " in %d.%06d seconds", (int)diff.tv_sec, (int)diff.tv_usec);
+        snprintf(buf, 32, " in %d.%06d seconds", (int)diff.tv_sec,
+                 (int)diff.tv_usec);
         timeinfo = buf;
     }
     if (!successful && !not_imported && !duplicates && !in_error_dataset)
@@ -71,8 +70,7 @@ std::string DispatchResults::summary() const
     else
         res << "some problems: ";
 
-    res << successful << " ok, "
-        << duplicates << " duplicates, "
+    res << successful << " ok, " << duplicates << " duplicates, "
         << in_error_dataset << " in error dataset";
 
     if (not_imported)
@@ -83,7 +81,6 @@ std::string DispatchResults::summary() const
     return res.str();
 }
 
-
-}
-}
-}
+} // namespace arki_scan
+} // namespace python
+} // namespace arki

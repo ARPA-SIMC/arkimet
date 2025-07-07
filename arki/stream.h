@@ -3,14 +3,14 @@
 
 #include <arki/core/fwd.h>
 #include <arki/stream/fwd.h>
-#include <memory>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-#include <vector>
-#include <stdexcept>
 #include <iosfwd>
+#include <memory>
+#include <stdexcept>
 #include <sys/types.h>
+#include <vector>
 
 namespace arki {
 
@@ -27,8 +27,7 @@ public:
 
 std::ostream& operator<<(std::ostream& out, const SendResult& r);
 
-}
-
+} // namespace stream
 
 /**
  * Abstract interface for streaming data.
@@ -58,7 +57,8 @@ public:
      * Pipe all input data through the given child command before sending it to
      * the stream output.
      */
-    virtual stream::FilterProcess* start_filter(const std::vector<std::string>& command) = 0;
+    virtual stream::FilterProcess*
+    start_filter(const std::vector<std::string>& command) = 0;
 
     /**
      * Stop sending data through a child command, and shut it down.
@@ -90,7 +90,9 @@ public:
      *
      * Returns the number of bytes written, which is always size.
      */
-    virtual stream::SendResult send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset, size_t size) = 0;
+    virtual stream::SendResult
+    send_file_segment(arki::core::NamedFileDescriptor& fd, off_t offset,
+                      size_t size) = 0;
 
     /**
      * Create a StreamOutput to stream to a file.
@@ -101,7 +103,9 @@ public:
      * Otherwise, stream operations can block on writes for at most the given
      * number of milliseconds. If timed out, StreamTimedOut is raised
      */
-    static std::unique_ptr<StreamOutput> create(std::shared_ptr<core::NamedFileDescriptor> out, unsigned timeout_ms=0);
+    static std::unique_ptr<StreamOutput>
+    create(std::shared_ptr<core::NamedFileDescriptor> out,
+           unsigned timeout_ms = 0);
 
     /**
      * Create a Streamoutput to stream to a memory buffer
@@ -114,5 +118,5 @@ public:
     static std::unique_ptr<StreamOutput> create_discard();
 };
 
-}
+} // namespace arki
 #endif

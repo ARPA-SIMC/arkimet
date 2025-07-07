@@ -1,5 +1,5 @@
-#include <arki/types/tests.h>
 #include <arki/types/bbox.h>
+#include <arki/types/tests.h>
 
 namespace {
 using namespace std;
@@ -13,14 +13,14 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_types_bbox");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Check INVALID
-add_method("invalid", [] {
-    tests::TestGenericType t("bbox", "INVALID");
-    wassert(t.check());
-});
-
+    // Check INVALID
+    add_method("invalid", [] {
+        tests::TestGenericType t("bbox", "INVALID");
+        wassert(t.check());
+    });
 }
 
-}
+} // namespace

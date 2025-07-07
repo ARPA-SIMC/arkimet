@@ -22,8 +22,11 @@ public:
     FuzzyTime() : TimeBase(-1, -1, -1, -1, -1, -1) {}
 
     /// A time given its 6 components
-    FuzzyTime(int ye, int mo=-1, int da=-1, int ho=-1, int mi=-1, int se=-1)
-        : TimeBase(ye, mo, da, ho, mi, se) {}
+    FuzzyTime(int ye, int mo = -1, int da = -1, int ho = -1, int mi = -1,
+              int se = -1)
+        : TimeBase(ye, mo, da, ho, mi, se)
+    {
+    }
 
     /// Return a Time object with the earlier possible time
     Time lowerbound();
@@ -42,7 +45,7 @@ public:
     void validate() const;
 };
 
-}
-}
+} // namespace core
+} // namespace arki
 
 #endif

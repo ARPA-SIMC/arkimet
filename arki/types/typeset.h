@@ -18,7 +18,10 @@ class TypeSet
 protected:
     struct TypeptrLt
     {
-        inline bool operator()(const types::Type* a, const types::Type* b) const { return *a < *b; }
+        inline bool operator()(const types::Type* a, const types::Type* b) const
+        {
+            return *a < *b;
+        }
     };
     typedef std::set<const types::Type*, TypeptrLt> container;
     container vals;
@@ -70,6 +73,6 @@ protected:
     TypeSet& operator=(const TypeSet&);
 };
 
-}
-}
+} // namespace types
+} // namespace arki
 #endif

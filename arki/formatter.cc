@@ -8,7 +8,6 @@ namespace arki {
 
 static std::function<std::unique_ptr<Formatter>()> factory;
 
-
 Formatter::Formatter() {}
 Formatter::~Formatter() {}
 std::string Formatter::format(const Type& v) const
@@ -25,9 +24,10 @@ std::unique_ptr<Formatter> Formatter::create()
     return std::unique_ptr<Formatter>(new Formatter);
 }
 
-void Formatter::set_factory(std::function<std::unique_ptr<Formatter>()> new_factory)
+void Formatter::set_factory(
+    std::function<std::unique_ptr<Formatter>()> new_factory)
 {
     factory = new_factory;
 }
 
-}
+} // namespace arki

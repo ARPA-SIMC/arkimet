@@ -1,20 +1,20 @@
 #include "session.h"
-#include "data.h"
-#include "data/fd.h"
-#include "data/dir.h"
-#include "data/tar.h"
-#include "data/zip.h"
-#include "data/gz.h"
-#include "metadata.h"
-#include "scan.h"
+#include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/core/lock.h"
-#include "arki/core/cfg.h"
+#include "arki/nag.h"
 #include "arki/scan.h"
+#include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/utils/files.h"
-#include "arki/nag.h"
+#include "data.h"
+#include "data/dir.h"
+#include "data/fd.h"
+#include "data/gz.h"
+#include "data/tar.h"
+#include "data/zip.h"
+#include "metadata.h"
+#include "scan.h"
 #include <memory>
 
 using namespace arki::core;
@@ -28,20 +28,17 @@ Session::Session(const std::filesystem::path& root)
 }
 
 Session::Session(const core::cfg::Section& cfg)
-    : reader_pool(),
-      root(cfg.value("path")),
+    : reader_pool(), root(cfg.value("path")),
       smallfiles(cfg.value_bool("smallfiles")),
       eatmydata(cfg.value_bool("eatmydata"))
 {
 }
 
-Session::~Session()
-{
-}
+Session::~Session() {}
 
 bool Session::is_data_segment(const std::filesystem::path& relpath) const
 {
-    auto abspath = root / relpath;
+    auto abspath                    = root / relpath;
     std::unique_ptr<struct stat> st = sys::stat(abspath);
     if (!st.get())
         return false;
@@ -78,7 +75,7 @@ bool Session::is_data_segment(const std::filesystem::path& relpath) const
         if (S_ISDIR(st->st_mode))
             return false;
         return segment::data::tar::Data::can_store(
-                arki::scan::Scanner::format_from_filename(abspath.stem()));
+            arki::scan::Scanner::format_from_filename(abspath.stem()));
     }
 
     auto format = arki::scan::Scanner::detect_format(abspath);
@@ -94,143 +91,174 @@ bool Session::is_data_segment(const std::filesystem::path& relpath) const
     return segment::data::dir::Data::can_store(format.value());
 }
 
-
-std::shared_ptr<Segment> Session::segment_from_relpath(const std::filesystem::path& relpath) const
+std::shared_ptr<Segment>
+Session::segment_from_relpath(const std::filesystem::path& relpath) const
 {
-    return segment_from_relpath_and_format(relpath, arki::scan::Scanner::format_from_filename(relpath));
+    return segment_from_relpath_and_format(
+        relpath, arki::scan::Scanner::format_from_filename(relpath));
 }
 
-std::shared_ptr<Segment> Session::segment_from_relpath_and_format(const std::filesystem::path& relpath, DataFormat format) const
+std::shared_ptr<Segment>
+Session::segment_from_relpath_and_format(const std::filesystem::path& relpath,
+                                         DataFormat format) const
 {
     return std::make_shared<Segment>(shared_from_this(), format, relpath);
 }
 
-
-std::shared_ptr<segment::Reader> Session::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::Reader>
+Session::segment_reader(std::shared_ptr<const Segment> segment,
+                        std::shared_ptr<const core::ReadLock> lock) const
 {
     // stat the metadata file, if it exists
     auto md_abspath = segment->abspath_metadata();
-    auto st_md = sys::stat(md_abspath);
+    auto st_md      = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get())
     {
         auto data = segment->data();
-        auto ts = data->timestamp();
+        auto ts   = data->timestamp();
         if (!ts)
         {
-            nag::warning("%s: segment data is not available", segment->abspath().c_str());
+            nag::warning("%s: segment data is not available",
+                         segment->abspath().c_str());
             return std::make_shared<segment::EmptyReader>(segment, lock);
         }
 
         if (st_md->st_mtime >= ts.value())
             return std::make_shared<segment::metadata::Reader>(segment, lock);
         else
-            nag::warning("%s: outdated .metadata file: falling back to data scan", segment->abspath().c_str());
+            nag::warning(
+                "%s: outdated .metadata file: falling back to data scan",
+                segment->abspath().c_str());
     }
 
     // Else scan the file as usual
     return std::make_shared<segment::scan::Reader>(segment, lock);
 }
 
-std::shared_ptr<segment::Writer> Session::segment_writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock) const
+std::shared_ptr<segment::Writer>
+Session::segment_writer(std::shared_ptr<const Segment> segment,
+                        std::shared_ptr<core::AppendLock> lock) const
 {
     // stat the metadata file, if it exists
     auto md_abspath = segment->abspath_metadata();
-    auto st_md = sys::stat(md_abspath);
+    auto st_md      = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get())
         return std::make_shared<segment::metadata::Writer>(segment, lock);
 
     auto data = segment->data();
-    auto ts = data->timestamp();
+    auto ts   = data->timestamp();
     if (ts)
         return std::make_shared<segment::scan::Writer>(segment, lock);
     else
-        throw std::runtime_error("this session misses a policy to determine how to create writers for segments that do not yet exist");
+        throw std::runtime_error(
+            "this session misses a policy to determine how to create writers "
+            "for segments that do not yet exist");
 }
 
-std::shared_ptr<segment::Checker> Session::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+std::shared_ptr<segment::Checker>
+Session::segment_checker(std::shared_ptr<const Segment> segment,
+                         std::shared_ptr<core::CheckLock> lock) const
 {
     // stat the metadata file, if it exists
     auto md_abspath = segment->abspath_metadata();
-    auto st_md = sys::stat(md_abspath);
+    auto st_md      = sys::stat(md_abspath);
     // If it exists and it looks new enough, use it
     if (st_md.get())
         return std::make_shared<segment::metadata::Checker>(segment, lock);
 
     auto data = segment->data();
-    auto ts = data->timestamp();
+    auto ts   = data->timestamp();
     if (ts)
         return std::make_shared<segment::scan::Checker>(segment, lock);
     else
-        throw std::runtime_error("this session misses a policy to determine how to create checkers for segments that do not yet exist");
+        throw std::runtime_error(
+            "this session misses a policy to determine how to create checkers "
+            "for segments that do not yet exist");
 }
 
-std::shared_ptr<segment::data::Reader> Session::segment_data_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::data::Reader>
+Session::segment_data_reader(std::shared_ptr<const Segment> segment,
+                             std::shared_ptr<const core::ReadLock> lock) const
 {
     auto res = reader_pool.find(segment->abspath());
     if (res == reader_pool.end() || res->second.expired())
     {
-        auto reader = segment->data()->reader(lock);
+        auto reader                     = segment->data()->reader(lock);
         reader_pool[segment->abspath()] = reader;
         return reader;
     }
     return res->second.lock();
 }
 
-std::shared_ptr<segment::data::Writer> Session::segment_data_writer(std::shared_ptr<const Segment> segment, const segment::WriterConfig& config) const
+std::shared_ptr<segment::data::Writer>
+Session::segment_data_writer(std::shared_ptr<const Segment> segment,
+                             const segment::WriterConfig& config) const
 {
     std::filesystem::create_directories(segment->abspath().parent_path());
     auto data = segment->data();
     return data->writer(config);
 }
 
-std::shared_ptr<segment::data::Checker> Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
+std::shared_ptr<segment::data::Checker>
+Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
 {
     auto data = segment->data();
     return data->checker();
 }
 
-void Session::create_scan(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
+void Session::create_scan(std::shared_ptr<Segment> segment,
+                          arki::metadata::Collection& mds) const
 {
     auto data = segment->data();
     data->create_segment(mds);
 }
 
-void Session::create_metadata(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
+void Session::create_metadata(std::shared_ptr<Segment> segment,
+                              arki::metadata::Collection& mds) const
 {
     auto data = segment->data();
     data->create_segment(mds);
     // TODO: implement data->read_lock() and data->check_lock()
-    auto lock = std::make_shared<core::lock::NullCheckLock>();
+    auto lock    = std::make_shared<core::lock::NullCheckLock>();
     auto checker = std::make_shared<segment::metadata::Checker>(segment, lock);
-    auto fixer = checker->fixer();
+    auto fixer   = checker->fixer();
     fixer->reindex(mds);
 }
 
-void Session::create_iseg(std::shared_ptr<Segment> segment, arki::metadata::Collection& mds) const
+void Session::create_iseg(std::shared_ptr<Segment> segment,
+                          arki::metadata::Collection& mds) const
 {
     throw std::runtime_error("normal sessions cannot create iseg segments");
 }
 
-std::shared_ptr<segment::Reader> ScanSession::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::Reader>
+ScanSession::segment_reader(std::shared_ptr<const Segment> segment,
+                            std::shared_ptr<const core::ReadLock> lock) const
 {
     return std::make_shared<segment::scan::Reader>(segment, lock);
 }
 
-std::shared_ptr<segment::Checker> ScanSession::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+std::shared_ptr<segment::Checker>
+ScanSession::segment_checker(std::shared_ptr<const Segment> segment,
+                             std::shared_ptr<core::CheckLock> lock) const
 {
     return std::make_shared<segment::scan::Checker>(segment, lock);
 }
 
-std::shared_ptr<segment::Reader> MetadataSession::segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::Reader> MetadataSession::segment_reader(
+    std::shared_ptr<const Segment> segment,
+    std::shared_ptr<const core::ReadLock> lock) const
 {
     return std::make_shared<segment::metadata::Reader>(segment, lock);
 }
 
-std::shared_ptr<segment::Checker> MetadataSession::segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const
+std::shared_ptr<segment::Checker>
+MetadataSession::segment_checker(std::shared_ptr<const Segment> segment,
+                                 std::shared_ptr<core::CheckLock> lock) const
 {
     return std::make_shared<segment::metadata::Checker>(segment, lock);
 }
 
-}
+} // namespace arki::segment

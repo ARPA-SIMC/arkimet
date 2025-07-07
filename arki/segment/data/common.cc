@@ -1,7 +1,7 @@
 #include "common.h"
 #include "arki/metadata.h"
-#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/data.h"
 #include "arki/scan/validator.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -19,13 +19,12 @@ AppendCreator::AppendCreator(const Segment& segment, Collection& mds)
 {
 }
 
-AppendCreator::~AppendCreator()
-{
-}
+AppendCreator::~AppendCreator() {}
 
 size_t AppendCreator::append(const arki::metadata::Data& data)
 {
-    throw std::runtime_error("append of buffers not implemented for this segment");
+    throw std::runtime_error(
+        "append of buffers not implemented for this segment");
 }
 
 Span AppendCreator::append_md(Metadata& md)
@@ -38,34 +37,38 @@ Span AppendCreator::append_md(Metadata& md)
     return Span(append(data), data.size());
 }
 
-std::unique_ptr<types::Source> AppendCreator::create_source(const Metadata& md, const Span& span)
+std::unique_ptr<types::Source> AppendCreator::create_source(const Metadata& md,
+                                                            const Span& span)
 {
-    return types::Source::createBlobUnlocked(md.source().format, segment.root(), segment.relpath(), span.offset, span.size);
+    return types::Source::createBlobUnlocked(md.source().format, segment.root(),
+                                             segment.relpath(), span.offset,
+                                             span.size);
 }
 
 void AppendCreator::create()
 {
     // Fill the temp file with all the data in the right order
-    for (auto& md: mds)
+    for (auto& md : mds)
     {
         bool had_cached_data = md->has_cached_data();
-        Span span = append_md(*md);
+        Span span            = append_md(*md);
         // Update the source information in the metadata
         md->set_source(create_source(*md, span));
-        // Drop the cached data, to prevent accidentally loading the whole segment in memory
-        if (!had_cached_data) md->drop_cached_data();
+        // Drop the cached data, to prevent accidentally loading the whole
+        // segment in memory
+        if (!had_cached_data)
+            md->drop_cached_data();
     }
 }
 
-
-AppendCheckBackend::AppendCheckBackend(std::function<void(const std::string&)> reporter, const Segment& segment, const Collection& mds)
+AppendCheckBackend::AppendCheckBackend(
+    std::function<void(const std::string&)> reporter, const Segment& segment,
+    const Collection& mds)
     : segment(segment), reporter(reporter), mds(mds)
 {
 }
 
-AppendCheckBackend::~AppendCheckBackend()
-{
-}
+AppendCheckBackend::~AppendCheckBackend() {}
 
 size_t AppendCheckBackend::actual_start(off_t offset, size_t size) const
 {
@@ -77,10 +80,11 @@ size_t AppendCheckBackend::actual_end(off_t offset, size_t size) const
     return offset + size;
 }
 
-size_t AppendCheckBackend::compute_unindexed_space(const std::vector<Span>& indexed_spans) const
+size_t AppendCheckBackend::compute_unindexed_space(
+    const std::vector<Span>& indexed_spans) const
 {
     size_t res = offset_end();
-    for (const auto& i: indexed_spans)
+    for (const auto& i : indexed_spans)
         res -= i.size;
     return res;
 }
@@ -96,7 +100,8 @@ void AppendCheckBackend::validate(Metadata& md, const types::source::Blob& sourc
 State AppendCheckBackend::check_source(const types::source::Blob& source)
 {
     if (source.filename != segment.relpath())
-        throw std::runtime_error("metadata to validate does not appear to be from this segment");
+        throw std::runtime_error(
+            "metadata to validate does not appear to be from this segment");
     return State(SEGMENT_OK);
 }
 
@@ -106,17 +111,19 @@ State AppendCheckBackend::check_contiguous()
 
     // List of data (offset, size) sorted by offset, to detect overlaps
     std::vector<Span> spans;
-    for (const auto& md: mds)
+    for (const auto& md : mds)
     {
         const types::source::Blob& source = md->sourceBlob();
-        State state = check_source(source);
+        State state                       = check_source(source);
         if (!state.is_ok())
             return state;
 
         if (!dirty && !spans.empty() && source.offset < spans.back().offset)
         {
             stringstream out;
-            out << "item at offset " << source.offset << " is wrongly ordered before item at offset " << spans.back().offset;
+            out << "item at offset " << source.offset
+                << " is wrongly ordered before item at offset "
+                << spans.back().offset;
             reporter(out.str());
             dirty = true;
         }
@@ -125,22 +132,27 @@ State AppendCheckBackend::check_contiguous()
     std::sort(spans.begin(), spans.end());
 
     // Check for overlaps
-    for (const auto& i: spans)
+    for (const auto& i : spans)
     {
         size_t start = actual_start(i.offset, i.size);
 
-        // If an item begins after the end of another, they overlap and the file needs rescanning
+        // If an item begins after the end of another, they overlap and the file
+        // needs rescanning
         if (start < end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << start << " overlaps with the previous items that ends at offset " << end_of_known_data;
+            out << "item at offset " << start
+                << " overlaps with the previous items that ends at offset "
+                << end_of_known_data;
             reporter(out.str());
             return State(SEGMENT_CORRUPTED);
         }
         else if (!dirty && start > end_of_known_data)
         {
             stringstream out;
-            out << "item at offset " << start << " begins past the end of the previous item (offset " << end_of_known_data << ")";
+            out << "item at offset " << start
+                << " begins past the end of the previous item (offset "
+                << end_of_known_data << ")";
             reporter(out.str());
             dirty = true;
         }
@@ -153,7 +165,8 @@ State AppendCheckBackend::check_contiguous()
     if (unindexed_size > 0)
     {
         std::stringstream out;
-        out << "deleted/duplicated/replaced data found: " << unindexed_size << "b would be freed by a repack";
+        out << "deleted/duplicated/replaced data found: " << unindexed_size
+            << "b would be freed by a repack";
         reporter(out.str());
     }
 
@@ -162,7 +175,9 @@ State AppendCheckBackend::check_contiguous()
     if (end < end_of_known_data)
     {
         stringstream ss;
-        ss << "file looks truncated: data ends at offset " << end << " but it is supposed to extend until " << end_of_known_data << " bytes";
+        ss << "file looks truncated: data ends at offset " << end
+           << " but it is supposed to extend until " << end_of_known_data
+           << " bytes";
         reporter(ss.str());
         return State(SEGMENT_CORRUPTED);
     }
@@ -181,22 +196,26 @@ State AppendCheckBackend::validate_data()
     if (mds.empty())
         return State(SEGMENT_OK);
 
-    validator = &arki::scan::Validator::by_format(mds[0].source().format);
+    validator  = &arki::scan::Validator::by_format(mds[0].source().format);
     size_t end = offset_end();
 
-    for (const auto& md: mds)
+    for (const auto& md : mds)
     {
         const types::source::Blob& source = md->sourceBlob();
 
         if (actual_end(source.offset, source.size) > end)
         {
-            reporter("data at offset " + std::to_string(source.offset) + " would continue past the end of the segment");
+            reporter("data at offset " + std::to_string(source.offset) +
+                     " would continue past the end of the segment");
             return State(SEGMENT_CORRUPTED);
         }
 
-        try {
+        try
+        {
             validate(*md, source);
-        } catch (std::exception& e) {
+        }
+        catch (std::exception& e)
+        {
             stringstream out;
             out << "validation failed at " << md->source() << ": " << e.what();
             reporter(out.str());
@@ -223,5 +242,5 @@ State AppendCheckBackend::check()
     return State(SEGMENT_OK);
 }
 
-}
-}
+} // namespace segment
+} // namespace arki

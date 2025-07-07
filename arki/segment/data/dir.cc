@@ -1,28 +1,28 @@
 #include "dir.h"
-#include "common.h"
-#include "missing.h"
 #include "arki/exceptions.h"
-#include "arki/stream.h"
+#include "arki/iotrace.h"
 #include "arki/metadata.h"
-#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/data.h"
+#include "arki/nag.h"
+#include "arki/scan.h"
+#include "arki/scan/validator.h"
+#include "arki/stream.h"
 #include "arki/types/source/blob.h"
+#include "arki/utils/accounting.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/scan.h"
-#include "arki/scan/validator.h"
-#include "arki/utils/accounting.h"
-#include "arki/iotrace.h"
-#include "arki/nag.h"
-#include <cerrno>
-#include <cstring>
-#include <cstdint>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/uio.h>
+#include "common.h"
+#include "missing.h"
 #include <algorithm>
+#include <cerrno>
+#include <cstdint>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/uio.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace arki::types;
@@ -38,9 +38,10 @@ struct Creator : public AppendCreator
 {
     std::filesystem::path dest_abspath;
     size_t current_pos = 0;
-    bool hardlink = false;
+    bool hardlink      = false;
 
-    Creator(const Segment& segment, Collection& mds, const std::filesystem::path& dest_abspath)
+    Creator(const Segment& segment, Collection& mds,
+            const std::filesystem::path& dest_abspath)
         : AppendCreator(segment, mds), dest_abspath(dest_abspath)
     {
     }
@@ -52,26 +53,37 @@ struct Creator : public AppendCreator
         if (hardlink)
         {
             const source::Blob& source = md.sourceBlob();
-            res.size = source.size;
-            std::filesystem::path src = source.absolutePathname() / SequenceFile::data_fname(source.offset, segment.format());
-            std::filesystem::path dst = dest_abspath / SequenceFile::data_fname(current_pos, segment.format());
+            res.size                   = source.size;
+            std::filesystem::path src =
+                source.absolutePathname() /
+                SequenceFile::data_fname(source.offset, segment.format());
+            std::filesystem::path dst =
+                dest_abspath /
+                SequenceFile::data_fname(current_pos, segment.format());
 
             if (::link(src.c_str(), dst.c_str()) != 0)
-                throw_system_error("cannot link "s + src.native() + " as " + dst.native());
-        } else {
+                throw_system_error("cannot link "s + src.native() + " as " +
+                                   dst.native());
+        }
+        else
+        {
             const auto& data = md.get_data();
-            res.size = data.size();
+            res.size         = data.size();
             if (validator)
                 validator->validate_data(data);
 
-            sys::File fd(dest_abspath / SequenceFile::data_fname(current_pos, segment.format()),
-                        O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
-            try {
+            sys::File fd(dest_abspath / SequenceFile::data_fname(
+                                            current_pos, segment.format()),
+                         O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+            try
+            {
                 data.write(fd);
                 if (fdatasync(fd) < 0)
                     fd.throw_error("cannot flush write");
                 fd.close();
-            } catch (...) {
+            }
+            catch (...)
+            {
                 unlink(fd.path().c_str());
                 throw;
             }
@@ -97,27 +109,35 @@ struct CheckBackend : public AppendCheckBackend
     std::unique_ptr<struct stat> st;
     dir::Scanner scanner;
 
-    CheckBackend(const Segment& segment, std::function<void(const std::string&)> reporter, const Collection& mds)
+    CheckBackend(const Segment& segment,
+                 std::function<void(const std::string&)> reporter,
+                 const Collection& mds)
         : AppendCheckBackend(reporter, segment, mds), scanner(segment)
     {
     }
 
     void validate(Metadata& md, const types::source::Blob& source) override
     {
-        filesystem::path fname = segment.abspath() / SequenceFile::data_fname(source.offset, segment.format());
+        filesystem::path fname =
+            segment.abspath() /
+            SequenceFile::data_fname(source.offset, segment.format());
         core::File data(fname, O_RDONLY);
         validator->validate_file(data, 0, source.size);
     }
 
-    size_t actual_end(off_t offset, size_t) const override { return offset + 1; }
+    size_t actual_end(off_t offset, size_t) const override
+    {
+        return offset + 1;
+    }
     size_t offset_end() const override { return scanner.max_sequence + 1; }
-    size_t compute_unindexed_space(const std::vector<Span>& indexed_spans) const override
+    size_t compute_unindexed_space(
+        const std::vector<Span>& indexed_spans) const override
     {
         // When this is called, all elements found in the index have already
         // been removed from scanner. We can just then add up what's left of
         // sizes in scanner
         size_t res = 0;
-        for (const auto& i: scanner.on_disk)
+        for (const auto& i : scanner.on_disk)
             res += i.second.size;
         return res;
     }
@@ -128,14 +148,18 @@ struct CheckBackend : public AppendCheckBackend
         if (si == scanner.on_disk.end())
         {
             stringstream ss;
-            ss << "expected file " << source.offset << " not found in the file system";
+            ss << "expected file " << source.offset
+               << " not found in the file system";
             reporter(ss.str());
             return State(SEGMENT_CORRUPTED);
         }
-        if (!(source.size == si->second.size || (segment.format() == DataFormat::VM2 && (source.size + 1 == si->second.size))))
+        if (!(source.size == si->second.size ||
+              (segment.format() == DataFormat::VM2 &&
+               (source.size + 1 == si->second.size))))
         {
             stringstream ss;
-            ss << "expected file " << source.offset << " has size " << si->second.size << " instead of expected " << source.size;
+            ss << "expected file " << source.offset << " has size "
+               << si->second.size << " instead of expected " << source.size;
             reporter(ss.str());
             return State(SEGMENT_CORRUPTED);
         }
@@ -167,7 +191,7 @@ struct CheckBackend : public AppendCheckBackend
 
         scanner.list_files();
 
-        bool dirty = false;
+        bool dirty  = false;
         State state = AppendCheckBackend::check();
         if (!state.is_ok())
         {
@@ -180,24 +204,30 @@ struct CheckBackend : public AppendCheckBackend
         if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
-            out << "sequence file has value " << cur_sequence << " but found files until sequence " << scanner.max_sequence;
+            out << "sequence file has value " << cur_sequence
+                << " but found files until sequence " << scanner.max_sequence;
             reporter(out.str());
             return State(SEGMENT_UNALIGNED);
         }
 
         // Check files on disk that were not accounted for
-        for (const auto& di: scanner.on_disk)
+        for (const auto& di : scanner.on_disk)
         {
             auto scanner = arki::scan::Scanner::get_scanner(segment.format());
-            auto idx = di.first;
+            auto idx     = di.first;
             if (accurate)
             {
-                filesystem::path fname = SequenceFile::data_fname(idx, segment.format());
-                try {
+                filesystem::path fname =
+                    SequenceFile::data_fname(idx, segment.format());
+                try
+                {
                     scanner->scan_singleton(fname);
-                } catch (std::exception& e) {
+                }
+                catch (std::exception& e)
+                {
                     stringstream out;
-                    out << "unexpected data file " << idx << " fails to scan (" << e.what() << ")";
+                    out << "unexpected data file " << idx << " fails to scan ("
+                        << e.what() << ")";
                     reporter(out.str());
                     dirty = true;
                     continue;
@@ -208,7 +238,8 @@ struct CheckBackend : public AppendCheckBackend
         if (!scanner.on_disk.empty())
         {
             stringstream ss;
-            ss << "segment contains " << scanner.on_disk.size() << " file(s) that the index does now know about";
+            ss << "segment contains " << scanner.on_disk.size()
+               << " file(s) that the index does now know about";
             reporter(ss.str());
             dirty = true;
         }
@@ -217,8 +248,7 @@ struct CheckBackend : public AppendCheckBackend
     }
 };
 
-}
-
+} // namespace
 
 const char* Data::type() const { return "dir"; }
 bool Data::single_file() const { return false; }
@@ -237,13 +267,15 @@ bool Data::exists_on_disk() const
      * Just an empty directory is considered not enough, to leave space for
      * implementing different formats of directory-based segments
      */
-    if (!std::filesystem::is_directory(segment().abspath())) return false;
+    if (!std::filesystem::is_directory(segment().abspath()))
+        return false;
     return std::filesystem::exists(segment().abspath() / ".sequence");
 }
 
 bool Data::is_empty() const
 {
-    if (!std::filesystem::is_directory(segment().abspath())) return false;
+    if (!std::filesystem::is_directory(segment().abspath()))
+        return false;
     sys::Path dir(segment().abspath());
 
     // If we just have an empty directory, do not consider it as a valid
@@ -251,8 +283,10 @@ bool Data::is_empty() const
     bool has_sequence = false;
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        if (strcmp(i->d_name, ".") == 0) continue;
-        if (strcmp(i->d_name, "..") == 0) continue;
+        if (strcmp(i->d_name, ".") == 0)
+            continue;
+        if (strcmp(i->d_name, "..") == 0)
+            continue;
         if (strcmp(i->d_name, ".sequence") == 0)
         {
             has_sequence = true;
@@ -266,12 +300,14 @@ bool Data::is_empty() const
 size_t Data::size() const
 {
     std::string ext = "."s + format_name(segment().format());
-    size_t res = 0;
+    size_t res      = 0;
     sys::Path dir(segment().abspath());
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        if (!i.isreg()) continue;
-        if (!str::endswith(i->d_name, ext)) continue;
+        if (!i.isreg())
+            continue;
+        if (!str::endswith(i->d_name, ext))
+            continue;
         struct stat st;
         i.path->fstatat(i->d_name, st);
         res += st.st_size;
@@ -284,32 +320,44 @@ utils::files::PreserveFileTimes Data::preserve_mtime()
     return utils::files::PreserveFileTimes(segment().abspath() / ".sequence");
 }
 
-std::shared_ptr<data::Reader> Data::reader(std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<data::Reader>
+Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 {
-    try {
-        return make_shared<Reader>(static_pointer_cast<const Data>(shared_from_this()), lock);
-    } catch (std::system_error& e) {
+    try
+    {
+        return make_shared<Reader>(
+            static_pointer_cast<const Data>(shared_from_this()), lock);
+    }
+    catch (std::system_error& e)
+    {
         if (e.code() == std::errc::no_such_file_or_directory)
-            return make_shared<arki::segment::data::missing::Reader>(shared_from_this(), lock);
+            return make_shared<arki::segment::data::missing::Reader>(
+                shared_from_this(), lock);
         else
             throw;
     }
 }
-std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig& config) const
+std::shared_ptr<data::Writer>
+Data::writer(const segment::WriterConfig& config) const
 {
     if (session().mock_data)
-        return make_shared<HoleWriter>(config, static_pointer_cast<const Data>(shared_from_this()));
+        return make_shared<HoleWriter>(
+            config, static_pointer_cast<const Data>(shared_from_this()));
     else
-        return make_shared<Writer>(config, static_pointer_cast<const Data>(shared_from_this()));
+        return make_shared<Writer>(
+            config, static_pointer_cast<const Data>(shared_from_this()));
 }
 std::shared_ptr<data::Checker> Data::checker() const
 {
     if (session().mock_data)
-        return make_shared<HoleChecker>(static_pointer_cast<const Data>(shared_from_this()));
+        return make_shared<HoleChecker>(
+            static_pointer_cast<const Data>(shared_from_this()));
     else
-        return make_shared<Checker>(static_pointer_cast<const Data>(shared_from_this()));
+        return make_shared<Checker>(
+            static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker> Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<data::Checker>
+Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(segment, mds, segment.abspath());
     creator.create();
@@ -326,16 +374,15 @@ bool Data::can_store(DataFormat format)
         case DataFormat::ODIMH5:
         case DataFormat::VM2:
         case DataFormat::NETCDF:
-        case DataFormat::JPEG:
-            return true;
-        default:
-            return false;
+        case DataFormat::JPEG:   return true;
+        default:                 return false;
     }
 }
 
-
-Reader::Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock)
-    : BaseReader<Data>(data, lock), dirfd(data->segment().abspath(), O_DIRECTORY)
+Reader::Reader(std::shared_ptr<const Data> data,
+               std::shared_ptr<const core::ReadLock> lock)
+    : BaseReader<Data>(data, lock),
+      dirfd(data->segment().abspath(), O_DIRECTORY)
 {
 }
 
@@ -343,24 +390,28 @@ bool Reader::scan_data(metadata_dest_func dest)
 {
     Scanner scanner(segment());
     scanner.list_files();
-    return scanner.scan(static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
+    return scanner.scan(
+        static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
 }
 
 sys::File Reader::open_src(const types::source::Blob& src)
 {
     char dataname[32];
-    snprintf(dataname, 32, "%06zu.%s", (size_t)src.offset, format_name(segment().format()).c_str());
+    snprintf(dataname, 32, "%06zu.%s", (size_t)src.offset,
+             format_name(segment().format()).c_str());
     int fd = dirfd.openat_ifexists(dataname, O_RDONLY | O_CLOEXEC);
     if (fd == -1)
     {
         stringstream msg;
-        msg << dataname << " does not exist in directory segment " << dirfd.path();
+        msg << dataname << " does not exist in directory segment "
+            << dirfd.path();
         throw std::runtime_error(msg.str());
     }
     sys::File file_fd(fd, dirfd.path() / dataname);
 
     if (posix_fadvise(file_fd, 0, src.size, POSIX_FADV_DONTNEED) != 0)
-        nag::debug("fadvise on %s failed: %s", file_fd.path().c_str(), strerror(errno));
+        nag::debug("fadvise on %s failed: %s", file_fd.path().c_str(),
+                   strerror(errno));
 
     return file_fd;
 }
@@ -376,8 +427,9 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     if ((size_t)res != src.size)
     {
         stringstream msg;
-        msg << "cannot read " << src.size << " bytes of " << src.format << " data from " << segment().abspath() << ":"
-            << src.offset << ": only " << res << "/" << src.size << " bytes have been read";
+        msg << "cannot read " << src.size << " bytes of " << src.format
+            << " data from " << segment().abspath() << ":" << src.offset
+            << ": only " << res << "/" << src.size << " bytes have been read";
         throw std::runtime_error(msg.str());
     }
 
@@ -387,7 +439,8 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
     return buf;
 }
 
-stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
+stream::SendResult Reader::stream(const types::source::Blob& src,
+                                  StreamOutput& out)
 {
     if (src.format == DataFormat::VM2)
         return data::Reader::stream(src, out);
@@ -397,9 +450,9 @@ stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& 
     return out.send_file_segment(file_fd, 0, src.size);
 }
 
-
-template<typename Data>
-BaseWriter<Data>::BaseWriter(const segment::WriterConfig& config, std::shared_ptr<const Data> data)
+template <typename Data>
+BaseWriter<Data>::BaseWriter(const segment::WriterConfig& config,
+                             std::shared_ptr<const Data> data)
     : data::BaseWriter<Data>(config, data), seqfile(data->segment().abspath())
 {
     // Ensure that the directory 'abspath' exists
@@ -411,72 +464,78 @@ BaseWriter<Data>::BaseWriter(const segment::WriterConfig& config, std::shared_pt
         ++current_pos;
 }
 
-template<typename Data>
-BaseWriter<Data>::~BaseWriter()
+template <typename Data> BaseWriter<Data>::~BaseWriter()
 {
-    if (!this->fired) rollback_nothrow();
+    if (!this->fired)
+        rollback_nothrow();
 }
 
-template<typename Data>
-size_t BaseWriter<Data>::next_offset() const
+template <typename Data> size_t BaseWriter<Data>::next_offset() const
 {
     return current_pos;
 }
 
-template<typename Data>
+template <typename Data>
 const types::source::Blob& BaseWriter<Data>::append(Metadata& md)
 {
     this->fired = false;
 
-    File fd(this->segment().abspath() / SequenceFile::data_fname(current_pos, this->segment().format()),
-                O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
-    try {
+    File fd(this->segment().abspath() /
+                SequenceFile::data_fname(current_pos, this->segment().format()),
+            O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+    try
+    {
         write_file(md, fd);
-    } catch (...) {
+    }
+    catch (...)
+    {
         unlink(fd.path().c_str());
         throw;
     }
     written.push_back(fd.path());
     fd.close();
-    pending.emplace_back(this->config, md, source::Blob::create_unlocked(md.source().format, this->segment().root(), this->segment().relpath(), current_pos, md.data_size()));
+    pending.emplace_back(this->config, md,
+                         source::Blob::create_unlocked(
+                             md.source().format, this->segment().root(),
+                             this->segment().relpath(), current_pos,
+                             md.data_size()));
     ++current_pos;
     return *pending.back().new_source;
 }
 
-template<typename Data>
-void BaseWriter<Data>::commit()
+template <typename Data> void BaseWriter<Data>::commit()
 {
-    if (this->fired) return;
+    if (this->fired)
+        return;
     seqfile.write_sequence(current_pos - 1);
-    for (auto& p: pending)
+    for (auto& p : pending)
         p.set_source();
     pending.clear();
     written.clear();
     this->fired = true;
 }
 
-template<typename Data>
-void BaseWriter<Data>::rollback()
+template <typename Data> void BaseWriter<Data>::rollback()
 {
-    if (this->fired) return;
-    for (auto fn: written)
+    if (this->fired)
+        return;
+    for (auto fn : written)
         sys::unlink(fn);
     pending.clear();
     written.clear();
     this->fired = true;
 }
 
-template<typename Data>
-void BaseWriter<Data>::rollback_nothrow() noexcept
+template <typename Data> void BaseWriter<Data>::rollback_nothrow() noexcept
 {
-    if (this->fired) return;
-    for (auto fn: written)
+    if (this->fired)
+        return;
+    for (auto fn : written)
         ::unlink(fn.c_str());
     pending.clear();
     written.clear();
     this->fired = true;
 }
-
 
 void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
@@ -487,22 +546,22 @@ void Writer::write_file(Metadata& md, NamedFileDescriptor& fd)
             fd.throw_error("cannot flush write");
 }
 
-
 void HoleWriter::write_file(Metadata& md, NamedFileDescriptor& fd)
 {
     if (ftruncate(fd, md.data_size()) == -1)
         fd.throw_error("cannot set file size");
 }
 
-
-template<typename Data>
+template <typename Data>
 void BaseChecker<Data>::move_data(std::shared_ptr<const Segment> new_segment)
 {
     std::filesystem::rename(this->segment().abspath(), new_segment->abspath());
 }
 
-template<typename Data>
-bool BaseChecker<Data>::rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest)
+template <typename Data>
+bool BaseChecker<Data>::rescan_data(
+    std::function<void(const std::string&)> reporter,
+    std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest)
 {
     Scanner scanner(this->segment());
 
@@ -516,42 +575,52 @@ bool BaseChecker<Data>::rescan_data(std::function<void(const std::string&)> repo
         if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
-            out << "sequence file value set to " << scanner.max_sequence << " from old value " << cur_sequence << " earlier than files found on disk";
+            out << "sequence file value set to " << scanner.max_sequence
+                << " from old value " << cur_sequence
+                << " earlier than files found on disk";
             reporter(out.str());
             sf.write_sequence(scanner.max_sequence);
         }
     }
 
     auto reader = this->data().reader(lock);
-    return scanner.scan(reporter, static_pointer_cast<data::Reader>(reader), dest);
+    return scanner.scan(reporter, static_pointer_cast<data::Reader>(reader),
+                        dest);
 }
 
-template<typename Data>
-State BaseChecker<Data>::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
+template <typename Data>
+State BaseChecker<Data>::check(std::function<void(const std::string&)> reporter,
+                               const Collection& mds, bool quick)
 {
     CheckBackend checker(this->segment(), reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
 
-template<typename Data>
+template <typename Data>
 void BaseChecker<Data>::validate(Metadata& md, const arki::scan::Validator& v)
 {
-    if (const types::source::Blob* blob = md.has_source_blob()) {
+    if (const types::source::Blob* blob = md.has_source_blob())
+    {
         if (blob->filename != this->segment().relpath())
-            throw std::runtime_error("metadata to validate does not appear to be from this segment");
+            throw std::runtime_error(
+                "metadata to validate does not appear to be from this segment");
 
-        filesystem::path fname = this->segment().abspath() / SequenceFile::data_fname(blob->offset, blob->format);
+        filesystem::path fname =
+            this->segment().abspath() /
+            SequenceFile::data_fname(blob->offset, blob->format);
         sys::File fd(fname, O_RDONLY);
         v.validate_file(fd, 0, blob->size);
         return;
     }
     const auto& data = md.get_data();
-    auto buf = data.read();
-    v.validate_buf(buf.data(), buf.size());  // TODO: add a validate_data that takes the metadata::Data
+    auto buf         = data.read();
+    v.validate_buf(
+        buf.data(),
+        buf.size()); // TODO: add a validate_data that takes the metadata::Data
 }
 
-template<typename Data>
+template <typename Data>
 void BaseChecker<Data>::foreach_datafile(std::function<void(const char*)> f)
 {
     sys::Path dir(this->segment().abspath());
@@ -559,19 +628,21 @@ void BaseChecker<Data>::foreach_datafile(std::function<void(const char*)> f)
     ext += format_name(this->segment().format());
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        if (!i.isreg()) continue;
-        if (strcmp(i->d_name, ".sequence") == 0) continue;
-        if (!str::endswith(i->d_name, ext)) continue;
+        if (!i.isreg())
+            continue;
+        if (strcmp(i->d_name, ".sequence") == 0)
+            continue;
+        if (!str::endswith(i->d_name, ext))
+            continue;
         f(i->d_name);
     }
 }
 
-template<typename Data>
-size_t BaseChecker<Data>::remove()
+template <typename Data> size_t BaseChecker<Data>::remove()
 {
     size_t size = 0;
     foreach_datafile([&](const char* name) {
-            filesystem::path pathname = this->segment().abspath() / name;
+        filesystem::path pathname = this->segment().abspath() / name;
         size += sys::size(pathname);
         sys::unlink(pathname);
     });
@@ -583,8 +654,9 @@ size_t BaseChecker<Data>::remove()
     return size;
 }
 
-template<typename Data>
-core::Pending BaseChecker<Data>::repack(Collection& mds, const RepackConfig& cfg)
+template <typename Data>
+core::Pending BaseChecker<Data>::repack(Collection& mds,
+                                        const RepackConfig& cfg)
 {
     struct Rename : public Transaction
     {
@@ -593,31 +665,41 @@ core::Pending BaseChecker<Data>::repack(Collection& mds, const RepackConfig& cfg
         std::filesystem::path tmppos;
         bool fired;
 
-        Rename(const std::filesystem::path& tmpabspath, const std::filesystem::path& abspath)
-            : tmpabspath(tmpabspath), abspath(abspath), tmppos(sys::with_suffix(abspath, ".pre-repack")), fired(false)
+        Rename(const std::filesystem::path& tmpabspath,
+               const std::filesystem::path& abspath)
+            : tmpabspath(tmpabspath), abspath(abspath),
+              tmppos(sys::with_suffix(abspath, ".pre-repack")), fired(false)
         {
         }
 
         virtual ~Rename()
         {
-            if (!fired) rollback();
+            if (!fired)
+                rollback();
         }
 
         void commit() override
         {
-            if (fired) return;
+            if (fired)
+                return;
 
-            // It is impossible to make this atomic, so we just try to make it as quick as possible
+            // It is impossible to make this atomic, so we just try to make it
+            // as quick as possible
 
-            // Move the old directory inside the temp dir, to free the old directory name
+            // Move the old directory inside the temp dir, to free the old
+            // directory name
             if (rename(abspath.c_str(), tmppos.c_str()))
-                throw_system_error("cannot rename "s + abspath.native() + " to " + tmppos.native());
+                throw_system_error("cannot rename "s + abspath.native() +
+                                   " to " + tmppos.native());
 
             // Rename the data file to its final name
             if (rename(tmpabspath.c_str(), abspath.c_str()) < 0)
-                throw_system_error("cannot rename "s + tmpabspath.native() + " to " + abspath.native()
-                    + " (ATTENTION: please check if you need to rename " + tmppos.native() + " to " + abspath.native()
-                    + " manually to restore it as it was before the repack)");
+                throw_system_error(
+                    "cannot rename "s + tmpabspath.native() + " to " +
+                    abspath.native() +
+                    " (ATTENTION: please check if you need to rename " +
+                    tmppos.native() + " to " + abspath.native() +
+                    " manually to restore it as it was before the repack)");
 
             // Remove the old data
             sys::rmtree(tmppos);
@@ -627,13 +709,18 @@ core::Pending BaseChecker<Data>::repack(Collection& mds, const RepackConfig& cfg
 
         void rollback() override
         {
-            if (fired) return;
+            if (fired)
+                return;
 
             try
             {
                 sys::rmtree(tmpabspath);
-            } catch (std::exception& e) {
-                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabspath.c_str(), e.what());
+            }
+            catch (std::exception& e)
+            {
+                nag::warning("Failed to remove %s while recovering from a "
+                             "failed repack: %s",
+                             tmpabspath.c_str(), e.what());
             }
 
             rename(tmppos.c_str(), abspath.c_str());
@@ -643,13 +730,18 @@ core::Pending BaseChecker<Data>::repack(Collection& mds, const RepackConfig& cfg
 
         void rollback_nothrow() noexcept override
         {
-            if (fired) return;
+            if (fired)
+                return;
 
             try
             {
                 sys::rmtree(tmpabspath);
-            } catch (std::exception& e) {
-                nag::warning("Failed to remove %s while recovering from a failed repack: %s", tmpabspath.c_str(), e.what());
+            }
+            catch (std::exception& e)
+            {
+                nag::warning("Failed to remove %s while recovering from a "
+                             "failed repack: %s",
+                             tmpabspath.c_str(), e.what());
             }
 
             rename(tmppos.c_str(), abspath.c_str());
@@ -658,25 +750,28 @@ core::Pending BaseChecker<Data>::repack(Collection& mds, const RepackConfig& cfg
         }
     };
 
-    filesystem::path tmprelpath = sys::with_suffix(this->segment().relpath(), ".repack");
-    filesystem::path tmpabspath = sys::with_suffix(this->segment().abspath(), ".repack");
+    filesystem::path tmprelpath =
+        sys::with_suffix(this->segment().relpath(), ".repack");
+    filesystem::path tmpabspath =
+        sys::with_suffix(this->segment().abspath(), ".repack");
 
     core::Pending p(new Rename(tmpabspath, this->segment().abspath()));
 
     Creator creator(this->segment(), mds, tmpabspath);
     creator.hardlink = true;
-    creator.validator = &arki::scan::Validator::by_format(this->segment().format());
+    creator.validator =
+        &arki::scan::Validator::by_format(this->segment().format());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
     // will soon be invalidated
-    for (auto& md: mds) md->sourceBlob().unlock();
+    for (auto& md : mds)
+        md->sourceBlob().unlock();
 
     return p;
 }
 
-template<typename Data>
-void BaseChecker<Data>::test_truncate(size_t offset)
+template <typename Data> void BaseChecker<Data>::test_truncate(size_t offset)
 {
     utils::files::PreserveFileTimes pft(this->segment().abspath());
 
@@ -687,8 +782,9 @@ void BaseChecker<Data>::test_truncate(size_t offset)
     });
 }
 
-template<typename Data>
-void BaseChecker<Data>::test_make_hole(Collection& mds, unsigned hole_size, unsigned data_idx)
+template <typename Data>
+void BaseChecker<Data>::test_make_hole(Collection& mds, unsigned hole_size,
+                                       unsigned data_idx)
 {
     SequenceFile seqfile(this->segment().abspath());
     utils::files::PreserveFileTimes pf(seqfile.path());
@@ -700,18 +796,24 @@ void BaseChecker<Data>::test_make_hole(Collection& mds, unsigned hole_size, unsi
     {
         for (unsigned i = 0; i < hole_size; ++i)
         {
-            File fd(this->segment().abspath() / SequenceFile::data_fname(pos, this->segment().format()),
-                O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+            File fd(this->segment().abspath() /
+                        SequenceFile::data_fname(pos, this->segment().format()),
+                    O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
             fd.close();
             ++pos;
         }
-    } else {
+    }
+    else
+    {
         for (int i = mds.size() - 1; i >= (int)data_idx; --i)
         {
             std::unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
             std::filesystem::rename(
-                    source->absolutePathname() / SequenceFile::data_fname(source->offset, source->format),
-                    source->absolutePathname() / SequenceFile::data_fname(source->offset + hole_size, source->format));
+                source->absolutePathname() /
+                    SequenceFile::data_fname(source->offset, source->format),
+                source->absolutePathname() /
+                    SequenceFile::data_fname(source->offset + hole_size,
+                                             source->format));
             source->offset += hole_size;
             mds[i].set_source(std::move(source));
         }
@@ -720,37 +822,43 @@ void BaseChecker<Data>::test_make_hole(Collection& mds, unsigned hole_size, unsi
     seqfile.write_sequence(pos - 1);
 }
 
-template<typename Data>
-void BaseChecker<Data>::test_make_overlap(Collection& mds, unsigned overlap_size, unsigned data_idx)
+template <typename Data>
+void BaseChecker<Data>::test_make_overlap(Collection& mds,
+                                          unsigned overlap_size,
+                                          unsigned data_idx)
 {
     for (unsigned i = data_idx; i < mds.size(); ++i)
     {
         unique_ptr<source::Blob> source(mds[i].sourceBlob().clone());
         std::filesystem::rename(
-                source->absolutePathname() / SequenceFile::data_fname(source->offset, source->format),
-                source->absolutePathname() / SequenceFile::data_fname(source->offset - overlap_size, source->format));
+            source->absolutePathname() /
+                SequenceFile::data_fname(source->offset, source->format),
+            source->absolutePathname() /
+                SequenceFile::data_fname(source->offset - overlap_size,
+                                         source->format));
         source->offset -= overlap_size;
         mds[i].set_source(std::move(source));
     }
 }
 
-template<typename Data>
+template <typename Data>
 void BaseChecker<Data>::test_corrupt(const Collection& mds, unsigned data_idx)
 {
     const auto& s = mds[data_idx].sourceBlob();
-    File fd(s.absolutePathname() / SequenceFile::data_fname(s.offset, s.format), O_WRONLY);
+    File fd(s.absolutePathname() / SequenceFile::data_fname(s.offset, s.format),
+            O_WRONLY);
     fd.write_all_or_throw("\0", 1);
 }
 
-template<typename Data>
+template <typename Data>
 void BaseChecker<Data>::test_touch_contents(time_t timestamp)
 {
     SequenceFile seqfile(this->segment().abspath());
     sys::touch_ifexists(seqfile.path(), timestamp);
 }
 
-
-State HoleChecker::check(std::function<void(const std::string&)> reporter, const Collection& mds, bool quick)
+State HoleChecker::check(std::function<void(const std::string&)> reporter,
+                         const Collection& mds, bool quick)
 {
     // Force quick, since the file contents are fake
     return BaseChecker::check(reporter, mds, true);
@@ -759,11 +867,7 @@ State HoleChecker::check(std::function<void(const std::string&)> reporter, const
 template class BaseWriter<Data>;
 template class BaseChecker<Data>;
 
-
-Scanner::Scanner(const Segment& segment)
-    : segment(segment)
-{
-}
+Scanner::Scanner(const Segment& segment) : segment(segment) {}
 
 void Scanner::list_files()
 {
@@ -772,8 +876,10 @@ void Scanner::list_files()
     ext += format_name(segment.format());
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        if (!i.isreg()) continue;
-        if (!str::endswith(i->d_name, ext)) continue;
+        if (!i.isreg())
+            continue;
+        if (!str::endswith(i->d_name, ext))
+            continue;
         struct stat st;
         i.path->fstatat(i->d_name, st);
         size_t seq = (size_t)strtoul(i->d_name, 0, 10);
@@ -782,7 +888,8 @@ void Scanner::list_files()
     }
 }
 
-bool Scanner::scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest)
+bool Scanner::scan(std::shared_ptr<data::Reader> reader,
+                   metadata_dest_func dest)
 {
     // Scan them one by one
     auto scanner = arki::scan::Scanner::get_scanner(segment.format());
@@ -797,18 +904,24 @@ bool Scanner::scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest
     return true;
 }
 
-bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared_ptr<data::Reader> reader, metadata_dest_func dest)
+bool Scanner::scan(std::function<void(const std::string&)> reporter,
+                   std::shared_ptr<data::Reader> reader,
+                   metadata_dest_func dest)
 {
     // Scan them one by one
     auto scanner = arki::scan::Scanner::get_scanner(segment.format());
     for (const auto& fi : on_disk)
     {
         std::shared_ptr<Metadata> md;
-        try {
+        try
+        {
             md = scanner->scan_singleton(segment.abspath() / fi.second.fname);
-        } catch (std::exception& e) {
+        }
+        catch (std::exception& e)
+        {
             stringstream out;
-            out << "data file " << fi.second.fname << " fails to scan (" << e.what() << ")";
+            out << "data file " << fi.second.fname << " fails to scan ("
+                << e.what() << ")";
             reporter(out.str());
             continue;
         }
@@ -820,5 +933,5 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter, std::shared
     return true;
 }
 
-}
+} // namespace arki::segment::data::dir
 #include "base.tcc"

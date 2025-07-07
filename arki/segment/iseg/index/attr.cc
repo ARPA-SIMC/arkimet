@@ -1,9 +1,9 @@
 #include "attr.h"
-#include "base.h"
-#include "arki/matcher/utils.h"
 #include "arki/core/binary.h"
-#include "arki/types.h"
+#include "arki/matcher/utils.h"
 #include "arki/metadata.h"
+#include "arki/types.h"
+#include "base.h"
 
 using namespace std;
 using namespace arki;
@@ -34,22 +34,22 @@ int AttrSubIndex::q_select_id(const std::vector<uint8_t>& blob) const
 
 unique_ptr<Type> AttrSubIndex::q_select_one(int id) const
 {
-	if (not m_select_one)
-	{
-		m_select_one = new utils::sqlite::PrecompiledQuery("sel_one", m_db);
-		m_select_one->compile("SELECT data FROM sub_" + name + " where id=?");
-	}
+    if (not m_select_one)
+    {
+        m_select_one = new utils::sqlite::PrecompiledQuery("sel_one", m_db);
+        m_select_one->compile("SELECT data FROM sub_" + name + " where id=?");
+    }
 
-	// Reset the query
-	m_select_one->reset();
-	m_select_one->bind(1, id);
+    // Reset the query
+    m_select_one->reset();
+    m_select_one->bind(1, id);
 
     // Decode every blob and run the matcher on it
     unique_ptr<Type> res;
     while (m_select_one->step())
     {
         const void* buf = m_select_one->fetchBlob(0);
-        int len = m_select_one->fetchBytes(0);
+        int len         = m_select_one->fetchBytes(0);
         core::BinaryDecoder dec((const uint8_t*)buf, len);
         res = types::Type::decodeInner(code, dec);
     }
@@ -71,11 +71,9 @@ int AttrSubIndex::q_insert(const std::vector<uint8_t>& blob)
     return m_db.lastInsertID();
 }
 
-
 AttrSubIndex::AttrSubIndex(utils::sqlite::SQLiteDB& db, types::Code code)
-	: name(types::tag(code)), code(code),
-	  m_db(db), m_select_id(0), m_select_one(0),
-	  m_select_all(0), m_insert(0)
+    : name(types::tag(code)), code(code), m_db(db), m_select_id(0),
+      m_select_one(0), m_select_all(0), m_insert(0)
 {
 }
 
@@ -83,10 +81,14 @@ AttrSubIndex::~AttrSubIndex()
 {
     for (map<int, Type*>::iterator i = m_cache.begin(); i != m_cache.end(); ++i)
         delete i->second;
-    if (m_select_id) delete m_select_id;
-    if (m_select_one) delete m_select_one;
-    if (m_select_all) delete m_select_all;
-    if (m_insert) delete m_insert;
+    if (m_select_id)
+        delete m_select_id;
+    if (m_select_one)
+        delete m_select_one;
+    if (m_select_all)
+        delete m_select_all;
+    if (m_insert)
+        delete m_insert;
 }
 
 void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
@@ -97,7 +99,8 @@ void AttrSubIndex::add_to_cache(int id, const types::Type& item) const
     add_to_cache(id, item, encoded);
 }
 
-void AttrSubIndex::add_to_cache(int id, const types::Type& item, const std::vector<uint8_t>& encoded) const
+void AttrSubIndex::add_to_cache(int id, const types::Type& item,
+                                const std::vector<uint8_t>& encoded) const
 {
     map<int, Type*>::iterator i = m_cache.find(id);
     if (i == m_cache.end())
@@ -113,7 +116,8 @@ void AttrSubIndex::add_to_cache(int id, const types::Type& item, const std::vect
 int AttrSubIndex::id(const Metadata& md) const
 {
     const Type* item = md.get(code);
-    if (!item) return -1;
+    if (!item)
+        return -1;
 
     // Encode the item
     vector<uint8_t> encoded;
@@ -153,20 +157,21 @@ void AttrSubIndex::read(int id, Metadata& md) const
 
 std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 {
-	// Compile the select all query
-	if (not m_select_all)
-	{
-		m_select_all = new utils::sqlite::PrecompiledQuery("sel_all", m_db);
-		m_select_all->compile("SELECT id, data FROM sub_" + name);
-	}
+    // Compile the select all query
+    if (not m_select_all)
+    {
+        m_select_all = new utils::sqlite::PrecompiledQuery("sel_all", m_db);
+        m_select_all->compile("SELECT id, data FROM sub_" + name);
+    }
 
-	std::vector<int> ids;
+    std::vector<int> ids;
 
     // Run the matcher on every blob in the database
     m_select_all->reset();
     while (m_select_all->step())
     {
-        const uint8_t* buf = reinterpret_cast<const uint8_t*>(m_select_all->fetchBlob(1));
+        const uint8_t* buf =
+            reinterpret_cast<const uint8_t*>(m_select_all->fetchBlob(1));
         int len = m_select_all->fetchBytes(1);
         if (m.match_buffer(code, buf, len))
             ids.push_back(m_select_all->fetch<int>(0));
@@ -176,18 +181,20 @@ std::vector<int> AttrSubIndex::query(const matcher::OR& m) const
 
 void AttrSubIndex::initDB()
 {
-	// Create the table
-	std::string query = "CREATE TABLE IF NOT EXISTS sub_" + name + " ("
-		"id INTEGER PRIMARY KEY,"
-		" data BLOB NOT NULL,"
-		" UNIQUE(data))";
-	m_db.exec(query);
+    // Create the table
+    std::string query = "CREATE TABLE IF NOT EXISTS sub_" + name +
+                        " ("
+                        "id INTEGER PRIMARY KEY,"
+                        " data BLOB NOT NULL,"
+                        " UNIQUE(data))";
+    m_db.exec(query);
 }
 
 int AttrSubIndex::insert(const Metadata& md)
 {
     const Type* item = md.get(code);
-    if (!item) return -1;
+    if (!item)
+        return -1;
 
     // Extract the blob to insert
     std::vector<uint8_t> blob;
@@ -209,37 +216,39 @@ int AttrSubIndex::insert(const Metadata& md)
     return id;
 }
 
-
 Attrs::Attrs(utils::sqlite::SQLiteDB& db, const std::set<types::Code>& attrs)
 {
-	// Instantiate subtables
-	for (set<types::Code>::const_iterator i = attrs.begin();
-			i != attrs.end(); ++i)
-	{
-		if (*i == TYPE_REFTIME) continue;
-		m_attrs.push_back(new AttrSubIndex(db, *i));
-	}
+    // Instantiate subtables
+    for (set<types::Code>::const_iterator i = attrs.begin(); i != attrs.end();
+         ++i)
+    {
+        if (*i == TYPE_REFTIME)
+            continue;
+        m_attrs.push_back(new AttrSubIndex(db, *i));
+    }
 }
 
 Attrs::~Attrs()
 {
-	for (std::vector<AttrSubIndex*>::iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
-		delete *i;
+    for (std::vector<AttrSubIndex*>::iterator i = m_attrs.begin();
+         i != m_attrs.end(); ++i)
+        delete *i;
 }
 
 void Attrs::initDB()
 {
-	for (std::vector<AttrSubIndex*>::iterator i = m_attrs.begin(); i != m_attrs.end(); ++i)
-		(*i)->initDB();
+    for (std::vector<AttrSubIndex*>::iterator i = m_attrs.begin();
+         i != m_attrs.end(); ++i)
+        (*i)->initDB();
 }
 
 std::vector<int> Attrs::obtainIDs(const Metadata& md) const
 {
-	vector<int> ids;
-	ids.reserve(m_attrs.size());
-	for (const_iterator i = begin(); i != end(); ++i)
-		ids.push_back((*i)->insert(md));
-	return ids;
+    vector<int> ids;
+    ids.reserve(m_attrs.size());
+    for (const_iterator i = begin(); i != end(); ++i)
+        ids.push_back((*i)->insert(md));
+    return ids;
 }
 
-}
+} // namespace arki::segment::iseg::index

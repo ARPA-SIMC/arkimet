@@ -1,10 +1,9 @@
 #include "data.h"
-#include "arki/structured/emitter.h"
-#include "arki/stream.h"
-#include "arki/exceptions.h"
 #include "arki/core/file.h"
+#include "arki/exceptions.h"
+#include "arki/stream.h"
+#include "arki/structured/emitter.h"
 #include <sys/uio.h>
-
 
 namespace arki {
 namespace metadata {
@@ -42,7 +41,6 @@ struct DataUnreadable : public Data
     }
 };
 
-
 struct DataBuffer : public Data
 {
     std::vector<uint8_t> buffer;
@@ -50,10 +48,7 @@ struct DataBuffer : public Data
     DataBuffer(std::vector<uint8_t>&& buffer) : buffer(std::move(buffer)) {}
 
     size_t size() const override { return buffer.size(); }
-    std::vector<uint8_t> read() const override
-    {
-        return buffer;
-    }
+    std::vector<uint8_t> read() const override { return buffer; }
     size_t write(core::NamedFileDescriptor& fd) const override
     {
         fd.write_all_or_retry(buffer.data(), buffer.size());
@@ -72,12 +67,8 @@ struct DataBuffer : public Data
     {
         return out.send_buffer(buffer.data(), buffer.size());
     }
-    void emit(structured::Emitter& e) const override
-    {
-        e.add_raw(buffer);
-    }
+    void emit(structured::Emitter& e) const override { e.add_raw(buffer); }
 };
-
 
 struct DataLineBuffer : public DataBuffer
 {
@@ -86,12 +77,13 @@ struct DataLineBuffer : public DataBuffer
     size_t write(core::NamedFileDescriptor& fd) const override
     {
         struct iovec todo[2] = {
-            { const_cast<uint8_t*>(buffer.data()), buffer.size() },
-            { const_cast<char*>("\n"), 1 },
+            {const_cast<uint8_t*>(buffer.data()), buffer.size()},
+            {const_cast<char*>("\n"),             1            },
         };
         ssize_t res = ::writev(fd, todo, 2);
         if (res < 0 || (unsigned)res != buffer.size() + 1)
-            throw_system_error(errno, "cannot write ", (buffer.size() + 1), " bytes to ", fd.path());
+            throw_system_error(errno, "cannot write ", (buffer.size() + 1),
+                               " bytes to ", fd.path());
         return buffer.size() + 1;
     }
     stream::SendResult write(StreamOutput& out) const override
@@ -100,17 +92,12 @@ struct DataLineBuffer : public DataBuffer
     }
 };
 
-
-TrackedData::TrackedData(DataManager& manager)
-    : manager(manager)
+TrackedData::TrackedData(DataManager& manager) : manager(manager)
 {
     manager.start_tracking(this);
 }
 
-TrackedData::~TrackedData()
-{
-    manager.stop_tracking(this);
-}
+TrackedData::~TrackedData() { manager.stop_tracking(this); }
 
 void TrackedData::track(std::shared_ptr<Data> data)
 {
@@ -123,12 +110,11 @@ void TrackedData::track(std::shared_ptr<Data> data)
 unsigned TrackedData::count_used() const
 {
     unsigned res = 0;
-    for (const auto& t: tracked)
+    for (const auto& t : tracked)
         if (!t.expired())
             ++res;
     return res;
 }
-
 
 void DataManager::start_tracking(TrackedData* tracker)
 {
@@ -140,7 +126,8 @@ void DataManager::stop_tracking(TrackedData* tracker)
     trackers.remove(tracker);
 }
 
-std::shared_ptr<Data> DataManager::to_data(DataFormat format, std::vector<uint8_t>&& data)
+std::shared_ptr<Data> DataManager::to_data(DataFormat format,
+                                           std::vector<uint8_t>&& data)
 {
     std::shared_ptr<Data> res;
 
@@ -149,7 +136,7 @@ std::shared_ptr<Data> DataManager::to_data(DataFormat format, std::vector<uint8_
     else
         res = std::make_shared<DataBuffer>(std::move(data));
 
-    for (auto& tracker: trackers)
+    for (auto& tracker : trackers)
         tracker->track(res);
 
     return res;
@@ -159,7 +146,7 @@ std::shared_ptr<Data> DataManager::to_unreadable_data(size_t size)
 {
     std::shared_ptr<Data> res = std::make_shared<DataUnreadable>(size);
 
-    for (auto& tracker: trackers)
+    for (auto& tracker : trackers)
         tracker->track(res);
 
     return res;
@@ -167,11 +154,7 @@ std::shared_ptr<Data> DataManager::to_unreadable_data(size_t size)
 
 static DataManager data_tracker;
 
-DataManager& DataManager::get()
-{
-    return data_tracker;
-}
+DataManager& DataManager::get() { return data_tracker; }
 
-
-}
-}
+} // namespace metadata
+} // namespace arki

@@ -1,16 +1,16 @@
 #include "arki/dataset/http.h"
-#include "arki/query.h"
-#include "arki/query/progress.h"
+#include "arki/core/binary.h"
 #include "arki/core/file.h"
 #include "arki/core/time.h"
-#include "arki/stream.h"
-#include "arki/metadata/stream.h"
-#include "arki/metadata/sort.h"
 #include "arki/matcher.h"
+#include "arki/metadata/sort.h"
+#include "arki/metadata/stream.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
+#include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/core/binary.h"
 #include <cstdlib>
 #include <sstream>
 
@@ -22,17 +22,17 @@ namespace dataset {
 
 namespace http {
 
-
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Dataset(session, cfg),
-      baseurl(cfg.value("path")),
+Dataset::Dataset(std::shared_ptr<Session> session,
+                 const core::cfg::Section& cfg)
+    : dataset::Dataset(session, cfg), baseurl(cfg.value("path")),
       qmacro(cfg.value("qmacro"))
 {
 }
 
 std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    return std::make_shared<Reader>(std::static_pointer_cast<Dataset>(shared_from_this()));
+    return std::make_shared<Reader>(
+        std::static_pointer_cast<Dataset>(shared_from_this()));
 }
 
 std::string Reader::type() const { return "http"; }
@@ -49,14 +49,17 @@ struct StreamState : public core::curl::Request
 
     void perform() override
     {
-        if (progress) progress->start();
+        if (progress)
+            progress->start();
         Request::perform();
     }
 
-    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
+    size_t process_body_chunk(void* ptr, size_t size, size_t nmemb,
+                              void* stream) override
     {
         out.send_buffer(ptr, size * nmemb);
-        if (progress) progress->update(0, size * nmemb);
+        if (progress)
+            progress->update(0, size * nmemb);
         return size * nmemb;
     }
 };
@@ -65,19 +68,22 @@ struct MDStreamState : public core::curl::Request
 {
     metadata::Stream mdc;
 
-    MDStreamState(core::curl::CurlEasy& curl, metadata_dest_func dest, const std::string& baseurl)
+    MDStreamState(core::curl::CurlEasy& curl, metadata_dest_func dest,
+                  const std::string& baseurl)
         : Request(curl), mdc(dest, baseurl)
     {
     }
 
-    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
+    size_t process_body_chunk(void* ptr, size_t size, size_t nmemb,
+                              void* stream) override
     {
         mdc.readData(ptr, size * nmemb);
         return size * nmemb;
     }
 };
 
-void Reader::set_post_query(core::curl::Request& request, const std::string& query)
+void Reader::set_post_query(core::curl::Request& request,
+                            const std::string& query)
 {
     if (dataset().qmacro.empty())
         request.post_data.add_string("query", query);
@@ -143,8 +149,10 @@ void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
         unsigned count = 0;
         // Split by ':'
         str::Split splitter(toupload, ":");
-        for (str::Split::const_iterator i = splitter.begin(); i != splitter.end(); ++i)
-            request.post_data.add_file("postprocfile" + std::to_string(++count), *i);
+        for (str::Split::const_iterator i = splitter.begin();
+             i != splitter.end(); ++i)
+            request.post_data.add_file("postprocfile" + std::to_string(++count),
+                                       *i);
     }
     switch (q.type)
     {
@@ -157,20 +165,24 @@ void Reader::impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out)
             break;
         default: {
             std::stringstream ss;
-            ss << "cannot query dataset: unsupported query type: " << (int)q.type;
+            ss << "cannot query dataset: unsupported query type: "
+               << (int)q.type;
             throw std::runtime_error(ss.str());
         }
     }
     request.perform();
-    if (q.progress) q.progress->done();
+    if (q.progress)
+        q.progress->done();
 }
 
 core::Interval Reader::get_stored_time_interval()
 {
-    throw std::runtime_error("http::Reader::get_stored_time_interval not yet implemented");
+    throw std::runtime_error(
+        "http::Reader::get_stored_time_interval not yet implemented");
 }
 
-std::shared_ptr<core::cfg::Sections> Reader::load_cfg_sections(const std::string& path)
+std::shared_ptr<core::cfg::Sections>
+Reader::load_cfg_sections(const std::string& path)
 {
     using namespace http;
 
@@ -183,12 +195,13 @@ std::shared_ptr<core::cfg::Sections> Reader::load_cfg_sections(const std::string
 
     auto res = core::cfg::Sections::parse(request.buf, request.url);
     // Make sure name=* is present in each section
-    for (auto& si: *res)
+    for (auto& si : *res)
         si.second->set("name", si.first);
     return res;
 }
 
-std::shared_ptr<core::cfg::Section> Reader::load_cfg_section(const std::string& path)
+std::shared_ptr<core::cfg::Section>
+Reader::load_cfg_section(const std::string& path)
 {
     using namespace http;
 
@@ -201,14 +214,18 @@ std::shared_ptr<core::cfg::Section> Reader::load_cfg_section(const std::string& 
 
     auto sections = core::cfg::Sections::parse(request.buf, request.url);
     if (sections->size() != 1)
-        throw std::runtime_error(request.url + ": only 1 section expected in resulting configuration, found " + std::to_string(sections->size()));
+        throw std::runtime_error(
+            request.url +
+            ": only 1 section expected in resulting configuration, found " +
+            std::to_string(sections->size()));
 
     auto res = sections->begin()->second;
     res->set("name", sections->begin()->first);
     return res;
 }
 
-std::string Reader::expandMatcher(const std::string& matcher, const std::string& server)
+std::string Reader::expandMatcher(const std::string& matcher,
+                                  const std::string& server)
 {
     using namespace http;
 
@@ -224,7 +241,6 @@ std::string Reader::expandMatcher(const std::string& matcher, const std::string&
     return str::strip(request.buf);
 }
 
-
-}
-}
-}
+} // namespace http
+} // namespace dataset
+} // namespace arki

@@ -1,6 +1,6 @@
 #include "base.h"
-#include "arki/utils/string.h"
 #include "arki/types.h"
+#include "arki/utils/string.h"
 #include <sstream>
 
 using namespace std;
@@ -21,8 +21,8 @@ std::string fmtin(const std::vector<int>& vals)
     else
     {
         res << "IN(";
-        for (std::vector<int>::const_iterator i = vals.begin();
-                i != vals.end(); ++i)
+        for (std::vector<int>::const_iterator i = vals.begin(); i != vals.end();
+             ++i)
             if (i == vals.begin())
                 res << *i;
             else
@@ -32,4 +32,4 @@ std::string fmtin(const std::vector<int>& vals)
     return res.str();
 }
 
-}
+} // namespace arki::segment::iseg::index

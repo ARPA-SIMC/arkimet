@@ -1,12 +1,12 @@
 #include "reader.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/simple/manifest.h"
+#include "arki/metadata.h"
+#include "arki/metadata/sort.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
-#include "arki/metadata.h"
-#include "arki/metadata/sort.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
 
@@ -36,9 +36,13 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     auto segmentinfos = manifest.file_list(q.matcher);
 
     // segmentinfos is sorted by relpath: resort by time
-    std::sort(segmentinfos.begin(), segmentinfos.end(), [](const auto& a, const auto& b) { return a.time.begin < b.time.begin; });
+    std::sort(segmentinfos.begin(), segmentinfos.end(),
+              [](const auto& a, const auto& b) {
+                  return a.time.begin < b.time.begin;
+              });
 
-    // TODO: do we need to sort individual results, or can we rely on checker to warn if
+    // TODO: do we need to sort individual results, or can we rely on checker to
+    // warn if
     //       segments overlap or if a segment is not sorted?
     //       (note that a segment not being sorted can be common; however
     //       if they don't overlap then we can just sort metadata on a
@@ -58,13 +62,13 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
         compare = metadata::sort::Compare::parse("reftime");
 
     metadata::sort::Stream sorter(*compare, dest);
-    for (const auto& segmentinfo: segmentinfos)
+    for (const auto& segmentinfo : segmentinfos)
     {
-        auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
+        auto segment = dataset().segment_session->segment_from_relpath(
+            segmentinfo.relpath);
         auto reader = segment->reader(lock);
-        reader->query_data(q, [&](std::shared_ptr<Metadata> md) {
-            return sorter.add(md);
-        });
+        reader->query_data(
+            q, [&](std::shared_ptr<Metadata> md) { return sorter.add(md); });
         if (!sorter.flush())
             return track.done(false);
     }
@@ -72,13 +76,16 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
     return track.done(true);
 }
 
-void Reader::query_segments_for_summary(const Matcher& matcher, Summary& summary, std::shared_ptr<core::ReadLock> lock)
+void Reader::query_segments_for_summary(const Matcher& matcher,
+                                        Summary& summary,
+                                        std::shared_ptr<core::ReadLock> lock)
 {
     manifest.reread();
     auto segmentinfos = manifest.file_list(matcher);
-    for (const auto& segmentinfo: segmentinfos)
+    for (const auto& segmentinfo : segmentinfos)
     {
-        auto segment = dataset().segment_session->segment_from_relpath(segmentinfo.relpath);
+        auto segment = dataset().segment_session->segment_from_relpath(
+            segmentinfo.relpath);
         auto reader = segment->reader(lock);
         reader->query_summary(matcher, summary);
     }
@@ -91,7 +98,8 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     // Query the archives first
     local::Reader::impl_query_summary(matcher, summary);
 
-    // If the matcher discriminates on reference times, query the individual segments
+    // If the matcher discriminates on reference times, query the individual
+    // segments
     if (matcher.get(TYPE_REFTIME))
     {
         query_segments_for_summary(matcher, summary, lock);
@@ -107,7 +115,9 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         Summary s;
         s.read_file(cache_pathname);
         s.filter(matcher, summary);
-    } else if (sys::access(dataset().path, W_OK)) {
+    }
+    else if (sys::access(dataset().path, W_OK))
+    {
         // Rebuild the cache
         Summary s;
         query_segments_for_summary(Matcher(), s, lock);
@@ -118,7 +128,8 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         // Query the newly generated summary that we still have
         // in memory
         s.filter(matcher, summary);
-    } else
+    }
+    else
         query_segments_for_summary(matcher, summary, lock);
 }
 
@@ -129,9 +140,7 @@ Reader::Reader(std::shared_ptr<simple::Dataset> dataset)
     std::filesystem::create_directories(dataset->path);
 }
 
-Reader::~Reader()
-{
-}
+Reader::~Reader() {}
 
 std::string Reader::type() const { return "simple"; }
 
@@ -147,4 +156,4 @@ core::Interval Reader::get_stored_time_interval()
     return manifest.get_stored_time_interval();
 }
 
-}
+} // namespace arki::dataset::simple

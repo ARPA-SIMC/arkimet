@@ -34,7 +34,6 @@ struct DispatchResults
     /// Count of metadata not imported at all
     unsigned not_imported = 0;
 
-
     DispatchResults();
 
     /// Notify the end of processing for this source
@@ -47,8 +46,8 @@ struct DispatchResults
     bool success(bool ignore_duplicates) const;
 };
 
-}
-}
-}
+} // namespace arki_scan
+} // namespace python
+} // namespace arki
 
 #endif

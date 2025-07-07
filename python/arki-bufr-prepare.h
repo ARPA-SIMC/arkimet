@@ -7,16 +7,16 @@
 
 extern "C" {
 
-typedef struct {
+typedef struct
+{
     PyObject_HEAD
 } arkipy_ArkiBUFRPrepare;
 
 extern PyTypeObject* arkipy_ArkiBUFRPrepare_Type;
 
-#define arkipy_ArkiBUFRPrepare_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_ArkiBUFRPrepare_Type || \
+#define arkipy_ArkiBUFRPrepare_Check(ob)                                       \
+    (Py_TYPE(ob) == &arkipy_ArkiBUFRPrepare_Type ||                            \
      PyType_IsSubtype(Py_TYPE(ob), &arkipy_ArkiBUFRPrepare_Type))
-
 }
 
 namespace arki {
@@ -25,6 +25,6 @@ namespace python {
 void register_arki_bufr_prepare(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

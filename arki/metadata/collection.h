@@ -3,17 +3,17 @@
 
 /// In-memory collection of metadata
 
-#include <arki/defs.h>
 #include <arki/core/fwd.h>
-#include <arki/types/fwd.h>
 #include <arki/dataset/fwd.h>
+#include <arki/defs.h>
 #include <arki/metadata/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/stream/fwd.h>
-#include <vector>
+#include <arki/types/fwd.h>
 #include <filesystem>
-#include <string>
 #include <set>
+#include <string>
+#include <vector>
 
 namespace arki {
 class Summary;
@@ -23,16 +23,17 @@ namespace metadata {
 /**
  * Consumer that collects all metadata into a vector
  */
-// TODO: turn this into a clean vector of shared_ptrs, without the extra dereferencing on indexing
+// TODO: turn this into a clean vector of shared_ptrs, without the extra
+// dereferencing on indexing
 class Collection
 {
 protected:
     std::vector<std::shared_ptr<Metadata>> vals;
 
 public:
-    Collection() = default;
+    Collection()                    = default;
     Collection(const Collection& o) = default;
-    Collection(Collection&& o) = default;
+    Collection(Collection&& o)      = default;
     /// Construct a collection filled by the results of query_data
     Collection(dataset::Dataset& ds, const query::Data& q);
     Collection(dataset::Dataset& ds, const std::string& q);
@@ -41,7 +42,7 @@ public:
     ~Collection();
 
     Collection& operator=(const Collection& o) = default;
-    Collection& operator=(Collection&& o) = default;
+    Collection& operator=(Collection&& o)      = default;
 
     bool operator==(const Collection& o) const;
 
@@ -50,7 +51,10 @@ public:
     size_t size() const { return vals.size(); }
     /// Remove the last element
     void pop_back() { vals.pop_back(); }
-    void swap(unsigned idx1, unsigned idx2) { std::swap(vals[idx1], vals[idx2]); }
+    void swap(unsigned idx1, unsigned idx2)
+    {
+        std::swap(vals[idx1], vals[idx2]);
+    }
     void replace(unsigned idx, std::shared_ptr<Metadata> md) { vals[idx] = md; }
     std::shared_ptr<Metadata> get(unsigned idx) const { return vals[idx]; }
 
@@ -60,8 +64,10 @@ public:
     /// Append a copy of md
     void push_back(const Metadata& md);
 
-    // TODO: make an iterator adapter that iterates on Metadata references, to make the interface consistent
-    typedef std::vector<std::shared_ptr<Metadata>>::const_iterator const_iterator;
+    // TODO: make an iterator adapter that iterates on Metadata references, to
+    // make the interface consistent
+    typedef std::vector<std::shared_ptr<Metadata>>::const_iterator
+        const_iterator;
     typedef std::vector<std::shared_ptr<Metadata>>::iterator iterator;
     const_iterator begin() const { return vals.begin(); }
     const_iterator end() const { return vals.end(); }
@@ -100,7 +106,7 @@ public:
     void add(dataset::Reader& reader, const std::string& q);
 
     /// Append md
-    void acquire(std::shared_ptr<Metadata> md, bool with_data=false);
+    void acquire(std::shared_ptr<Metadata> md, bool with_data = false);
 
     /**
      * Write all the metadata to a file, atomically
@@ -112,7 +118,8 @@ public:
      *
      * The file timestamp is left unchanged.
      */
-    void writeAtomicallyPreservingTimestamp(const std::filesystem::path& fname) const;
+    void writeAtomicallyPreservingTimestamp(
+        const std::filesystem::path& fname) const;
 
     /**
      * Append all metadata to the given file
@@ -155,12 +162,13 @@ public:
      *
      * @returns the data file name
      */
-    std::filesystem::path ensureContiguousData(const std::string& source = std::string("metadata")) const;
+    std::filesystem::path ensureContiguousData(
+        const std::string& source = std::string("metadata")) const;
 
     /// Sort with the given order
     void sort(const sort::Compare& cmp);
     void sort(const std::string& cmp);
-    void sort(); // Sort by reftime
+    void sort();         // Sort by reftime
     void sort_segment(); // Sort by reftime and offset
 
     /**
@@ -186,7 +194,8 @@ public:
      * All data for which the metadata items listed in \a unique_components are
      * the same will be removed from the result, except for the last one.
      */
-    Collection without_duplicates(const std::set<types::Code>& unique_components) const;
+    Collection
+    without_duplicates(const std::set<types::Code>& unique_components) const;
 
     /**
      * Return a copy of this collection without the data at the given offsets.
@@ -196,7 +205,8 @@ public:
     /**
      * Print the contents of the collection
      */
-    void dump(FILE* out, const std::set<types::Code>& extra_items = std::set<types::Code>()) const;
+    void dump(FILE* out, const std::set<types::Code>& extra_items =
+                             std::set<types::Code>()) const;
 };
 
 struct TestCollection : public Collection
@@ -209,7 +219,7 @@ struct TestCollection : public Collection
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    TestCollection(const std::filesystem::path& path, bool with_data=false);
+    TestCollection(const std::filesystem::path& path, bool with_data = false);
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
@@ -217,9 +227,10 @@ struct TestCollection : public Collection
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any
-    void scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data);
+    void scan_from_file(const std::filesystem::path& path, DataFormat format,
+                        bool with_data);
 };
 
-}
-}
+} // namespace metadata
+} // namespace arki
 #endif

@@ -1,13 +1,13 @@
-#include "arki/types/tests.h"
-#include "itemset.h"
-#include "arki/types/origin.h"
-#include "arki/types/product.h"
-#include "arki/types/level.h"
-#include "arki/types/timerange.h"
-#include "arki/types/reftime.h"
 #include "arki/types/area.h"
+#include "arki/types/level.h"
+#include "arki/types/origin.h"
 #include "arki/types/proddef.h"
+#include "arki/types/product.h"
+#include "arki/types/reftime.h"
+#include "arki/types/tests.h"
+#include "arki/types/timerange.h"
 #include "arki/types/values.h"
+#include "itemset.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -26,7 +26,9 @@ struct Fixture : public arki::utils::tests::Fixture
     {
         using namespace arki::types::values;
         // 100663295 == 0x5ffffff
-        testValues = ValueBag::parse("foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", cippo=\"\"");
+        testValues = ValueBag::parse(
+            "foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, "
+            "supercazzola=-1234567, pippo=pippo, pluto=\"12\", cippo=\"\"");
     }
 
     void fill(ItemSet& md)
@@ -48,8 +50,9 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 } tests("arki_itemset");
 
-template<typename T>
-static inline void test_basic_itemset_ops(const std::string& vlower, const std::string& vhigher)
+template <typename T>
+static inline void test_basic_itemset_ops(const std::string& vlower,
+                                          const std::string& vhigher)
 {
     types::Code code = types::traits<T>::type_code;
     ItemSet md;
@@ -111,22 +114,25 @@ static inline void test_basic_itemset_ops(const std::string& vlower, const std::
     wassert(actual(md.has(code)).isfalse());
 }
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-/*
- * It looks like most of these tests are just testing if std::set and
- * std::vector work.
- *
- * I thought about removing them, but then I relised that they're in fact
- * testing if all our metadata items work properly inside stl containers, so I
- * decided to keep them.
- */
+    /*
+     * It looks like most of these tests are just testing if std::set and
+     * std::vector work.
+     *
+     * I thought about removing them, but then I relised that they're in fact
+     * testing if all our metadata items work properly inside stl containers, so
+     * I decided to keep them.
+     */
 
-// Test with several item types
-add_method("basic_ops", [](Fixture& f) {
-    wassert(test_basic_itemset_ops<Origin>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
-    wassert(test_basic_itemset_ops<Origin>("BUFR(1, 2)", "BUFR(2, 3)"));
-    wassert(test_basic_itemset_ops<Reftime>("2006-05-04T03:02:01Z", "2008-07-06T05:04:03"));
+    // Test with several item types
+    add_method("basic_ops", [](Fixture& f) {
+        wassert(
+            test_basic_itemset_ops<Origin>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
+        wassert(test_basic_itemset_ops<Origin>("BUFR(1, 2)", "BUFR(2, 3)"));
+        wassert(test_basic_itemset_ops<Reftime>("2006-05-04T03:02:01Z",
+                                                "2008-07-06T05:04:03"));
 #if 0
 	// Test PERIOD reference times
 	md.reftime.set(Time(2007, 6, 5, 4, 3, 2), Time(2008, 7, 6, 5, 4, 3));
@@ -153,11 +159,15 @@ add_method("basic_ops", [](Fixture& f) {
 	ensure_equals(tend, Time());
 #endif
 #endif
-    wassert(test_basic_itemset_ops<Product>("GRIB1(1, 2, 3)", "GRIB1(2, 3, 4)"));
-    wassert(test_basic_itemset_ops<Product>("BUFR(1, 2, 3, name=antani)", "BUFR(1, 2, 3, name=blinda)"));
-    wassert(test_basic_itemset_ops<Level>("GRIB1(114, 260, 123)", "GRIB1(120,280,123)"));
-    wassert(test_basic_itemset_ops<Timerange>("GRIB1(1)", "GRIB1(2, 3y, 4y)"));
-});
+        wassert(test_basic_itemset_ops<Product>("GRIB1(1, 2, 3)",
+                                                "GRIB1(2, 3, 4)"));
+        wassert(test_basic_itemset_ops<Product>("BUFR(1, 2, 3, name=antani)",
+                                                "BUFR(1, 2, 3, name=blinda)"));
+        wassert(test_basic_itemset_ops<Level>("GRIB1(114, 260, 123)",
+                                              "GRIB1(120,280,123)"));
+        wassert(
+            test_basic_itemset_ops<Timerange>("GRIB1(1)", "GRIB1(2, 3y, 4y)"));
+    });
 
 #if 0
 // Test areas
@@ -226,7 +236,6 @@ def_test(12)
 	ensure_equals(compareMaps(b, a), -1);
 }
 #endif
-
 }
 
-}
+} // namespace

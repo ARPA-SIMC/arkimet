@@ -2,8 +2,8 @@
 #define ARKI_MATCHER_REFTIME_PARSER_H
 
 #include <arki/core/fwd.h>
-#include <string>
 #include <ctime>
+#include <string>
 #include <vector>
 
 namespace arki {
@@ -14,11 +14,11 @@ class DTMatch
 {
 public:
     virtual ~DTMatch() {}
-    virtual DTMatch* clone() const = 0;
-    virtual bool match(const core::Time& tt) const = 0;
+    virtual DTMatch* clone() const                           = 0;
+    virtual bool match(const core::Time& tt) const           = 0;
     virtual bool match(const core::Interval& interval) const = 0;
     virtual std::string sql(const std::string& column) const = 0;
-    virtual std::string toString() const = 0;
+    virtual std::string toString() const                     = 0;
 
     /**
      * Time (in seconds since midnight) of this expression, used as a reference
@@ -54,18 +54,16 @@ struct Parser
 
     std::vector<DTMatch*> res;
 
-    Parser()
-    {
-        tnow = time(NULL);
-    }
+    Parser() { tnow = time(NULL); }
     ~Parser()
     {
-        for (auto& i: res) delete i;
+        for (auto& i : res)
+            delete i;
     }
 
     void add(DTMatch* val);
 
-    void add_step(int val, int idx, const int* time=nullptr);
+    void add_step(int val, int idx, const int* time = nullptr);
 
     void parse(const std::string& str);
 
@@ -86,10 +84,10 @@ struct Parser
     DTMatch* createTimeGT(const int* tt);
     DTMatch* createTimeEQ(const int* tt);
 
-    DTMatch* createStep(int val, int idx, const int* tt=nullptr);
+    DTMatch* createStep(int val, int idx, const int* tt = nullptr);
 };
 
-}
-}
-}
+} // namespace reftime
+} // namespace matcher
+} // namespace arki
 #endif

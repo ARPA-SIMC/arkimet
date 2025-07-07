@@ -6,17 +6,16 @@
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::Formatter* formatter;
+typedef struct
+{
+    PyObject_HEAD arki::Formatter* formatter;
 } arkipy_Formatter;
 
 extern PyTypeObject* arkipy_Formatter_Type;
 
-#define arkipy_Formatter_Check(ob) \
-    (Py_TYPE(ob) == arkipy_Formatter_Type || \
+#define arkipy_Formatter_Check(ob)                                             \
+    (Py_TYPE(ob) == arkipy_Formatter_Type ||                                   \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_Formatter_Type))
-
 }
 
 namespace arki {
@@ -29,7 +28,7 @@ namespace formatter {
 void init();
 
 }
-}
-}
+} // namespace python
+} // namespace arki
 
 #endif

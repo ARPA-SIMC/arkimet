@@ -1,9 +1,9 @@
 #ifndef ARKI_PYTHON_EMITTER_H
 #define ARKI_PYTHON_EMITTER_H
 
+#include "utils/core.h"
 #include <arki/structured/emitter.h>
 #include <arki/structured/reader.h>
-#include "utils/core.h"
 
 namespace arki {
 namespace python {
@@ -26,10 +26,7 @@ struct PythonEmitter : public structured::Emitter
 
     ~PythonEmitter();
 
-    PyObject* release()
-    {
-        return res.release();
-    }
+    PyObject* release() { return res.release(); }
 
     /**
      * Adds a value to the python object that is currnetly been built.
@@ -52,28 +49,15 @@ struct PythonEmitter : public structured::Emitter
     void add_time(const core::Time& val) override;
 };
 
-
 struct PythonReader : public structured::Reader
 {
 protected:
     PyObject* o;
 
 public:
-    PythonReader(PyObject* o)
-        : o(o)
-    {
-        Py_INCREF(o);
-    }
-    PythonReader(const PythonReader& o)
-        : o (o.o)
-    {
-        Py_INCREF(this->o);
-    }
-    PythonReader(PythonReader&& o)
-        : o (o.o)
-    {
-        Py_INCREF(this->o);
-    }
+    PythonReader(PyObject* o) : o(o) { Py_INCREF(o); }
+    PythonReader(const PythonReader& o) : o(o.o) { Py_INCREF(this->o); }
+    PythonReader(PythonReader&& o) : o(o.o) { Py_INCREF(this->o); }
     PythonReader& operator=(const PythonReader& o)
     {
         if (this->o == o.o)
@@ -92,10 +76,7 @@ public:
         Py_INCREF(this->o);
         return *this;
     }
-    ~PythonReader()
-    {
-        Py_DECREF(o);
-    }
+    ~PythonReader() { Py_DECREF(o); }
     structured::NodeType type() const override;
     std::string repr() const override;
 
@@ -109,23 +90,31 @@ public:
     long long int list_as_int(unsigned idx, const char* desc) const override;
     double list_as_double(unsigned idx, const char* desc) const override;
     std::string list_as_string(unsigned idx, const char* desc) const override;
-    void list_sub(unsigned idx, const char* desc, std::function<void(const Reader&)>) const override;
+    void list_sub(unsigned idx, const char* desc,
+                  std::function<void(const Reader&)>) const override;
 
-    bool dict_has_key(const std::string& key, structured::NodeType type) const override;
+    bool dict_has_key(const std::string& key,
+                      structured::NodeType type) const override;
     bool dict_as_bool(const std::string& key, const char* desc) const override;
-    long long int dict_as_int(const std::string& key, const char* desc) const override;
-    double dict_as_double(const std::string& key, const char* desc) const override;
-    std::string dict_as_string(const std::string& key, const char* desc) const override;
-    core::Time dict_as_time(const std::string& key, const char* desc) const override;
-    void dict_items(const char* desc, std::function<void(const std::string&, const Reader&)>) const override;
-    void dict_sub(const std::string& key, const char* desc, std::function<void(const Reader&)>) const override;
+    long long int dict_as_int(const std::string& key,
+                              const char* desc) const override;
+    double dict_as_double(const std::string& key,
+                          const char* desc) const override;
+    std::string dict_as_string(const std::string& key,
+                               const char* desc) const override;
+    core::Time dict_as_time(const std::string& key,
+                            const char* desc) const override;
+    void dict_items(
+        const char* desc,
+        std::function<void(const std::string&, const Reader&)>) const override;
+    void dict_sub(const std::string& key, const char* desc,
+                  std::function<void(const Reader&)>) const override;
 };
 
-namespace structured{
+namespace structured {
 void init();
 }
 
-
-}
-}
+} // namespace python
+} // namespace arki
 #endif

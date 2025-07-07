@@ -12,7 +12,7 @@ namespace {
 
 std::string format_re_msg(const regex_t& re, int code, const string& user_msg)
 {
-    int size = 64;
+    int size  = 64;
     char* msg = new char[size];
     int nsize = regerror(code, &re, msg, size);
     if (nsize > size)
@@ -26,7 +26,7 @@ std::string format_re_msg(const regex_t& re, int code, const string& user_msg)
     return m_message;
 }
 
-}
+} // namespace
 
 RegexpError::RegexpError(const regex_t& re, int code, const string& msg)
     : std::runtime_error(format_re_msg(re, code, msg))
@@ -49,11 +49,11 @@ Regexp::Regexp(const string& expr, int match_count, int flags)
         pmatch = new regmatch_t[match_count];
 }
 
-Regexp::~Regexp() throw ()
+Regexp::~Regexp() throw()
 {
-	regfree(&re);
-	if (pmatch)
-		delete[] pmatch;
+    regfree(&re);
+    if (pmatch)
+        delete[] pmatch;
 }
 
 bool Regexp::match(const char* str, int flags)
@@ -62,7 +62,7 @@ bool Regexp::match(const char* str, int flags)
 
     if (nmatch)
     {
-        res = regexec(&re, str, nmatch, pmatch, flags);
+        res       = regexec(&re, str, nmatch, pmatch, flags);
         lastMatch = str;
     }
     else
@@ -70,9 +70,11 @@ bool Regexp::match(const char* str, int flags)
 
     switch (res)
     {
-        case 0: return true;
+        case 0:           return true;
         case REG_NOMATCH: return false;
-        default: throw RegexpError(re, res, "cannot match string \"" + string(str) + "\"");
+        default:
+            throw RegexpError(re, res,
+                              "cannot match string \"" + string(str) + "\"");
     }
 }
 
@@ -80,19 +82,20 @@ bool Regexp::match(const string& str, int flags)
 {
     int res;
 
-	if (nmatch)
-	{
-		res = regexec(&re, str.c_str(), nmatch, pmatch, flags);
-		lastMatch = str;
-	}
-	else
-		res = regexec(&re, str.c_str(), 0, 0, flags);
+    if (nmatch)
+    {
+        res       = regexec(&re, str.c_str(), nmatch, pmatch, flags);
+        lastMatch = str;
+    }
+    else
+        res = regexec(&re, str.c_str(), 0, 0, flags);
 
     switch (res)
     {
-        case 0: return true;
+        case 0:           return true;
         case REG_NOMATCH: return false;
-        default: throw RegexpError(re, res, "cannot match string \"" + str + "\"");
+        default:
+            throw RegexpError(re, res, "cannot match string \"" + str + "\"");
     }
 }
 
@@ -101,14 +104,16 @@ string Regexp::operator[](int idx) const
     if (idx >= nmatch)
     {
         stringstream ss;
-        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        ss << "cannot get submatch of regexp: index " << idx
+           << " out of range 0--" << nmatch;
         throw std::runtime_error(ss.str());
     }
 
     if (pmatch[idx].rm_so == -1)
         return string();
 
-    return string(lastMatch, pmatch[idx].rm_so, pmatch[idx].rm_eo - pmatch[idx].rm_so);
+    return string(lastMatch, pmatch[idx].rm_so,
+                  pmatch[idx].rm_eo - pmatch[idx].rm_so);
 }
 
 std::string Regexp::first_match() const { return operator[](1); }
@@ -120,7 +125,8 @@ size_t Regexp::match_start(int idx)
     if (idx > nmatch)
     {
         stringstream ss;
-        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        ss << "cannot get submatch of regexp: index " << idx
+           << " out of range 0--" << nmatch;
         throw std::runtime_error(ss.str());
     }
     return pmatch[idx].rm_so;
@@ -131,7 +137,8 @@ size_t Regexp::match_end(int idx)
     if (idx > nmatch)
     {
         stringstream ss;
-        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        ss << "cannot get submatch of regexp: index " << idx
+           << " out of range 0--" << nmatch;
         throw std::runtime_error(ss.str());
     }
     return pmatch[idx].rm_eo;
@@ -142,7 +149,8 @@ size_t Regexp::match_length(int idx)
     if (idx > nmatch)
     {
         stringstream ss;
-        ss << "cannot get submatch of regexp: index " << idx << " out of range 0--" << nmatch;
+        ss << "cannot get submatch of regexp: index " << idx
+           << " out of range 0--" << nmatch;
         throw std::runtime_error(ss.str());
     }
     return pmatch[idx].rm_eo - pmatch[idx].rm_so;
@@ -157,7 +165,7 @@ Tokenizer::const_iterator& Tokenizer::const_iterator::operator++()
     {
         beg += tok.re.match_start(0);
         end = beg + tok.re.match_length(0);
-    } 
+    }
     else
         beg = end = tok.str.size();
 
@@ -170,25 +178,29 @@ Splitter::const_iterator& Splitter::const_iterator::operator++()
     {
         if (re.match_length(0))
         {
-            cur = next.substr(0, re.match_start(0));
+            cur  = next.substr(0, re.match_start(0));
             next = next.substr(re.match_start(0) + re.match_length(0));
         }
         else
         {
             if (!next.empty())
             {
-                cur = next.substr(0, 1);
+                cur  = next.substr(0, 1);
                 next = next.substr(1);
-            } else {
+            }
+            else
+            {
                 cur = next;
             }
         }
-    } else {
-        cur = next;
+    }
+    else
+    {
+        cur  = next;
         next = string();
     }
     return *this;
 }
 
-}
-}
+} // namespace utils
+} // namespace arki

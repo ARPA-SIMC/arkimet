@@ -13,12 +13,11 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_metadata_data");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Test sources
-add_method("todo", []() noexcept {
-});
-
+    // Test sources
+    add_method("todo", []() noexcept {});
 }
 
-}
+} // namespace

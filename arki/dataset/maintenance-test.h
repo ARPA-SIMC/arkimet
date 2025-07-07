@@ -23,7 +23,9 @@ struct Fixture : public arki::tests::DatasetTest
     /// Size of the first datum in test_relepath
     unsigned test_datum_size;
 
-    Fixture(const std::string& format, const std::string& cfg_instance=std::string(), DatasetTest::TestVariant variant=DatasetTest::TEST_NORMAL);
+    Fixture(const std::string& format,
+            const std::string& cfg_instance  = std::string(),
+            DatasetTest::TestVariant variant = DatasetTest::TEST_NORMAL);
 
     static bool segment_can_delete_data() { return true; }
     static bool segment_can_append_data() { return true; }
@@ -31,7 +33,8 @@ struct Fixture : public arki::tests::DatasetTest
     /**
      * Return the relative path of test_relpath as found on disk.
      *
-     * It can differ from test_relpath in case the segment is archived or compressed
+     * It can differ from test_relpath in case the segment is archived or
+     * compressed
      */
     std::filesystem::path test_relpath_ondisk() const { return test_relpath; }
 
@@ -39,13 +42,15 @@ struct Fixture : public arki::tests::DatasetTest
      * Compute the dataset state and assert that it contains `segment_count`
      * segments, and that the segment test_relpath has the given state.
      */
-    void state_is(unsigned segment_count, const segment::State& test_relpath_state);
+    void state_is(unsigned segment_count,
+                  const segment::State& test_relpath_state);
 
     /**
      * Compute the dataset state and assert that it contains `segment_count`
      * segments, and that the segment test_relpath has the given state.
      */
-    void accurate_state_is(unsigned segment_count, const segment::State& test_relpath_state);
+    void accurate_state_is(unsigned segment_count,
+                           const segment::State& test_relpath_state);
 
     void test_setup();
 
@@ -136,8 +141,7 @@ struct FixtureZip : public Fixture
     void make_overlap();
 };
 
-
-template<typename TestFixture>
+template <typename TestFixture>
 class CheckTest : public arki::tests::FixtureTestCase<TestFixture>
 {
 public:
@@ -169,7 +173,7 @@ public:
     virtual void register_tests_zip();
 };
 
-template<typename TestFixture>
+template <typename TestFixture>
 class FixTest : public arki::tests::FixtureTestCase<TestFixture>
 {
 public:
@@ -200,7 +204,7 @@ public:
     virtual void register_tests_dir();
 };
 
-template<typename TestFixture>
+template <typename TestFixture>
 class RepackTest : public arki::tests::FixtureTestCase<TestFixture>
 {
 public:
@@ -231,8 +235,8 @@ public:
     virtual void register_tests_dir();
 };
 
-}
-}
-}
+} // namespace maintenance_test
+} // namespace dataset
+} // namespace arki
 
 #endif

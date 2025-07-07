@@ -1,9 +1,9 @@
 #include "summarycache.h"
+#include "arki/dataset.h"
+#include "arki/dataset/reporter.h"
 #include "arki/metadata.h"
 #include "arki/metadata/inbound.h"
 #include "arki/summary.h"
-#include "arki/dataset.h"
-#include "arki/dataset/reporter.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -23,9 +23,7 @@ SummaryCache::SummaryCache(const std::filesystem::path& root)
 {
 }
 
-SummaryCache::~SummaryCache()
-{
-}
+SummaryCache::~SummaryCache() {}
 
 std::filesystem::path SummaryCache::summary_pathname(int year, int month) const
 {
@@ -117,7 +115,7 @@ void SummaryCache::invalidate(const Metadata& md)
 void SummaryCache::invalidate(const metadata::InboundBatch& batch)
 {
     std::set<std::pair<int, int>> to_delete;
-    for (const auto& el: batch)
+    for (const auto& el : batch)
     {
         if (el->result != metadata::Inbound::Result::OK)
             continue;
@@ -128,7 +126,7 @@ void SummaryCache::invalidate(const metadata::InboundBatch& batch)
         }
     }
 
-    for (const auto& month: to_delete)
+    for (const auto& month : to_delete)
         invalidate(month.first, month.second);
 }
 
@@ -144,7 +142,6 @@ void SummaryCache::invalidate(const Time& tmin, const Time& tmax)
         std::filesystem::remove(m_scache_root / "all.summary");
 }
 
-
 bool SummaryCache::check(const dataset::Base& ds, Reporter& reporter) const
 {
     bool res = true;
@@ -153,18 +150,20 @@ bool SummaryCache::check(const dataset::Base& ds, Reporter& reporter) const
     sys::Path dir(m_scache_root);
     for (sys::Path::iterator i = dir.begin(); i != dir.end(); ++i)
     {
-        if (!str::endswith(i->d_name, ".summary")) continue;
+        if (!str::endswith(i->d_name, ".summary"))
+            continue;
 
         auto pathname = m_scache_root / i->d_name;
         if (!sys::access(pathname, W_OK))
         {
-            reporter.operation_manual_intervention(ds.name(), "check", pathname.native() + " is not writable");
+            reporter.operation_manual_intervention(
+                ds.name(), "check", pathname.native() + " is not writable");
             res = false;
         }
     }
     return res;
 }
 
-}
-}
-}
+} // namespace index
+} // namespace dataset
+} // namespace arki

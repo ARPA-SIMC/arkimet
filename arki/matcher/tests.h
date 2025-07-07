@@ -1,8 +1,8 @@
 #ifndef ARKI_MATCHER_TESTUTILS_H
 #define ARKI_MATCHER_TESTUTILS_H
 
-#include <arki/metadata/tests.h>
 #include <arki/matcher.h>
+#include <arki/metadata/tests.h>
 
 namespace arki {
 namespace tests {
@@ -38,15 +38,18 @@ inline arki::tests::ActualMatcher actual_matcher(const std::string& actual)
     return arki::tests::ActualMatcher(actual);
 }
 
-inline arki::tests::ActualMatcher actual_matcher(const matcher::Parser& parser, const std::string& actual)
+inline arki::tests::ActualMatcher actual_matcher(const matcher::Parser& parser,
+                                                 const std::string& actual)
 {
     return arki::tests::ActualMatcher(parser, actual);
 }
 
-#define ensure_matches(expr, md) wassert(arki::tests::actual_matcher(expr).matches(md))
-#define ensure_not_matches(expr, md) wassert(arki::tests::actual_matcher(expr).not_matches(md))
+#define ensure_matches(expr, md)                                               \
+    wassert(arki::tests::actual_matcher(expr).matches(md))
+#define ensure_not_matches(expr, md)                                           \
+    wassert(arki::tests::actual_matcher(expr).not_matches(md))
 
-}
-}
+} // namespace tests
+} // namespace arki
 
 #endif

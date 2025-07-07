@@ -4,9 +4,7 @@
 namespace arki {
 namespace query {
 
-Progress::~Progress()
-{
-}
+Progress::~Progress() {}
 
 void Progress::start(size_t expected_count, size_t expected_bytes)
 {
@@ -20,9 +18,7 @@ void Progress::update(size_t count, size_t bytes)
     this->bytes += bytes;
 }
 
-void Progress::done()
-{
-}
+void Progress::done() {}
 
 metadata_dest_func Progress::wrap(metadata_dest_func dest)
 {
@@ -33,5 +29,5 @@ metadata_dest_func Progress::wrap(metadata_dest_func dest)
     };
 }
 
-}
-}
+} // namespace query
+} // namespace arki

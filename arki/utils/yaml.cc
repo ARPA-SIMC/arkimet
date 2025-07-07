@@ -22,8 +22,7 @@ static std::string stripYamlComment(const std::string& str)
     return res;
 }
 
-YamlStream::const_iterator::const_iterator(LineReader& sin)
-    : in(&sin)
+YamlStream::const_iterator::const_iterator(LineReader& sin) : in(&sin)
 {
     // Read the next line to parse, skipping leading empty lines
     while (!in->eof())
@@ -57,12 +56,16 @@ YamlStream::const_iterator& YamlStream::const_iterator::operator++()
     }
 
     if (line[0] == ' ')
-        throw std::runtime_error("cannot parse yaml line \"" + line + "\": field continuation found, but no field has started");
+        throw std::runtime_error(
+            "cannot parse yaml line \"" + line +
+            "\": field continuation found, but no field has started");
 
     // Field start
     size_t pos = line.find(':');
     if (pos == string::npos)
-        throw std::runtime_error("parsing Yaml line \"" + line + "\": every line that does not start with spaces must have a semicolon");
+        throw std::runtime_error("parsing Yaml line \"" + line +
+                                 "\": every line that does not start with "
+                                 "spaces must have a semicolon");
 
     // Get the field name
     value.first = line.substr(0, pos);
@@ -79,12 +82,15 @@ YamlStream::const_iterator& YamlStream::const_iterator::operator++()
     while (true)
     {
         line.clear();
-        if (in->eof()) break;
+        if (in->eof())
+            break;
         in->getline(line);
         // End of record
-        if (line.empty()) break;
+        if (line.empty())
+            break;
         // Full comment line: ignore it
-        if (line[0] == '#') continue;
+        if (line[0] == '#')
+            continue;
         // New field or empty line with comment
         if (line[0] != ' ')
         {
@@ -96,7 +102,9 @@ YamlStream::const_iterator& YamlStream::const_iterator::operator++()
 
         // See how much we are indented
         size_t this_indent;
-        for (this_indent = 0; this_indent < line.size() && line[this_indent] == ' '; ++this_indent)
+        for (this_indent = 0;
+             this_indent < line.size() && line[this_indent] == ' ';
+             ++this_indent)
             ;
 
         if (indent == 0)
@@ -122,5 +130,5 @@ YamlStream::const_iterator& YamlStream::const_iterator::operator++()
     return *this;
 }
 
-}
-}
+} // namespace utils
+} // namespace arki

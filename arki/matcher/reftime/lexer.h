@@ -2,12 +2,12 @@
 #define ARKI_MATCHER_REFTIME_LEXER_H
 
 #include <arki/core/fuzzytime.h>
-#include <string>
-#include <ctime>
 #include <cstring>
-#include <vector>
+#include <ctime>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace matcher {
@@ -19,12 +19,8 @@ struct LexInterval
     int val;
     int idx;
 
-    void add_to(int* vals) const
-    {
-        vals[idx] += val;
-    }
+    void add_to(int* vals) const { vals[idx] += val; }
 };
-
 
 struct Parser
 {
@@ -32,7 +28,10 @@ struct Parser
     const char* buf;
     unsigned len;
 
-    Parser(const char* sbuf, unsigned slen) : orig_buf(sbuf), buf(sbuf), len(slen) {}
+    Parser(const char* sbuf, unsigned slen)
+        : orig_buf(sbuf), buf(sbuf), len(slen)
+    {
+    }
 
     bool string_in(std::initializer_list<const char*> values) const;
 
@@ -40,7 +39,8 @@ struct Parser
     {
         std::string lead(orig_buf, buf - orig_buf);
         std::string trail(buf, len);
-        throw std::invalid_argument("cannot parse reftime match expression \"" + lead + "[HERE]" + trail + "\": " + msg);
+        throw std::invalid_argument("cannot parse reftime match expression \"" +
+                                    lead + "[HERE]" + trail + "\": " + msg);
     }
 
     void eatNonSpaces()
@@ -65,7 +65,8 @@ struct Parser
 
     void eatInsensitive(const char* s)
     {
-        if (*s == 0) return;
+        if (*s == 0)
+            return;
         if (!len || ::tolower(*buf) != s[0])
             error(std::string("expecting ") + s);
         ++buf;
@@ -90,7 +91,7 @@ struct DTParser : public Parser
     int num()
     {
         std::string val;
-        for ( ; len && isdigit(*buf); ++buf, --len)
+        for (; len && isdigit(*buf); ++buf, --len)
             val += *buf;
         if (val.empty())
             error("number expected");
@@ -103,7 +104,7 @@ struct DTParser : public Parser
         ++buf;
         --len;
         return true;
-        //error(string("expected '") + c + "'");
+        // error(string("expected '") + c + "'");
     }
     bool eatOneOf(const char* chars)
     {
@@ -125,29 +126,41 @@ struct DTParser : public Parser
         // Year
         res->ye = num();
         // Month
-        if (!eat('-')) goto done;
+        if (!eat('-'))
+            goto done;
         res->mo = num();
         // Day
-        if (!eat('-')) goto done;
+        if (!eat('-'))
+            goto done;
         res->da = num();
         // Eat optional 'T' at the end of the date
-        if (len && (*buf == 'T' || *buf == 't')) { ++buf; --len; }
+        if (len && (*buf == 'T' || *buf == 't'))
+        {
+            ++buf;
+            --len;
+        }
         // Eat optional spaces
         eatSpaces();
         // Hour
-        if (!len) goto done;
+        if (!len)
+            goto done;
         res->ho = num();
         // Minute
-        if (!eat(':')) goto done;
+        if (!eat(':'))
+            goto done;
         res->mi = num();
         // Second
-        if (!eat(':')) goto done;
+        if (!eat(':'))
+            goto done;
         res->se = num();
 
-done:
-        try {
+    done:
+        try
+        {
             res->validate();
-        } catch (std::invalid_argument& e) {
+        }
+        catch (std::invalid_argument& e)
+        {
             error(e.what());
         }
 
@@ -157,9 +170,8 @@ done:
     void check_minmax(int value, int min, int max, const char* what)
     {
         if (value < min || value > max)
-            error(
-                std::string(what) + " must be between "
-                + std::to_string(min) + " and " + std::to_string(max));
+            error(std::string(what) + " must be between " +
+                  std::to_string(min) + " and " + std::to_string(max));
     }
 
     void getTime(int* res)
@@ -168,11 +180,13 @@ done:
         res[0] = num();
         check_minmax(res[0], 0, 24, "hour");
         // Minute
-        if (!eat(':')) return;
+        if (!eat(':'))
+            return;
         res[1] = num();
         check_minmax(res[1], 0, 59, "minute");
         // Second
-        if (!eat(':')) return;
+        if (!eat(':'))
+            return;
         res[2] = num();
         check_minmax(res[2], 0, 60, "second");
 
@@ -189,26 +203,25 @@ done:
 arki::core::FuzzyTime* parse_datetime(const char* buf, unsigned len);
 void parse_time(const char* buf, unsigned len, int* res);
 
-
 struct ISParser : public Parser
 {
     struct LexInterval& res;
 
-    ISParser(const char* sbuf, unsigned slen, struct LexInterval& res) : Parser(sbuf, slen), res(res)
+    ISParser(const char* sbuf, unsigned slen, struct LexInterval& res)
+        : Parser(sbuf, slen), res(res)
     {
     }
 
     unsigned long int num()
     {
         std::string val;
-        for ( ; len && isdigit(*buf); ++buf, --len)
+        for (; len && isdigit(*buf); ++buf, --len)
             val += *buf;
         if (val.empty())
             error("number expected");
         return strtoul(val.c_str(), 0, 10);
     }
 };
-
 
 /// Parser for time intervals
 struct IParser : public ISParser
@@ -226,10 +239,9 @@ struct SParser : public ISParser
     void itype();
 };
 
-
-}
-}
-}
-}
+} // namespace lexer
+} // namespace reftime
+} // namespace matcher
+} // namespace arki
 
 #endif

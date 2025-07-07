@@ -1,10 +1,10 @@
 #ifndef ARKI_TYPES_AREA_H
 #define ARKI_TYPES_AREA_H
 
-#include <memory>
-#include <cstdint>
 #include <arki/types/encoded.h>
 #include <arki/utils/geos.h>
+#include <cstdint>
+#include <memory>
 
 namespace arki {
 namespace types {
@@ -12,16 +12,15 @@ namespace types {
 namespace area {
 
 /// Style values
-enum class Style: unsigned char {
-    GRIB = 1,
+enum class Style : unsigned char {
+    GRIB   = 1,
     ODIMH5 = 2,
-    VM2 = 3,
+    VM2    = 3,
 };
 
-}
+} // namespace area
 
-template<>
-struct traits<Area>
+template <> struct traits<Area>
 {
     static const char* type_tag;
     static const types::Code type_code;
@@ -49,7 +48,10 @@ public:
     typedef area::Style Style;
 
     types::Code type_code() const override { return traits<Area>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<Area>::type_sersize_bytes; }
+    size_t serialisationSizeLength() const override
+    {
+        return traits<Area>::type_sersize_bytes;
+    }
     std::string tag() const override { return traits<Area>::type_tag; }
 
     Area* clone() const override = 0;
@@ -73,9 +75,12 @@ public:
     static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Area> decode(core::BinaryDecoder& dec, bool reuse_buffer);
+    static std::unique_ptr<Area> decode(core::BinaryDecoder& dec,
+                                        bool reuse_buffer);
     static std::unique_ptr<Area> decodeString(const std::string& val);
-    static std::unique_ptr<Area> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::unique_ptr<Area>
+    decode_structure(const structured::Keys& keys,
+                     const structured::Reader& val);
 
     /// Return the geographical bounding box
     const arki::utils::geos::Geometry& bbox() const;
@@ -88,14 +93,16 @@ public:
 
 namespace area {
 
-inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Area::formatStyle(s); }
-
+inline std::ostream& operator<<(std::ostream& o, Style s)
+{
+    return o << Area::formatStyle(s);
+}
 
 class GRIB : public Area
 {
 public:
     constexpr static const char* name = "GRIB";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Collection of key-value pairs, interpreted in the context of GRIB grid
 definitions.
 )";
@@ -104,7 +111,8 @@ definitions.
     ~GRIB();
 
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 
     int compare_local(const GRIB& o) const;
@@ -117,7 +125,7 @@ class ODIMH5 : public Area
 {
 public:
     constexpr static const char* name = "ODIMH5";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Collection of key-value pairs, interpreted in the context of ODIM area
 information.
 )";
@@ -126,7 +134,8 @@ information.
     ~ODIMH5();
 
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 
     int compare_local(const ODIMH5& o) const;
@@ -139,7 +148,7 @@ class VM2 : public Area
 {
 public:
     constexpr static const char* name = "VM2";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Area information as an integer VM2 station identifier.
 )";
     using Area::Area;
@@ -149,7 +158,8 @@ Area information as an integer VM2 station identifier.
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     void encode_for_indexing(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 
     int compare_local(const VM2& o) const;
@@ -160,8 +170,7 @@ Area information as an integer VM2 station identifier.
     static std::unique_ptr<Area> create(unsigned station_id);
 };
 
-
-}
-}
-}
+} // namespace area
+} // namespace types
+} // namespace arki
 #endif

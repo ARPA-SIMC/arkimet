@@ -2,20 +2,19 @@
 #define ARKI_SCAN_H
 
 #include <arki/core/fwd.h>
-#include <arki/segment/fwd.h>
-#include <arki/scan/fwd.h>
-#include <arki/types/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <filesystem>
-#include <string>
-#include <memory>
-#include <vector>
-#include <optional>
+#include <arki/scan/fwd.h>
+#include <arki/segment/fwd.h>
+#include <arki/types/fwd.h>
 #include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace scan {
-
 
 class Scanner
 {
@@ -30,26 +29,30 @@ public:
      *
      * Returns true if dest always returned true, else false.
      */
-    virtual bool scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest) = 0;
+    virtual bool scan_segment(std::shared_ptr<segment::data::Reader> reader,
+                              metadata_dest_func dest) = 0;
 
     /**
      * Scan data from a non-seekable pipe
      */
-    virtual bool scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest) = 0;
+    virtual bool scan_pipe(core::NamedFileDescriptor& in,
+                           metadata_dest_func dest) = 0;
 
     /**
      * Scan a memory buffer.
      *
      * Returns a Metadata with inline source.
      */
-    virtual std::shared_ptr<Metadata> scan_data(const std::vector<uint8_t>& data) = 0;
+    virtual std::shared_ptr<Metadata>
+    scan_data(const std::vector<uint8_t>& data) = 0;
 
     /**
      * Open a file, scan it, send results to dest, and close it.
      *
      * Scanned metadata will have no source set.
      */
-    virtual std::shared_ptr<Metadata> scan_singleton(const std::filesystem::path& abspath) = 0;
+    virtual std::shared_ptr<Metadata>
+    scan_singleton(const std::filesystem::path& abspath) = 0;
 
     /**
      * Normalize metadata and data before dispatch, if required.
@@ -80,7 +83,8 @@ public:
      *
      * Return no value if the file format was not recognized.
      */
-    static std::optional<DataFormat> detect_format(const std::filesystem::path& path);
+    static std::optional<DataFormat>
+    detect_format(const std::filesystem::path& path);
 
     /**
      * Return the update sequence number for this data
@@ -88,8 +92,8 @@ public:
      * The data associated to the metadata is read and scanned if needed.
      *
      * @retval
-     *   The update sequence number found. This is left untouched if the function
-     *   returns false.
+     *   The update sequence number found. This is left untouched if the
+     * function returns false.
      * @returns
      *   true if the update sequence number could be found, else false
      *
@@ -100,29 +104,34 @@ public:
      * Return the update sequence number for this data
      *
      * @retval
-     *   The update sequence number found. This is left untouched if the function
-     *   returns false.
+     *   The update sequence number found. This is left untouched if the
+     * function returns false.
      * @returns
      *   true if the update sequence number could be found, else false
      *
      */
-    static bool update_sequence_number(const types::source::Blob& source, int& usn);
+    static bool update_sequence_number(const types::source::Blob& source,
+                                       int& usn);
 
     /**
      * Reconstruct raw data based on a metadata and a value
      */
-    static std::vector<uint8_t> reconstruct(DataFormat format, const Metadata& md, const std::string& value);
+    static std::vector<uint8_t> reconstruct(DataFormat format,
+                                            const Metadata& md,
+                                            const std::string& value);
 
     /**
      * Register the scanner factory function for the given format
      */
-    static void register_factory(DataFormat format, std::function<std::shared_ptr<Scanner>()> factory);
+    static void
+    register_factory(DataFormat format,
+                     std::function<std::shared_ptr<Scanner>()> factory);
 };
 
 /// Initialize scanner registry
 void init();
 
-}
-}
+} // namespace scan
+} // namespace arki
 
 #endif

@@ -9,16 +9,16 @@
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::dataset::CheckerConfig checker_config;
+typedef struct
+{
+    PyObject_HEAD arki::dataset::CheckerConfig checker_config;
     std::shared_ptr<arki::dataset::Pool> pool;
 } arkipy_ArkiCheck;
 
 extern PyTypeObject* arkipy_ArkiCheck_Type;
 
-#define arkipy_ArkiCheck_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_ArkiCheck_Type || \
+#define arkipy_ArkiCheck_Check(ob)                                             \
+    (Py_TYPE(ob) == &arkipy_ArkiCheck_Type ||                                  \
      PyType_IsSubtype(Py_TYPE(ob), &arkipy_ArkiCheck_Type))
 }
 
@@ -28,6 +28,6 @@ namespace python {
 void register_arki_check(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

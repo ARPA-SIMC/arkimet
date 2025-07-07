@@ -1,9 +1,9 @@
 #ifndef ARKI_SEGMENT_TESTS_H
 #define ARKI_SEGMENT_TESTS_H
 
+#include <arki/metadata/collection.h>
 #include <arki/metadata/tests.h>
 #include <arki/segment.h>
-#include <arki/metadata/collection.h>
 
 namespace arki::tests {
 
@@ -12,18 +12,24 @@ namespace arki::tests {
  *
  * mds metadata sources are updated to point inside the segment
  */
-void fill_scan_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds);
+void fill_scan_segment(std::shared_ptr<const Segment> segment,
+                       arki::metadata::Collection& mds);
 
 /**
  * Create a segment with attached metadata.
  *
  * mds metadata sources are updated to point inside the segment
  */
-void fill_metadata_segment(std::shared_ptr<const Segment> segment, arki::metadata::Collection& mds);
+void fill_metadata_segment(std::shared_ptr<const Segment> segment,
+                           arki::metadata::Collection& mds);
 
-struct ActualSegment : public arki::utils::tests::Actual<std::shared_ptr<const Segment>>
+struct ActualSegment
+    : public arki::utils::tests::Actual<std::shared_ptr<const Segment>>
 {
-    explicit ActualSegment(std::shared_ptr<const Segment> s) : Actual<std::shared_ptr<const Segment>>(s) {}
+    explicit ActualSegment(std::shared_ptr<const Segment> s)
+        : Actual<std::shared_ptr<const Segment>>(s)
+    {
+    }
 
     /// The segment has its data part
     void has_data();
@@ -50,18 +56,26 @@ struct ActualSegment : public arki::utils::tests::Actual<std::shared_ptr<const S
     void data_mtime_newer_than(time_t value);
 };
 
-inline arki::tests::ActualSegment actual(std::shared_ptr<Segment> actual) { return arki::tests::ActualSegment(actual); }
-inline arki::tests::ActualSegment actual(std::shared_ptr<const Segment> actual) { return arki::tests::ActualSegment(actual); }
-inline arki::tests::ActualSegment actual(const Segment& actual) { return arki::tests::ActualSegment(actual.shared_from_this()); }
+inline arki::tests::ActualSegment actual(std::shared_ptr<Segment> actual)
+{
+    return arki::tests::ActualSegment(actual);
+}
+inline arki::tests::ActualSegment actual(std::shared_ptr<const Segment> actual)
+{
+    return arki::tests::ActualSegment(actual);
+}
+inline arki::tests::ActualSegment actual(const Segment& actual)
+{
+    return arki::tests::ActualSegment(actual.shared_from_this());
+}
 
-
-template<class Data>
-class SegmentTestFixture : public Fixture
+template <class Data> class SegmentTestFixture : public Fixture
 {
 protected:
     std::shared_ptr<segment::Session> m_session;
 
-    virtual std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) = 0;
+    virtual std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) = 0;
 
 public:
     Data td;
@@ -74,74 +88,91 @@ public:
 
     std::shared_ptr<Segment> create_segment(const char* name = "segment");
     std::shared_ptr<Segment> create(const char* name = "segment");
-    virtual std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") = 0;
+    virtual std::shared_ptr<Segment> create(const metadata::Collection& mds,
+                                            const char* name = "segment") = 0;
 
-    virtual void skip_unless_scan() const { throw TestSkipped("test is only valid for scan segments"); }
-    virtual void skip_unless_metadata() const { throw TestSkipped("test is only valid for metadata segments"); }
-    virtual void skip_unless_iseg() const { throw TestSkipped("test is only valid for iseg segments"); }
-    virtual void skip_unless_has_index() const { throw TestSkipped("test is only valid for segments with indices"); }
+    virtual void skip_unless_scan() const
+    {
+        throw TestSkipped("test is only valid for scan segments");
+    }
+    virtual void skip_unless_metadata() const
+    {
+        throw TestSkipped("test is only valid for metadata segments");
+    }
+    virtual void skip_unless_iseg() const
+    {
+        throw TestSkipped("test is only valid for iseg segments");
+    }
+    virtual void skip_unless_has_index() const
+    {
+        throw TestSkipped("test is only valid for segments with indices");
+    }
 
     virtual bool has_index() const { return false; }
 };
 
-template<class Data>
-class ScanSegmentFixture: public SegmentTestFixture<Data>
+template <class Data> class ScanSegmentFixture : public SegmentTestFixture<Data>
 {
 protected:
     using SegmentTestFixture<Data>::m_session;
 
-    std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
+    std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) override;
 
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
     using SegmentTestFixture<Data>::initial_mtime;
 
-    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
+    std::shared_ptr<Segment> create(const metadata::Collection& mds,
+                                    const char* name = "segment") override;
 
     void skip_unless_scan() const override {}
 };
 
-template<class Data>
-class MetadataSegmentFixture: public SegmentTestFixture<Data>
+template <class Data>
+class MetadataSegmentFixture : public SegmentTestFixture<Data>
 {
 protected:
     using SegmentTestFixture<Data>::m_session;
 
-    std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
+    std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) override;
 
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
     using SegmentTestFixture<Data>::initial_mtime;
 
-    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
+    std::shared_ptr<Segment> create(const metadata::Collection& mds,
+                                    const char* name = "segment") override;
 
     void skip_unless_metadata() const override {}
     void skip_unless_has_index() const override {}
     bool has_index() const override { return true; }
 };
 
-template<class Data>
-class IsegSegmentFixture: public SegmentTestFixture<Data>
+template <class Data> class IsegSegmentFixture : public SegmentTestFixture<Data>
 {
 protected:
     using SegmentTestFixture<Data>::m_session;
 
-    std::shared_ptr<segment::Session> make_session(const std::filesystem::path& root) override;
+    std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) override;
 
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
     using SegmentTestFixture<Data>::initial_mtime;
 
-    std::shared_ptr<Segment> create(const metadata::Collection& mds, const char* name = "segment") override;
+    std::shared_ptr<Segment> create(const metadata::Collection& mds,
+                                    const char* name = "segment") override;
 
     void skip_unless_iseg() const override {}
     void skip_unless_has_index() const override {}
     bool has_index() const override { return true; }
 };
 
-}
+} // namespace arki::tests
 
 #endif

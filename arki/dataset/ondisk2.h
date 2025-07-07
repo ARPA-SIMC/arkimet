@@ -18,8 +18,8 @@ public:
     std::shared_ptr<dataset::Checker> create_checker() override;
 };
 
-}
-}
-}
+} // namespace ondisk2
+} // namespace dataset
+} // namespace arki
 
 #endif

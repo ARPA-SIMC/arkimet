@@ -10,8 +10,10 @@ void PythonProgress::call_update()
 {
     pyo_unique_ptr py_count(to_python(partial_count));
     pyo_unique_ptr py_bytes(to_python(partial_bytes));
-    pyo_unique_ptr args(throw_ifnull(PyTuple_Pack(2, py_count.get(), py_bytes.get())));
-    pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_update, args.get(), nullptr)));
+    pyo_unique_ptr args(
+        throw_ifnull(PyTuple_Pack(2, py_count.get(), py_bytes.get())));
+    pyo_unique_ptr res(
+        throw_ifnull(PyObject_Call(meth_update, args.get(), nullptr)));
     partial_count = 0;
     partial_bytes = 0;
 }
@@ -20,9 +22,9 @@ PythonProgress::PythonProgress(PyObject* progress)
 {
     if (progress and progress != Py_None)
     {
-        meth_start = throw_ifnull(PyObject_GetAttrString(progress, "start"));
+        meth_start  = throw_ifnull(PyObject_GetAttrString(progress, "start"));
         meth_update = throw_ifnull(PyObject_GetAttrString(progress, "update"));
-        meth_done = throw_ifnull(PyObject_GetAttrString(progress, "done"));
+        meth_done   = throw_ifnull(PyObject_GetAttrString(progress, "done"));
     }
 }
 
@@ -43,8 +45,10 @@ void PythonProgress::start(size_t expected_count, size_t expected_bytes)
         AcquireGIL gil;
         pyo_unique_ptr count(to_python(expected_count));
         pyo_unique_ptr bytes(to_python(expected_bytes));
-        pyo_unique_ptr args(throw_ifnull(PyTuple_Pack(2, count.get(), bytes.get())));
-        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_start, args.get(), nullptr)));
+        pyo_unique_ptr args(
+            throw_ifnull(PyTuple_Pack(2, count.get(), bytes.get())));
+        pyo_unique_ptr res(
+            throw_ifnull(PyObject_Call(meth_start, args.get(), nullptr)));
     }
 }
 
@@ -94,11 +98,13 @@ void PythonProgress::done()
     {
         pyo_unique_ptr py_count(to_python(count));
         pyo_unique_ptr py_bytes(to_python(bytes));
-        pyo_unique_ptr args(throw_ifnull(PyTuple_Pack(2, py_count.get(), py_bytes.get())));
-        pyo_unique_ptr res(throw_ifnull(PyObject_Call(meth_done, args.get(), nullptr)));
+        pyo_unique_ptr args(
+            throw_ifnull(PyTuple_Pack(2, py_count.get(), py_bytes.get())));
+        pyo_unique_ptr res(
+            throw_ifnull(PyObject_Call(meth_done, args.get(), nullptr)));
     }
 }
 
-}
-}
-}
+} // namespace dataset
+} // namespace python
+} // namespace arki

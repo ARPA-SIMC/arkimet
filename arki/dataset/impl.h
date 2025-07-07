@@ -6,8 +6,7 @@
 namespace arki {
 namespace dataset {
 
-template<typename Dataset, typename Base>
-struct DatasetAccess: public Base
+template <typename Dataset, typename Base> struct DatasetAccess : public Base
 {
 protected:
     std::shared_ptr<Dataset> m_dataset;
@@ -21,7 +20,7 @@ public:
     Dataset& dataset() override { return *m_dataset; }
 };
 
-}
-}
+} // namespace dataset
+} // namespace arki
 
 #endif

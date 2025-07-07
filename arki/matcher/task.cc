@@ -11,10 +11,7 @@ namespace matcher {
 
 /*============================================================================*/
 
-MatchTask::MatchTask(const MatchTask& o)
-    : Implementation(o), task(o.task)
-{
-}
+MatchTask::MatchTask(const MatchTask& o) : Implementation(o), task(o.task) {}
 
 MatchTask::MatchTask(const std::string& pattern)
 {
@@ -22,17 +19,15 @@ MatchTask::MatchTask(const std::string& pattern)
     task = str::upper(args.getString(0, ""));
 }
 
-MatchTask* MatchTask::clone() const
-{
-    return new MatchTask(*this);
-}
+MatchTask* MatchTask::clone() const { return new MatchTask(*this); }
 
 std::string MatchTask::name() const { return "task"; }
 
 bool MatchTask::matchItem(const Type& o) const
 {
     const types::Task* v = dynamic_cast<const types::Task*>(&o);
-    if (!v) return false;
+    if (!v)
+        return false;
     if (task.size())
     {
         std::string utask = str::upper(v->get());
@@ -45,7 +40,10 @@ bool MatchTask::matchItem(const Type& o) const
 std::string MatchTask::toString() const
 {
     CommaJoiner res;
-    if (task.size()) res.add(task); else res.addUndef();
+    if (task.size())
+        res.add(task);
+    else
+        res.addUndef();
     return res.join();
 }
 
@@ -56,8 +54,9 @@ Implementation* MatchTask::parse(const std::string& pattern)
 
 void MatchTask::init()
 {
-    MatcherType::register_matcher("task", TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
+    MatcherType::register_matcher(
+        "task", TYPE_TASK, (MatcherType::subexpr_parser)MatchTask::parse);
 }
 
-}
-}
+} // namespace matcher
+} // namespace arki

@@ -7,14 +7,15 @@
 
 extern "C" {
 
-typedef struct {
+typedef struct
+{
     PyObject_HEAD
 } arkipy_ArkiDump;
 
 extern PyTypeObject* arkipy_ArkiDump_Type;
 
-#define arkipy_ArkiDump_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_ArkiDump_Type || \
+#define arkipy_ArkiDump_Check(ob)                                              \
+    (Py_TYPE(ob) == &arkipy_ArkiDump_Type ||                                   \
      PyType_IsSubtype(Py_TYPE(ob), &arkipy_ArkiDump_Type))
 }
 
@@ -24,6 +25,6 @@ namespace python {
 void register_arki_dump(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

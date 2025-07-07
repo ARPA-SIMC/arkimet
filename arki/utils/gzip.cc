@@ -1,6 +1,6 @@
 #include "gzip.h"
-#include <system_error>
 #include <cerrno>
+#include <system_error>
 
 using namespace std;
 
@@ -8,10 +8,7 @@ namespace arki {
 namespace utils {
 namespace gzip {
 
-File::File(const std::filesystem::path& pathname)
-    : pathname(pathname)
-{
-}
+File::File(const std::filesystem::path& pathname) : pathname(pathname) {}
 
 File::File(const std::filesystem::path& pathname, int fd, const char* mode)
     : pathname(pathname)
@@ -34,13 +31,14 @@ File::File(const std::filesystem::path& pathname, const char* mode)
 
 File::~File()
 {
-    if (fd != nullptr) gzclose(fd);
+    if (fd != nullptr)
+        gzclose(fd);
 }
 
 void File::throw_error(const char* desc)
 {
     int errnum;
-    const char *gzmsg = gzerror(fd, &errnum);
+    const char* gzmsg = gzerror(fd, &errnum);
     if (errnum == Z_ERRNO)
     {
         string msg = pathname;
@@ -69,11 +67,13 @@ void File::throw_runtime_error(const char* desc)
 
 void File::close()
 {
-    if (fd == nullptr) return;
+    if (fd == nullptr)
+        return;
 
     int res = gzclose(fd);
-    fd = nullptr;
-    if (res != Z_OK) throw_error("cannot close");
+    fd      = nullptr;
+    if (res != Z_OK)
+        throw_error("cannot close");
 }
 
 void File::fdopen(int fd, const char* mode)
@@ -120,7 +120,8 @@ std::vector<uint8_t> File::read_all()
     while (true)
     {
         buf.resize(buf.size() + blocksize);
-        unsigned read = this->read(buf.data() + buf.size() - blocksize, blocksize);
+        unsigned read =
+            this->read(buf.data() + buf.size() - blocksize, blocksize);
         if (read < blocksize)
         {
             buf.resize(buf.size() - blocksize + read);
@@ -131,6 +132,6 @@ std::vector<uint8_t> File::read_all()
     return buf;
 }
 
-}
-}
-}
+} // namespace gzip
+} // namespace utils
+} // namespace arki

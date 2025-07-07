@@ -1,6 +1,6 @@
 #include "bundle.h"
-#include "arki/core/file.h"
 #include "arki/core/binary.h"
+#include "arki/core/file.h"
 #include "arki/utils/sys.h"
 #include <algorithm>
 
@@ -17,8 +17,10 @@ bool Bundle::read_header(NamedFileDescriptor& fd)
     while (true)
     {
         int res = fd.read(&c, 1);
-        if (res == 0) return false; // EOF
-        if (c) break;
+        if (res == 0)
+            return false; // EOF
+        if (c)
+            break;
     }
 
     // Read the rest of the first 8 bytes
@@ -53,7 +55,7 @@ bool Bundle::read_data(NamedFileDescriptor& fd)
     while (to_read > 0)
     {
         size_t chunk_size = std::min(to_read, (size_t)1024 * 1024);
-        size_t pos = data.size();
+        size_t pos        = data.size();
         data.resize(pos + chunk_size);
         size_t res = fd.read(data.data() + pos, chunk_size);
         if (res == 0)
@@ -66,7 +68,8 @@ bool Bundle::read_data(NamedFileDescriptor& fd)
 
 bool Bundle::read(NamedFileDescriptor& fd)
 {
-    if (!read_header(fd)) return false;
+    if (!read_header(fd))
+        return false;
     return read_data(fd);
 }
 
@@ -77,15 +80,18 @@ bool Bundle::read_header(AbstractInputFile& fd)
     while (true)
     {
         int res = fd.read(&c, 1);
-        if (res == 0) return false; // EOF
-        if (c) break;
+        if (res == 0)
+            return false; // EOF
+        if (c)
+            break;
     }
 
     // Read the rest of the first 8 bytes
     unsigned char hdr[8];
-    hdr[0] = c;
+    hdr[0]     = c;
     size_t res = fd.read(hdr + 1, 7);
-    if (res < 7) return false; // EOF
+    if (res < 7)
+        return false; // EOF
 
     core::BinaryDecoder dec(hdr, 8);
 
@@ -113,7 +119,7 @@ bool Bundle::read_data(AbstractInputFile& fd)
     while (to_read > 0)
     {
         size_t chunk_size = std::min(to_read, (size_t)1024 * 1024);
-        size_t pos = data.size();
+        size_t pos        = data.size();
         data.resize(pos + chunk_size);
         size_t res = fd.read(data.data() + pos, chunk_size);
         if (res == 0)
@@ -126,10 +132,10 @@ bool Bundle::read_data(AbstractInputFile& fd)
 
 bool Bundle::read(AbstractInputFile& fd)
 {
-    if (!read_header(fd)) return false;
+    if (!read_header(fd))
+        return false;
     return read_data(fd);
 }
 
-
-}
-}
+} // namespace types
+} // namespace arki

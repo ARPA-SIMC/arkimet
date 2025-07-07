@@ -11,8 +11,8 @@ namespace qmacro {
 void init();
 
 }
-}
-}
-}
+} // namespace dataset
+} // namespace python
+} // namespace arki
 
 #endif

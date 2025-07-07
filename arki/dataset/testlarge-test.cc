@@ -1,6 +1,6 @@
-#include "tests.h"
 #include "arki/matcher.h"
 #include "arki/query.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -30,15 +30,15 @@ class Tests : public FixtureTestCase<Fixture>
 
 Tests test("arki_dataset_testlarge");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Test accessing the data
-add_method("read", [](Fixture& f) {
-    auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, "reftime:=2016-01-01");
-    wassert(actual(mdc.size()) == 4u);
-});
-
+    // Test accessing the data
+    add_method("read", [](Fixture& f) {
+        auto reader = f.config().create_reader();
+        metadata::Collection mdc(*reader, "reftime:=2016-01-01");
+        wassert(actual(mdc.size()) == 4u);
+    });
 }
 
-}
+} // namespace

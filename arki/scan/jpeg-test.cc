@@ -16,17 +16,17 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_jpeg");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("validator", [] {
-    sys::File in("inbound/jpeg/autumn.jpg", O_RDONLY);
-    const scan::Validator& validator = scan::jpeg::validator();
-    validator.validate_file(in, 0, 94701);
+    add_method("validator", [] {
+        sys::File in("inbound/jpeg/autumn.jpg", O_RDONLY);
+        const scan::Validator& validator = scan::jpeg::validator();
+        validator.validate_file(in, 0, 94701);
 
-    std::string buf = sys::read_file("inbound/jpeg/autumn.jpg");
-    validator.validate_buf(buf.data(), 94701);
-});
-
+        std::string buf = sys::read_file("inbound/jpeg/autumn.jpg");
+        validator.validate_buf(buf.data(), 94701);
+    });
 }
 
-}
+} // namespace

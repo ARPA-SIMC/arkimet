@@ -11,7 +11,6 @@ class Checker;
 class CheckerSegment;
 struct RepackConfig;
 class Manager;
-}
+} // namespace arki::segment::data
 
 #endif
-

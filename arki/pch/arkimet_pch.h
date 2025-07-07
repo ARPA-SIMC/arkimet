@@ -1,5 +1,6 @@
 // List of headers to precompile.
-// See https://github.com/mesonbuild/meson/blob/master/docs/markdown/Precompiled-headers.md
+// See
+// https://github.com/mesonbuild/meson/blob/master/docs/markdown/Precompiled-headers.md
 //
 // Hint: git grep -h '#include <'| sort | uniq -c | sort -n
 //
@@ -41,20 +42,19 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <sysexits.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
-#include <system_error>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <sysexits.h>
+#include <system_error>
 #include <type_traits>
 #include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <utime.h>
 #include <vector>
-
 
 // #include "arki/core/cfg.h"
 // #include "arki/core/file.h"

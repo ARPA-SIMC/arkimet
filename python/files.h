@@ -8,17 +8,16 @@
 namespace arki {
 namespace python {
 
-template<typename AbstractFile>
-struct FileBase
+template <typename AbstractFile> struct FileBase
 {
-    AbstractFile* abstract = nullptr;
+    AbstractFile* abstract        = nullptr;
     core::NamedFileDescriptor* fd = nullptr;
 
-    FileBase() = default;
-    FileBase(const FileBase&) = delete;
-    FileBase(FileBase&&) = delete;
+    FileBase()                           = default;
+    FileBase(const FileBase&)            = delete;
+    FileBase(FileBase&&)                 = delete;
     FileBase& operator=(const FileBase&) = delete;
-    FileBase& operator=(FileBase&&) = delete;
+    FileBase& operator=(FileBase&&)      = delete;
     ~FileBase()
     {
         delete abstract;
@@ -40,20 +39,17 @@ struct FileBase
     }
 };
 
-
 /// Turn a python object into an open input file
 struct TextInputFile : public FileBase<core::AbstractInputFile>
 {
     TextInputFile(PyObject* o);
 };
 
-
 /// Turn a python object into an open input file
 struct BinaryInputFile : public FileBase<core::AbstractInputFile>
 {
     BinaryInputFile(PyObject* o);
 };
-
 
 /**
  * Wrap a python TextIO into a StreamOutput
@@ -65,7 +61,7 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o);
  */
 std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o);
 
-}
-}
+} // namespace python
+} // namespace arki
 
 #endif

@@ -12,13 +12,13 @@ class Progress
 protected:
     size_t expected_count = 0;
     size_t expected_bytes = 0;
-    size_t count = 0;
-    size_t bytes = 0;
+    size_t count          = 0;
+    size_t bytes          = 0;
 
 public:
     virtual ~Progress();
 
-    virtual void start(size_t expected_count=0, size_t expected_bytes=0);
+    virtual void start(size_t expected_count = 0, size_t expected_bytes = 0);
     virtual void update(size_t count, size_t bytes);
     virtual void done();
 
@@ -37,16 +37,15 @@ struct TrackProgress
 {
     std::shared_ptr<Progress> progress;
 
-    TrackProgress(std::shared_ptr<Progress> progress, size_t expected_count=0, size_t expected_bytes=0)
+    TrackProgress(std::shared_ptr<Progress> progress, size_t expected_count = 0,
+                  size_t expected_bytes = 0)
         : progress(progress)
     {
         if (progress)
             progress->start(expected_count, expected_bytes);
     }
 
-    ~TrackProgress()
-    {
-    }
+    ~TrackProgress() {}
 
     metadata_dest_func wrap(metadata_dest_func dest)
     {
@@ -60,17 +59,19 @@ struct TrackProgress
     /// query_data
     bool done(bool res)
     {
-        if (progress) progress->done();
+        if (progress)
+            progress->done();
         return res;
     }
 
     void done()
     {
-        if (progress) progress->done();
+        if (progress)
+            progress->done();
     }
 };
 
-}
-}
+} // namespace query
+} // namespace arki
 
 #endif

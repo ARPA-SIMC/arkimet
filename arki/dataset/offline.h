@@ -17,11 +17,11 @@ struct Dataset : public dataset::Dataset
      */
     std::filesystem::path summary_pathname;
 
-    Dataset(std::shared_ptr<Session> session, const std::filesystem::path& pathname);
+    Dataset(std::shared_ptr<Session> session,
+            const std::filesystem::path& pathname);
 
     std::shared_ptr<dataset::Reader> create_reader() override;
 };
-
 
 /**
  * Archive that has been put offline (only a summary file is left)
@@ -43,7 +43,7 @@ public:
     core::Interval get_stored_time_interval() override;
 };
 
-}
-}
-}
+} // namespace offline
+} // namespace dataset
+} // namespace arki
 #endif

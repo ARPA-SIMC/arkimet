@@ -1,10 +1,10 @@
 #ifndef ARKI_CORE_CURL_H
 #define ARKI_CORE_CURL_H
 
-#include <curl/curl.h>
-#include <stdexcept>
-#include <sstream>
 #include <cstdint>
+#include <curl/curl.h>
+#include <sstream>
+#include <stdexcept>
 
 namespace arki {
 namespace core {
@@ -14,11 +14,11 @@ class Exception : public std::runtime_error
 {
 public:
     Exception(CURLcode code, const std::string& context);
-    Exception(CURLcode code, const std::string& extrainfo, const std::string& context);
+    Exception(CURLcode code, const std::string& extrainfo,
+              const std::string& context);
 };
 
 struct Request;
-
 
 /**
  * Wrapper for the CURL easy API
@@ -30,18 +30,17 @@ struct CurlEasy
 
     CurlEasy();
     CurlEasy(const CurlEasy&) = delete;
-    CurlEasy(CurlEasy&&) = delete;
+    CurlEasy(CurlEasy&&)      = delete;
     ~CurlEasy();
 
     CurlEasy& operator=(const CurlEasy&) = delete;
-    CurlEasy& operator=(CurlEasy&&) = delete;
+    CurlEasy& operator=(CurlEasy&&)      = delete;
 
     void reset();
 
     operator CURL*() { return m_curl; }
     operator const CURL*() const { return m_curl; }
 };
-
 
 /**
  * Builds curl_httppost POST data
@@ -61,7 +60,6 @@ public:
 
     curl_mime* get() { return post; }
 };
-
 
 /**
  * CURL HTTP request
@@ -99,36 +97,36 @@ protected:
     virtual void process_header_line(const std::string& line);
 
     /// Process a chunk of response body
-    virtual size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) = 0;
+    virtual size_t process_body_chunk(void* ptr, size_t size, size_t nmemb,
+                                      void* stream) = 0;
 
     // Curl callback to process header data
-    static size_t headerfunc(void *ptr, size_t size, size_t nmemb, void *stream);
+    static size_t headerfunc(void* ptr, size_t size, size_t nmemb,
+                             void* stream);
 
     // Curl callback to process response body data
-    static size_t writefunc(void *ptr, size_t size, size_t nmemb, void *stream);
+    static size_t writefunc(void* ptr, size_t size, size_t nmemb, void* stream);
 };
-
 
 /**
  * Process CURL results, inserting them into a container
  */
-template<typename Container>
-struct BufState : public Request
+template <typename Container> struct BufState : public Request
 {
     using Request::Request;
 
     Container buf;
 
-    size_t process_body_chunk(void *ptr, size_t size, size_t nmemb, void *stream) override
+    size_t process_body_chunk(void* ptr, size_t size, size_t nmemb,
+                              void* stream) override
     {
         buf.insert(buf.end(), (uint8_t*)ptr, (uint8_t*)ptr + size * nmemb);
         return size * nmemb;
     }
 };
 
-
-}
-}
-}
+} // namespace curl
+} // namespace core
+} // namespace arki
 
 #endif

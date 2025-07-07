@@ -3,11 +3,11 @@
 
 /// zlib wrappers
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
-#include <zlib.h>
 #include <vector>
-#include <cstdint>
+#include <zlib.h>
 
 namespace arki {
 namespace utils {
@@ -66,14 +66,16 @@ public:
     z_off_t seek(z_off_t offset, int whence);
 
     /// Return the file pathname
-    [[deprecated("Use path() instead")]] const std::string& name() const { return pathname.native(); }
+    [[deprecated("Use path() instead")]] const std::string& name() const
+    {
+        return pathname.native();
+    }
     const std::filesystem::path& path() const { return pathname; }
 
     operator gzFile() const { return fd; }
 };
 
-}
-}
-}
+} // namespace gzip
+} // namespace utils
+} // namespace arki
 #endif
-

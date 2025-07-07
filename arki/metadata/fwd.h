@@ -21,10 +21,10 @@ class Postprocess;
 namespace sort {
 class Compare;
 class Stream;
-}
+} // namespace sort
 
-}
+} // namespace metadata
 
-}
+} // namespace arki
 
 #endif

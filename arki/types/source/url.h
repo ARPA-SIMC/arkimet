@@ -11,7 +11,7 @@ class URL : public Source
 {
 public:
     constexpr static const char* name = "URL";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 The data is stored at a remote location.
 
 This is a string containing a URL that points at the data remotely.
@@ -28,18 +28,21 @@ query time, with data returned inline after the metadata.
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
 
     int compare_local(const Source& o) const override;
     bool equals(const Type& o) const override;
     URL* clone() const override;
 
-    static std::unique_ptr<URL> create(DataFormat format, const std::string& url);
-    static std::unique_ptr<URL> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
+    static std::unique_ptr<URL> create(DataFormat format,
+                                       const std::string& url);
+    static std::unique_ptr<URL>
+    decode_structure(const structured::Keys& keys,
+                     const structured::Reader& reader);
 };
 
-
-}
-}
-}
+} // namespace source
+} // namespace types
+} // namespace arki
 #endif

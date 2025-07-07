@@ -3,25 +3,24 @@
 
 /// Represent where the data for a metadata can be found
 
-#include <filesystem>
-#include <arki/types.h>
 #include <arki/segment/fwd.h>
+#include <arki/types.h>
+#include <filesystem>
 
 namespace arki {
 namespace types {
 namespace source {
 
 /// Style values
-enum class Style: unsigned char {
-    BLOB = 1,
-    URL = 2,
+enum class Style : unsigned char {
+    BLOB   = 1,
+    URL    = 2,
     INLINE = 3,
 };
 
-}
+} // namespace source
 
-template<>
-struct traits<Source>
+template <> struct traits<Source>
 {
     static const char* type_tag;
     static const types::Code type_code;
@@ -45,7 +44,10 @@ public:
     DataFormat format;
 
     types::Code type_code() const override { return traits<Source>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<Source>::type_sersize_bytes; }
+    size_t serialisationSizeLength() const override
+    {
+        return traits<Source>::type_sersize_bytes;
+    }
     std::string tag() const override { return traits<Source>::type_tag; }
 
     typedef source::Style Style;
@@ -64,32 +66,51 @@ public:
 
     /// CODEC functions
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
-    static std::unique_ptr<Source> decode(core::BinaryDecoder& dec, bool reuse_buffer);
-    static std::unique_ptr<Source> decodeRelative(core::BinaryDecoder& dec, const std::filesystem::path& basedir);
+    static std::unique_ptr<Source> decode(core::BinaryDecoder& dec,
+                                          bool reuse_buffer);
+    static std::unique_ptr<Source>
+    decodeRelative(core::BinaryDecoder& dec,
+                   const std::filesystem::path& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
-    static std::unique_ptr<Source> decode_structure(const structured::Keys& keys, const structured::Reader& val);
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    static std::unique_ptr<Source>
+    decode_structure(const structured::Keys& keys,
+                     const structured::Reader& val);
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
 
     Source* clone() const override = 0;
 
     // Register this type with the type system
     static void init();
 
-    static std::unique_ptr<Source> createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createBlob(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
-    static std::unique_ptr<Source> createBlobUnlocked(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Source> createInline(DataFormat format, uint64_t size);
-    static std::unique_ptr<Source> createURL(DataFormat format, const std::string& url);
+    static std::unique_ptr<Source>
+    createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset,
+               uint64_t size);
+    static std::unique_ptr<Source>
+    createBlob(DataFormat format, const std::filesystem::path& basedir,
+               const std::filesystem::path& filename, uint64_t offset,
+               uint64_t size, std::shared_ptr<segment::data::Reader> reader);
+    static std::unique_ptr<Source>
+    createBlobUnlocked(DataFormat format, const std::filesystem::path& basedir,
+                       const std::filesystem::path& filename, uint64_t offset,
+                       uint64_t size);
+    static std::unique_ptr<Source> createInline(DataFormat format,
+                                                uint64_t size);
+    static std::unique_ptr<Source> createURL(DataFormat format,
+                                             const std::string& url);
 
     static void write_documentation(stream::Text& out, unsigned heading_level);
 };
 
 namespace source {
 
-inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Source::formatStyle(s); }
-
+inline std::ostream& operator<<(std::ostream& o, Style s)
+{
+    return o << Source::formatStyle(s);
 }
 
-}
-}
+} // namespace source
+
+} // namespace types
+} // namespace arki
 #endif

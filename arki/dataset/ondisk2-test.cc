@@ -8,7 +8,8 @@ using namespace arki::types;
 
 namespace {
 
-struct Fixture : public DatasetTest {
+struct Fixture : public DatasetTest
+{
     using DatasetTest::DatasetTest;
 
     void test_setup()
@@ -29,22 +30,24 @@ class Tests : public FixtureTestCase<Fixture>
 
 Tests tests("arki_dataset_ondisk2");
 
+void Tests::register_tests()
+{
 
-void Tests::register_tests() {
+    // Test acquiring data
+    add_method("deprecation", [](Fixture& f) {
+        auto ds = f.dataset_config();
 
-// Test acquiring data
-add_method("deprecation", [](Fixture& f) {
-    auto ds = f.dataset_config();
+        auto e1 = wassert_throws(std::runtime_error, ds->create_reader());
+        wassert(actual(e1.what()).contains(
+            "ondisk2 datasets are not supported anymore"));
 
-    auto e1 = wassert_throws(std::runtime_error, ds->create_reader());
-    wassert(actual(e1.what()).contains("ondisk2 datasets are not supported anymore"));
+        auto e2 = wassert_throws(std::runtime_error, ds->create_writer());
+        wassert(actual(e2.what()).contains(
+            "ondisk2 datasets are not supported anymore"));
 
-    auto e2 = wassert_throws(std::runtime_error, ds->create_writer());
-    wassert(actual(e2.what()).contains("ondisk2 datasets are not supported anymore"));
-
-    auto e3 = wassert_throws(std::runtime_error, ds->create_checker());
-    wassert(actual(e3.what()).contains("ondisk2 datasets are not supported anymore"));
-});
-
+        auto e3 = wassert_throws(std::runtime_error, ds->create_checker());
+        wassert(actual(e3.what()).contains(
+            "ondisk2 datasets are not supported anymore"));
+    });
 }
-}
+} // namespace

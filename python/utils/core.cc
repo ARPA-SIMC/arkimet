@@ -4,4 +4,4 @@ namespace arki {
 namespace python {
 
 }
-}
+} // namespace arki

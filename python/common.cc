@@ -1,13 +1,13 @@
 #include "common.h"
-#include "cfg.h"
-#include "metadata.h"
-#include "matcher.h"
-#include "utils/values.h"
-#include "arki/libconfig.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
+#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/runtime.h"
+#include "cfg.h"
+#include "matcher.h"
+#include "metadata.h"
+#include "utils/values.h"
 #include <datetime.h>
 
 using namespace std;
@@ -16,22 +16,26 @@ namespace arki {
 namespace python {
 
 #if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7
-PyObject *ArkiPyImport_GetModule(PyObject *name)
+PyObject* ArkiPyImport_GetModule(PyObject* name)
 {
-    PyObject *m;
-    PyObject *modules = PyImport_GetModuleDict();
-    if (modules == NULL) {
+    PyObject* m;
+    PyObject* modules = PyImport_GetModuleDict();
+    if (modules == NULL)
+    {
         PyErr_SetString(PyExc_RuntimeError, "unable to get sys.modules");
         return NULL;
     }
     Py_INCREF(modules);
-    if (PyDict_CheckExact(modules)) {
-        m = PyDict_GetItemWithError(modules, name);  /* borrowed */
+    if (PyDict_CheckExact(modules))
+    {
+        m = PyDict_GetItemWithError(modules, name); /* borrowed */
         Py_XINCREF(m);
     }
-    else {
+    else
+    {
         m = PyObject_GetItem(modules, name);
-        if (m == NULL && PyErr_ExceptionMatches(PyExc_KeyError)) {
+        if (m == NULL && PyErr_ExceptionMatches(PyExc_KeyError))
+        {
             PyErr_Clear();
         }
     }
@@ -45,20 +49,19 @@ void set_std_exception(const std::exception& e)
     PyErr_SetString(PyExc_RuntimeError, e.what());
 }
 
-
 namespace {
 
 struct PythonLineReader : public core::LineReader
 {
     PyObject* iter;
 
-    PythonLineReader(PyObject* obj)
-        : iter(throw_ifnull(PyObject_GetIter(obj)))
+    PythonLineReader(PyObject* obj) : iter(throw_ifnull(PyObject_GetIter(obj)))
     {
     }
     virtual ~PythonLineReader()
     {
-        if (iter) Py_DECREF(iter);
+        if (iter)
+            Py_DECREF(iter);
     }
 
     bool getline(std::string& line) override
@@ -73,7 +76,7 @@ struct PythonLineReader : public core::LineReader
                 throw PythonException();
             Py_DECREF(iter);
             fd_eof = true;
-            iter = nullptr;
+            iter   = nullptr;
             return false;
         }
 
@@ -90,7 +93,7 @@ struct PythonLineReader : public core::LineReader
     }
 };
 
-}
+} // namespace
 
 std::unique_ptr<core::LineReader> linereader_from_python(PyObject* o)
 {
@@ -109,8 +112,8 @@ PyObject* dataformat_to_python(DataFormat val)
 
 static int get_attr_int(PyObject* o, const char* name)
 {
-  pyo_unique_ptr res(throw_ifnull(PyObject_GetAttrString(o, name)));
-  return from_python<int>(res);
+    pyo_unique_ptr res(throw_ifnull(PyObject_GetAttrString(o, name)));
+    return from_python<int>(res);
 }
 
 core::Time core_time_from_python(PyObject* o)
@@ -121,25 +124,20 @@ core::Time core_time_from_python(PyObject* o)
     if (PyDateTime_Check(0))
     {
         PyDateTime_DateTime* dt = reinterpret_cast<PyDateTime_DateTime*>(o);
-        return core::Time(
-                PyDateTime_GET_YEAR(dt), PyDateTime_GET_MONTH(dt), PyDateTime_GET_DAY(dt),
-                PyDateTime_DATE_GET_HOUR(dt), PyDateTime_DATE_GET_MINUTE(dt), PyDateTime_DATE_GET_SECOND(dt));
+        return core::Time(PyDateTime_GET_YEAR(dt), PyDateTime_GET_MONTH(dt),
+                          PyDateTime_GET_DAY(dt), PyDateTime_DATE_GET_HOUR(dt),
+                          PyDateTime_DATE_GET_MINUTE(dt),
+                          PyDateTime_DATE_GET_SECOND(dt));
     }
-  
+
     // Fall back to duck typing, to catch creative cases such as
     // cftime.datetime instances. See https://unidata.github.io/cftime/api.html
-    return core::Time(
-            get_attr_int(o, "year"),
-            get_attr_int(o, "month"),
-            get_attr_int(o, "day"),
-            get_attr_int(o, "hour"),
-            get_attr_int(o, "minute"),
-            get_attr_int(o, "second")
-    );
+    return core::Time(get_attr_int(o, "year"), get_attr_int(o, "month"),
+                      get_attr_int(o, "day"), get_attr_int(o, "hour"),
+                      get_attr_int(o, "minute"), get_attr_int(o, "second"));
 
-    // PyErr_SetString(PyExc_TypeError, "value must be an instance of datetime.datetime");
-    // throw PythonException();
-
+    // PyErr_SetString(PyExc_TypeError, "value must be an instance of
+    // datetime.datetime"); throw PythonException();
 }
 
 PyObject* core_time_to_python(const core::Time& time)
@@ -148,8 +146,7 @@ PyObject* core_time_to_python(const core::Time& time)
         Py_RETURN_NONE;
 
     return throw_ifnull(PyDateTime_FromDateAndTime(
-                time.ye, time.mo, time.da,
-                time.ho, time.mi, time.se, 0));
+        time.ye, time.mo, time.da, time.ho, time.mi, time.se, 0));
 }
 
 int common_init()
@@ -177,5 +174,5 @@ int common_init()
     return 0;
 }
 
-}
-}
+} // namespace python
+} // namespace arki

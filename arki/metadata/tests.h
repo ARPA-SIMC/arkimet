@@ -1,9 +1,9 @@
 #ifndef ARKI_METADATA_TESTS_H
 #define ARKI_METADATA_TESTS_H
 
-#include <arki/types/tests.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
+#include <arki/types/tests.h>
 
 namespace arki::tests {
 
@@ -44,7 +44,9 @@ struct JPEGData : TestData
     JPEGData();
 };
 
-std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size, unsigned month, unsigned day, unsigned hour=0);
+std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size,
+                                          unsigned month, unsigned day,
+                                          unsigned hour = 0);
 
 void fill(Metadata& md);
 
@@ -52,8 +54,14 @@ struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
 {
     explicit ActualMetadata(const Metadata& s) : Actual<const Metadata&>(s) {}
 
-    void operator==(std::shared_ptr<Metadata> expected) const { return operator==(*expected); }
-    void operator!=(std::shared_ptr<Metadata> expected) const { return operator!=(*expected); }
+    void operator==(std::shared_ptr<Metadata> expected) const
+    {
+        return operator==(*expected);
+    }
+    void operator!=(std::shared_ptr<Metadata> expected) const
+    {
+        return operator!=(*expected);
+    }
 
     void operator==(const Metadata& expected) const;
     void operator!=(const Metadata& expected) const;
@@ -80,9 +88,16 @@ struct ActualMetadata : public arki::utils::tests::Actual<const Metadata&>
     void not_matches(const std::string& expr);
 };
 
-inline arki::tests::ActualMetadata actual(const arki::Metadata& actual) { return arki::tests::ActualMetadata(actual); }
-inline arki::tests::ActualMetadata actual(std::shared_ptr<const arki::Metadata> actual) { return arki::tests::ActualMetadata(*actual); }
-
+inline arki::tests::ActualMetadata actual(const arki::Metadata& actual)
+{
+    return arki::tests::ActualMetadata(actual);
 }
+inline arki::tests::ActualMetadata
+actual(std::shared_ptr<const arki::Metadata> actual)
+{
+    return arki::tests::ActualMetadata(*actual);
+}
+
+} // namespace arki::tests
 
 #endif

@@ -18,11 +18,10 @@ class Tests : public TestCase
 
 Tests test("arki_stream_filter");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

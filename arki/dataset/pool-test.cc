@@ -1,7 +1,7 @@
 #include "arki/core/cfg.h"
-#include "arki/tests/tests.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
+#include "arki/tests/tests.h"
 #include "pool.h"
 
 namespace {
@@ -49,169 +49,189 @@ std::shared_ptr<core::cfg::Section> cfg(const std::string& config)
     return cfg;
 }
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("add_local", [] {
-    auto session = std::make_shared<dataset::Session>();
-    auto pool = std::make_shared<dataset::Pool>(session);
-    auto cfg = dataset::Session::read_configs("inbound/test.grib1");
-    auto sec = cfg->section("inbound/test.grib1");
-    pool->add_dataset(*sec);
-    wassert_true(pool->has_dataset("inbound/test.grib1"));
-
-    auto ds = pool->dataset("inbound/test.grib1");
-    wassert_true(ds);
-});
-
-add_method("get_common_remote_server", [] {
-    {
-        std::string conf =
-            "[test200]\n"
-            "name = test200\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test200\n"
-            "server = http://foo.bar/foo/\n"
-            "\n"
-            "[test80]\n"
-            "name = test80\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test80\n"
-            "server = http://foo.bar/foo/\n"
-            "\n"
-            "[error]\n"
-            "name = error\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n"
-            "server = http://foo.bar/foo/\n";
-        auto cfg = core::cfg::Sections::parse(conf);
+    add_method("add_local", [] {
         auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        for (const auto& si: *cfg)
-            pool->add_dataset(*si.second, false);
+        auto pool    = std::make_shared<dataset::Pool>(session);
+        auto cfg     = dataset::Session::read_configs("inbound/test.grib1");
+        auto sec     = cfg->section("inbound/test.grib1");
+        pool->add_dataset(*sec);
+        wassert_true(pool->has_dataset("inbound/test.grib1"));
 
-        wassert(actual(pool->get_common_remote_server()) == "http://foo.bar/foo/");
-    }
+        auto ds = pool->dataset("inbound/test.grib1");
+        wassert_true(ds);
+    });
 
-    {
-        string conf =
-            "[test200]\n"
-            "name = test200\n"
-            "type = remote\n"
-            "path = http://bar.foo.bar/foo/dataset/test200\n"
-            "server = http://bar.foo.bar/foo/\n"
-            "\n"
-            "[test80]\n"
-            "name = test80\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test80\n"
-            "server = http://foo.bar/foo/\n"
-            "\n"
-            "[error]\n"
-            "name = error\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n"
-            "server = http://foo.bar/foo/\n";
-        auto cfg = core::cfg::Sections::parse(conf);
+    add_method("get_common_remote_server", [] {
+        {
+            std::string conf = "[test200]\n"
+                               "name = test200\n"
+                               "type = remote\n"
+                               "path = http://foo.bar/foo/dataset/test200\n"
+                               "server = http://foo.bar/foo/\n"
+                               "\n"
+                               "[test80]\n"
+                               "name = test80\n"
+                               "type = remote\n"
+                               "path = http://foo.bar/foo/dataset/test80\n"
+                               "server = http://foo.bar/foo/\n"
+                               "\n"
+                               "[error]\n"
+                               "name = error\n"
+                               "type = remote\n"
+                               "path = http://foo.bar/foo/dataset/error\n"
+                               "server = http://foo.bar/foo/\n";
+            auto cfg         = core::cfg::Sections::parse(conf);
+            auto session     = std::make_shared<dataset::Session>();
+            auto pool        = std::make_shared<dataset::Pool>(session);
+            for (const auto& si : *cfg)
+                pool->add_dataset(*si.second, false);
+
+            wassert(actual(pool->get_common_remote_server()) ==
+                    "http://foo.bar/foo/");
+        }
+
+        {
+            string conf  = "[test200]\n"
+                           "name = test200\n"
+                           "type = remote\n"
+                           "path = http://bar.foo.bar/foo/dataset/test200\n"
+                           "server = http://bar.foo.bar/foo/\n"
+                           "\n"
+                           "[test80]\n"
+                           "name = test80\n"
+                           "type = remote\n"
+                           "path = http://foo.bar/foo/dataset/test80\n"
+                           "server = http://foo.bar/foo/\n"
+                           "\n"
+                           "[error]\n"
+                           "name = error\n"
+                           "type = remote\n"
+                           "path = http://foo.bar/foo/dataset/error\n"
+                           "server = http://foo.bar/foo/\n";
+            auto cfg     = core::cfg::Sections::parse(conf);
+            auto session = std::make_shared<dataset::Session>();
+            auto pool    = std::make_shared<dataset::Pool>(session);
+            for (const auto& si : *cfg)
+                pool->add_dataset(*si.second, false);
+            wassert(actual(pool->get_common_remote_server()) == "");
+        }
+
+        {
+            string conf  = "[test200]\n"
+                           "name = test200\n"
+                           "type = iseg\n"
+                           "format = grib\n"
+                           "step = daily\n"
+                           "path = http://foo.bar/foo/dataset/test200\n"
+                           "server = http://foo.bar/foo/\n"
+                           "\n"
+                           "[test80]\n"
+                           "name = test80\n"
+                           "type = remote\n"
+                           "path = http://foo.bar/foo/dataset/test80\n"
+                           "server = http://foo.bar/foo/\n"
+                           "\n"
+                           "[error]\n"
+                           "name = error\n"
+                           "type = remote\n"
+                           "path = http://foo.bar/foo/dataset/error\n"
+                           "server = http://foo.bar/foo/\n";
+            auto cfg     = core::cfg::Sections::parse(conf);
+            auto session = std::make_shared<dataset::Session>();
+            auto pool    = std::make_shared<dataset::Pool>(session);
+            for (const auto& si : *cfg)
+                pool->add_dataset(*si.second, false);
+            wassert(actual(pool->get_common_remote_server()) == "");
+        }
+    });
+
+    add_method("instantiate", [] {
+        using namespace arki::dataset;
+        // In-memory dataset configuration
         auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        for (const auto& si: *cfg)
-            pool->add_dataset(*si.second, false);
-        wassert(actual(pool->get_common_remote_server()) == "");
-    }
+        auto pool    = std::make_shared<dataset::Pool>(session);
+        auto config  = core::cfg::Sections::parse(sample_config, "(memory)");
+        for (const auto& i : *config)
+            pool->add_dataset(*i.second);
 
-    {
-        string conf =
-            "[test200]\n"
-            "name = test200\n"
-            "type = iseg\n"
-            "format = grib\n"
-            "step = daily\n"
-            "path = http://foo.bar/foo/dataset/test200\n"
-            "server = http://foo.bar/foo/\n"
-            "\n"
-            "[test80]\n"
-            "name = test80\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/test80\n"
-            "server = http://foo.bar/foo/\n"
-            "\n"
-            "[error]\n"
-            "name = error\n"
-            "type = remote\n"
-            "path = http://foo.bar/foo/dataset/error\n"
-            "server = http://foo.bar/foo/\n";
-        auto cfg = core::cfg::Sections::parse(conf);
-        auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        for (const auto& si: *cfg)
-            pool->add_dataset(*si.second, false);
-        wassert(actual(pool->get_common_remote_server()) == "");
-    }
-});
+        DispatchPool dpool(pool);
+        wassert(actual(dpool.get("error")).istrue());
+        wassert(actual(dpool.get("test200")).istrue());
+        wassert(actual(dpool.get("test80")).istrue());
+        try
+        {
+            dpool.get("duplicates");
+            throw TestFailed(
+                "looking up nonexisting dataset should throw runtime_error");
+        }
+        catch (runtime_error&)
+        {
+        }
+    });
 
-add_method("instantiate", [] {
-    using namespace arki::dataset;
-    // In-memory dataset configuration
-    auto session = std::make_shared<dataset::Session>();
-    auto pool = std::make_shared<dataset::Pool>(session);
-    auto config = core::cfg::Sections::parse(sample_config, "(memory)");
-    for (const auto& i: *config)
-        pool->add_dataset(*i.second);
+    add_method("dataset_for_use", [] {
+        {
+            auto session = std::make_shared<dataset::Session>();
+            auto pool    = std::make_shared<dataset::Pool>(session);
+            pool->add_dataset(*cfg("name=a\nuse=errors\ntype=simple\n"), false);
+            wassert(actual(pool->dataset_for_use(DatasetUse::ERRORS)->name()) ==
+                    "a");
+            wassert(
+                actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) ==
+                "a");
+        }
 
-    DispatchPool dpool(pool);
-    wassert(actual(dpool.get("error")).istrue());
-    wassert(actual(dpool.get("test200")).istrue());
-    wassert(actual(dpool.get("test80")).istrue());
-    try {
-        dpool.get("duplicates");
-        throw TestFailed("looking up nonexisting dataset should throw runtime_error");
-    } catch (runtime_error&) {
-    }
-});
+        {
+            auto session = std::make_shared<dataset::Session>();
+            auto pool    = std::make_shared<dataset::Pool>(session);
+            pool->add_dataset(*cfg("name=a\nuse=errors\ntype=simple\n"), false);
+            pool->add_dataset(*cfg("name=b\nuse=duplicates\ntype=simple\n"),
+                              false);
+            wassert(actual(pool->dataset_for_use(DatasetUse::ERRORS)->name()) ==
+                    "a");
+            wassert(
+                actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) ==
+                "b");
+        }
 
-add_method("dataset_for_use", [] {
-    {
-        auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        pool->add_dataset(*cfg("name=a\nuse=errors\ntype=simple\n"), false);
-        wassert(actual(pool->dataset_for_use(DatasetUse::ERRORS)->name()) == "a");
-        wassert(actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) == "a");
-    }
+        {
+            auto session = std::make_shared<dataset::Session>();
+            auto pool    = std::make_shared<dataset::Pool>(session);
+            pool->add_dataset(*cfg("name=b\nuse=duplicates\ntype=simple\n"),
+                              false);
+            auto e = wassert_throws(std::runtime_error,
+                                    pool->dataset_for_use(DatasetUse::ERRORS));
+            wassert(actual(e.what()) ==
+                    "no error dataset found in configuration");
+            wassert(
+                actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) ==
+                "b");
+        }
 
-    {
-        auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        pool->add_dataset(*cfg("name=a\nuse=errors\ntype=simple\n"), false);
-        pool->add_dataset(*cfg("name=b\nuse=duplicates\ntype=simple\n"), false);
-        wassert(actual(pool->dataset_for_use(DatasetUse::ERRORS)->name()) == "a");
-        wassert(actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) == "b");
-    }
+        {
+            auto session = std::make_shared<dataset::Session>();
+            auto pool    = std::make_shared<dataset::Pool>(session);
+            pool->add_dataset(*cfg("name=a\ntype=simple\n"), false);
 
-    {
-        auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        pool->add_dataset(*cfg("name=b\nuse=duplicates\ntype=simple\n"), false);
-        auto e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::ERRORS));
-        wassert(actual(e.what()) == "no error dataset found in configuration");
-        wassert(actual(pool->dataset_for_use(DatasetUse::DUPLICATES)->name()) == "b");
-    }
+            auto e = wassert_throws(std::runtime_error,
+                                    pool->dataset_for_use(DatasetUse::ERRORS));
+            wassert(actual(e.what()) ==
+                    "no error dataset found in configuration");
 
-    {
-        auto session = std::make_shared<dataset::Session>();
-        auto pool = std::make_shared<dataset::Pool>(session);
-        pool->add_dataset(*cfg("name=a\ntype=simple\n"), false);
+            e = wassert_throws(std::runtime_error,
+                               pool->dataset_for_use(DatasetUse::DUPLICATES));
+            wassert(actual(e.what()) ==
+                    "no error dataset found in configuration");
 
-        auto e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::ERRORS));
-        wassert(actual(e.what()) == "no error dataset found in configuration");
-
-        e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::DUPLICATES));
-        wassert(actual(e.what()) == "no error dataset found in configuration");
-
-        e = wassert_throws(std::runtime_error, pool->dataset_for_use(DatasetUse::DEFAULT));
-        wassert(actual(e.what()) == "cannot select a dataset for use=DEFAULT");
-    }
-});
-
+            e = wassert_throws(std::runtime_error,
+                               pool->dataset_for_use(DatasetUse::DEFAULT));
+            wassert(actual(e.what()) ==
+                    "cannot select a dataset for use=DEFAULT");
+        }
+    });
 }
 
-}
+} // namespace

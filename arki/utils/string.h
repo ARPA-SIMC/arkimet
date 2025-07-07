@@ -13,9 +13,7 @@
 #include <sstream>
 #include <string>
 
-namespace arki {
-namespace utils {
-namespace str {
+namespace arki::utils::str {
 
 /// Check if a string starts with the given substring
 inline bool startswith(const std::string& str, const std::string& part)
@@ -259,6 +257,5 @@ std::string encode_base64(const void* data, size_t size);
 /// Decode a string encoded in Base64
 std::string decode_base64(const std::string& str);
 
-} // namespace str
-} // namespace arki::utils
+} // namespace arki::utils::str
 #endif

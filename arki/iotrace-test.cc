@@ -1,7 +1,7 @@
 #include "config.h"
 
-#include <arki/tests/tests.h>
 #include <arki/iotrace.h>
+#include <arki/tests/tests.h>
 
 namespace {
 using namespace std;
@@ -14,11 +14,10 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_iotrace");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

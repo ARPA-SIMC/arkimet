@@ -8,6 +8,6 @@ class Bytes;
 class Progress;
 class TrackProgress;
 
-}
+} // namespace arki::query
 
 #endif

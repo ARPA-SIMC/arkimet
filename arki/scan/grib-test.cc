@@ -1,24 +1,24 @@
-#include "arki/metadata/tests.h"
 #include "arki/core/file.h"
-#include "arki/scan/grib.h"
-#include "arki/types/source.h"
-#include "arki/types/origin.h"
-#include "arki/types/product.h"
-#include "arki/types/level.h"
-#include "arki/types/timerange.h"
-#include "arki/types/reftime.h"
-#include "arki/types/area.h"
-#include "arki/types/proddef.h"
-#include "arki/types/run.h"
 #include "arki/metadata.h"
-#include "arki/metadata/data.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/data.h"
+#include "arki/metadata/tests.h"
+#include "arki/scan/grib.h"
 #include "arki/scan/validator.h"
-#include "arki/utils/sys.h"
+#include "arki/types/area.h"
+#include "arki/types/level.h"
+#include "arki/types/origin.h"
+#include "arki/types/proddef.h"
+#include "arki/types/product.h"
+#include "arki/types/reftime.h"
+#include "arki/types/run.h"
+#include "arki/types/source.h"
+#include "arki/types/timerange.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <iostream>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 namespace {
 using namespace std;
@@ -33,37 +33,41 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_grib");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Test validation
-add_method("validation", [] {
-    Metadata md;
-    vector<uint8_t> buf;
+    // Test validation
+    add_method("validation", [] {
+        Metadata md;
+        vector<uint8_t> buf;
 
-    const scan::Validator& v = scan::grib::validator();
+        const scan::Validator& v = scan::grib::validator();
 
-    sys::File fd("inbound/test.grib1", O_RDONLY);
-    v.validate_file(fd, 0, 7218);
-    v.validate_file(fd, 7218, 34960);
-    v.validate_file(fd, 42178, 2234);
+        sys::File fd("inbound/test.grib1", O_RDONLY);
+        v.validate_file(fd, 0, 7218);
+        v.validate_file(fd, 7218, 34960);
+        v.validate_file(fd, 42178, 2234);
 
-    wassert_throws(std::runtime_error, v.validate_file(fd, 1, 7217));
-    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 7217));
-    wassert_throws(std::runtime_error, v.validate_file(fd, 0, 7219));
-    wassert_throws(std::runtime_error, v.validate_file(fd, 7217, 34961));
-    wassert_throws(std::runtime_error, v.validate_file(fd, 42178, 2235));
-    wassert_throws(std::runtime_error, v.validate_file(fd, 44412, 0));
-    wassert_throws(std::runtime_error, v.validate_file(fd, 44412, 10));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 1, 7217));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 0, 7217));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 0, 7219));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 7217, 34961));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 42178, 2235));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 44412, 0));
+        wassert_throws(std::runtime_error, v.validate_file(fd, 44412, 10));
 
-    fd.close();
+        fd.close();
 
-    metadata::TestCollection mdc("inbound/test.grib1");
-    buf = mdc[0].get_data().read();
+        metadata::TestCollection mdc("inbound/test.grib1");
+        buf = mdc[0].get_data().read();
 
-    wassert(v.validate_buf(buf.data(), buf.size()));
-    wassert_throws(std::runtime_error, v.validate_buf((const char*)buf.data()+1, buf.size()-1));
-    wassert_throws(std::runtime_error, v.validate_buf(buf.data(), buf.size()-1));
-});
+        wassert(v.validate_buf(buf.data(), buf.size()));
+        wassert_throws(
+            std::runtime_error,
+            v.validate_buf((const char*)buf.data() + 1, buf.size() - 1));
+        wassert_throws(std::runtime_error,
+                       v.validate_buf(buf.data(), buf.size() - 1));
+    });
 
 #if 0
 // Check opening very long GRIB files for scanning
@@ -80,7 +84,6 @@ add_method("bigfile", [] {
     wassert(scanner.test_open("bigfile.grib1"));
 });
 #endif
-
 }
 
-}
+} // namespace

@@ -11,18 +11,17 @@ namespace types {
 namespace product {
 
 /// Style values
-enum class Style: unsigned char {
-    GRIB1 = 1,
-    GRIB2 = 2,
-    BUFR = 3,
+enum class Style : unsigned char {
+    GRIB1  = 1,
+    GRIB2  = 2,
+    BUFR   = 3,
     ODIMH5 = 4,
-    VM2 = 5,
+    VM2    = 5,
 };
 
-}
+} // namespace product
 
-template<>
-struct traits<Product>
+template <> struct traits<Product>
 {
     static const char* type_tag;
     static const types::Code type_code;
@@ -46,27 +45,45 @@ public:
 
     typedef product::Style Style;
 
-    types::Code type_code() const override { return traits<Product>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<Product>::type_sersize_bytes; }
+    types::Code type_code() const override
+    {
+        return traits<Product>::type_code;
+    }
+    size_t serialisationSizeLength() const override
+    {
+        return traits<Product>::type_sersize_bytes;
+    }
     std::string tag() const override { return traits<Product>::type_tag; }
 
     static Style style(const uint8_t* data, unsigned size);
-    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& origin, unsigned& table, unsigned& product);
-    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version);
-    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values);
-    static void get_ODIMH5(const uint8_t* data, unsigned size, std::string& obj, std::string& prod);
-    static void get_VM2(const uint8_t* data, unsigned size, unsigned& variable_id);
+    static void get_GRIB1(const uint8_t* data, unsigned size, unsigned& origin,
+                          unsigned& table, unsigned& product);
+    static void get_GRIB2(const uint8_t* data, unsigned size, unsigned& centre,
+                          unsigned& discipline, unsigned& category,
+                          unsigned& number, unsigned& table_version,
+                          unsigned& local_table_version);
+    static void get_BUFR(const uint8_t* data, unsigned size, unsigned& type,
+                         unsigned& subtype, unsigned& localsubtype,
+                         ValueBag& values);
+    static void get_ODIMH5(const uint8_t* data, unsigned size, std::string& obj,
+                           std::string& prod);
+    static void get_VM2(const uint8_t* data, unsigned size,
+                        unsigned& variable_id);
 
     Style style() const { return style(data, size); }
     void get_GRIB1(unsigned& origin, unsigned& table, unsigned& product) const
     {
         get_GRIB1(data, size, origin, table, product);
     }
-    void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category, unsigned& number, unsigned& table_version, unsigned& local_table_version) const
+    void get_GRIB2(unsigned& centre, unsigned& discipline, unsigned& category,
+                   unsigned& number, unsigned& table_version,
+                   unsigned& local_table_version) const
     {
-        get_GRIB2(data, size, centre, discipline, category, number, table_version, local_table_version);
+        get_GRIB2(data, size, centre, discipline, category, number,
+                  table_version, local_table_version);
     }
-    void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype, ValueBag& values) const
+    void get_BUFR(unsigned& type, unsigned& subtype, unsigned& localsubtype,
+                  ValueBag& values) const
     {
         get_BUFR(data, size, type, subtype, localsubtype, values);
     }
@@ -88,23 +105,32 @@ public:
 
     /// CODEC functions
 
-    static std::unique_ptr<Product> decode(core::BinaryDecoder& dec, bool reuse_buffer);
+    static std::unique_ptr<Product> decode(core::BinaryDecoder& dec,
+                                           bool reuse_buffer);
     static std::unique_ptr<Product> decodeString(const std::string& val);
-    static std::unique_ptr<Product> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::unique_ptr<Product>
+    decode_structure(const structured::Keys& keys,
+                     const structured::Reader& val);
 
     static void init();
 
-    static std::unique_ptr<Product> createGRIB1(unsigned char origin, unsigned char table, unsigned char product);
-    static std::unique_ptr<Product> createGRIB2(
-            unsigned short centre,
-            unsigned char discipline,
-            unsigned char category,
-            unsigned char number,
-            unsigned char table_version=4,
-            unsigned char local_table_version=255);
-    static std::unique_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype);
-    static std::unique_ptr<Product> createBUFR(unsigned char type, unsigned char subtype, unsigned char localsubtype, const ValueBag& name);
-    static std::unique_ptr<Product> createODIMH5(const std::string& obj, const std::string& prod);
+    static std::unique_ptr<Product> createGRIB1(unsigned char origin,
+                                                unsigned char table,
+                                                unsigned char product);
+    static std::unique_ptr<Product>
+    createGRIB2(unsigned short centre, unsigned char discipline,
+                unsigned char category, unsigned char number,
+                unsigned char table_version       = 4,
+                unsigned char local_table_version = 255);
+    static std::unique_ptr<Product> createBUFR(unsigned char type,
+                                               unsigned char subtype,
+                                               unsigned char localsubtype);
+    static std::unique_ptr<Product> createBUFR(unsigned char type,
+                                               unsigned char subtype,
+                                               unsigned char localsubtype,
+                                               const ValueBag& name);
+    static std::unique_ptr<Product> createODIMH5(const std::string& obj,
+                                                 const std::string& prod);
     static std::unique_ptr<Product> createVM2(unsigned variable_id);
 
     static void write_documentation(stream::Text& out, unsigned heading_level);
@@ -112,13 +138,16 @@ public:
 
 namespace product {
 
-inline std::ostream& operator<<(std::ostream& o, Style s) { return o << Product::formatStyle(s); }
+inline std::ostream& operator<<(std::ostream& o, Style s)
+{
+    return o << Product::formatStyle(s);
+}
 
 class GRIB1 : public Product
 {
 public:
     constexpr static const char* name = "GRIB1";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Product defined the same as product definition in GRIB version 1:
 
 * Origin
@@ -134,7 +163,8 @@ Product defined the same as product definition in GRIB version 1:
 
     int compare_local(const GRIB1& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 };
 
@@ -142,7 +172,7 @@ class GRIB2 : public Product
 {
 public:
     constexpr static const char* name = "GRIB2";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Product defined the same as in GRIB version 2:
 
 * Centre
@@ -161,7 +191,8 @@ Product defined the same as in GRIB version 2:
 
     int compare_local(const GRIB2& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 };
 
@@ -169,7 +200,7 @@ class BUFR : public Product
 {
 public:
     constexpr static const char* name = "BUFR";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Product defined the same as in BUFR:
 
 * Type
@@ -189,7 +220,8 @@ purposes.
 
     int compare_local(const BUFR& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 };
 
@@ -197,7 +229,7 @@ class ODIMH5 : public Product
 {
 public:
     constexpr static const char* name = "ODIMH5";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Product defined as in ODIM:
 
 * Obj
@@ -212,7 +244,8 @@ Product defined as in ODIM:
 
     int compare_local(const ODIMH5& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
 };
 
@@ -220,7 +253,7 @@ class VM2 : public Product
 {
 public:
     constexpr static const char* name = "VM2";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Product defined as a VM2 variable ID
 )";
     using Product::Product;
@@ -230,17 +263,17 @@ Product defined as a VM2 variable ID
     bool equals(const Type& o) const override;
     int compare_local(const VM2& o) const;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     void encode_for_indexing(core::BinaryEncoder& enc) const override;
     ValueBag derived_values() const;
 };
 
+} // namespace product
 
-}
-
-}
-}
+} // namespace types
+} // namespace arki
 
 #endif

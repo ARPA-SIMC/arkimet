@@ -1,14 +1,14 @@
 #ifndef ARKI_CORE_FILE_H
 #define ARKI_CORE_FILE_H
 
-#include <arki/utils/sys.h>
 #include <arki/core/fwd.h>
-#include <string>
-#include <vector>
+#include <arki/utils/sys.h>
 #include <array>
-#include <memory>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace arki::core {
 
@@ -20,8 +20,8 @@ namespace arki::core {
  * This header exists to promote NamedFileDescriptor and File to non-utils arki
  * namespace, so they can be used by general arkimet APIs.
  */
-using arki::utils::sys::NamedFileDescriptor;
 using arki::utils::sys::File;
+using arki::utils::sys::NamedFileDescriptor;
 
 struct Stdin : public NamedFileDescriptor
 {
@@ -38,7 +38,6 @@ struct Stderr : public NamedFileDescriptor
     Stderr();
 };
 
-
 /**
  * Abstract input file implementation to use for output operation on things
  * that are not file descriptors
@@ -48,7 +47,7 @@ struct AbstractInputFile
     virtual ~AbstractInputFile();
 
     [[deprecated("Use path() instead")]] virtual std::string name() const = 0;
-    virtual std::filesystem::path path() const = 0;
+    virtual std::filesystem::path path() const                            = 0;
 
     /**
      * Read up to \a size bytes into dest.
@@ -57,7 +56,6 @@ struct AbstractInputFile
      */
     virtual size_t read(void* dest, size_t size) = 0;
 };
-
 
 /**
  * Generic abstract input interface, with buffering
@@ -132,20 +130,20 @@ public:
     /**
      * Create a BufferedReader from a buffer on a string.
      *
-     * No copy is made of the data: the buffer must remain valid for as long as the
-     * reader is used.
+     * No copy is made of the data: the buffer must remain valid for as long as
+     * the reader is used.
      */
-    static std::unique_ptr<BufferedReader> from_chars(const char* buf, size_t size);
+    static std::unique_ptr<BufferedReader> from_chars(const char* buf,
+                                                      size_t size);
 
     /**
      * Create a BufferedReader from a buffer on a string.
      *
-     * No copy is made of the data: the buffer must remain valid for as long as the
-     * reader is used.
+     * No copy is made of the data: the buffer must remain valid for as long as
+     * the reader is used.
      */
     static std::unique_ptr<BufferedReader> from_string(const std::string& str);
 };
-
 
 /**
  * Abstract interface to things that return a line of text at a time
@@ -175,13 +173,13 @@ public:
      * Create a LineReader from a file descriptor.
      *
      * The file descriptor is not managed by the LineReader, and will ned to be
-     * kept open by the caller for as long as the line reader is used, then closed
-     * at the end.
+     * kept open by the caller for as long as the line reader is used, then
+     * closed at the end.
      *
-     * Note that a LineReader on a file descriptor needs to do read ahead to avoid
-     * reading one character at a time, so if the caller stops calling getline(),
-     * the file descriptor is likely to be positioned further ahead than the last
-     * line read.
+     * Note that a LineReader on a file descriptor needs to do read ahead to
+     * avoid reading one character at a time, so if the caller stops calling
+     * getline(), the file descriptor is likely to be positioned further ahead
+     * than the last line read.
      */
     static std::unique_ptr<LineReader> from_fd(NamedFileDescriptor& fd);
 
@@ -189,32 +187,32 @@ public:
      * Create a LineReader from an abstract input file.
      *
      * The file descriptor is not managed by the LineReader, and will ned to be
-     * kept open by the caller for as long as the line reader is used, then closed
-     * at the end.
+     * kept open by the caller for as long as the line reader is used, then
+     * closed at the end.
      *
-     * Note that a LineReader on a file descriptor needs to do read ahead to avoid
-     * reading one character at a time, so if the caller stops calling getline(),
-     * the file descriptor is likely to be positioned further ahead than the last
-     * line read.
+     * Note that a LineReader on a file descriptor needs to do read ahead to
+     * avoid reading one character at a time, so if the caller stops calling
+     * getline(), the file descriptor is likely to be positioned further ahead
+     * than the last line read.
      */
     static std::unique_ptr<LineReader> from_abstract(AbstractInputFile& fd);
 
     /**
      * Create a LineReader from a buffer on a string.
      *
-     * No copy is made of the data: the buffer must remain valid for as long as the
-     * line reader is used.
+     * No copy is made of the data: the buffer must remain valid for as long as
+     * the line reader is used.
      */
     static std::unique_ptr<LineReader> from_chars(const char* buf, size_t size);
 
     /**
      * Create a LineReader from a buffer on a string.
      *
-     * No copy is made of the data: the buffer must remain valid for as long as the
-     * reader is used.
+     * No copy is made of the data: the buffer must remain valid for as long as
+     * the reader is used.
      */
     static std::unique_ptr<LineReader> from_string(const std::string& str);
 };
 
-}
+} // namespace arki::core
 #endif

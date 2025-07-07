@@ -1,12 +1,12 @@
-#include "arki/exceptions.h"
 #include "arki/types/run.h"
+#include "arki/core/binary.h"
+#include "arki/exceptions.h"
+#include "arki/stream/text.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include "arki/types/utils.h"
 #include "arki/utils/iostream.h"
-#include "arki/core/binary.h"
-#include "arki/structured/emitter.h"
-#include "arki/structured/reader.h"
-#include "arki/structured/keys.h"
-#include "arki/stream/text.h"
 #include <iomanip>
 #include <sstream>
 
@@ -19,16 +19,19 @@ using namespace arki::utils;
 namespace arki {
 namespace types {
 
-const char* traits<Run>::type_tag = TAG;
-const types::Code traits<Run>::type_code = CODE;
+const char* traits<Run>::type_tag            = TAG;
+const types::Code traits<Run>::type_code     = CODE;
 const size_t traits<Run>::type_sersize_bytes = SERSIZELEN;
 
 Run::~Run() {}
 
 Run::Style Run::parseStyle(const std::string& str)
 {
-    if (str == "MINUTE") return Style::MINUTE;
-    throw_consistency_error("parsing Run style", "cannot parse Run style '"+str+"': only MINUTE is supported");
+    if (str == "MINUTE")
+        return Style::MINUTE;
+    throw_consistency_error("parsing Run style",
+                            "cannot parse Run style '" + str +
+                                "': only MINUTE is supported");
 }
 
 std::string Run::formatStyle(Run::Style s)
@@ -46,21 +49,25 @@ std::string Run::formatStyle(Run::Style s)
 int Run::compare(const Type& o) const
 {
     int res = Encoded::compare(o);
-    if (res != 0) return res;
+    if (res != 0)
+        return res;
 
     // We should be the same kind, so upcast
     const Run* v = dynamic_cast<const Run*>(&o);
     if (!v)
     {
         std::stringstream ss;
-        ss << "cannot compare metadata types: second element claims to be `Run`, but it is `" << typeid(&o).name() << "' instead";
+        ss << "cannot compare metadata types: second element claims to be "
+              "`Run`, but it is `"
+           << typeid(&o).name() << "' instead";
         throw std::runtime_error(ss.str());
     }
 
     auto sty = style();
 
     // Compare style
-    if (int res = (int)sty - (int)v->style()) return res;
+    if (int res = (int)sty - (int)v->style())
+        return res;
 
     // Styles are the same, compare the rest.
     //
@@ -70,9 +77,10 @@ int Run::compare(const Type& o) const
     {
         case run::Style::MINUTE:
             return reinterpret_cast<const run::Minute*>(this)->compare_local(
-                    *reinterpret_cast<const run::Minute*>(v));
+                *reinterpret_cast<const run::Minute*>(v));
         default:
-            throw_consistency_error("parsing Run", "unknown Run style " + formatStyle(sty));
+            throw_consistency_error("parsing Run",
+                                    "unknown Run style " + formatStyle(sty));
     }
 }
 
@@ -80,7 +88,6 @@ run::Style Run::style(const uint8_t* data, unsigned size)
 {
     return (run::Style)data[0];
 }
-
 
 unsigned Run::get_Minute(const uint8_t* data, unsigned size)
 {
@@ -103,7 +110,8 @@ std::unique_ptr<Run> Run::decode(core::BinaryDecoder& dec, bool reuse_buffer)
             dec.skip(dec.size);
             break;
         default:
-            throw std::runtime_error("cannot parse Run: unknown style " + formatStyle(sty));
+            throw std::runtime_error("cannot parse Run: unknown style " +
+                                     formatStyle(sty));
     }
     return res;
 }
@@ -114,35 +122,37 @@ std::unique_ptr<Run> Run::decodeString(const std::string& val)
     Run::Style sty = outerParse<Run>(val, inner);
     switch (sty)
     {
-        case Style::MINUTE:
-        {
+        case Style::MINUTE: {
             size_t sep = inner.find(':');
             int hour, minute;
             if (sep == std::string::npos)
             {
                 // 12
-                hour = strtoul(inner.c_str(), 0, 10);
+                hour   = strtoul(inner.c_str(), 0, 10);
                 minute = 0;
-            } else {
+            }
+            else
+            {
                 // 12:00
-                hour = strtoul(inner.substr(0, sep).c_str(), 0, 10);
-                minute = strtoul(inner.substr(sep+1).c_str(), 0, 10);
+                hour   = strtoul(inner.substr(0, sep).c_str(), 0, 10);
+                minute = strtoul(inner.substr(sep + 1).c_str(), 0, 10);
             }
             return createMinute(hour, minute);
         }
         default:
-            throw_consistency_error("parsing Run", "unknown Run style " + formatStyle(sty));
+            throw_consistency_error("parsing Run",
+                                    "unknown Run style " + formatStyle(sty));
     }
 }
 
-std::unique_ptr<Run> Run::decode_structure(const structured::Keys& keys, const structured::Reader& val)
+std::unique_ptr<Run> Run::decode_structure(const structured::Keys& keys,
+                                           const structured::Reader& val)
 {
     run::Style sty = parseStyle(val.as_string(keys.type_style, "type style"));
     std::unique_ptr<Run> res;
     switch (sty)
     {
-        case Style::MINUTE:
-        {
+        case Style::MINUTE: {
             unsigned int m = val.as_int(keys.run_value, "run value");
             return createMinute(m / 60, m % 60);
         }
@@ -175,13 +185,13 @@ std::ostream& Minute::writeToOstream(std::ostream& o) const
     using namespace std;
     utils::SaveIOState sis(o);
     auto minute = get_Minute();
-    return o << formatStyle(style()) << "("
-             << setfill('0') << fixed
-             << setw(2) << (minute / 60) << ":"
-             << setw(2) << (minute % 60) << ")";
+    return o << formatStyle(style()) << "(" << setfill('0') << fixed << setw(2)
+             << (minute / 60) << ":" << setw(2) << (minute % 60) << ")";
 }
 
-void Minute::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+void Minute::serialise_local(structured::Emitter& e,
+                             const structured::Keys& keys,
+                             const Formatter* f) const
 {
     auto minute = get_Minute();
     e.add(keys.type_style, formatStyle(Style::MINUTE));
@@ -193,23 +203,21 @@ std::string Minute::exactQuery() const
     using namespace std;
     auto minute = get_Minute();
     std::stringstream res;
-    res << "MINUTE," << setfill('0') << setw(2) << (minute/60) << ":" << setw(2) << (minute % 60);
+    res << "MINUTE," << setfill('0') << setw(2) << (minute / 60) << ":"
+        << setw(2) << (minute % 60);
     return res.str();
 }
 
 int Minute::compare_local(const Minute& o) const
 {
-    int minute = get_Minute();
+    int minute  = get_Minute();
     int vminute = o.get_Minute();
     return minute - vminute;
 }
 
-}
+} // namespace run
 
-void Run::init()
-{
-    MetadataType::register_type<Run>();
-}
+void Run::init() { MetadataType::register_type<Run>(); }
 
-}
-}
+} // namespace types
+} // namespace arki

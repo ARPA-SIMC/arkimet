@@ -5,9 +5,7 @@
 #include <sys/types.h>
 #include <vector>
 
-namespace arki {
-namespace utils {
-namespace subprocess {
+namespace arki::utils::subprocess {
 
 enum class Redirect {
     /** Redirect the file descriptor to a pipe. The variabile will be set to the
@@ -186,7 +184,6 @@ public:
     void setenv(const std::string& key, const std::string& val);
 };
 
-} // namespace subprocess
-} // namespace arki::utils
+} // namespace arki::utils::subprocess
 
 #endif

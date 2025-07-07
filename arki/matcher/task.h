@@ -26,6 +26,6 @@ struct MatchTask : public Implementation
     static void init();
 };
 
-}
-}
+} // namespace matcher
+} // namespace arki
 #endif

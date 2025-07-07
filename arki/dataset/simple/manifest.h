@@ -2,13 +2,13 @@
 #define ARKI_DATASET_SIMPLE_MANIFEST_H
 
 #include <arki/core/fwd.h>
-#include <arki/matcher/fwd.h>
 #include <arki/core/time.h>
+#include <arki/matcher/fwd.h>
 #include <arki/summary.h>
-#include <vector>
-#include <string>
-#include <memory>
 #include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace arki::dataset::simple {
 struct Dataset;
@@ -41,7 +41,8 @@ std::vector<SegmentInfo> read_sqlite(const std::filesystem::path& path);
  *
  * Invariants:
  * * entried in the MANIFEST file are always sorted by relpath
- * * the MANIFEST file is always atomically rewritten (write new + rename) and never updated
+ * * the MANIFEST file is always atomically rewritten (write new + rename) and
+ * never updated
  */
 class Reader
 {
@@ -54,10 +55,10 @@ protected:
 
 public:
     explicit Reader(const std::filesystem::path& root);
-    Reader(const Reader&) = delete;
-    Reader(Reader&&) = delete;
+    Reader(const Reader&)            = delete;
+    Reader(Reader&&)                 = delete;
     Reader& operator=(const Reader&) = delete;
-    Reader& operator=(Reader&&) = delete;
+    Reader& operator=(Reader&&)      = delete;
 
     const std::filesystem::path root() const { return m_root; }
 
@@ -90,15 +91,17 @@ public:
     void reread();
 
     SegmentInfo* segment(const std::filesystem::path& relpath);
-    void set(const std::filesystem::path& relpath, time_t mtime, const core::Interval& time);
+    void set(const std::filesystem::path& relpath, time_t mtime,
+             const core::Interval& time);
     void set_mtime(const std::filesystem::path& relpath, time_t mtime);
     void remove(const std::filesystem::path& relpath);
     void flush();
-    void rename(const std::filesystem::path& relpath, const std::filesystem::path& new_relpath);
+    void rename(const std::filesystem::path& relpath,
+                const std::filesystem::path& new_relpath);
 };
 
-}
+} // namespace manifest
 
-}
+} // namespace arki::dataset::simple
 
 #endif

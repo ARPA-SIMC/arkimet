@@ -3,9 +3,9 @@
 
 /// Reader for iseg datasets with no duplicate checks
 
-#include <arki/dataset/iseg.h>
 #include <arki/dataset/impl.h>
 #include <arki/dataset/index/summarycache.h>
+#include <arki/dataset/iseg.h>
 #include <string>
 
 namespace arki {
@@ -18,7 +18,9 @@ protected:
     index::SummaryCache scache;
 
     /// List all existing segments matched by the reftime part of matcher
-    bool list_segments(const Matcher& matcher, std::function<bool(std::shared_ptr<arki::Segment> segment)> dest);
+    bool list_segments(
+        const Matcher& matcher,
+        std::function<bool(std::shared_ptr<arki::Segment> segment)> dest);
 
     /**
      * Compute the summary for the given month, and output it to \a
@@ -39,7 +41,8 @@ protected:
 
     void summary_from_indices(const Matcher& matcher, Summary& summary);
 
-    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q,
+                         metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:
@@ -53,7 +56,7 @@ public:
     static bool is_dataset(const std::filesystem::path& dir);
 };
 
-}
-}
-}
+} // namespace iseg
+} // namespace dataset
+} // namespace arki
 #endif

@@ -11,7 +11,8 @@ namespace summary {
 class Stats;
 class Table;
 
-size_t decode(core::BinaryDecoder& dec, unsigned version, const std::filesystem::path& filename, Table& target);
+size_t decode(core::BinaryDecoder& dec, unsigned version,
+              const std::filesystem::path& filename, Table& target);
 
 struct EncodingVisitor : public Visitor
 {
@@ -23,9 +24,10 @@ struct EncodingVisitor : public Visitor
 
     EncodingVisitor(core::BinaryEncoder& enc);
 
-    bool operator()(const std::vector<const types::Type*>& md, const Stats& stats) override;
+    bool operator()(const std::vector<const types::Type*>& md,
+                    const Stats& stats) override;
 };
 
-}
-}
+} // namespace summary
+} // namespace arki
 #endif

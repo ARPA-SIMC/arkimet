@@ -1,24 +1,24 @@
 #include "bufr.h"
-#include <dballe/file.h>
-#include <dballe/message.h>
-#include <dballe/importer.h>
-#include <wreport/bulletin.h>
-#include <wreport/options.h>
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
+#include "arki/scan/mock.h"
+#include "arki/scan/validator.h"
 #include "arki/segment/data.h"
-#include "arki/types/source.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"
+#include "arki/types/source.h"
 #include "arki/types/timerange.h"
 #include "arki/types/values.h"
-#include "arki/scan/validator.h"
-#include "arki/scan/mock.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/files.h"
-#include <sstream>
+#include "arki/utils/sys.h"
 #include <cstring>
+#include <dballe/file.h>
+#include <dballe/importer.h>
+#include <dballe/message.h>
+#include <sstream>
+#include <wreport/bulletin.h>
+#include <wreport/options.h>
 
 using namespace std;
 using namespace wreport;
@@ -36,19 +36,27 @@ struct BufrValidator : public Validator
     DataFormat format() const override { return DataFormat::BUFR; }
 
     // Validate data found in a file
-    void validate_file(sys::NamedFileDescriptor& fd, off_t offset, size_t size) const override
+    void validate_file(sys::NamedFileDescriptor& fd, off_t offset,
+                       size_t size) const override
     {
         if (size < 8)
-            throw_check_error(fd, offset, "file segment to check is only " + std::to_string(size) + " bytes (minimum for a BUFR is 8)");
+            throw_check_error(fd, offset,
+                              "file segment to check is only " +
+                                  std::to_string(size) +
+                                  " bytes (minimum for a BUFR is 8)");
 
         char buf[4];
         ssize_t res;
         if ((res = fd.pread(buf, 4, offset)) != 4)
-            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of BUFR header");
+            throw_check_error(fd, offset,
+                              "read only " + std::to_string(res) +
+                                  "/4 bytes of BUFR header");
         if (memcmp(buf, "BUFR", 4) != 0)
             throw_check_error(fd, offset, "data does not start with 'BUFR'");
         if ((res = fd.pread(buf, 4, offset + size - 4)) != 4)
-            throw_check_error(fd, offset, "read only " + std::to_string(res) + "/4 bytes of BUFR trailer");
+            throw_check_error(fd, offset,
+                              "read only " + std::to_string(res) +
+                                  "/4 bytes of BUFR trailer");
         if (memcmp(buf, "7777", 4) != 0)
             throw_check_error(fd, offset, "data does not end with '7777'");
     }
@@ -69,8 +77,7 @@ static BufrValidator bufr_validator;
 
 const Validator& validator() { return bufr_validator; }
 
-}
-
+} // namespace bufr
 
 /*
  * BufrScanner
@@ -94,21 +101,25 @@ public:
     void refine_reftime(const Message& msg)
     {
         Datetime dt;
-        try {
+        try
+        {
             dt = msg.get_datetime();
-        } catch (wreport::error_consistency&) {
+        }
+        catch (wreport::error_consistency&)
+        {
             return;
         }
-        if (dt.is_missing()) return;
+        if (dt.is_missing())
+            return;
         reftime = Reftime::createPosition(core::Time(
-                dt.year, dt.month, dt.day,
-                dt.hour, dt.minute, dt.second));
+            dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second));
     }
 
     void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
     {
         msg.reset();
-        auto bulletin = BufrBulletin::decode_header(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
+        auto bulletin = BufrBulletin::decode_header(
+            rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
 
 #if 0
         // Detect optional section and handle it
@@ -123,8 +134,8 @@ public:
         // Set reference time
         // FIXME: WRONG! The header date should ALWAYS be ignored
         reftime = Reftime::createPosition(core::Time(
-                bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
-                bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
+            bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
+            bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
 
         // Set origin from the bufr header
         switch (bulletin->edition_number)
@@ -133,36 +144,49 @@ public:
             case 3:
             case 4:
                 // No process?
-                origin = Origin::createBUFR(bulletin->originating_centre, bulletin->originating_subcentre);
+                origin = Origin::createBUFR(bulletin->originating_centre,
+                                            bulletin->originating_subcentre);
                 break;
             default: {
                 std::stringstream ss;
-                ss << "cannot extract metadata from BUFR message: edition is " << bulletin->edition_number << " but I can only handle 3 and 4";
+                ss << "cannot extract metadata from BUFR message: edition is "
+                   << bulletin->edition_number
+                   << " but I can only handle 3 and 4";
                 throw std::runtime_error(ss.str());
             }
         }
 
         // Default to a generic product unless we find more info later
-        //md.set(types::product::BUFR::create("generic"));
+        // md.set(types::product::BUFR::create("generic"));
 
         // Try to decode the data; if we fail, we are done
-        try {
+        try
+        {
             // Ignore domain errors, it's ok if we lose some oddball data
-            wreport::options::LocalOverride<bool> o(wreport::options::var_silent_domain_errors, true);
+            wreport::options::LocalOverride<bool> o(
+                wreport::options::var_silent_domain_errors, true);
 
-            bulletin = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
-        } catch (wreport::error& e) {
+            bulletin = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(),
+                                            rmsg.offset);
+        }
+        catch (wreport::error& e)
+        {
             // We can still try to handle partially decoded files
 
             // Not if the error was not a parse error
-            if (e.code() != WR_ERR_PARSE) return;
+            if (e.code() != WR_ERR_PARSE)
+                return;
 
             // Not if we didn't decode just one subset
-            if (bulletin->subsets.size() != 1) return;
+            if (bulletin->subsets.size() != 1)
+                return;
 
             // Not if the subset is empty
-            if (bulletin->subsets[0].empty()) return;
-        } catch (std::exception& e) {
+            if (bulletin->subsets[0].empty())
+                return;
+        }
+        catch (std::exception& e)
+        {
             return;
         }
 
@@ -171,10 +195,13 @@ public:
             return;
 
         // Try to parse as a dba_msg
-        try {
+        try
+        {
             // We already set the importer to ignore domain errors
             msgs = importer.from_bulletin(*bulletin);
-        } catch (std::exception& e) {
+        }
+        catch (std::exception& e)
+        {
             // If we cannot import it as a Msgs, we are done
             return;
         }
@@ -190,27 +217,25 @@ public:
         types::values::ValueBagBuilder vbuilder;
         vbuilder.add("t", format_message_type(msg->get_type()));
         types::ValueBag newvals = vbuilder.build();
-        product = Product::createBUFR(bulletin->data_category, bulletin->data_subcategory, bulletin->data_subcategory_local, newvals);
+        product                 = Product::createBUFR(
+            bulletin->data_category, bulletin->data_subcategory,
+            bulletin->data_subcategory_local, newvals);
 
         // Set reference time from date and time if available
         refine_reftime(*msg);
     }
 };
-}
-
+} // namespace
 
 BufrScanner::BufrScanner()
 {
-    auto opts = ImporterOptions::create();
+    auto opts           = ImporterOptions::create();
     opts->domain_errors = ImporterOptions::DomainErrors::UNSET;
-    opts->simplified = true;
+    opts->simplified    = true;
     importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
 }
 
-BufrScanner::~BufrScanner()
-{
-    delete importer;
-}
+BufrScanner::~BufrScanner() { delete importer; }
 
 void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
 {
@@ -255,60 +280,81 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
             md->set(timedef->validity_time_to_emission_time(*p));
 }
 
-std::shared_ptr<Metadata> BufrScanner::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata>
+BufrScanner::scan_data(const std::vector<uint8_t>& data)
 {
     auto md = std::make_shared<Metadata>();
-    md->set_source_inline(DataFormat::BUFR, metadata::DataManager::get().to_data(DataFormat::BUFR, std::vector<uint8_t>(data)));
+    md->set_source_inline(DataFormat::BUFR,
+                          metadata::DataManager::get().to_data(
+                              DataFormat::BUFR, std::vector<uint8_t>(data)));
     BinaryMessage rmsg(Encoding::BUFR);
     rmsg.data = std::string(data.begin(), data.end());
     do_scan(rmsg, md);
     return md;
 }
 
-bool BufrScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader, metadata_dest_func dest)
+bool BufrScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader,
+                               metadata_dest_func dest)
 {
-    auto file = dballe::File::create(dballe::Encoding::BUFR, reader->segment().abspath().c_str(), "r");
+    auto file = dballe::File::create(dballe::Encoding::BUFR,
+                                     reader->segment().abspath().c_str(), "r");
     while (true)
     {
-        auto md = std::make_shared<Metadata>();
+        auto md            = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
-        if (!rmsg) break;
-        md->set_source(Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::BUFR, vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
+        if (!rmsg)
+            break;
+        md->set_source(
+            Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
+        md->set_cached_data(metadata::DataManager::get().to_data(
+            DataFormat::BUFR,
+            vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, md);
-        if (!dest(md)) return false;
+        if (!dest(md))
+            return false;
     }
     return true;
 }
 
-std::shared_ptr<Metadata> BufrScanner::scan_singleton(const std::filesystem::path& abspath)
+std::shared_ptr<Metadata>
+BufrScanner::scan_singleton(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
-    auto file = dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
+    auto file =
+        dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
     BinaryMessage rmsg = file->read();
-    if (!rmsg) throw std::runtime_error(abspath.native() + " contains no BUFR data");
+    if (!rmsg)
+        throw std::runtime_error(abspath.native() + " contains no BUFR data");
     do_scan(rmsg, md);
     if (file->read())
-        throw std::runtime_error(abspath.native() + " contains more than one BUFR");
+        throw std::runtime_error(abspath.native() +
+                                 " contains more than one BUFR");
     return md;
 }
 
-bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
+bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd,
+                            metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
-    auto file = dballe::File::create(dballe::Encoding::BUFR, in, false, infd.path());
+    auto file =
+        dballe::File::create(dballe::Encoding::BUFR, in, false, infd.path());
     while (true)
     {
-        auto md = std::make_shared<Metadata>();
+        auto md            = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
-        if (!rmsg) break;
-        md->set_source_inline(DataFormat::BUFR, metadata::DataManager::get().to_data(DataFormat::BUFR, vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
+        if (!rmsg)
+            break;
+        md->set_source_inline(
+            DataFormat::BUFR,
+            metadata::DataManager::get().to_data(
+                DataFormat::BUFR,
+                vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, md);
-        if (!dest(move(md))) return false;
+        if (!dest(move(md)))
+            return false;
     }
     return true;
 }
-
 
 int BufrScanner::update_sequence_number(const std::string& buf)
 {
@@ -316,26 +362,22 @@ int BufrScanner::update_sequence_number(const std::string& buf)
     return bulletin->update_sequence_number;
 }
 
-
 /*
  * MockBufrScanner
  */
 
-MockBufrScanner::MockBufrScanner()
-{
-    engine = new MockEngine();
-}
+MockBufrScanner::MockBufrScanner() { engine = new MockEngine(); }
 
-MockBufrScanner::~MockBufrScanner()
-{
-    delete engine;
-}
+MockBufrScanner::~MockBufrScanner() { delete engine; }
 
-void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md)
+void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg,
+                                 std::shared_ptr<dballe::Message> msg,
+                                 std::shared_ptr<Metadata> md)
 {
-    auto new_md = engine->lookup(reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
+    auto new_md = engine->lookup(
+        reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
     md->merge(*new_md);
 }
 
-}
-}
+} // namespace scan
+} // namespace arki

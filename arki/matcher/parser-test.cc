@@ -1,5 +1,5 @@
-#include "arki/matcher/tests.h"
 #include "arki/matcher/parser.h"
+#include "arki/matcher/tests.h"
 
 using namespace std;
 using namespace arki::tests;
@@ -17,12 +17,10 @@ class Tests : public TestCase
     void register_tests() override;
 } tests("arki_matcher_parser");
 
+void Tests::register_tests()
+{
 
-void Tests::register_tests() {
-
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

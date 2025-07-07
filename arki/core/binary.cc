@@ -1,22 +1,25 @@
 #include "binary.h"
-#include <stdexcept>
 #include <algorithm>
 #include <sstream>
+#include <stdexcept>
 
 using namespace std;
 
 namespace arki {
 namespace core {
 
-void BinaryDecoder::throw_parse_error(const std::string& what, const std::string& errmsg)
+void BinaryDecoder::throw_parse_error(const std::string& what,
+                                      const std::string& errmsg)
 {
     throw std::runtime_error("Cannot parse " + what + ": " + errmsg);
 }
 
-void BinaryDecoder::throw_insufficient_size(const std::string& what, size_t wanted)
+void BinaryDecoder::throw_insufficient_size(const std::string& what,
+                                            size_t wanted)
 {
     std::stringstream ss;
-    ss << "Cannot parse " << what << ": size is " << size << " but at least " << wanted << " are needed";
+    ss << "Cannot parse " << what << ": size is " << size << " but at least "
+       << wanted << " are needed";
     throw std::runtime_error(ss.str());
 }
 
@@ -24,7 +27,8 @@ std::string BinaryDecoder::pop_line(char sep)
 {
     string res;
 
-    if (!size) return res;
+    if (!size)
+        return res;
 
     const uint8_t* pos = std::find(buf, buf + size, (uint8_t)sep);
     if (pos == buf + size)
@@ -45,9 +49,11 @@ std::string BinaryDecoder::pop_line(const std::string& sep)
 {
     string res;
 
-    if (!size) return res;
+    if (!size)
+        return res;
 
-    const uint8_t* pos = std::search(buf, buf + size, sep.data(), sep.data() + sep.size());
+    const uint8_t* pos =
+        std::search(buf, buf + size, sep.data(), sep.data() + sep.size());
     if (pos == buf + size)
     {
         res.assign(buf, buf + size);
@@ -65,7 +71,7 @@ std::string BinaryDecoder::pop_line(const std::string& sep)
 BinaryDecoder BinaryDecoder::pop_type_envelope(TypeCode& code)
 {
     // Decode the element type
-    code = (TypeCode)pop_varint<unsigned>("element code");
+    code              = (TypeCode)pop_varint<unsigned>("element code");
     // Decode the element size
     size_t inner_size = pop_varint<size_t>("element size");
 
@@ -79,7 +85,8 @@ BinaryDecoder BinaryDecoder::pop_type_envelope(TypeCode& code)
     return BinaryDecoder(inner_buf, inner_size);
 }
 
-BinaryDecoder BinaryDecoder::pop_metadata_bundle(std::string& signature, unsigned& version)
+BinaryDecoder BinaryDecoder::pop_metadata_bundle(std::string& signature,
+                                                 unsigned& version)
 {
     // Skip all leading blank bytes
     ensure_size(8, "header of metadata bundle");
@@ -102,5 +109,5 @@ BinaryDecoder BinaryDecoder::pop_metadata_bundle(std::string& signature, unsigne
     return res;
 }
 
-}
-}
+} // namespace core
+} // namespace arki

@@ -1,18 +1,18 @@
 #include "arki/dataset/file.h"
-#include "arki/dataset/session.h"
-#include "arki/query.h"
-#include "arki/query/progress.h"
-#include "arki/metadata.h"
-#include "arki/segment/data.h"
 #include "arki/core/lock.h"
 #include "arki/core/time.h"
-#include "arki/types/source/blob.h"
-#include "arki/metadata/sort.h"
+#include "arki/dataset/session.h"
 #include "arki/matcher.h"
+#include "arki/metadata.h"
+#include "arki/metadata/sort.h"
+#include "arki/query.h"
+#include "arki/query/progress.h"
 #include "arki/scan.h"
+#include "arki/segment/data.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
-#include "arki/utils/sys.h"
 #include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 #include <fcntl.h>
 #include <sstream>
 
@@ -24,17 +24,20 @@ namespace arki {
 namespace dataset {
 namespace file {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+Dataset::Dataset(std::shared_ptr<Session> session,
+                 const core::cfg::Section& cfg)
     : dataset::Dataset(session, cfg)
 {
 }
 
 std::shared_ptr<dataset::Reader> Dataset::create_reader()
 {
-    return std::make_shared<Reader>(static_pointer_cast<Dataset>(shared_from_this()));
+    return std::make_shared<Reader>(
+        static_pointer_cast<Dataset>(shared_from_this()));
 }
 
-std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+std::shared_ptr<Dataset> Dataset::from_config(std::shared_ptr<Session> session,
+                                              const core::cfg::Section& cfg)
 {
     std::string format(cfg.value("format"));
     if (format == "arkimet")
@@ -53,7 +56,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 
 core::Interval Reader::get_stored_time_interval()
 {
-    throw std::runtime_error("file::Reader::get_stored_time_interval not yet implemented");
+    throw std::runtime_error(
+        "file::Reader::get_stored_time_interval not yet implemented");
 }
 
 /**
@@ -69,33 +73,50 @@ static std::optional<std::string> normalise_format_name(const std::string& name)
 {
     std::string f = str::lower(name);
 
-    if (f == "grib") return "grib";
-    if (f == "grib1") return "grib";
-    if (f == "grib2") return "grib";
+    if (f == "grib")
+        return "grib";
+    if (f == "grib1")
+        return "grib";
+    if (f == "grib2")
+        return "grib";
 
-    if (f == "bufr") return "bufr";
-    if (f == "vm2") return "vm2";
+    if (f == "bufr")
+        return "bufr";
+    if (f == "vm2")
+        return "vm2";
 
-    if (f == "h5")     return "odimh5";
-    if (f == "hdf5")   return "odimh5";
-    if (f == "odim")   return "odimh5";
-    if (f == "odimh5") return "odimh5";
+    if (f == "h5")
+        return "odimh5";
+    if (f == "hdf5")
+        return "odimh5";
+    if (f == "odim")
+        return "odimh5";
+    if (f == "odimh5")
+        return "odimh5";
 
-    if (f == "nc") return "netcdf";
-    if (f == "netcdf") return "netcdf";
+    if (f == "nc")
+        return "netcdf";
+    if (f == "netcdf")
+        return "netcdf";
 
-    if (f == "jpg") return "jpeg";
-    if (f == "jpeg") return "jpeg";
+    if (f == "jpg")
+        return "jpeg";
+    if (f == "jpeg")
+        return "jpeg";
 
-    if (f == "arkimet") return "arkimet";
-    if (f == "metadata") return "arkimet";
+    if (f == "arkimet")
+        return "arkimet";
+    if (f == "metadata")
+        return "arkimet";
 
-    if (f == "yaml") return "yaml";
+    if (f == "yaml")
+        return "yaml";
 
     return std::optional<std::string>();
 }
 
-std::shared_ptr<core::cfg::Section> read_config(const std::string& prefix, const std::filesystem::path& path)
+std::shared_ptr<core::cfg::Section>
+read_config(const std::string& prefix, const std::filesystem::path& path)
 {
     if (!std::filesystem::exists(path))
     {
@@ -115,7 +136,8 @@ std::shared_ptr<core::cfg::Section> read_config(const std::string& prefix, const
     return section;
 }
 
-std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path)
+std::shared_ptr<core::cfg::Section>
+read_config(const std::filesystem::path& path)
 {
     if (!std::filesystem::exists(path))
     {
@@ -139,7 +161,8 @@ std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& pat
     return section;
 }
 
-std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& fname)
+std::shared_ptr<core::cfg::Sections>
+read_configs(const std::filesystem::path& fname)
 {
     auto sec = read_config(fname);
     if (!sec)
@@ -149,7 +172,8 @@ std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& f
     return res;
 }
 
-std::shared_ptr<core::cfg::Sections> read_configs(const std::string& prefix, const std::filesystem::path& fname)
+std::shared_ptr<core::cfg::Sections>
+read_configs(const std::string& prefix, const std::filesystem::path& fname)
 {
     auto sec = read_config(prefix, fname);
     auto res = std::make_shared<core::cfg::Sections>();
@@ -157,27 +181,31 @@ std::shared_ptr<core::cfg::Sections> read_configs(const std::string& prefix, con
     return res;
 }
 
-static std::shared_ptr<metadata::sort::Stream> wrap_with_query(const query::Data& q, metadata_dest_func& dest)
+static std::shared_ptr<metadata::sort::Stream>
+wrap_with_query(const query::Data& q, metadata_dest_func& dest)
 {
     // Wrap with a stream sorter if we need sorting
     shared_ptr<metadata::sort::Stream> sorter;
     if (q.sorter)
     {
         sorter.reset(new metadata::sort::Stream(*q.sorter, dest));
-        dest = [sorter](std::shared_ptr<Metadata> md) { return sorter->add(md); };
+        dest = [sorter](std::shared_ptr<Metadata> md) {
+            return sorter->add(md);
+        };
     }
 
     dest = [dest, &q](std::shared_ptr<Metadata> md) {
         // And filter using the query matcher
-        if (!q.matcher(*md)) return true;
+        if (!q.matcher(*md))
+            return true;
         return dest(md);
     };
 
     return sorter;
 }
 
-
-SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
+SegmentDataset::SegmentDataset(std::shared_ptr<Session> session,
+                               const core::cfg::Section& cfg)
     : Dataset(session, cfg)
 {
     std::filesystem::path basedir;
@@ -186,7 +214,8 @@ SegmentDataset::SegmentDataset(std::shared_ptr<Session> session, const core::cfg
     if (basedir.empty())
         basedir = relpath.parent_path();
     segment_session = std::make_shared<segment::Session>(basedir);
-    segment = segment_session->segment_from_relpath_and_format(relpath, format_from_string(cfg.value("format")));
+    segment         = segment_session->segment_from_relpath_and_format(
+        relpath, format_from_string(cfg.value("format")));
 }
 
 bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
@@ -195,20 +224,18 @@ bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
     auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
     if (!reader->read_all(dest))
         return false;
-    if (sorter) return sorter->flush();
+    if (sorter)
+        return sorter->flush();
     return true;
 }
 
-
 FdFile::FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : Dataset(session, cfg), fd(cfg.value("path"), O_RDONLY), path(cfg.value("path"))
+    : Dataset(session, cfg), fd(cfg.value("path"), O_RDONLY),
+      path(cfg.value("path"))
 {
 }
 
-FdFile::~FdFile()
-{
-}
-
+FdFile::~FdFile() {}
 
 ArkimetFile::~ArkimetFile() {}
 
@@ -220,18 +247,24 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
     {
         if (!Metadata::read_file(fd, dest))
             return false;
-    } else {
+    }
+    else
+    {
         if (!Metadata::read_file(fd, [&](std::shared_ptr<Metadata> md) {
-                    if (md->has_source_blob())
-                    {
-                        const auto& blob = md->sourceBlob();
-                        auto segment_session = std::make_shared<segment::Session>(blob.basedir);
-                        auto segment = segment_session->segment_from_relpath_and_format(blob.filename, blob.format);
-                        auto reader = segment->data_reader(std::make_shared<core::lock::NullReadLock>());
-                        md->sourceBlob().lock(reader);
-                    }
-                    return dest(md);
-                }))
+                if (md->has_source_blob())
+                {
+                    const auto& blob = md->sourceBlob();
+                    auto segment_session =
+                        std::make_shared<segment::Session>(blob.basedir);
+                    auto segment =
+                        segment_session->segment_from_relpath_and_format(
+                            blob.filename, blob.format);
+                    auto reader = segment->data_reader(
+                        std::make_shared<core::lock::NullReadLock>());
+                    md->sourceBlob().lock(reader);
+                }
+                return dest(md);
+            }))
             return false;
     }
     if (sorter)
@@ -239,9 +272,11 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
     return true;
 }
 
-
-YamlFile::YamlFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : FdFile(session, cfg), reader(LineReader::from_fd(fd).release()) {}
+YamlFile::YamlFile(std::shared_ptr<Session> session,
+                   const core::cfg::Section& cfg)
+    : FdFile(session, cfg), reader(LineReader::from_fd(fd).release())
+{
+}
 
 YamlFile::~YamlFile() { delete reader; }
 
@@ -260,11 +295,12 @@ bool YamlFile::scan(const query::Data& q, metadata_dest_func dest)
             return false;
     }
 
-    if (sorter) return sorter->flush();
+    if (sorter)
+        return sorter->flush();
 
     return true;
 }
 
-}
-}
-}
+} // namespace file
+} // namespace dataset
+} // namespace arki

@@ -19,32 +19,32 @@
  *
  * Author: Enrico Zini <enrico@enricozini.com>
  */
-#include <arki/types-init.h>
-#include <arki/types/origin.h>
-#include <arki/matcher/origin.h>
-#include <arki/types/product.h>
-#include <arki/matcher/product.h>
-#include <arki/types/proddef.h>
-#include <arki/matcher/proddef.h>
-#include <arki/types/level.h>
-#include <arki/matcher/level.h>
-#include <arki/types/timerange.h>
-#include <arki/matcher/timerange.h>
-#include <arki/types/area.h>
 #include <arki/matcher/area.h>
-#include <arki/types/reftime.h>
-#include <arki/matcher/reftime.h>
-#include <arki/types/run.h>
-#include <arki/matcher/run.h>
-#include <arki/types/bbox.h>
-#include <arki/types/quantity.h>
+#include <arki/matcher/level.h>
+#include <arki/matcher/origin.h>
+#include <arki/matcher/proddef.h>
+#include <arki/matcher/product.h>
 #include <arki/matcher/quantity.h>
-#include <arki/types/task.h>
+#include <arki/matcher/reftime.h>
+#include <arki/matcher/run.h>
 #include <arki/matcher/task.h>
-#include <arki/types/value.h>
-#include <arki/types/note.h>
-#include <arki/types/source.h>
+#include <arki/matcher/timerange.h>
+#include <arki/types-init.h>
+#include <arki/types/area.h>
 #include <arki/types/assigneddataset.h>
+#include <arki/types/bbox.h>
+#include <arki/types/level.h>
+#include <arki/types/note.h>
+#include <arki/types/origin.h>
+#include <arki/types/proddef.h>
+#include <arki/types/product.h>
+#include <arki/types/quantity.h>
+#include <arki/types/reftime.h>
+#include <arki/types/run.h>
+#include <arki/types/source.h>
+#include <arki/types/task.h>
+#include <arki/types/timerange.h>
+#include <arki/types/value.h>
 
 namespace arki {
 namespace types {
@@ -78,5 +78,5 @@ void init_default_types()
     AssignedDataset::init();
 }
 
-}
-}
+} // namespace types
+} // namespace arki

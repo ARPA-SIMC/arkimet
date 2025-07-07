@@ -9,16 +9,17 @@
  * The stable C API of GEOS is itself a wrapper for the C++ GEOS API, so it
  * would be easier and more efficient to use the C++ API directly. However, on
  * top of API/ABI stability issues, some version of the C++ API have been
- * packaged intentionally broken (see https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010002 ),
- * so wrapping the C API fixes both problems.
+ * packaged intentionally broken (see
+ * https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1010002 ), so wrapping the
+ * C API fixes both problems.
  */
 
 #include <arki/utils/geosfwd.h>
 
 #ifdef HAVE_GEOS
-#include <vector>
-#include <string>
 #include <geos_c.h>
+#include <string>
+#include <vector>
 #endif
 
 namespace arki {
@@ -36,7 +37,6 @@ public:
     const char* what() const noexcept override;
 };
 
-
 class Context
 {
     GEOSContextHandle_t ctx;
@@ -45,14 +45,13 @@ public:
     Context();
     ~Context();
     Context(const Context&) = delete;
-    Context(Context&&) = delete;
+    Context(Context&&)      = delete;
 
     Context& operator=(const Context&) = delete;
-    Context& operator=(Context&&) = delete;
+    Context& operator=(Context&&)      = delete;
 
     operator GEOSContextHandle_t() { return ctx; }
 };
-
 
 class GeometryVector : protected std::vector<GEOSGeometry*>
 {
@@ -70,8 +69,7 @@ public:
     void discard() { clear(); }
 };
 
-
-template<typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
+template <typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
 class Wrapper
 {
 protected:
@@ -81,10 +79,7 @@ public:
     Wrapper() = default;
     Wrapper(Pointer ptr) : ptr(ptr) {}
     Wrapper(const Wrapper&) = delete;
-    Wrapper(Wrapper&& o) : ptr(o.ptr)
-    {
-        o.ptr = nullptr;
-    }
+    Wrapper(Wrapper&& o) : ptr(o.ptr) { o.ptr = nullptr; }
     ~Wrapper();
 
     Wrapper& operator=(Pointer o);
@@ -94,7 +89,7 @@ public:
     Pointer release()
     {
         auto res = ptr;
-        ptr = nullptr;
+        ptr      = nullptr;
         return res;
     }
 
@@ -103,18 +98,17 @@ public:
     operator const Pointer() const { return ptr; }
 };
 
-
-class CoordinateSequence : public Wrapper<GEOSCoordSequence*, GEOSCoordSeq_destroy_r>
+class CoordinateSequence
+    : public Wrapper<GEOSCoordSequence*, GEOSCoordSeq_destroy_r>
 {
 public:
     using Wrapper::Wrapper;
     using Wrapper::operator=;
 
-    CoordinateSequence(unsigned size, unsigned dims=2);
+    CoordinateSequence(unsigned size, unsigned dims = 2);
 
     void setxy(unsigned idx, double x, double y);
 };
-
 
 class Geometry : public Wrapper<GEOSGeometry*, GEOSGeom_destroy_r>
 {
@@ -133,10 +127,10 @@ public:
 
     static Geometry create_point(double lat, double lon);
     static Geometry create_linear_ring(CoordinateSequence&& seq);
-    static Geometry create_polygon(Geometry&& exterior, GeometryVector&& interior);
+    static Geometry create_polygon(Geometry&& exterior,
+                                   GeometryVector&& interior);
     static Geometry create_collection(GeometryVector&& geoms);
 };
-
 
 class WKTReader : public Wrapper<GEOSWKTReader*, GEOSWKTReader_destroy_r>
 {
@@ -149,7 +143,6 @@ public:
     Geometry read(const char* str);
     Geometry read(const std::string& str);
 };
-
 
 class WKTWriter : public Wrapper<GEOSWKTWriter*, GEOSWKTWriter_destroy_r>
 {
@@ -164,9 +157,15 @@ public:
 
 #else
 
-struct Geometry {};
-struct WKTReader {};
-struct WKTWriter {};
+struct Geometry
+{
+};
+struct WKTReader
+{
+};
+struct WKTWriter
+{
+};
 
 extern template class Wrapper<GEOSGeometry*, GEOSGeom_destroy_r>;
 extern template class Wrapper<GEOSCoordSequence*, GEOSCoordSeq_destroy_r>;
@@ -175,8 +174,8 @@ extern template class Wrapper<GEOSWKTWriter*, GEOSWKTWriter_destroy_r>;
 
 #endif
 
-}
-}
-}
+} // namespace geos
+} // namespace utils
+} // namespace arki
 
 #endif

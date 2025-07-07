@@ -8,4 +8,4 @@ namespace arki {
 namespace tests {
 
 }
-}
+} // namespace arki

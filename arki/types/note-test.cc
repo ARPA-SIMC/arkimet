@@ -1,5 +1,5 @@
-#include "tests.h"
 #include "note.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -12,14 +12,17 @@ class Tests : public TypeTestCase<types::Note>
     void register_tests() override;
 } test("arki_types_note");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Check Note, created with arbitrary time
-add_generic_test("note",
-    { "[2015-01-02T00:00:00]foo", "[2015-01-03T00:00:00]bar" },
-    "[2015-01-03T00:00:00]foo",
-    { "[2015-01-03T00:00:00]zab", "[2015-01-04T00:00:00]bar", });
-
+    // Check Note, created with arbitrary time
+    add_generic_test("note",
+                     {"[2015-01-02T00:00:00]foo", "[2015-01-03T00:00:00]bar"},
+                     "[2015-01-03T00:00:00]foo",
+                     {
+                         "[2015-01-03T00:00:00]zab",
+                         "[2015-01-04T00:00:00]bar",
+                     });
 }
 
-}
+} // namespace

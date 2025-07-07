@@ -16,14 +16,14 @@ struct Dataset : public dataset::Dataset
     std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
-
 /**
  * Dataset that is always empty
  */
 class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
 protected:
-    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q,
+                         metadata_dest_func dest) override;
 
 public:
     using DatasetAccess::DatasetAccess;
@@ -35,8 +35,7 @@ public:
     core::Interval get_stored_time_interval() override;
 };
 
-}
-}
-}
+} // namespace fromfunction
+} // namespace dataset
+} // namespace arki
 #endif
-

@@ -1,16 +1,16 @@
 #include "pool.h"
-#include "arki/utils/string.h"
 #include "arki/core/cfg.h"
 #include "arki/dataset.h"
 #include "arki/dataset/local.h"
-#include "arki/dataset/session.h"
-#include "arki/dataset/querymacro.h"
 #include "arki/dataset/merged.h"
-#include "arki/types/source/blob.h"
-#include "arki/utils/sys.h"
+#include "arki/dataset/querymacro.h"
+#include "arki/dataset/session.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki::utils;
@@ -25,15 +25,14 @@ struct FSPos
     dev_t dev;
     ino_t ino;
 
-    FSPos(const struct stat& st)
-        : dev(st.st_dev), ino(st.st_ino)
-    {
-    }
+    FSPos(const struct stat& st) : dev(st.st_dev), ino(st.st_ino) {}
 
     bool operator<(const FSPos& o) const
     {
-        if (dev < o.dev) return true;
-        if (dev > o.dev) return false;
+        if (dev < o.dev)
+            return true;
+        if (dev > o.dev)
+            return false;
         return ino < o.ino;
     }
 
@@ -47,10 +46,7 @@ struct PathMatch
 {
     std::set<FSPos> parents;
 
-    PathMatch(const std::filesystem::path& pathname)
-    {
-        fill_parents(pathname);
-    }
+    PathMatch(const std::filesystem::path& pathname) { fill_parents(pathname); }
 
     void fill_parents(const std::filesystem::path& pathname)
     {
@@ -59,7 +55,8 @@ struct PathMatch
         auto i = parents.insert(FSPos(st));
         // If we already knew of that fs position, stop here: we reached the
         // top or a loop
-        if (i.second == false) return;
+        if (i.second == false)
+            return;
         // Otherwise, go up a level and scan again
         fill_parents(pathname.parent_path());
     }
@@ -72,7 +69,7 @@ struct PathMatch
     }
 };
 
-}
+} // namespace
 
 /*
  * Pool
@@ -80,14 +77,14 @@ struct PathMatch
 
 void Pool::add_dataset(const core::cfg::Section& cfg, bool load_aliases)
 {
-    auto ds = m_session->dataset(cfg);
+    auto ds  = m_session->dataset(cfg);
     auto old = dataset_pool.find(ds->name());
     if (old != dataset_pool.end())
     {
-        nag::warning(
-            "dataset \"%s\" in \"%s\" already loaded from \"%s\": keeping only the first one",
-            ds->name().c_str(), ds->config->value("path").c_str(),
-            old->second->config->value("path").c_str());
+        nag::warning("dataset \"%s\" in \"%s\" already loaded from \"%s\": "
+                     "keeping only the first one",
+                     ds->name().c_str(), ds->config->value("path").c_str(),
+                     old->second->config->value("path").c_str());
         return;
     }
 
@@ -107,16 +104,14 @@ bool Pool::has_dataset(const std::string& name) const
     return dataset_pool.find(name) != dataset_pool.end();
 }
 
-bool Pool::has_datasets() const
-{
-    return !dataset_pool.empty();
-}
+bool Pool::has_datasets() const { return !dataset_pool.empty(); }
 
 std::shared_ptr<Dataset> Pool::dataset(const std::string& name)
 {
     auto res = dataset_pool.find(name);
     if (res == dataset_pool.end())
-        throw std::runtime_error("dataset " + name + " not found in session pool");
+        throw std::runtime_error("dataset " + name +
+                                 " not found in session pool");
     return res->second;
 }
 
@@ -126,34 +121,38 @@ std::shared_ptr<Dataset> Pool::dataset_for_use(DatasetUse use)
     {
         case DatasetUse::DEFAULT:
             throw std::runtime_error("cannot select a dataset for use=DEFAULT");
-        case DatasetUse::ERRORS:
-        {
+        case DatasetUse::ERRORS: {
             std::shared_ptr<Dataset> result;
-            for (const auto& ds: dataset_pool)
+            for (const auto& ds : dataset_pool)
             {
                 if (ds.second->use() == DatasetUse::ERRORS)
                 {
                     if (!result)
                         result = ds.second;
                     else
-                        throw std::runtime_error("multiple datasets defined as error datasets: " + result->name() + " and " + ds.first);
+                        throw std::runtime_error(
+                            "multiple datasets defined as error datasets: " +
+                            result->name() + " and " + ds.first);
                 }
             }
             if (!result)
-                throw std::runtime_error("no error dataset found in configuration");
+                throw std::runtime_error(
+                    "no error dataset found in configuration");
             return result;
         }
-        case DatasetUse::DUPLICATES:
-        {
+        case DatasetUse::DUPLICATES: {
             std::shared_ptr<Dataset> result;
-            for (const auto& ds: dataset_pool)
+            for (const auto& ds : dataset_pool)
             {
                 if (ds.second->use() == DatasetUse::DUPLICATES)
                 {
                     if (!result)
                         result = ds.second;
                     else
-                        throw std::runtime_error("multiple datasets defined as duplicates datasets: " + result->name() + " and " + ds.first);
+                        throw std::runtime_error("multiple datasets defined as "
+                                                 "duplicates datasets: " +
+                                                 result->name() + " and " +
+                                                 ds.first);
                 }
             }
             // If not found, fall back on errors
@@ -161,8 +160,7 @@ std::shared_ptr<Dataset> Pool::dataset_for_use(DatasetUse use)
                 return dataset_for_use(DatasetUse::ERRORS);
             return result;
         }
-        default:
-        {
+        default: {
             std::stringstream buf;
             buf << "unsupported dataset use: " << use;
             throw std::runtime_error(buf.str());
@@ -170,15 +168,12 @@ std::shared_ptr<Dataset> Pool::dataset_for_use(DatasetUse use)
     }
 }
 
+size_t Pool::size() const { return dataset_pool.size(); }
 
-size_t Pool::size() const
+bool Pool::foreach_dataset(
+    std::function<bool(std::shared_ptr<dataset::Dataset>)> dest)
 {
-    return dataset_pool.size();
-}
-
-bool Pool::foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)> dest)
-{
-    for (auto& i: dataset_pool)
+    for (auto& i : dataset_pool)
         if (!dest(i.second))
             return false;
     return true;
@@ -187,10 +182,11 @@ bool Pool::foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)
 std::string Pool::get_common_remote_server() const
 {
     std::string base;
-    for (const auto& si: dataset_pool)
+    for (const auto& si : dataset_pool)
     {
         std::string type = str::lower(si.second->config->value("type"));
-        if (type != "remote") return std::string();
+        if (type != "remote")
+            return std::string();
         std::string server = si.second->config->value("server");
         if (base.empty())
             base = server;
@@ -200,7 +196,8 @@ std::string Pool::get_common_remote_server() const
     return base;
 }
 
-std::shared_ptr<Dataset> Pool::querymacro(const std::string& macro_name, const std::string& macro_query)
+std::shared_ptr<Dataset> Pool::querymacro(const std::string& macro_name,
+                                          const std::string& macro_query)
 {
     // If all the datasets are on the same server, we can run the macro remotely
     std::string baseurl = get_common_remote_server();
@@ -209,12 +206,18 @@ std::shared_ptr<Dataset> Pool::querymacro(const std::string& macro_name, const s
 
     if (baseurl.empty())
     {
-        // Either all datasets are local, or they are on different servers: run the macro locally
-        arki::nag::verbose("Running query macro %s locally", macro_name.c_str());
-        return std::make_shared<arki::dataset::QueryMacro>(shared_from_this(), macro_name, macro_query);
-    } else {
+        // Either all datasets are local, or they are on different servers: run
+        // the macro locally
+        arki::nag::verbose("Running query macro %s locally",
+                           macro_name.c_str());
+        return std::make_shared<arki::dataset::QueryMacro>(
+            shared_from_this(), macro_name, macro_query);
+    }
+    else
+    {
         // Create the remote query macro
-        arki::nag::verbose("Running query macro %s remotely on %s", macro_name.c_str(), baseurl.c_str());
+        arki::nag::verbose("Running query macro %s remotely on %s",
+                           macro_name.c_str(), baseurl.c_str());
         arki::core::cfg::Section cfg;
         cfg.set("name", macro_name);
         cfg.set("type", "remote");
@@ -231,15 +234,17 @@ std::shared_ptr<Dataset> Pool::merged()
 
 std::shared_ptr<dataset::Dataset> Pool::locate_metadata(Metadata& md)
 {
-    const auto& source = md.sourceBlob();
+    const auto& source   = md.sourceBlob();
     std::string pathname = source.absolutePathname();
 
     PathMatch pmatch(pathname);
 
-    for (const auto& dsi: dataset_pool)
+    for (const auto& dsi : dataset_pool)
     {
-        auto lcfg = std::dynamic_pointer_cast<dataset::local::Dataset>(dsi.second);
-        if (!lcfg) continue;
+        auto lcfg =
+            std::dynamic_pointer_cast<dataset::local::Dataset>(dsi.second);
+        if (!lcfg)
+            continue;
         if (pmatch.is_under(lcfg->path))
         {
             md.set_source(source.makeRelativeTo(lcfg->path));
@@ -250,19 +255,13 @@ std::shared_ptr<dataset::Dataset> Pool::locate_metadata(Metadata& md)
     return std::shared_ptr<dataset::local::Dataset>();
 }
 
-
 /*
  * DispatchPool
  */
 
-DispatchPool::DispatchPool(std::shared_ptr<Pool> pool)
-    : pool(pool)
-{
-}
+DispatchPool::DispatchPool(std::shared_ptr<Pool> pool) : pool(pool) {}
 
-DispatchPool::~DispatchPool()
-{
-}
+DispatchPool::~DispatchPool() {}
 
 std::shared_ptr<dataset::Writer> DispatchPool::get(const std::string& name)
 {
@@ -273,7 +272,9 @@ std::shared_ptr<dataset::Writer> DispatchPool::get(const std::string& name)
         auto writer(ds->create_writer());
         cache.insert(make_pair(name, writer));
         return writer;
-    } else {
+    }
+    else
+    {
         return ci->second;
     }
 }
@@ -283,7 +284,7 @@ std::shared_ptr<dataset::Writer> DispatchPool::get_error()
     if (!error)
     {
         auto ds = pool->dataset_for_use(DatasetUse::ERRORS);
-        error = get(ds->name());
+        error   = get(ds->name());
         return error;
     }
     return error;
@@ -294,7 +295,7 @@ std::shared_ptr<dataset::Writer> DispatchPool::get_duplicates()
     if (!error)
     {
         auto ds = pool->dataset_for_use(DatasetUse::DUPLICATES);
-        error = get(ds->name());
+        error   = get(ds->name());
         return error;
     }
     return error;
@@ -302,23 +303,17 @@ std::shared_ptr<dataset::Writer> DispatchPool::get_duplicates()
 
 void DispatchPool::flush()
 {
-    for (auto& i: cache)
+    for (auto& i : cache)
         i.second->flush();
 }
-
 
 /*
  * CheckPool
  */
 
-CheckPool::CheckPool(std::shared_ptr<Pool> pool)
-    : pool(pool)
-{
-}
+CheckPool::CheckPool(std::shared_ptr<Pool> pool) : pool(pool) {}
 
-CheckPool::~CheckPool()
-{
-}
+CheckPool::~CheckPool() {}
 
 std::shared_ptr<dataset::Checker> CheckPool::get(const std::string& name)
 {
@@ -329,7 +324,9 @@ std::shared_ptr<dataset::Checker> CheckPool::get(const std::string& name)
         auto checker(ds->create_checker());
         cache.insert(make_pair(name, checker));
         return checker;
-    } else {
+    }
+    else
+    {
         return ci->second;
     }
 }
@@ -339,12 +336,13 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
     // Group metadata by dataset
     std::unordered_map<std::string, metadata::Collection> by_dataset;
     unsigned idx = 1;
-    for (const auto& md: todolist)
+    for (const auto& md : todolist)
     {
         if (!md->has_source_blob())
         {
             std::stringstream ss;
-            ss << "cannot remove data #" << idx << ": metadata does not come from an on-disk dataset";
+            ss << "cannot remove data #" << idx
+               << ": metadata does not come from an on-disk dataset";
             throw std::runtime_error(ss.str());
         }
 
@@ -352,7 +350,8 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
         if (!ds)
         {
             std::stringstream ss;
-            ss << "cannot remove data #" << idx << " is does not come from any known dataset";
+            ss << "cannot remove data #" << idx
+               << " is does not come from any known dataset";
             throw std::runtime_error(ss.str());
         }
 
@@ -362,28 +361,33 @@ void CheckPool::remove(const metadata::Collection& todolist, bool simulate)
 
     if (simulate)
     {
-        for (const auto& i: by_dataset)
-            arki::nag::warning("%s: %zu data would be deleted", i.first.c_str(), i.second.size());
+        for (const auto& i : by_dataset)
+            arki::nag::warning("%s: %zu data would be deleted", i.first.c_str(),
+                               i.second.size());
         return;
     }
 
     // Perform removals
-    for (const auto& i: by_dataset)
+    for (const auto& i : by_dataset)
     {
-        auto ds = get(i.first);
+        auto ds      = get(i.first);
         bool removed = false;
-        try {
+        try
+        {
             ds->remove(i.second);
             removed = true;
-        } catch (std::exception& e) {
+        }
+        catch (std::exception& e)
+        {
             arki::nag::warning("Cannot remove %zu messages from dataset %s: %s",
-                    i.second.size(), i.first.c_str(), e.what());
+                               i.second.size(), i.first.c_str(), e.what());
         }
 
         if (removed)
-            arki::nag::verbose("%s: %zu data marked as deleted", i.first.c_str(), i.second.size());
+            arki::nag::verbose("%s: %zu data marked as deleted",
+                               i.first.c_str(), i.second.size());
     }
 }
 
-}
-}
+} // namespace dataset
+} // namespace arki

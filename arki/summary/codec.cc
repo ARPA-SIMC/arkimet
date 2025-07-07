@@ -1,10 +1,10 @@
 #include "codec.h"
-#include "table.h"
-#include "stats.h"
-#include "arki/summary.h"
 #include "arki/core/binary.h"
-#include "arki/utils/compress.h"
+#include "arki/summary.h"
 #include "arki/types.h"
+#include "arki/utils/compress.h"
+#include "stats.h"
+#include "table.h"
 #include <sstream>
 
 // #define DEBUG_THIS
@@ -13,7 +13,10 @@
 #include <iostream>
 #define codeclog(...) cerr << __VA_ARGS__ << endl
 #else
-#define codeclog(...) do {} while(0)
+#define codeclog(...)                                                          \
+    do                                                                         \
+    {                                                                          \
+    } while (0)
 #endif
 
 using namespace std;
@@ -36,22 +39,23 @@ struct Format1Decoder : public DecoderBase
 {
     Row row;
 
-    Format1Decoder(Table& target) : DecoderBase(target)
-    {
-        row.set_to_zero();
-    }
+    Format1Decoder(Table& target) : DecoderBase(target) { row.set_to_zero(); }
 
     const Type* decodeUItem(size_t msoIdx, core::BinaryDecoder& dec)
     {
-        codeclog("Decode metadata item " << msoIdx << ":" << formatCode(Table::mso[msoIdx]) << " len " << Table::msoSerLen[msoIdx]);
+        codeclog("Decode metadata item "
+                 << msoIdx << ":" << formatCode(Table::mso[msoIdx]) << " len "
+                 << Table::msoSerLen[msoIdx]);
         size_t itemsizelen = Table::msoSerLen[msoIdx];
-        size_t itemsize = dec.pop_uint(itemsizelen, "Metadata item size");
+        size_t itemsize    = dec.pop_uint(itemsizelen, "Metadata item size");
         codeclog("  item size " << itemsize);
 
         if (itemsize)
         {
-            core::BinaryDecoder inner = dec.pop_data(itemsize, "encoded metadata body");
-            return target.intern(msoIdx, Type::decodeInner(Table::mso[msoIdx], inner));
+            core::BinaryDecoder inner =
+                dec.pop_data(itemsize, "encoded metadata body");
+            return target.intern(msoIdx,
+                                 Type::decodeInner(Table::mso[msoIdx], inner));
         }
         else
             return 0;
@@ -77,9 +81,11 @@ struct Format1Decoder : public DecoderBase
             // Decode the children
             for (size_t i = 0; i < childnum; ++i)
                 decode(dec, scanpos + stripelen);
-        } else {
+        }
+        else
+        {
             // Leaf node: decode stats
-            /*size_t statlen =*/ dec.pop_uint(2, "Summary statistics size");
+            /*size_t statlen =*/dec.pop_uint(2, "Summary statistics size");
             codeclog("Decoding stats in " << statlen << "b");
             row.stats = *Stats::decode(dec);
 
@@ -97,40 +103,42 @@ struct Format3Decoder : public DecoderBase
 {
     Row row;
 
-    Format3Decoder(Table& target) : DecoderBase(target)
-    {
-        row.set_to_zero();
-    }
+    Format3Decoder(Table& target) : DecoderBase(target) { row.set_to_zero(); }
 
     void decode(core::BinaryDecoder& dec)
     {
         while (dec)
         {
             // Decode the list of removed items
-            unsigned count_removed = dec.pop_varint<unsigned>("number of items to unset");
+            unsigned count_removed =
+                dec.pop_varint<unsigned>("number of items to unset");
             for (unsigned i = 0; i < count_removed; ++i)
             {
-                types::Code code = (types::Code)dec.pop_varint<unsigned>("typecode");
+                types::Code code =
+                    (types::Code)dec.pop_varint<unsigned>("typecode");
                 int pos = Visitor::posForCode(code);
                 if (pos < 0)
                 {
                     stringstream ss;
-                    ss << "cannot parse summary: found unsupported typecode " << (int)code;
+                    ss << "cannot parse summary: found unsupported typecode "
+                       << (int)code;
                     throw runtime_error(ss.str());
                 }
                 row.items[pos] = nullptr;
             }
 
             // Decode the list of changed/added items
-            unsigned count_added = dec.pop_varint<unsigned>("number of items to add/change");
+            unsigned count_added =
+                dec.pop_varint<unsigned>("number of items to add/change");
             for (unsigned i = 0; i < count_added; ++i)
             {
                 unique_ptr<Type> item = Type::decode(dec);
-                int pos = Visitor::posForCode(item->type_code());
+                int pos               = Visitor::posForCode(item->type_code());
                 if (pos < 0)
                 {
                     stringstream ss;
-                    ss << "cannot parse summary: found unsupported typecode " << (int)item->type_code();
+                    ss << "cannot parse summary: found unsupported typecode "
+                       << (int)item->type_code();
                     throw runtime_error(ss.str());
                 }
                 row.items[pos] = target.intern(pos, move(item));
@@ -142,7 +150,9 @@ struct Format3Decoder : public DecoderBase
             if (code != TYPE_SUMMARYSTATS)
             {
                 stringstream ss;
-                ss << "cannot parse summary: found typecode " << (int)code << " instead of summary stats (" << (int)TYPE_SUMMARYSTATS << ")";
+                ss << "cannot parse summary: found typecode " << (int)code
+                   << " instead of summary stats (" << (int)TYPE_SUMMARYSTATS
+                   << ")";
                 throw runtime_error(ss.str());
             }
             row.stats = *Stats::decode(inner);
@@ -154,7 +164,7 @@ struct Format3Decoder : public DecoderBase
     }
 };
 
-}
+} // namespace
 
 static size_t decode1(core::BinaryDecoder& dec, Table& target)
 {
@@ -163,7 +173,8 @@ static size_t decode1(core::BinaryDecoder& dec, Table& target)
     //     or: 0 + stats
     // msoSerLen used for number of bytes used for item lenght
 
-    if (!dec) return 0;
+    if (!dec)
+        return 0;
 
     Format1Decoder decoder(target);
     decoder.decode(dec);
@@ -177,7 +188,8 @@ static size_t decode3(core::BinaryDecoder& dec, Table& target)
     // stats size + stats
     // child size + children
     // item length encoded using varints
-    if (!dec) return 0;
+    if (!dec)
+        return 0;
 
     Format3Decoder decoder(target);
     decoder.decode(dec);
@@ -185,7 +197,8 @@ static size_t decode3(core::BinaryDecoder& dec, Table& target)
     return decoder.count;
 }
 
-size_t decode(core::BinaryDecoder& dec, unsigned version, const std::filesystem::path& filename, Table& target)
+size_t decode(core::BinaryDecoder& dec, unsigned version,
+              const std::filesystem::path& filename, Table& target)
 {
     // Check version and ensure we can decode
     switch (version)
@@ -196,18 +209,21 @@ size_t decode(core::BinaryDecoder& dec, unsigned version, const std::filesystem:
         }
         case 2: {
             // LZO compressed summary
-            if (!dec) return 0;
+            if (!dec)
+                return 0;
 
             // Read uncompressed size
             uint32_t uncsize = dec.pop_uint(4, "size of uncompressed data");
 
-            vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.size, uncsize);
+            vector<uint8_t> decomp =
+                utils::compress::unlzo(dec.buf, dec.size, uncsize);
             core::BinaryDecoder uncdec(decomp);
             return decode1(uncdec, target);
         }
         case 3: {
             // Compression type byte, node in new format
-            if (!dec) return 0;
+            if (!dec)
+                return 0;
 
             unsigned compression = dec.pop_uint(1, "compression type");
             switch (compression)
@@ -216,36 +232,40 @@ size_t decode(core::BinaryDecoder& dec, unsigned version, const std::filesystem:
                     return decode3(dec, target);
                 case 1: { // LZO compressed
                     // Read uncompressed size
-                    uint32_t uncsize = dec.pop_uint(4, "uncompressed item size");
-                    vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.size, uncsize);
+                    uint32_t uncsize =
+                        dec.pop_uint(4, "uncompressed item size");
+                    vector<uint8_t> decomp =
+                        utils::compress::unlzo(dec.buf, dec.size, uncsize);
                     core::BinaryDecoder uncdec(decomp);
                     return decode3(uncdec, target);
                 }
-                default:
-                {
+                default: {
                     stringstream ss;
-                    ss << "cannot parse file " << filename << ": file compression type is " << compression << " but I can only decode 0 (uncompressed) or 1 (LZO)";
+                    ss << "cannot parse file " << filename
+                       << ": file compression type is " << compression
+                       << " but I can only decode 0 (uncompressed) or 1 (LZO)";
                     throw runtime_error(ss.str());
                 }
             }
         }
-        default:
-        {
+        default: {
             stringstream ss;
-            ss << "cannot parse file " << filename << ": version of the file is " << version << " but I can only decode version 1 or 2";
+            ss << "cannot parse file " << filename
+               << ": version of the file is " << version
+               << " but I can only decode version 1 or 2";
             throw runtime_error(ss.str());
         }
     }
 }
 
-EncodingVisitor::EncodingVisitor(core::BinaryEncoder& enc)
-    : enc(enc)
+EncodingVisitor::EncodingVisitor(core::BinaryEncoder& enc) : enc(enc)
 {
     // Start with all undef
     last.resize(Table::msoSize);
 }
 
-bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats& stats)
+bool EncodingVisitor::operator()(const std::vector<const Type*>& md,
+                                 const Stats& stats)
 {
     vector<types::Code> removed;
     size_t added_count = 0;
@@ -261,7 +281,9 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
             // Enqueue an empty codeForPos(i)
             removed.push_back(codeForPos(i));
             last[i] = 0;
-        } else if (md_has_it && (!last[i] || md[i] != last[i])) {
+        }
+        else if (md_has_it && (!last[i] || md[i] != last[i]))
+        {
             // Enqueue md[i]
             ++added_count;
             md[i]->encodeBinary(added_enc);
@@ -272,7 +294,7 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
     // Encode the list of removed items
     enc.add_varint(removed.size());
     for (vector<types::Code>::const_iterator i = removed.begin();
-            i != removed.end(); ++i)
+         i != removed.end(); ++i)
         enc.add_varint((unsigned)*i);
 
     // Encode the list of changed/added items
@@ -285,5 +307,5 @@ bool EncodingVisitor::operator()(const std::vector<const Type*>& md, const Stats
     return true;
 }
 
-}
-}
+} // namespace summary
+} // namespace arki

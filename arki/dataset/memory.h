@@ -3,9 +3,9 @@
 
 /// dataset/memory - Dataset interface for metadata::Collection
 
-#include <arki/metadata/collection.h>
 #include <arki/dataset.h>
 #include <arki/dataset/impl.h>
+#include <arki/metadata/collection.h>
 
 namespace arki {
 class Summary;
@@ -27,7 +27,8 @@ public:
 class Reader : public DatasetAccess<Dataset, dataset::Reader>
 {
 protected:
-    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
+    bool impl_query_data(const query::Data& q,
+                         metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:
@@ -39,9 +40,8 @@ public:
     core::Interval get_stored_time_interval() override;
 };
 
-}
-}
-}
+} // namespace memory
+} // namespace dataset
+} // namespace arki
 
 #endif
-

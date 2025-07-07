@@ -1,9 +1,9 @@
 #ifndef ARKI_TYPES_ENCODED_H
 #define ARKI_TYPES_ENCODED_H
 
-#include <cstdint>
-#include <arki/types.h>
 #include <arki/core/fwd.h>
+#include <arki/types.h>
+#include <cstdint>
 
 namespace arki {
 namespace types {
@@ -12,8 +12,8 @@ class Encoded : public Type
 {
 protected:
     const uint8_t* data = nullptr;
-    unsigned size = 0;
-    bool owned = true;
+    unsigned size       = 0;
+    bool owned          = true;
 
 public:
     /// Construct copying a vector contents
@@ -34,19 +34,18 @@ public:
     Encoded(const uint8_t* buf, unsigned size, bool owned);
 
     Encoded(const Encoded&) = delete;
-    Encoded(Encoded&& o) = delete;
+    Encoded(Encoded&& o)    = delete;
 
     ~Encoded();
 
     Encoded& operator=(const Encoded&) = delete;
-    Encoded& operator=(Encoded&&) = delete;
+    Encoded& operator=(Encoded&&)      = delete;
 
     bool equals(const Type& o) const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
 };
 
-}
-}
+} // namespace types
+} // namespace arki
 
 #endif
-

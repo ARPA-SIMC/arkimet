@@ -1,5 +1,5 @@
-#include "arki/tests/tests.h"
 #include "arki/core/curl.h"
+#include "arki/tests/tests.h"
 
 using namespace arki;
 using namespace arki::utils;
@@ -14,11 +14,10 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_core_curl");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

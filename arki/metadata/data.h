@@ -1,14 +1,14 @@
 #ifndef ARKI_METADATA_DATA_H
 #define ARKI_METADATA_DATA_H
 
-#include <arki/defs.h>
 #include <arki/core/fwd.h>
+#include <arki/defs.h>
 #include <arki/stream/fwd.h>
 #include <arki/structured/fwd.h>
-#include <vector>
+#include <cstdint>
 #include <list>
 #include <memory>
-#include <cstdint>
+#include <vector>
 
 namespace arki {
 namespace metadata {
@@ -23,10 +23,10 @@ public:
     virtual ~Data() {}
 
     // Copying and moving are disallowed
-    Data(const Data&) = delete;
-    Data(Data&&) = delete;
+    Data(const Data&)            = delete;
+    Data(Data&&)                 = delete;
     Data& operator=(const Data&) = delete;
-    Data& operator=(Data&&) = delete;
+    Data& operator=(Data&&)      = delete;
 
     /// Return the data size
     virtual size_t size() const = 0;
@@ -72,7 +72,6 @@ public:
     virtual void emit(structured::Emitter& e) const = 0;
 };
 
-
 class DataManager;
 
 /**
@@ -91,16 +90,15 @@ public:
 
     TrackedData(DataManager& manager);
     TrackedData(const TrackedData&) = delete;
-    TrackedData(TrackedData&&) = delete;
+    TrackedData(TrackedData&&)      = delete;
     ~TrackedData();
     TrackedData& operator=(const TrackedData&) = delete;
-    TrackedData& operator=(TrackedData&&) = delete;
+    TrackedData& operator=(TrackedData&&)      = delete;
 
     unsigned count_used() const;
 
     void track(std::shared_ptr<Data> data);
 };
-
 
 /**
  * Track data cached in memory
@@ -116,9 +114,11 @@ protected:
 
 public:
     /// Create a Data from a buffer
-    std::shared_ptr<Data> to_data(DataFormat format, std::vector<uint8_t>&& data);
+    std::shared_ptr<Data> to_data(DataFormat format,
+                                  std::vector<uint8_t>&& data);
 
-    /// Create a Data that throws an error when trying to read it (used for tests)
+    /// Create a Data that throws an error when trying to read it (used for
+    /// tests)
     std::shared_ptr<Data> to_unreadable_data(size_t size);
 
     static DataManager& get();
@@ -126,8 +126,7 @@ public:
     friend class TrackedData;
 };
 
-
-}
-}
+} // namespace metadata
+} // namespace arki
 
 #endif

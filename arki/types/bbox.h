@@ -7,7 +7,6 @@
  * compatibility with existing saved data
  */
 
-
 #include <arki/types/encoded.h>
 
 namespace arki {
@@ -16,19 +15,18 @@ namespace types {
 namespace bbox {
 
 /// Style values
-enum class Style: unsigned char {
+enum class Style : unsigned char {
     INVALID = 1,
-    POINT = 2,
-    BOX = 3,
-    HULL = 4,
+    POINT   = 2,
+    BOX     = 3,
+    HULL    = 4,
 };
 
-}
+} // namespace bbox
 
 class BBox;
 
-template<>
-struct traits<BBox>
+template <> struct traits<BBox>
 {
     static const char* type_tag;
     static const types::Code type_code;
@@ -51,7 +49,10 @@ public:
     typedef bbox::Style Style;
 
     types::Code type_code() const override { return traits<BBox>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<BBox>::type_sersize_bytes; }
+    size_t serialisationSizeLength() const override
+    {
+        return traits<BBox>::type_sersize_bytes;
+    }
     std::string tag() const override { return traits<BBox>::type_tag; }
 
     BBox* clone() const override { return new BBox(data, size); }
@@ -69,12 +70,18 @@ public:
 
     /// CODEC functions
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
-    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec, bool reuse_buffer);
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
+    static std::unique_ptr<BBox> decode(core::BinaryDecoder& dec,
+                                        bool reuse_buffer);
     static std::unique_ptr<BBox> decodeString(const std::string& val);
-    static std::unique_ptr<BBox> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::unique_ptr<BBox>
+    decode_structure(const structured::Keys& keys,
+                     const structured::Reader& val);
 
-    static void write_documentation(stream::Text& out, unsigned heading_level) {}
+    static void write_documentation(stream::Text& out, unsigned heading_level)
+    {
+    }
 
     // Register this type tree with the type system
     static void init();
@@ -82,6 +89,6 @@ public:
     static std::unique_ptr<BBox> createInvalid();
 };
 
-}
-}
+} // namespace types
+} // namespace arki
 #endif

@@ -1,8 +1,8 @@
 #ifndef ARKI_TYPES_RUN_H
 #define ARKI_TYPES_RUN_H
 
-#include <cstdint>
 #include <arki/types/encoded.h>
+#include <cstdint>
 
 namespace arki {
 namespace types {
@@ -10,14 +10,13 @@ namespace types {
 namespace run {
 
 /// Style values
-enum class Style: unsigned char {
+enum class Style : unsigned char {
     MINUTE = 1,
 };
 
-}
+} // namespace run
 
-template<>
-struct traits<Run>
+template <> struct traits<Run>
 {
     static const char* type_tag;
     static const types::Code type_code;
@@ -51,7 +50,10 @@ public:
     typedef run::Style Style;
 
     types::Code type_code() const override { return traits<Run>::type_code; }
-    size_t serialisationSizeLength() const override { return traits<Run>::type_sersize_bytes; }
+    size_t serialisationSizeLength() const override
+    {
+        return traits<Run>::type_sersize_bytes;
+    }
     std::string tag() const override { return traits<Run>::type_tag; }
 
     Run* clone() const override = 0;
@@ -70,13 +72,16 @@ public:
     static std::string formatStyle(Style s);
 
     /// CODEC functions
-    static std::unique_ptr<Run> decode(core::BinaryDecoder& dec, bool reuse_buffer);
+    static std::unique_ptr<Run> decode(core::BinaryDecoder& dec,
+                                       bool reuse_buffer);
     static std::unique_ptr<Run> decodeString(const std::string& val);
-    static std::unique_ptr<Run> decode_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::unique_ptr<Run> decode_structure(const structured::Keys& keys,
+                                                 const structured::Reader& val);
 
     // Register this type tree with the type system
     static void init();
-    static std::unique_ptr<Run> createMinute(unsigned int hour, unsigned int minute=0);
+    static std::unique_ptr<Run> createMinute(unsigned int hour,
+                                             unsigned int minute = 0);
 
     static void write_documentation(stream::Text& out, unsigned heading_level);
 };
@@ -87,20 +92,21 @@ class Minute : public Run
 {
 public:
     constexpr static const char* name = "Minute";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 Model run time of day, in minutes from midnight
 )";
     using Run::Run;
 
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
     std::string exactQuery() const override;
     int compare_local(const Minute& o) const;
 
     Minute* clone() const override { return new Minute(data, size); }
 };
 
-}
-}
-}
+} // namespace run
+} // namespace types
+} // namespace arki
 #endif

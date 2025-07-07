@@ -23,7 +23,6 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 
-
 #include <arki/types/fwd.h>
 #include <vector>
 
@@ -111,6 +110,6 @@ protected:
     TypeVector& operator=(const TypeVector&);
 };
 
-}
-}
+} // namespace types
+} // namespace arki
 #endif

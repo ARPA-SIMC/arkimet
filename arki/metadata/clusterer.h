@@ -22,7 +22,8 @@ protected:
     size_t size;
     /// Interval for the current batch
     int cur_interval[6];
-    /// Timerange of all the items in the current batch, if split_timerange is true
+    /// Timerange of all the items in the current batch, if split_timerange is
+    /// true
     types::Timerange* last_timerange;
     /// Actual time span of the current batch
     core::Interval timespan;
@@ -55,10 +56,12 @@ protected:
      */
     virtual void flush_batch();
 
-    /// Check if adding the given data would exceed the count limits for the current batch
+    /// Check if adding the given data would exceed the count limits for the
+    /// current batch
     bool exceeds_count(const Metadata& md) const;
 
-    /// Check if adding the given data would exceed the size limits for the current batch
+    /// Check if adding the given data would exceed the size limits for the
+    /// current batch
     bool exceeds_size(size_t data_size) const;
 
     /// Check if the time of the given data is inside the range acceptable for
@@ -73,7 +76,8 @@ public:
     /// Maximum number of data items per batch (0 to ignore)
     size_t max_count = 0;
 
-    /// Maximum batch size in bytes, counting only data, not  metadata (0 to ignore)
+    /// Maximum batch size in bytes, counting only data, not  metadata (0 to
+    /// ignore)
     size_t max_bytes = 0;
 
     /**
@@ -108,7 +112,7 @@ private:
     Clusterer& operator=(const Clusterer&);
 };
 
-}
-}
+} // namespace metadata
+} // namespace arki
 
 #endif

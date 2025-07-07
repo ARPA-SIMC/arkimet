@@ -13,32 +13,32 @@ protected:
     Lock() = default;
 
 public:
-    Lock(const Lock&) = delete;
-    Lock(Lock&&) = delete;
+    Lock(const Lock&)            = delete;
+    Lock(Lock&&)                 = delete;
     Lock& operator=(const Lock&) = delete;
-    Lock&& operator=(Lock&&) = delete;
+    Lock&& operator=(Lock&&)     = delete;
     virtual ~Lock();
 };
 
-class ReadLock: public Lock
+class ReadLock : public Lock
 {
 public:
     using Lock::Lock;
 };
 
-class AppendLock: public ReadLock
+class AppendLock : public ReadLock
 {
 public:
     using ReadLock::ReadLock;
 };
 
-class CheckWriteLock: public Lock
+class CheckWriteLock : public Lock
 {
 public:
     using Lock::Lock;
 };
 
-class CheckLock: public ReadLock
+class CheckLock : public ReadLock
 {
 public:
     using ReadLock::ReadLock;
@@ -59,15 +59,13 @@ struct FLock : public ::flock
     FLock();
 
     bool ofd_setlk(NamedFileDescriptor& fd);
-    bool ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal=true);
+    bool ofd_setlkw(NamedFileDescriptor& fd, bool retry_on_signal = true);
     bool ofd_getlk(NamedFileDescriptor& fd);
 };
 
-
-
 namespace lock {
 
-class locked_error: public std::runtime_error
+class locked_error : public std::runtime_error
 {
 public:
     using std::runtime_error::runtime_error;
@@ -110,47 +108,47 @@ public:
  *  * a check write lock blocks reading, because it can completely rewrite
  *    segments
  */
-template<typename Base>
-class File : public Base
+template <typename Base> class File : public Base
 {
-    static_assert(std::is_base_of_v<arki::core::Lock, Base>, "Base not derived from arki::core::Lock");
+    static_assert(std::is_base_of_v<arki::core::Lock, Base>,
+                  "Base not derived from arki::core::Lock");
 
 public:
     arki::core::File lockfile;
     const core::lock::Policy* lock_policy;
     arki::core::FLock ds_lock;
 
-    File(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    File(const std::filesystem::path& pathname,
+         const core::lock::Policy* lock_policy);
 };
-
 
 class FileReadLock : public File<core::ReadLock>
 {
 public:
-    FileReadLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    FileReadLock(const std::filesystem::path& pathname,
+                 const core::lock::Policy* lock_policy);
     ~FileReadLock() override;
 };
-
 
 class FileAppendLock : public File<core::AppendLock>
 {
 public:
-    FileAppendLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    FileAppendLock(const std::filesystem::path& pathname,
+                   const core::lock::Policy* lock_policy);
     ~FileAppendLock() override;
 };
-
 
 class FileCheckLock : public File<core::CheckLock>
 {
 public:
     std::weak_ptr<core::CheckWriteLock> current_write_lock;
 
-    FileCheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy);
+    FileCheckLock(const std::filesystem::path& pathname,
+                  const core::lock::Policy* lock_policy);
     ~FileCheckLock() override;
 
     std::shared_ptr<core::CheckWriteLock> write_lock() override;
 };
-
 
 /**
  * Abstract locking functions that allow changing locking behaviour at runtime
@@ -158,11 +156,10 @@ public:
 struct Policy
 {
     virtual ~Policy();
-    virtual bool setlk(NamedFileDescriptor& fd, FLock&) const = 0;
+    virtual bool setlk(NamedFileDescriptor& fd, FLock&) const  = 0;
     virtual bool setlkw(NamedFileDescriptor& fd, FLock&) const = 0;
-    virtual bool getlk(NamedFileDescriptor& fd, FLock&) const = 0;
+    virtual bool getlk(NamedFileDescriptor& fd, FLock&) const  = 0;
 };
-
 
 /**
  * Set the default behaviour for the test nowait feature: when set to true,
@@ -170,7 +167,6 @@ struct Policy
  * waiting.
  */
 void test_set_nowait_default(bool value);
-
 
 /**
  * Change the behaviour of ofd_setlkw to wait if the lock is busy.
@@ -183,7 +179,6 @@ struct TestWait
     TestWait();
     ~TestWait();
 };
-
 
 /**
  * Change the behaviour of ofd_setlkw to throw an exception instead of
@@ -207,9 +202,9 @@ struct TestCount
     unsigned initial_ofd_setlk;
     unsigned initial_ofd_setlkw;
     unsigned initial_ofd_getlk;
-    unsigned ofd_setlk = 0;
+    unsigned ofd_setlk  = 0;
     unsigned ofd_setlkw = 0;
-    unsigned ofd_getlk = 0;
+    unsigned ofd_getlk  = 0;
 
     TestCount();
 
@@ -217,10 +212,8 @@ struct TestCount
     void measure();
 };
 
-}
+} // namespace lock
 
-}
+} // namespace arki::core
 
 #endif
-
-

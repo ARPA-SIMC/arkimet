@@ -1,17 +1,17 @@
 #include "arki/metadata/tests.h"
-#include "arki/metadata/data.h"
 #include "arki/matcher.h"
 #include "arki/matcher/parser.h"
-#include "arki/types/origin.h"
-#include "arki/types/product.h"
-#include "arki/types/level.h"
-#include "arki/types/timerange.h"
-#include "arki/types/reftime.h"
+#include "arki/metadata/data.h"
 #include "arki/types/area.h"
+#include "arki/types/level.h"
+#include "arki/types/origin.h"
 #include "arki/types/proddef.h"
+#include "arki/types/product.h"
+#include "arki/types/quantity.h"
+#include "arki/types/reftime.h"
 #include "arki/types/run.h"
 #include "arki/types/task.h"
-#include "arki/types/quantity.h"
+#include "arki/types/timerange.h"
 #include "arki/types/values.h"
 
 using namespace std;
@@ -22,61 +22,54 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-TestData::TestData(DataFormat format)
-    : format(format)
-{
-}
+TestData::TestData(DataFormat format) : format(format) {}
 
-GRIBData::GRIBData()
-    : TestData(DataFormat::GRIB)
+GRIBData::GRIBData() : TestData(DataFormat::GRIB)
 {
     skip_unless_grib();
     mds.scan_from_file("inbound/fixture.grib1", format, true);
 }
 
-BUFRData::BUFRData()
-    : TestData(DataFormat::BUFR)
+BUFRData::BUFRData() : TestData(DataFormat::BUFR)
 {
     skip_unless_bufr();
     mds.scan_from_file("inbound/fixture.bufr", format, true);
 }
 
-VM2Data::VM2Data()
-    : TestData(DataFormat::VM2)
+VM2Data::VM2Data() : TestData(DataFormat::VM2)
 {
     skip_unless_vm2();
     mds.scan_from_file("inbound/fixture.vm2", format, true);
 }
 
-ODIMData::ODIMData()
-    : TestData(DataFormat::ODIMH5)
+ODIMData::ODIMData() : TestData(DataFormat::ODIMH5)
 {
     mds.scan_from_file("inbound/fixture.odimh5/00.odimh5", format, true);
     mds.scan_from_file("inbound/fixture.odimh5/01.odimh5", format, true);
     mds.scan_from_file("inbound/fixture.odimh5/02.odimh5", format, true);
 }
 
-NCData::NCData()
-    : TestData(DataFormat::NETCDF)
+NCData::NCData() : TestData(DataFormat::NETCDF)
 {
     mds.scan_from_file("inbound/fixture.nc/00.nc", format, true);
     mds.scan_from_file("inbound/fixture.nc/01.nc", format, true);
     mds.scan_from_file("inbound/fixture.nc/02.nc", format, true);
 }
 
-JPEGData::JPEGData()
-    : TestData(DataFormat::JPEG)
+JPEGData::JPEGData() : TestData(DataFormat::JPEG)
 {
     mds.scan_from_file("inbound/fixture.jpeg/00.jpg", format, true);
     mds.scan_from_file("inbound/fixture.jpeg/01.jpg", format, true);
     mds.scan_from_file("inbound/fixture.jpeg/02.jpg", format, true);
 }
 
-
-std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size, unsigned month, unsigned day, unsigned hour)
+std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size,
+                                          unsigned month, unsigned day,
+                                          unsigned hour)
 {
     auto md = std::make_shared<Metadata>();
-    md->set_source_inline(format, metadata::DataManager::get().to_data(format, vector<uint8_t>(size)));
+    md->set_source_inline(format, metadata::DataManager::get().to_data(
+                                      format, vector<uint8_t>(size)));
     md->test_set("origin", "GRIB1(200, 10, 100)");
     md->test_set("product", "GRIB1(3, 4, 5)");
     md->test_set("level", "GRIB1(1, 2)");
@@ -88,12 +81,13 @@ std::shared_ptr<Metadata> make_large_mock(DataFormat format, size_t size, unsign
     return md;
 }
 
-
 void fill(Metadata& md)
 {
     using namespace arki::types::values;
     // 100663295 == 0x5ffffff
-    ValueBag testValues = ValueBag::parse("aaa=0, foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, supercazzola=-1234567, pippo=pippo, pluto=\"12\", zzz=1");
+    ValueBag testValues = ValueBag::parse(
+        "aaa=0, foo=5, bar=5000, baz=-200, moo=100663295, antani=-1, blinda=0, "
+        "supercazzola=-1234567, pippo=pippo, pluto=\"12\", zzz=1");
 
     md.test_set(Origin::createGRIB1(1, 2, 3));
     md.test_set(Product::createGRIB1(1, 2, 3));
@@ -112,7 +106,8 @@ void fill(Metadata& md)
 
 void ActualMetadata::operator==(const Metadata& expected) const
 {
-    if (_actual == expected) return;
+    if (_actual == expected)
+        return;
     std::stringstream ss;
     ss << "value:" << endl;
     ss << _actual.to_yaml();
@@ -123,7 +118,8 @@ void ActualMetadata::operator==(const Metadata& expected) const
 
 void ActualMetadata::operator!=(const Metadata& expected) const
 {
-    if (_actual != expected) return;
+    if (_actual != expected)
+        return;
     std::stringstream ss;
     ss << "value:" << endl;
     ss << _actual.to_yaml();
@@ -132,61 +128,73 @@ void ActualMetadata::operator!=(const Metadata& expected) const
     throw TestFailed(ss.str());
 }
 
-void ActualMetadata::contains(const std::string& field, const std::string& expected)
+void ActualMetadata::contains(const std::string& field,
+                              const std::string& expected)
 {
-    Code code = types::parseCodeName(field);
+    Code code                = types::parseCodeName(field);
     const Type* actual_field = _actual.get(code);
 
     if (!actual_field)
     {
         std::stringstream ss;
-        ss << "metadata does not contain a " << field << ", but we expected: \"" << expected << "\"";
+        ss << "metadata does not contain a " << field << ", but we expected: \""
+           << expected << "\"";
         throw TestFailed(ss.str());
     }
 
     unique_ptr<Type> expected_field = decodeString(code, expected);
-    if (Type::nullable_equals(actual_field, expected_field.get())) return;
+    if (Type::nullable_equals(actual_field, expected_field.get()))
+        return;
     std::stringstream ss;
-    ss << field << " '" << *actual_field << "' is different than the expected '" << *expected_field << "'";
+    ss << field << " '" << *actual_field << "' is different than the expected '"
+       << *expected_field << "'";
     throw TestFailed(ss.str());
 }
 
-void ActualMetadata::not_contains(const std::string& field, const std::string& expected)
+void ActualMetadata::not_contains(const std::string& field,
+                                  const std::string& expected)
 {
-    Code code = types::parseCodeName(field);
+    Code code                = types::parseCodeName(field);
     const Type* actual_field = _actual.get(code);
 
     if (!actual_field)
         return;
 
     unique_ptr<Type> expected_field = decodeString(code, expected);
-    if (!Type::nullable_equals(actual_field, expected_field.get())) return;
+    if (!Type::nullable_equals(actual_field, expected_field.get()))
+        return;
     std::stringstream ss;
-    ss << field << " '" << *actual_field << "' is not different than the expected '" << *expected_field << "'";
+    ss << field << " '" << *actual_field
+       << "' is not different than the expected '" << *expected_field << "'";
     throw TestFailed(ss.str());
 }
 
 void ActualMetadata::is_similar(const Metadata& expected)
 {
-    _actual.diff_items(expected, [](types::Code code, const types::Type* iact, const types::Type* iexp) {
-        if (code == TYPE_ASSIGNEDDATASET) return;
+    _actual.diff_items(expected, [](types::Code code, const types::Type* iact,
+                                    const types::Type* iexp) {
+        if (code == TYPE_ASSIGNEDDATASET)
+            return;
 
         if (!iexp)
         {
             std::stringstream ss;
-            ss << "unexpected metadata item " << types::formatCode(code) << ": " << *iact;
+            ss << "unexpected metadata item " << types::formatCode(code) << ": "
+               << *iact;
             throw TestFailed(ss.str());
         }
 
         if (!iact)
         {
             std::stringstream ss;
-            ss << "missing metadata item " << types::formatCode(code) << ": " << *iexp;
+            ss << "missing metadata item " << types::formatCode(code) << ": "
+               << *iexp;
             throw TestFailed(ss.str());
         }
 
         std::stringstream ss;
-        ss << "items differ: " << types::formatCode(code) << ": expected " << *iexp << " got " << *iact;
+        ss << "items differ: " << types::formatCode(code) << ": expected "
+           << *iexp << " got " << *iact;
         throw TestFailed(ss.str());
     });
 }
@@ -196,7 +204,8 @@ void ActualMetadata::is_set(const std::string& field)
     types::Code code = types::parseCodeName(field.c_str());
     const Type* item = _actual.get(code);
 
-    if (item) return;
+    if (item)
+        return;
     std::stringstream ss;
     ss << "metadata should contain a " << field << " field, but it does not";
     throw TestFailed(ss.str());
@@ -207,9 +216,11 @@ void ActualMetadata::is_not_set(const std::string& field)
     types::Code code = types::parseCodeName(field.c_str());
     const Type* item = _actual.get(code);
 
-    if (!item) return;
+    if (!item)
+        return;
     std::stringstream ss;
-    ss << "metadata should not contain a " << field << " field, but it contains \"" << *item << "\"";
+    ss << "metadata should not contain a " << field
+       << " field, but it contains \"" << *item << "\"";
     throw TestFailed(ss.str());
 }
 
@@ -230,5 +241,5 @@ void ActualMetadata::not_matches(const std::string& expr)
     wassert(actual(not m(_actual)));
 }
 
-}
-}
+} // namespace tests
+} // namespace arki

@@ -18,7 +18,8 @@ bool Span::maybe_merge(const Span& other)
 
 bool Span::operator==(const Span& other) const
 {
-    return std::tie(src_offset, dst_offset, size) == std::tie(other.src_offset, other.dst_offset, other.size);
+    return std::tie(src_offset, dst_offset, size) ==
+           std::tie(other.src_offset, other.dst_offset, other.size);
 }
 
 std::ostream& operator<<(std::ostream& o, const Span& s)
@@ -34,27 +35,28 @@ void Plan::add(const rearrange::Span& span)
 
 void Plan::execute(core::File& in, core::File& out)
 {
-    for (const auto& span: *this)
+    for (const auto& span : *this)
     {
-        off_t off_in = span.src_offset;
+        off_t off_in  = span.src_offset;
         off_t off_out = span.dst_offset;
-        size_t size = span.size;
+        size_t size   = span.size;
         while (size > 0)
         {
-            ssize_t copied = copy_file_range(
-                    in, &off_in, out, &off_out,
-                    size, 0);
+            ssize_t copied =
+                copy_file_range(in, &off_in, out, &off_out, size, 0);
             if (copied == 0)
-                throw std::runtime_error("source segment seems truncated compared to spans in metadata");
+                throw std::runtime_error("source segment seems truncated "
+                                         "compared to spans in metadata");
             else if (copied == -1)
             {
                 std::stringstream buf;
                 buf << span << ": copy_file_range failed";
                 throw_system_error(buf.str());
-            } else
+            }
+            else
                 size -= copied;
         }
     }
 }
 
-}
+} // namespace arki::utils::rearrange

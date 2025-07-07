@@ -11,6 +11,6 @@ class CIndex;
 class Reader;
 class Checker;
 class Fixer;
-}
+} // namespace arki::segment::iseg
 
 #endif

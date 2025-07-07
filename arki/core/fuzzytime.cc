@@ -1,8 +1,8 @@
 #include "fuzzytime.h"
 #include <arki/core/time.h>
-#include <stdexcept>
-#include <cstring>
 #include <cstdio>
+#include <cstring>
+#include <stdexcept>
 
 namespace arki {
 namespace core {
@@ -73,17 +73,21 @@ std::string FuzzyTime::to_string() const
 static void check_minmax(int value, int min, int max, const char* what)
 {
     if (value < min || value > max)
-        throw std::invalid_argument(
-            std::string(what) + " must be between "
-            + std::to_string(min) + " and " + std::to_string(max));
+        throw std::invalid_argument(std::string(what) + " must be between " +
+                                    std::to_string(min) + " and " +
+                                    std::to_string(max));
 }
 
 void FuzzyTime::validate() const
 {
-    if (mo != -1) check_minmax(mo, 1, 12, "month");
-    if (ho != -1) check_minmax(ho, 0, 24, "hour");
-    if (mi != -1) check_minmax(mi, 0, 59, "minute");
-    if (se != -1) check_minmax(se, 0, 60, "second");
+    if (mo != -1)
+        check_minmax(mo, 1, 12, "month");
+    if (ho != -1)
+        check_minmax(ho, 0, 24, "hour");
+    if (mi != -1)
+        check_minmax(mi, 0, 59, "minute");
+    if (se != -1)
+        check_minmax(se, 0, 60, "second");
 
     if (mo != -1 && da != -1)
         check_minmax(da, 1, Time::days_in_month(ye, mo), "day");
@@ -97,5 +101,5 @@ void FuzzyTime::validate() const
     }
 }
 
-}
-}
+} // namespace core
+} // namespace arki

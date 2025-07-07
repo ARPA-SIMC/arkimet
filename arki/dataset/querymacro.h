@@ -4,8 +4,8 @@
 /// Macros implementing special query strategies
 
 #include <arki/dataset.h>
-#include <string>
 #include <functional>
+#include <string>
 
 namespace arki {
 namespace dataset {
@@ -14,7 +14,8 @@ namespace dataset {
  * Dataset that builds results by querying one or more other datasets.
  *
  * * `pool` is the set of available datasets.
- * * `name` is a macro name, optionally followed by as space and macro arguments.
+ * * `name` is a macro name, optionally followed by as space and macro
+ * arguments.
  * * `query` is a description of how to build results from other datasets, in a
  * language defined by the named macro.
  */
@@ -25,7 +26,8 @@ public:
     std::string macro_args;
     std::string query;
 
-    QueryMacro(std::shared_ptr<dataset::Pool> pool, const std::string& name, const std::string& query);
+    QueryMacro(std::shared_ptr<dataset::Pool> pool, const std::string& name,
+               const std::string& query);
 
     std::shared_ptr<Reader> create_reader() override;
 };
@@ -33,12 +35,14 @@ public:
 namespace qmacro {
 
 void register_parser(
-        const std::string& ext,
-        std::function<std::shared_ptr<dataset::Reader>(const std::string& source, std::shared_ptr<QueryMacro> dataset)> parser);
+    const std::string& ext,
+    std::function<std::shared_ptr<dataset::Reader>(
+        const std::string& source, std::shared_ptr<QueryMacro> dataset)>
+        parser);
 
 void init();
 
-}
-}
-}
+} // namespace qmacro
+} // namespace dataset
+} // namespace arki
 #endif

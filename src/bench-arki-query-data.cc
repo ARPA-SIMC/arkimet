@@ -1,7 +1,7 @@
-#include "arki/runtime.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
 #include "arki/query.h"
+#include "arki/runtime.h"
 #include "arki/stream.h"
 #include "arki/utils/sys.h"
 #ifdef USE_GPERFTOOLS
@@ -12,10 +12,10 @@ int main(int argc, const char* argv[])
 {
     arki::init();
     auto session = std::make_shared<arki::dataset::Session>();
-    auto match = session->matcher(argv[1]);
-    auto cfg = arki::dataset::Session::read_config(argv[2]);
-    auto ds = session->dataset(*cfg);
-    auto reader = ds->create_reader();
+    auto match   = session->matcher(argv[1]);
+    auto cfg     = arki::dataset::Session::read_config(argv[2]);
+    auto ds      = session->dataset(*cfg);
+    auto reader  = ds->create_reader();
     size_t count = 0;
     arki::query::Bytes query;
     query.setData(match);

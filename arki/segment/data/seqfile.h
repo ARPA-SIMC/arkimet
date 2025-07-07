@@ -1,8 +1,8 @@
 #ifndef ARKI_SEGMENT_SEQFILE_H
 #define ARKI_SEGMENT_SEQFILE_H
 
-#include <arki/defs.h>
 #include <arki/core/file.h>
+#include <arki/defs.h>
 #include <filesystem>
 #include <string>
 
@@ -40,6 +40,6 @@ struct SequenceFile : public core::File
     static std::filesystem::path data_fname(size_t pos, DataFormat format);
 };
 
-}
-}
+} // namespace segment
+} // namespace arki
 #endif

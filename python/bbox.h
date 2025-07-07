@@ -6,17 +6,16 @@
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::BBox* bbox;
+typedef struct
+{
+    PyObject_HEAD arki::BBox* bbox;
 } arkipy_BBox;
 
 extern PyTypeObject* arkipy_BBox_Type;
 
-#define arkipy_BBox_Check(ob) \
-    (Py_TYPE(ob) == arkipy_BBox_Type || \
+#define arkipy_BBox_Check(ob)                                                  \
+    (Py_TYPE(ob) == arkipy_BBox_Type ||                                        \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_BBox_Type))
-
 }
 
 namespace arki {
@@ -29,8 +28,7 @@ namespace bbox {
 void init();
 
 }
-}
-}
+} // namespace python
+} // namespace arki
 
 #endif
-

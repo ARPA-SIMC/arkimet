@@ -1,24 +1,24 @@
-#include "arki/exceptions.h"
 #include "arki/types/task.h"
-#include "arki/types/utils.h"
 #include "arki/core/binary.h"
-#include "arki/structured/emitter.h"
-#include "arki/structured/reader.h"
-#include "arki/structured/keys.h"
+#include "arki/exceptions.h"
 #include "arki/stream/text.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
+#include "arki/types/utils.h"
 #include <sstream>
 
 #define CODE TYPE_TASK
 #define TAG "task"
-#define SERSIZELEN 	1
+#define SERSIZELEN 1
 
 using namespace arki::utils;
 
 namespace arki {
 namespace types {
 
-const char* traits<Task>::type_tag = TAG;
-const types::Code traits<Task>::type_code = CODE;
+const char* traits<Task>::type_tag            = TAG;
+const types::Code traits<Task>::type_code     = CODE;
 const size_t traits<Task>::type_sersize_bytes = SERSIZELEN;
 
 std::string Task::get() const
@@ -30,15 +30,17 @@ std::string Task::get() const
 
 int Task::compare(const Type& o) const
 {
-	int res = Type::compare(o);
-	if (res != 0) return res;
+    int res = Type::compare(o);
+    if (res != 0)
+        return res;
 
     // We should be the same kind, so upcast
     const Task* v = dynamic_cast<const Task*>(&o);
     if (!v)
         throw_consistency_error(
-                "comparing metadata types",
-                std::string("second element claims to be a Task, but it is a ") + typeid(&o).name() + " instead");
+            "comparing metadata types",
+            std::string("second element claims to be a Task, but it is a ") +
+                typeid(&o).name() + " instead");
 
     return get().compare(v->get());
 }
@@ -55,17 +57,16 @@ std::unique_ptr<Task> Task::decode(core::BinaryDecoder& dec, bool reuse_buffer)
     return res;
 }
 
-std::ostream& Task::writeToOstream(std::ostream& o) const
-{
-    return o << get();
-}
+std::ostream& Task::writeToOstream(std::ostream& o) const { return o << get(); }
 
-void Task::serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f) const
+void Task::serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                           const Formatter* f) const
 {
     e.add(keys.task_value, get());
 }
 
-std::unique_ptr<Task> Task::decode_structure(const structured::Keys& keys, const structured::Reader& val)
+std::unique_ptr<Task> Task::decode_structure(const structured::Keys& keys,
+                                             const structured::Reader& val)
 {
     return Task::create(val.as_string(keys.task_value, "Task value"));
 }
@@ -77,10 +78,7 @@ std::unique_ptr<Task> Task::decodeString(const std::string& val)
     return Task::create(val);
 }
 
-Task* Task::clone() const
-{
-    return new Task(data, size);
-}
+Task* Task::clone() const { return new Task(data, size); }
 
 std::unique_ptr<Task> Task::create(const std::string& val)
 {
@@ -103,10 +101,7 @@ Representation of ODIM Task as a string value.
 )");
 }
 
-void Task::init()
-{
-    MetadataType::register_type<Task>();
-}
+void Task::init() { MetadataType::register_type<Task>(); }
 
-}
-}
+} // namespace types
+} // namespace arki

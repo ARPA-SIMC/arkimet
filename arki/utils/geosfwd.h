@@ -26,7 +26,7 @@ class Geometry;
 class WKTReader;
 class WKTWriter;
 
-}
-}
-}
+} // namespace geos
+} // namespace utils
+} // namespace arki
 #endif

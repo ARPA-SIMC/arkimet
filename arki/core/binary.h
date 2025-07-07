@@ -2,10 +2,10 @@
 #define ARKI_BINARY_H
 
 #include <arki/defs.h>
-#include <vector>
-#include <string>
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace core {
@@ -17,8 +17,7 @@ struct BinaryEncoder
     BinaryEncoder(std::vector<uint8_t>& dest) : dest(dest) {}
 
     /// Encode an unsigned integer as a varint
-    template<typename T>
-    void add_varint(T val)
+    template <typename T> void add_varint(T val)
     {
         // Only work with unsigned
         static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
@@ -34,8 +33,7 @@ struct BinaryEncoder
     }
 
     /// Encode an unsigned integer in the given amount of bytes, big endian
-    template<typename T>
-    void add_unsigned(T val, unsigned bytes)
+    template <typename T> void add_unsigned(T val, unsigned bytes)
     {
         // Only work with unsigned
         static_assert(std::is_unsigned<T>(), "source integer must be unsigned");
@@ -45,7 +43,7 @@ struct BinaryEncoder
     }
 
     /// Encode an unsigned integer in the given amount of bytes, big endian
-    template<typename T>
+    template <typename T>
     static void set_unsigned(uint8_t* buf, T val, unsigned bytes)
     {
         // Only work with unsigned
@@ -61,10 +59,12 @@ struct BinaryEncoder
         uint32_t uns;
         if (val < 0)
         {
-            // If it's negative, we encode the 2-complement of the positive value
+            // If it's negative, we encode the 2-complement of the positive
+            // value
             uns = -val;
             uns = ~uns + 1;
-        } else
+        }
+        else
             uns = val;
         add_unsigned(uns, bytes);
     }
@@ -75,10 +75,12 @@ struct BinaryEncoder
         uint32_t uns;
         if (val < 0)
         {
-            // If it's negative, we encode the 2-complement of the positive value
+            // If it's negative, we encode the 2-complement of the positive
+            // value
             uns = -val;
             uns = ~uns + 1;
-        } else
+        }
+        else
             uns = val;
         set_unsigned(buf, uns, bytes);
     }
@@ -107,26 +109,47 @@ struct BinaryEncoder
             buf[i] = ((const uint8_t*)&val)[i];
     }
 
-    void add_string(const char* str) { while (*str) dest.push_back(*str++); }
-    void add_raw(const uint8_t* buf, size_t size) { dest.insert(dest.end(), buf, buf + size); }
-    void add_raw(const std::string& str) { dest.insert(dest.end(), str.begin(), str.end()); }
-    void add_raw(const std::vector<uint8_t>& o) { dest.insert(dest.end(), o.begin(), o.end()); }
+    void add_string(const char* str)
+    {
+        while (*str)
+            dest.push_back(*str++);
+    }
+    void add_raw(const uint8_t* buf, size_t size)
+    {
+        dest.insert(dest.end(), buf, buf + size);
+    }
+    void add_raw(const std::string& str)
+    {
+        dest.insert(dest.end(), str.begin(), str.end());
+    }
+    void add_raw(const std::vector<uint8_t>& o)
+    {
+        dest.insert(dest.end(), o.begin(), o.end());
+    }
     void add_byte(uint8_t val) { dest.emplace_back(val); }
 };
 
 struct BinaryDecoder
 {
     const uint8_t* buf = 0;
-    std::size_t size = 0;
+    std::size_t size   = 0;
 
-    BinaryDecoder() = default;
+    BinaryDecoder()                     = default;
     BinaryDecoder(const BinaryDecoder&) = default;
-    BinaryDecoder(BinaryDecoder&&) = default;
-    BinaryDecoder(const std::string& str) : buf((const uint8_t*)str.data()), size(str.size()) {}
-    BinaryDecoder(const std::vector<uint8_t>& buf) : buf(buf.data()), size(buf.size()) {}
-    BinaryDecoder(const uint8_t* buf, std::size_t size) : buf(buf), size(size) {}
+    BinaryDecoder(BinaryDecoder&&)      = default;
+    BinaryDecoder(const std::string& str)
+        : buf((const uint8_t*)str.data()), size(str.size())
+    {
+    }
+    BinaryDecoder(const std::vector<uint8_t>& buf)
+        : buf(buf.data()), size(buf.size())
+    {
+    }
+    BinaryDecoder(const uint8_t* buf, std::size_t size) : buf(buf), size(size)
+    {
+    }
     BinaryDecoder& operator=(const BinaryDecoder&) = default;
-    BinaryDecoder& operator=(BinaryDecoder&&) = default;
+    BinaryDecoder& operator=(BinaryDecoder&&)      = default;
 
     /// Check if there is data still to be read in the decoder
     operator bool() const { return size != 0; }
@@ -145,8 +168,7 @@ struct BinaryDecoder
         size -= bytes;
     }
 
-    template<typename STR>
-    inline void skip(size_t bytes, STR what)
+    template <typename STR> inline void skip(size_t bytes, STR what)
     {
         ensure_size(bytes, what);
         buf += bytes;
@@ -154,8 +176,7 @@ struct BinaryDecoder
     }
 
     /// Return the first byte in the buffer
-    template<typename STR>
-    uint8_t pop_byte(STR what)
+    template <typename STR> uint8_t pop_byte(STR what)
     {
         ensure_size(1, what);
         uint8_t res = buf[0];
@@ -167,12 +188,12 @@ struct BinaryDecoder
      * Decode a varint from the beginning of the buffer and return it,
      * advancing the buffer to just past the varint
      */
-    template<typename T, typename STR>
-    T pop_varint(STR what)
+    template <typename T, typename STR> T pop_varint(STR what)
     {
         T val;
         size_t res = decode_varint(buf, size, val);
-        if (res == 0) throw_parse_error(what, "invalid varint data");
+        if (res == 0)
+            throw_parse_error(what, "invalid varint data");
         skip(res);
         return val;
     }
@@ -181,8 +202,7 @@ struct BinaryDecoder
      * Decode a fixed-size unsigned integer from the beginning of the buffer
      * and return it.
      */
-    template<typename STR>
-    uint32_t pop_uint(unsigned int bytes, STR what)
+    template <typename STR> uint32_t pop_uint(unsigned int bytes, STR what)
     {
         ensure_size(bytes, what);
         uint32_t val = decode_uint(buf, bytes);
@@ -194,8 +214,7 @@ struct BinaryDecoder
      * Decode a fixed-size signed integer from the beginning of the buffer
      * and return it.
      */
-    template<typename STR>
-    int pop_sint(unsigned int bytes, STR what)
+    template <typename STR> int pop_sint(unsigned int bytes, STR what)
     {
         ensure_size(bytes, what);
         int val = decode_sint(buf, bytes);
@@ -203,8 +222,7 @@ struct BinaryDecoder
         return val;
     }
 
-    template<typename STR>
-    uint64_t pop_ulint(unsigned int bytes, STR what)
+    template <typename STR> uint64_t pop_ulint(unsigned int bytes, STR what)
     {
         ensure_size(bytes, what);
         uint64_t val = decode_ulint(buf, bytes);
@@ -216,10 +234,10 @@ struct BinaryDecoder
      * Decode a float value.
      *
      * Lacking enough clue about floating point representation, it is assumed
-     * that the in-memory representation is standard enough to be transmitted as is.
+     * that the in-memory representation is standard enough to be transmitted as
+     * is.
      */
-    template<typename STR>
-    float pop_float(STR what)
+    template <typename STR> float pop_float(STR what)
     {
         ensure_size(sizeof(float), what);
         float val = decode_float(buf);
@@ -231,10 +249,10 @@ struct BinaryDecoder
      * Decode a double value.
      *
      * Lacking enough clue about floating point representation, it is assumed
-     * that the in-memory representation is standard enough to be transmitted as is.
+     * that the in-memory representation is standard enough to be transmitted as
+     * is.
      */
-    template<typename STR>
-    double pop_double(STR what)
+    template <typename STR> double pop_double(STR what)
     {
         ensure_size(sizeof(double), what);
         double val = decode_double(buf);
@@ -281,7 +299,7 @@ struct BinaryDecoder
      * If the buffer does not contain the separator, all the buffer contents
      * are returned.
      */
-    std::string pop_line(char sep='\n');
+    std::string pop_line(char sep = '\n');
 
     /**
      * Return a line of text that ends with the given separator.
@@ -321,7 +339,8 @@ struct BinaryDecoder
      *
      * Throws an exception if the buffer does not contain a metadata bundle.
      */
-    BinaryDecoder pop_metadata_bundle(std::string& signature, unsigned& version);
+    BinaryDecoder pop_metadata_bundle(std::string& signature,
+                                      unsigned& version);
 
     /**
      * Decodes a varint from a buffer
@@ -331,7 +350,7 @@ struct BinaryDecoder
      * @retval val the decoded value
      * @returns the number of bytes decoded
      */
-    template<typename T>
+    template <typename T>
     static size_t decode_varint(const uint8_t* buf, unsigned int size, T& val)
     {
         // Only work with unsigned
@@ -341,7 +360,7 @@ struct BinaryDecoder
         // protbuf's varint implementation
         val = 0;
 
-        for (size_t count = 0; count < size && count < sizeof(val)+2; ++count)
+        for (size_t count = 0; count < size && count < sizeof(val) + 2; ++count)
         {
             val |= ((T)buf[count] & 0x7F) << (7 * count);
             if ((buf[count] & 0x80) == 0)
@@ -366,12 +385,16 @@ struct BinaryDecoder
     {
         uint32_t uns = decode_uint(val, bytes);
         // Check if it's negative
-        if (uns & 0x80u << ((bytes-1)*8))
+        if (uns & 0x80u << ((bytes - 1) * 8))
         {
-            const uint32_t mask = bytes == 1 ? 0xff : bytes == 2 ? 0xffff : bytes == 3 ? 0xffffff : 0xffffffff;
-            uns = (~(uns-1)) & mask;
+            const uint32_t mask = bytes == 1   ? 0xff
+                                  : bytes == 2 ? 0xffff
+                                  : bytes == 3 ? 0xffffff
+                                               : 0xffffffff;
+            uns                 = (~(uns - 1)) & mask;
             return -uns;
-        } else
+        }
+        else
             return uns;
     }
 
@@ -406,11 +429,13 @@ struct BinaryDecoder
     }
 
 protected:
-    [[noreturn]] void throw_parse_error(const std::string& what, const std::string& errmsg);
-    [[noreturn]] void throw_insufficient_size(const std::string& what, size_t wanted);
+    [[noreturn]] void throw_parse_error(const std::string& what,
+                                        const std::string& errmsg);
+    [[noreturn]] void throw_insufficient_size(const std::string& what,
+                                              size_t wanted);
 };
 
-}
-}
+} // namespace core
+} // namespace arki
 
 #endif

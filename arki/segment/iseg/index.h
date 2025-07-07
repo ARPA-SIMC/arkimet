@@ -3,24 +3,23 @@
 
 /// Index for the contents of an iseg data file
 
+#include <arki/core/lock.h>
 #include <arki/core/transaction.h>
-#include <arki/utils/sqlite.h>
-#include <arki/types/fwd.h>
+#include <arki/query.h>
 #include <arki/segment/fwd.h>
 #include <arki/segment/iseg.h>
-#include <arki/segment/iseg/session.h>
-#include <arki/segment/iseg/index/attr.h>
 #include <arki/segment/iseg/index/aggregate.h>
-#include <arki/core/lock.h>
-#include <arki/query.h>
+#include <arki/segment/iseg/index/attr.h>
+#include <arki/segment/iseg/session.h>
 #include <arki/summary.h>
-#include <string>
+#include <arki/types/fwd.h>
+#include <arki/utils/sqlite.h>
 #include <set>
+#include <string>
 
 struct sqlite3;
 
 namespace arki::segment::iseg {
-
 
 /**
  * Dataset index.
@@ -39,15 +38,17 @@ namespace arki::segment::iseg {
  * It must be possible to completely regenerate the dataset index by
  * rescanning all the data stored in the dataset.
  */
-template<typename LockType>
-class Index
+template <typename LockType> class Index
 {
 public:
     /// Segment for which this is the index
     std::shared_ptr<const Segment> segment;
 
     /// iseg segment session
-    const segment::iseg::Session& session() const { return *static_cast<const segment::iseg::Session*>(&segment->session()); }
+    const segment::iseg::Session& session() const
+    {
+        return *static_cast<const segment::iseg::Session*>(&segment->session());
+    }
 
 protected:
     mutable utils::sqlite::SQLiteDB m_db;
@@ -57,7 +58,7 @@ protected:
 
     // Subtables
     segment::iseg::index::Aggregate* m_uniques = nullptr;
-    segment::iseg::index::Aggregate* m_others = nullptr;
+    segment::iseg::index::Aggregate* m_others  = nullptr;
 
     /// Optionally held read lock
     std::shared_ptr<LockType> lock;
@@ -71,14 +72,16 @@ protected:
     /// Initialize m_others
     void init_others();
 
-    /// Get a list of all other attribute tables that can be created in the database
+    /// Get a list of all other attribute tables that can be created in the
+    /// database
     std::set<types::Code> all_other_tables() const;
 
     /**
      * Add to 'query' the SQL joins and constraints based on the given matcher.
      *
      * An example string that can be added is:
-     *  "JOIN mduniq AS u ON uniq = u.id WHERE reftime = (...) AND u.origin IN (1, 2, 3)"
+     *  "JOIN mduniq AS u ON uniq = u.id WHERE reftime = (...) AND u.origin IN
+     * (1, 2, 3)"
      *
      * @return true if the index could be used for the query, false if the
      * query does not use the index and a full scan should be used instead
@@ -96,14 +99,15 @@ protected:
      */
     void build_md(utils::sqlite::Query& q, Metadata& md) const;
 
-    Index(std::shared_ptr<const Segment> segment, std::shared_ptr<LockType> lock=nullptr);
+    Index(std::shared_ptr<const Segment> segment,
+          std::shared_ptr<LockType> lock = nullptr);
 
 public:
     Index(const Index&) = delete;
-    Index(Index&&) = delete;
+    Index(Index&&)      = delete;
     ~Index();
     Index& operator=(const Index&) = delete;
-    Index& operator=(Index&&) = delete;
+    Index& operator=(Index&&)      = delete;
 
     bool has_uniques() const { return m_uniques != nullptr; }
     segment::iseg::index::Aggregate& uniques() { return *m_uniques; }
@@ -130,7 +134,8 @@ public:
     /**
      * Send the metadata of all data items known by the index
      */
-    bool scan(metadata_dest_func consumer, const std::string& order_by="offset") const;
+    bool scan(metadata_dest_func consumer,
+              const std::string& order_by = "offset") const;
 
     /**
      * Query data sending the results to the given consumer.
@@ -160,11 +165,11 @@ public:
 class RIndex : public Index<const core::ReadLock>
 {
 public:
-    RIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock);
+    RIndex(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<const core::ReadLock> lock);
 };
 
-template<typename LockType>
-class WIndex : public Index<LockType>
+template <typename LockType> class WIndex : public Index<LockType>
 {
 protected:
     using Index<LockType>::index_pathname;
@@ -181,7 +186,9 @@ protected:
 
     void compile_insert();
 
-    WIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<LockType> lock);
+    WIndex(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<LockType> lock);
+
 public:
     using Index<LockType>::session;
     using Index<LockType>::segment;
@@ -199,7 +206,8 @@ public:
      * If the item already exists, returns the blob source pointing to the data
      * currently in the dataset
      */
-    std::unique_ptr<types::source::Blob> index(const Metadata& md, uint64_t ofs);
+    std::unique_ptr<types::source::Blob> index(const Metadata& md,
+                                               uint64_t ofs);
 
     /**
      * Index the given metadata item, or replace it in the index.
@@ -237,18 +245,18 @@ public:
     void test_make_hole(unsigned hole_size, unsigned data_idx);
 };
 
-
 class AIndex : public WIndex<core::AppendLock>
 {
 public:
-    AIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
+    AIndex(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<core::AppendLock> lock);
 };
-
 
 class CIndex : public WIndex<core::CheckLock>
 {
 public:
-    CIndex(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
+    CIndex(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<core::CheckLock> lock);
 };
 
 extern template class Index<const core::ReadLock>;
@@ -257,5 +265,5 @@ extern template class Index<core::CheckLock>;
 extern template class WIndex<core::AppendLock>;
 extern template class WIndex<core::CheckLock>;
 
-}
+} // namespace arki::segment::iseg
 #endif

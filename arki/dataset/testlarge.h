@@ -26,13 +26,13 @@ struct Dataset : public dataset::Dataset
     std::shared_ptr<dataset::Checker> create_checker() override;
 };
 
-
 /**
  * Dataset that is always empty
  */
 class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
-    bool generate(const core::Interval& interval, std::function<bool(std::unique_ptr<Metadata>)> out) const;
+    bool generate(const core::Interval& interval,
+                  std::function<bool(std::unique_ptr<Metadata>)> out) const;
 
 protected:
     bool impl_query_data(const query::Data& q, metadata_dest_func) override;
@@ -46,7 +46,7 @@ public:
     core::Interval get_stored_time_interval() override;
 };
 
-}
-}
-}
+} // namespace testlarge
+} // namespace dataset
+} // namespace arki
 #endif

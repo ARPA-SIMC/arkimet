@@ -1,5 +1,5 @@
-#include "tests.h"
 #include "quantity.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -12,13 +12,19 @@ class Tests : public TypeTestCase<types::Quantity>
     void register_tests() override;
 } test("arki_types_quantity");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_generic_test("quantity",
-    { "a", "a,a", "1,b,c", "a,1,c", "a,b,1", "1,2,3", },
-    "a,b,c",
-    { "b", "c", "c,d", "c,d,e" });
-
+    add_generic_test("quantity",
+                     {
+                         "a",
+                         "a,a",
+                         "1,b,c",
+                         "a,1,c",
+                         "a,b,1",
+                         "1,2,3",
+                     },
+                     "a,b,c", {"b", "c", "c,d", "c,d,e"});
 }
 
-}
+} // namespace

@@ -1,8 +1,8 @@
 #ifndef ARKI_CORE_TESTS_H
 #define ARKI_CORE_TESTS_H
 
-#include <arki/tests/tests.h>
 #include <arki/core/time.h>
+#include <arki/tests/tests.h>
 
 namespace arki {
 namespace tests {
@@ -10,7 +10,10 @@ namespace tests {
 class ActualTime : public arki::utils::tests::Actual<arki::core::Time>
 {
 public:
-    ActualTime(const core::Time& actual) : arki::utils::tests::Actual<core::Time>(actual) {}
+    ActualTime(const core::Time& actual)
+        : arki::utils::tests::Actual<core::Time>(actual)
+    {
+    }
 
     using arki::utils::tests::Actual<arki::core::Time>::operator==;
     using arki::utils::tests::Actual<arki::core::Time>::operator!=;
@@ -30,11 +33,17 @@ public:
     void compares(const core::Time& higher) const;
 
     /// Check all components of a Time item
-    void is(int ye, int mo, int da, int ho=0, int mi=0, int se=0);
+    void is(int ye, int mo, int da, int ho = 0, int mi = 0, int se = 0);
 };
 
-inline arki::tests::ActualTime actual_time(const arki::core::Time& actual) { return arki::tests::ActualTime(actual); }
-inline arki::tests::ActualTime actual(const arki::core::Time& actual) { return arki::tests::ActualTime(actual); }
+inline arki::tests::ActualTime actual_time(const arki::core::Time& actual)
+{
+    return arki::tests::ActualTime(actual);
+}
+inline arki::tests::ActualTime actual(const arki::core::Time& actual)
+{
+    return arki::tests::ActualTime(actual);
+}
 
 void skip_unless_libzip();
 void skip_unless_libarchive();
@@ -48,7 +57,6 @@ void skip_unless_splice();
 
 void delete_if_exists(const std::string& name);
 
-}
-}
+} // namespace tests
+} // namespace arki
 #endif
-

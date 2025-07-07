@@ -4,8 +4,8 @@
 /// dataset/index/summarycache - Cache precomputed summaries
 
 #include <arki/core/time.h>
-#include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
+#include <arki/metadata/fwd.h>
 #include <filesystem>
 
 namespace arki {
@@ -32,16 +32,20 @@ public:
     void openRO();
     void openRW();
 
-    /// Read summary for all the period. Returns true if found, false if not in cache.
+    /// Read summary for all the period. Returns true if found, false if not in
+    /// cache.
     bool read(Summary& s);
 
-    /// Read summary for the given month. Returns true if found, false if not in cache
+    /// Read summary for the given month. Returns true if found, false if not in
+    /// cache
     bool read(Summary& s, int year, int month);
 
-    /// Write the global cache file; returns false if the cache dir is not writable.
+    /// Write the global cache file; returns false if the cache dir is not
+    /// writable.
     bool write(Summary& s);
 
-    /// Write the cache file for the given month; returns false if the cache dir is not writable.
+    /// Write the cache file for the given month; returns false if the cache dir
+    /// is not writable.
     bool write(Summary& s, int year, int month);
 
     /// Remove all contents of the cache
@@ -66,8 +70,8 @@ public:
     bool check(const dataset::Base& ds, Reporter& reporter) const;
 };
 
-}
-}
-}
+} // namespace index
+} // namespace dataset
+} // namespace arki
 
 #endif

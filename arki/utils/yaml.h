@@ -48,20 +48,14 @@ public:
         {
             return &value;
         }
-        bool operator==(const const_iterator& ti) const
-        {
-            return in == ti.in;
-        }
-        bool operator!=(const const_iterator& ti) const
-        {
-            return in != ti.in;
-        }
+        bool operator==(const const_iterator& ti) const { return in == ti.in; }
+        bool operator!=(const const_iterator& ti) const { return in != ti.in; }
     };
 
     const_iterator begin(core::LineReader& in) { return const_iterator(in); }
     const_iterator end() { return const_iterator(); }
 };
 
-}
-}
+} // namespace utils
+} // namespace arki
 #endif

@@ -11,9 +11,8 @@ class OR;
 class AND;
 class Aliases;
 class AliasDatabase;
-}
+} // namespace matcher
 
-}
+} // namespace arki
 
 #endif
-

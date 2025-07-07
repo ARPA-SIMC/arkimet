@@ -1,24 +1,24 @@
 #include "collection.h"
-#include "arki/exceptions.h"
+#include "arki/core/binary.h"
 #include "arki/core/lock.h"
+#include "arki/dataset.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/inbound.h"
-#include "arki/types/source/blob.h"
-#include "arki/types/reftime.h"
-#include "arki/utils/compress.h"
-#include "arki/utils/files.h"
-#include "arki/core/binary.h"
-#include "arki/segment/data.h"
+#include "arki/metadata/sort.h"
 #include "arki/scan.h"
-#include "arki/utils/sys.h"
+#include "arki/segment/data.h"
 #include "arki/stream.h"
 #include "arki/summary.h"
-#include "arki/metadata/sort.h"
-#include "arki/dataset.h"
+#include "arki/types/reftime.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/compress.h"
+#include "arki/utils/files.h"
+#include "arki/utils/sys.h"
 #include <algorithm>
+#include <fcntl.h>
 #include <memory>
 #include <unordered_set>
-#include <fcntl.h>
 
 using namespace std;
 using namespace arki::core;
@@ -40,20 +40,24 @@ struct RepackSort : public arki::metadata::sort::Compare
     {
         const auto* rta = a.get(arki::TYPE_REFTIME);
         const auto* rtb = b.get(arki::TYPE_REFTIME);
-        if (rta && !rtb) return 1;
-        if (!rta && rtb) return -1;
+        if (rta && !rtb)
+            return 1;
+        if (!rta && rtb)
+            return -1;
         if (rta && rtb)
-            if (int res = rta->compare(*rtb)) return res;
-        if (a.sourceBlob().offset > b.sourceBlob().offset) return 1;
-        if (b.sourceBlob().offset > a.sourceBlob().offset) return -1;
+            if (int res = rta->compare(*rtb))
+                return res;
+        if (a.sourceBlob().offset > b.sourceBlob().offset)
+            return 1;
+        if (b.sourceBlob().offset > a.sourceBlob().offset)
+            return -1;
         return 0;
     }
 
     std::string toString() const override { return "reftime,offset"; }
 };
 
-}
-
+} // namespace
 
 namespace arki {
 namespace metadata {
@@ -72,31 +76,31 @@ struct AtomicWriter
     sys::File out;
 
     explicit AtomicWriter(const std::filesystem::path& fname)
-        : destfname(fname), out(path_tmp(fname), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
+        : destfname(fname),
+          out(path_tmp(fname), O_WRONLY | O_TRUNC | O_CREAT | O_EXCL, 0666)
     {
     }
 
-    ~AtomicWriter()
-    {
-        rollback();
-    }
+    ~AtomicWriter() { rollback(); }
 
     void commit()
     {
-        if (!out) return;
+        if (!out)
+            return;
         out.close();
         std::filesystem::rename(out.path(), destfname);
     }
 
     void rollback()
     {
-        if (!out) return;
+        if (!out)
+            return;
         out.close();
         ::unlink(out.path().c_str());
     }
 };
 
-struct AtomicWriterPreservingTimestamp: public AtomicWriter
+struct AtomicWriterPreservingTimestamp : public AtomicWriter
 {
     ::timespec saved_timestamp[2];
 
@@ -118,7 +122,8 @@ struct AtomicWriterPreservingTimestamp: public AtomicWriter
     }
 };
 
-static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescriptor& out)
+static void compressAndWrite(const std::vector<uint8_t>& buf,
+                             NamedFileDescriptor& out)
 {
     auto obuf = compress::lzo(buf.data(), buf.size());
     if (obuf.size() + 8 < buf.size())
@@ -127,17 +132,19 @@ static void compressAndWrite(const std::vector<uint8_t>& buf, NamedFileDescripto
         vector<uint8_t> tmp;
         core::BinaryEncoder enc(tmp);
         enc.add_string("MG");
-        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
+        enc.add_unsigned(0u, 2);              // Version 0: LZO compressed
         enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
-        enc.add_unsigned(buf.size(), 4); // Uncompressed len
+        enc.add_unsigned(buf.size(), 4);      // Uncompressed len
         out.write(tmp.data(), tmp.size());
         out.write((const char*)obuf.data(), obuf.size());
-    } else
+    }
+    else
         // Write the plain metadata
         out.write(buf.data(), buf.size());
 }
 
-static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf, StreamOutput& out)
+static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf,
+                                           StreamOutput& out)
 {
     auto obuf = compress::lzo(buf.data(), buf.size());
     if (obuf.size() + 8 < buf.size())
@@ -146,13 +153,14 @@ static stream::SendResult compressAndWrite(const std::vector<uint8_t>& buf, Stre
         vector<uint8_t> tmp;
         core::BinaryEncoder enc(tmp);
         enc.add_string("MG");
-        enc.add_unsigned(0u, 2);	// Version 0: LZO compressed
+        enc.add_unsigned(0u, 2);              // Version 0: LZO compressed
         enc.add_unsigned(obuf.size() + 4, 4); // Compressed len
-        enc.add_unsigned(buf.size(), 4); // Uncompressed len
+        enc.add_unsigned(buf.size(), 4);      // Uncompressed len
         auto res = out.send_buffer(tmp.data(), tmp.size());
         res += out.send_buffer((const char*)obuf.data(), obuf.size());
         return res;
-    } else
+    }
+    else
         // Write the plain metadata
         return out.send_buffer(buf.data(), buf.size());
 }
@@ -177,17 +185,17 @@ Collection::Collection(dataset::Reader& ds, const std::string& q)
     add(ds, q);
 }
 
-Collection::~Collection()
-{
-}
+Collection::~Collection() {}
 
 bool Collection::operator==(const Collection& o) const
 {
-    if (vals.size() != o.vals.size()) return false;
-    auto i = vals.begin();
+    if (vals.size() != o.vals.size())
+        return false;
+    auto i  = vals.begin();
     auto oi = o.vals.begin();
-    for ( ; i != vals.end() && oi != o.vals.end(); ++i, ++oi)
-        if (**i != **oi) return false;
+    for (; i != vals.end() && oi != o.vals.end(); ++i, ++oi)
+        if (**i != **oi)
+            return false;
     return true;
 }
 
@@ -195,7 +203,7 @@ Collection Collection::clone() const
 {
     Collection res;
     res.vals.reserve(size());
-    for (const auto& md: vals)
+    for (const auto& md : vals)
         res.vals.push_back(std::shared_ptr<Metadata>(md->clone()));
     return res;
 }
@@ -203,14 +211,17 @@ Collection Collection::clone() const
 InboundBatch Collection::make_batch() const
 {
     InboundBatch batch;
-    for (auto& md: vals)
+    for (auto& md : vals)
         batch.emplace_back(std::make_shared<metadata::Inbound>(md));
     return batch;
 }
 
 metadata_dest_func Collection::inserter_func()
 {
-    return [=](std::shared_ptr<Metadata> md) { acquire(md); return true; };
+    return [=](std::shared_ptr<Metadata> md) {
+        acquire(md);
+        return true;
+    };
 }
 
 void Collection::add(dataset::Dataset& ds, const query::Data& q)
@@ -233,14 +244,12 @@ void Collection::add(dataset::Reader& reader, const std::string& q)
     reader.query_data(q, inserter_func());
 }
 
-void Collection::push_back(const Metadata& md)
-{
-    acquire(md.clone());
-}
+void Collection::push_back(const Metadata& md) { acquire(md.clone()); }
 
 void Collection::acquire(std::shared_ptr<Metadata> md, bool with_data)
 {
-    if (!with_data) md->drop_cached_data();
+    if (!with_data)
+        md->drop_cached_data();
     vals.push_back(md);
 }
 
@@ -306,7 +315,8 @@ void Collection::writeAtomically(const std::filesystem::path& fname) const
     writer.commit();
 }
 
-void Collection::writeAtomicallyPreservingTimestamp(const std::filesystem::path& fname) const
+void Collection::writeAtomicallyPreservingTimestamp(
+    const std::filesystem::path& fname) const
 {
     AtomicWriterPreservingTimestamp writer(fname);
     write_to(writer.out);
@@ -320,10 +330,12 @@ void Collection::appendTo(const std::filesystem::path& fname) const
     out.close();
 }
 
-std::filesystem::path Collection::ensureContiguousData(const std::string& source) const
+std::filesystem::path
+Collection::ensureContiguousData(const std::string& source) const
 {
     // Check that the metadata completely cover the data file
-    if (empty()) return std::string();
+    if (empty())
+        return std::string();
 
     std::filesystem::path fname;
     off_t last_end = 0;
@@ -331,15 +343,22 @@ std::filesystem::path Collection::ensureContiguousData(const std::string& source
     {
         const source::Blob& s = (*i)->sourceBlob();
         if (s.offset != (size_t)last_end)
-            throw std::runtime_error("cannot validate "s + source +
-                    ": metadata element points to data that does not start at the end of the previous element");
+            throw std::runtime_error(
+                "cannot validate "s + source +
+                ": metadata element points to data that does not start at the "
+                "end of the previous element");
         if (i == vals.begin())
         {
             fname = s.absolutePathname();
-        } else {
+        }
+        else
+        {
             if (fname != s.absolutePathname())
                 throw std::runtime_error("cannot validate "s + source +
-                        ": metadata element points at another data file (previous: " + fname.native() + ", this: " + s.absolutePathname().native() + ")");
+                                         ": metadata element points at another "
+                                         "data file (previous: " +
+                                         fname.native() + ", this: " +
+                                         s.absolutePathname().native() + ")");
         }
         last_end += s.size;
     }
@@ -347,7 +366,9 @@ std::filesystem::path Collection::ensureContiguousData(const std::string& source
     if (st.get() == NULL)
         throw_file_error(fname, "cannot validate data described in " + source);
     if (st->st_size != last_end)
-        throw std::runtime_error("validating " + source + ": metadata do not cover the entire data file " + fname.native());
+        throw std::runtime_error(
+            "validating " + source +
+            ": metadata do not cover the entire data file " + fname.native());
     return fname;
 }
 
@@ -369,12 +390,12 @@ struct ClearOnEnd
         vals.clear();
     }
 };
-}
+} // namespace
 
 bool Collection::move_to(metadata_dest_func dest)
 {
     bool success = true;
-    for (auto& md: vals)
+    for (auto& md : vals)
     {
         if (success && !dest(md))
             success = false;
@@ -387,7 +408,7 @@ bool Collection::move_to(metadata_dest_func dest)
 
 void Collection::prepare_for_segment_metadata()
 {
-    for (auto& i: vals)
+    for (auto& i : vals)
         i->prepare_for_segment_metadata();
 }
 
@@ -402,22 +423,17 @@ void Collection::sort(const std::string& cmp)
     sort(*c);
 }
 
-void Collection::sort()
-{
-    sort("");
-}
+void Collection::sort() { sort(""); }
 
-void Collection::sort_segment()
-{
-    sort(RepackSort());
-}
+void Collection::sort_segment() { sort(RepackSort()); }
 
 bool Collection::expand_date_range(core::Interval& interval) const
 {
-    for (const auto& md: *this)
+    for (const auto& md : *this)
     {
         auto rt = md->get<types::Reftime>();
-        if (!rt) return false;
+        if (!rt)
+            return false;
         rt->expand_date_range(interval);
     }
     return true;
@@ -425,7 +441,8 @@ bool Collection::expand_date_range(core::Interval& interval) const
 
 void Collection::drop_cached_data()
 {
-    for (auto& md: *this) md->drop_cached_data();
+    for (auto& md : *this)
+        md->drop_cached_data();
 }
 
 namespace {
@@ -435,31 +452,36 @@ struct IDMaker
 {
     std::set<types::Code> components;
 
-    explicit IDMaker(const std::set<types::Code>& components) : components(components) {}
+    explicit IDMaker(const std::set<types::Code>& components)
+        : components(components)
+    {
+    }
 
     std::vector<uint8_t> make_string(const Metadata& md) const
     {
         std::vector<uint8_t> res;
         core::BinaryEncoder enc(res);
-        for (const auto& i: components)
+        for (const auto& i : components)
             if (const Type* t = md.get(i))
                 t->encodeBinary(enc);
         return res;
     }
 };
 
-}
+} // namespace
 
-Collection Collection::without_duplicates(const std::set<types::Code>& unique_components) const
+Collection Collection::without_duplicates(
+    const std::set<types::Code>& unique_components) const
 {
     if (unique_components.empty())
         return *this;
 
-    // unordered_map may be more efficient, but we would ned to implement hash for vector<uint8_t>
+    // unordered_map may be more efficient, but we would ned to implement hash
+    // for vector<uint8_t>
     std::map<std::vector<uint8_t>, std::shared_ptr<Metadata>> last_seen;
     std::unordered_set<const Metadata*> duplicates;
     IDMaker id_maker(unique_components);
-    for (const auto& md: vals)
+    for (const auto& md : vals)
     {
         auto id = id_maker.make_string(*md);
         if (id.empty())
@@ -484,7 +506,7 @@ Collection Collection::without_duplicates(const std::set<types::Code>& unique_co
     // duplicates is now a subset of this collection with the same order, and
     // we can use to iterate efficiently
     Collection res;
-    for (const auto& md: vals)
+    for (const auto& md : vals)
     {
         if (duplicates.find(md.get()) != duplicates.end())
             continue; // Duplicate found: skip
@@ -496,7 +518,7 @@ Collection Collection::without_duplicates(const std::set<types::Code>& unique_co
 Collection Collection::without_data(const std::set<uint64_t>& offsets) const
 {
     Collection res;
-    for (const auto& md: vals)
+    for (const auto& md : vals)
     {
         if (offsets.find(md->sourceBlob().offset) != offsets.end())
             continue; // Data to remove: skip
@@ -510,20 +532,25 @@ void Collection::dump(FILE* out, const std::set<types::Code>& extra_items) const
     for (size_t i = 0; i < size(); ++i)
     {
         auto md = get(i);
-        fprintf(out, "%zu: %s\n", i, md->has_source() ? md->source().to_string().c_str() : "<no source>");
-        fprintf(out, "    reftime: %s\n", md->get(TYPE_REFTIME)->to_string().c_str());
-        for (const auto& code: extra_items)
-            fprintf(out, "    %s: %s\n", formatCode(code).c_str(), md->get(code)->to_string().c_str());
+        fprintf(out, "%zu: %s\n", i,
+                md->has_source() ? md->source().to_string().c_str()
+                                 : "<no source>");
+        fprintf(out, "    reftime: %s\n",
+                md->get(TYPE_REFTIME)->to_string().c_str());
+        for (const auto& code : extra_items)
+            fprintf(out, "    %s: %s\n", formatCode(code).c_str(),
+                    md->get(code)->to_string().c_str());
     }
 }
 
-
-TestCollection::TestCollection(const std::filesystem::path& path, bool with_data)
+TestCollection::TestCollection(const std::filesystem::path& path,
+                               bool with_data)
 {
     scan_from_file(path, with_data);
 }
 
-void TestCollection::scan_from_file(const std::filesystem::path& path, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& path,
+                                    bool with_data)
 {
     std::filesystem::path basedir;
     std::filesystem::path relpath;
@@ -532,10 +559,14 @@ void TestCollection::scan_from_file(const std::filesystem::path& path, bool with
 
     auto segment = session->segment_from_relpath(relpath);
     auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
-    reader->read_all([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
+    reader->read_all([&](std::shared_ptr<Metadata> md) {
+        acquire(md, with_data);
+        return true;
+    });
 }
 
-void TestCollection::scan_from_file(const std::filesystem::path& path, DataFormat format, bool with_data)
+void TestCollection::scan_from_file(const std::filesystem::path& path,
+                                    DataFormat format, bool with_data)
 {
     std::filesystem::path basedir;
     std::filesystem::path relpath;
@@ -544,8 +575,11 @@ void TestCollection::scan_from_file(const std::filesystem::path& path, DataForma
 
     auto segment = session->segment_from_relpath_and_format(relpath, format);
     auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
-    reader->read_all([&](std::shared_ptr<Metadata> md) { acquire(md, with_data); return true; });
+    reader->read_all([&](std::shared_ptr<Metadata> md) {
+        acquire(md, with_data);
+        return true;
+    });
 }
 
-}
-}
+} // namespace metadata
+} // namespace arki

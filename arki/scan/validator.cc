@@ -1,16 +1,18 @@
 #include "validator.h"
 #include "arki/exceptions.h"
-#include "arki/scan.h"
 #include "arki/metadata/data.h"
+#include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include <sstream>
 
 namespace arki {
 namespace scan {
 
-void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd, off_t offset, const std::string& msg) const
+void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd,
+                                  off_t offset, const std::string& msg) const
 {
-    throw_runtime_error(fd.path(), ":", offset, ": ", format(), " validation failed: ", msg);
+    throw_runtime_error(fd.path(), ":", offset, ": ", format(),
+                        " validation failed: ", msg);
 }
 
 void Validator::throw_check_error(const std::string& msg) const
@@ -34,5 +36,5 @@ void Validator::validate_data(const metadata::Data& data) const
     validate_buf(buf.data(), buf.size());
 }
 
-}
-}
+} // namespace scan
+} // namespace arki

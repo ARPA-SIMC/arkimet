@@ -1,7 +1,7 @@
-#include "tests.h"
+#include "arki/core/file.h"
 #include "base.h"
 #include "filter.h"
-#include "arki/core/file.h"
+#include "tests.h"
 #include <vector>
 
 using namespace std;
@@ -16,17 +16,13 @@ struct CommonTestsFixture : public stream::StreamTestsFixture
 {
     std::vector<uint8_t> buffer;
 
-    CommonTestsFixture()
-    {
-        set_output(StreamOutput::create(buffer));
-    }
+    CommonTestsFixture() { set_output(StreamOutput::create(buffer)); }
 
     std::string streamed_contents() override
     {
         return std::string(buffer.begin(), buffer.end());
     }
 };
-
 
 class Tests : public stream::StreamTests
 {
@@ -36,15 +32,13 @@ class Tests : public stream::StreamTests
 
     std::unique_ptr<stream::StreamTestsFixture> make_fixture() override
     {
-        return std::unique_ptr<stream::StreamTestsFixture>(new CommonTestsFixture);
+        return std::unique_ptr<stream::StreamTestsFixture>(
+            new CommonTestsFixture);
     }
 };
 
 Tests test("arki_stream_buffer");
 
-void Tests::register_tests() {
-StreamTests::register_tests();
+void Tests::register_tests() { StreamTests::register_tests(); }
 
-}
-
-}
+} // namespace

@@ -13,7 +13,6 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_types");
 
-
 struct TestImpl : public types::Type
 {
     int val;
@@ -29,7 +28,10 @@ struct TestImpl : public types::Type
     size_t serialisationSizeLength() const override { return 1; }
     void encodeWithoutEnvelope(core::BinaryEncoder&) const override {}
     std::ostream& writeToOstream(std::ostream& o) const override { return o; }
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override {}
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override
+    {
+    }
 };
 
 struct ImplA : public TestImpl
@@ -48,21 +50,22 @@ struct ImplASub : public ImplA
 };
 
 // Check downcast and ucpast
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("cast", [] {
-    unique_ptr<ImplA> top(new ImplA);
-    unique_ptr<ImplASub> sub(new ImplASub);
+    add_method("cast", [] {
+        unique_ptr<ImplA> top(new ImplA);
+        unique_ptr<ImplASub> sub(new ImplASub);
 
-    unique_ptr<ImplA> from_sub(upcast<ImplA>(move(sub)));
-    wassert(actual(from_sub.get()).istrue());
+        unique_ptr<ImplA> from_sub(upcast<ImplA>(move(sub)));
+        wassert(actual(from_sub.get()).istrue());
 
-    unique_ptr<ImplASub> back_to_top(downcast<ImplASub>(move(from_sub)));
-    wassert(actual(back_to_top.get()).istrue());
-});
+        unique_ptr<ImplASub> back_to_top(downcast<ImplASub>(move(from_sub)));
+        wassert(actual(back_to_top.get()).istrue());
+    });
 
-// Check specific item assignments
-add_method("assign", []() noexcept {
+    // Check specific item assignments
+    add_method("assign", []() noexcept {
 #if 0
 	Item<ImplA> a(new ImplA);
 	Item<ImplB> b(new ImplB);
@@ -74,10 +77,10 @@ add_method("assign", []() noexcept {
 	// This is not supposed to compile
 	//tmp = b;
 #endif
-});
+    });
 
-// Check copying around
-add_method("copy", []() noexcept {
+    // Check copying around
+    add_method("copy", []() noexcept {
 #if 0
 	Item<ImplA> a(new ImplA);
 	ensure_equals(a->val, 0);
@@ -110,10 +113,10 @@ add_method("copy", []() noexcept {
 
 	ensure_equals(a->val, 0);
 #endif
-});
+    });
 
-// Check UItem
-add_method("uitem", []() noexcept {
+    // Check UItem
+    add_method("uitem", []() noexcept {
 #if 0
 	UItem<ImplA> a;
 	UItem<ImplA> b;
@@ -125,10 +128,10 @@ add_method("uitem", []() noexcept {
 	a = b;
 	ensure_equals(a, b);
 #endif
-});
+    });
 
-// Check that assignment works
-add_method("assign1", []() noexcept {
+    // Check that assignment works
+    add_method("assign1", []() noexcept {
 #if 0
 	Item<TestImpl> a(new TestImpl);
 	Item<TestImpl> b(new TestImpl(1));
@@ -143,8 +146,7 @@ add_method("assign1", []() noexcept {
 	a = b;
 	ensure_equals(a->val, 3);
 #endif
-});
-
+    });
 }
 
-}
+} // namespace

@@ -1,8 +1,8 @@
-#include "tests.h"
-#include "fromfunction.h"
 #include "arki/matcher.h"
-#include "arki/scan.h"
 #include "arki/query.h"
+#include "arki/scan.h"
+#include "fromfunction.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -32,31 +32,33 @@ class Tests : public FixtureTestCase<Fixture>
 
 Tests test("arki_dataset_fromfunction");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Test accessing the data
-add_method("read", [](Fixture& f) {
-    auto reader = f.config().create_reader();
-    fromfunction::Reader* ff_reader = dynamic_cast<fromfunction::Reader*>(reader.get());
-    ff_reader->generator = [&](metadata_dest_func dest){
-        metadata::TestCollection mds("inbound/test.grib1");
-        return mds.move_to(dest);
-    };
-    metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
-    wassert(actual(mdc.size()) == 3u);
-});
+    // Test accessing the data
+    add_method("read", [](Fixture& f) {
+        auto reader = f.config().create_reader();
+        fromfunction::Reader* ff_reader =
+            dynamic_cast<fromfunction::Reader*>(reader.get());
+        ff_reader->generator = [&](metadata_dest_func dest) {
+            metadata::TestCollection mds("inbound/test.grib1");
+            return mds.move_to(dest);
+        };
+        metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
+        wassert(actual(mdc.size()) == 3u);
+    });
 
-add_method("query", [](Fixture& f) {
-    auto reader = f.config().create_reader();
-    fromfunction::Reader* ff_reader = dynamic_cast<fromfunction::Reader*>(reader.get());
-    ff_reader->generator = [&](metadata_dest_func dest){
-        metadata::TestCollection mds("inbound/test.grib1");
-        return mds.move_to(dest);
-    };
-    metadata::Collection mdc(*reader, "origin:GRIB1,200");
-    wassert(actual(mdc.size()) == 1u);
-});
-
+    add_method("query", [](Fixture& f) {
+        auto reader = f.config().create_reader();
+        fromfunction::Reader* ff_reader =
+            dynamic_cast<fromfunction::Reader*>(reader.get());
+        ff_reader->generator = [&](metadata_dest_func dest) {
+            metadata::TestCollection mds("inbound/test.grib1");
+            return mds.move_to(dest);
+        };
+        metadata::Collection mdc(*reader, "origin:GRIB1,200");
+        wassert(actual(mdc.size()) == 1u);
+    });
 }
 
-}
+} // namespace

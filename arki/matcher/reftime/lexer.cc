@@ -7,7 +7,7 @@ namespace lexer {
 
 bool Parser::string_in(std::initializer_list<const char*> values) const
 {
-    for (const char* val: values)
+    for (const char* val : values)
         if (strncmp(buf, val, len) == 0)
             return true;
     return false;
@@ -56,7 +56,8 @@ char Parser::itype()
             break;
         }
     }
-    error("expected a time name like hour, minute, second, day, week, month or year");
+    error("expected a time name like hour, minute, second, day, week, month or "
+          "year");
     // This is just to appease the compiler warnings
     return 0;
 }
@@ -64,7 +65,9 @@ char Parser::itype()
 arki::core::FuzzyTime* parse_easter(const char* buf, unsigned len)
 {
     if (len < 4)
-        throw std::invalid_argument("cannot parse reftime match expression \"" + std::string(buf, len) + "\": expecting at least 4 characters");
+        throw std::invalid_argument("cannot parse reftime match expression \"" +
+                                    std::string(buf, len) +
+                                    "\": expecting at least 4 characters");
     std::unique_ptr<arki::core::FuzzyTime> res(new arki::core::FuzzyTime);
     // Parse the year directly
     res->set_easter(strtoul(buf + len - 4, nullptr, 10));
@@ -89,7 +92,6 @@ void parse_time(const char* buf, unsigned len, int* res)
     parser.end();
 }
 
-
 IParser::IParser(const char* sbuf, unsigned slen, struct LexInterval& res)
     : ISParser(sbuf, slen, res)
 {
@@ -99,7 +101,9 @@ IParser::IParser(const char* sbuf, unsigned slen, struct LexInterval& res)
     {
         res.val = 1;
         eatNonSpaces();
-    } else {
+    }
+    else
+    {
         res.val = num();
     }
     eatSpaces();
@@ -171,11 +175,12 @@ void IParser::itype()
             break;
         }
     }
-    error("expected a time name like hour, minute, second, day, week, month or year");
+    error("expected a time name like hour, minute, second, day, week, month or "
+          "year");
 }
 
-
-SParser::SParser(const char* sbuf, unsigned slen, struct LexInterval& res) : ISParser(sbuf, slen, res)
+SParser::SParser(const char* sbuf, unsigned slen, struct LexInterval& res)
+    : ISParser(sbuf, slen, res)
 {
     if (!len)
         error("expecting time step");
@@ -227,7 +232,7 @@ void SParser::itype()
     error("expected a time name like hours, minutes or seconds");
 }
 
-}
-}
-}
-}
+} // namespace lexer
+} // namespace reftime
+} // namespace matcher
+} // namespace arki

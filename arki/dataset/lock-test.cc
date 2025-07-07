@@ -13,10 +13,6 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_dataset_lock");
 
+void Tests::register_tests() {}
 
-void Tests::register_tests() {
-
-}
-
-}
-
+} // namespace

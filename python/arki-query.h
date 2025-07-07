@@ -12,21 +12,21 @@ namespace python {
 namespace cmdline {
 class DatasetProcessor;
 }
-}
-}
+} // namespace python
+} // namespace arki
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::python::cmdline::DatasetProcessor* processor = nullptr;
+typedef struct
+{
+    PyObject_HEAD arki::python::cmdline::DatasetProcessor* processor = nullptr;
     std::shared_ptr<arki::dataset::Pool> pool;
 } arkipy_ArkiQuery;
 
 extern PyTypeObject* arkipy_ArkiQuery_Type;
 
-#define arkipy_ArkiQuery_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_ArkiQuery_Type || \
+#define arkipy_ArkiQuery_Check(ob)                                             \
+    (Py_TYPE(ob) == &arkipy_ArkiQuery_Type ||                                  \
      PyType_IsSubtype(Py_TYPE(ob), &arkipy_ArkiQuery_Type))
 }
 
@@ -36,6 +36,6 @@ namespace python {
 void register_arki_query(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

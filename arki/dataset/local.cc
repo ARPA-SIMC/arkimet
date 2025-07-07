@@ -1,11 +1,11 @@
 #include "local.h"
-#include "segmented.h"
 #include "archive.h"
 #include "arki/dataset/time.h"
-#include "arki/types/reftime.h"
 #include "arki/metadata.h"
+#include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "segmented.h"
 #include <fcntl.h>
 
 using namespace std;
@@ -16,8 +16,10 @@ namespace arki {
 namespace dataset {
 namespace local {
 
-Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
-    : dataset::Dataset(session, cfg), path(sys::abspath(std::filesystem::path(cfg.value("path"))))
+Dataset::Dataset(std::shared_ptr<Session> session,
+                 const core::cfg::Section& cfg)
+    : dataset::Dataset(session, cfg),
+      path(sys::abspath(std::filesystem::path(cfg.value("path"))))
 {
     string tmp = cfg.value("archive age");
     if (!tmp.empty())
@@ -33,11 +35,12 @@ Dataset::Dataset(std::shared_ptr<Session> session, const core::cfg::Section& cfg
         lock_policy = core::lock::policy_ofd;
 }
 
-std::pair<bool, metadata::Inbound::Result> Dataset::check_acquire_age(Metadata& md) const
+std::pair<bool, metadata::Inbound::Result>
+Dataset::check_acquire_age(Metadata& md) const
 {
-    const auto& st = SessionTime::get();
+    const auto& st                     = SessionTime::get();
     const types::reftime::Position* rt = md.get<types::reftime::Position>();
-    auto time = rt->get_Position();
+    auto time                          = rt->get_Position();
 
     if (delete_age != -1 && time < st.age_threshold(delete_age))
     {
@@ -64,10 +67,7 @@ bool Dataset::hasArchive() const
     return std::filesystem::exists(path / ".archive");
 }
 
-
-Reader::~Reader()
-{
-}
+Reader::~Reader() {}
 
 std::shared_ptr<dataset::Reader> Reader::archive()
 {
@@ -78,7 +78,8 @@ std::shared_ptr<dataset::Reader> Reader::archive()
 
 bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
-    if (!dataset().hasArchive()) return true;
+    if (!dataset().hasArchive())
+        return true;
     return archive()->query_data(q, dest);
 }
 
@@ -88,7 +89,8 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
         archive()->query_summary(matcher, summary);
 }
 
-std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::path& path_)
+std::shared_ptr<core::cfg::Section>
+Reader::read_config(const std::filesystem::path& path_)
 {
     // Read the config file inside the directory
     auto path = sys::abspath(path_);
@@ -106,12 +108,14 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::p
         if (res->value("type") != "remote")
             res->set("path", sys::abspath(path));
         return res;
-    } else {
+    }
+    else
+    {
         auto abspath = std::filesystem::canonical(path);
         if (abspath.parent_path().filename() == ".archive")
         {
             auto containing_path = abspath.parent_path().parent_path();
-            file = containing_path / "config";
+            file                 = containing_path / "config";
             if (std::filesystem::exists(file))
             {
                 File in(file, O_RDONLY);
@@ -124,17 +128,27 @@ std::shared_ptr<core::cfg::Section> Reader::read_config(const std::filesystem::p
                 res->unset("archive age");
                 res->unset("delete age");
                 return res;
-            } else {
-                throw std::runtime_error(path.native() + ": path looks like an archive component but containing configuration not found at " + file.native());
             }
-        } else {
-            throw std::runtime_error(path.native() + ": path is a directory but dataset configuration not found");
+            else
+            {
+                throw std::runtime_error(
+                    path.native() +
+                    ": path looks like an archive component but containing "
+                    "configuration not found at " +
+                    file.native());
+            }
+        }
+        else
+        {
+            throw std::runtime_error(
+                path.native() +
+                ": path is a directory but dataset configuration not found");
         }
     }
-
 }
 
-std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::filesystem::path& path)
+std::shared_ptr<core::cfg::Sections>
+Reader::read_configs(const std::filesystem::path& path)
 {
     auto sec = read_config(path);
     auto res = std::make_shared<core::cfg::Sections>();
@@ -142,20 +156,16 @@ std::shared_ptr<core::cfg::Sections> Reader::read_configs(const std::filesystem:
     return res;
 }
 
+Writer::~Writer() {}
 
-Writer::~Writer()
-{
-}
-
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session,
+                          const core::cfg::Section& cfg,
+                          metadata::InboundBatch& batch)
 {
     return segmented::Writer::test_acquire(session, cfg, batch);
 }
 
-
-Checker::~Checker()
-{
-}
+Checker::~Checker() {}
 
 std::shared_ptr<dataset::Checker> Checker::archive()
 {
@@ -221,6 +231,6 @@ void Checker::state(CheckerConfig& opts)
 template class Base<Reader>;
 template class Base<Checker>;
 
-}
-}
-}
+} // namespace local
+} // namespace dataset
+} // namespace arki

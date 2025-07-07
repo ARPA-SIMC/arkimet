@@ -5,14 +5,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-
 namespace {
 using namespace std;
 using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-template<class Data, class FixtureData>
+template <class Data, class FixtureData>
 class Tests : public SegmentTests<Data, FixtureData>
 {
     using SegmentTests<Data, FixtureData>::SegmentTests;
@@ -24,29 +23,28 @@ class Tests : public SegmentTests<Data, FixtureData>
 Tests<segment::data::tar::Data, GRIBData> test1("arki_segment_data_tar_grib");
 Tests<segment::data::tar::Data, BUFRData> test2("arki_segment_data_tar_bufr");
 Tests<segment::data::tar::Data, ODIMData> test3("arki_segment_data_tar_odim");
-Tests<segment::data::tar::Data, VM2Data>  test4("arki_segment_data_tar_vm2");
-Tests<segment::data::tar::Data, NCData>  test5("arki_segment_data_tar_nc");
-Tests<segment::data::tar::Data, JPEGData>  test6("arki_segment_data_tar_jpeg");
+Tests<segment::data::tar::Data, VM2Data> test4("arki_segment_data_tar_vm2");
+Tests<segment::data::tar::Data, NCData> test5("arki_segment_data_tar_nc");
+Tests<segment::data::tar::Data, JPEGData> test6("arki_segment_data_tar_jpeg");
 
 struct Subprocess
 {
     std::vector<std::string> args;
     std::string executable;
     std::string cwd;
-    int stdin_fd = -1;
-    int stdout_fd = -1;
-    int stderr_fd = -1;
-    pid_t pid = -1;
+    int stdin_fd   = -1;
+    int stdout_fd  = -1;
+    int stderr_fd  = -1;
+    pid_t pid      = -1;
     int returncode = 0;
 
-    Subprocess()
-    {
-    }
+    Subprocess() {}
 
     void run()
     {
         if (args.empty())
-            throw std::runtime_error("Subprocess.run called with an empty argument list");
+            throw std::runtime_error(
+                "Subprocess.run called with an empty argument list");
         if (executable.empty())
             executable = args[0];
 
@@ -79,7 +77,9 @@ struct Subprocess
 
             execvpe(executable.c_str(), argv.get(), environ);
             throw_system_error("execve failed");
-        } else {
+        }
+        else
+        {
             // Parent
         }
     }
@@ -95,28 +95,29 @@ struct Subprocess
     }
 };
 
-template<class Data, class FixtureData>
-void Tests<Data, FixtureData>::register_tests() {
-SegmentTests<Data, FixtureData>::register_tests();
+template <class Data, class FixtureData>
+void Tests<Data, FixtureData>::register_tests()
+{
+    SegmentTests<Data, FixtureData>::register_tests();
 
-this->add_method("filenames", [](Fixture& f) {
-    std::shared_ptr<segment::data::Checker> checker = f.create();
-    sys::File tarout("tar.out", O_RDWR | O_CREAT | O_TRUNC);
-    Subprocess proc;
-    proc.stdout_fd = tarout;
-    proc.args = { "tar", "atf", checker->segment().abspath().native() + ".tar" };
-    proc.run();
-    tarout.close();
-    if (proc.wait() != 0)
-        throw std::runtime_error("tar exited with error");
-    wassert(actual_file("tar.out").contents_equal({
-                "000000." + format_name(f.td.format),
-                "000001." + format_name(f.td.format),
-                "000002." + format_name(f.td.format)}));
-    sys::unlink("tar.out");
-});
-
+    this->add_method("filenames", [](Fixture& f) {
+        std::shared_ptr<segment::data::Checker> checker = f.create();
+        sys::File tarout("tar.out", O_RDWR | O_CREAT | O_TRUNC);
+        Subprocess proc;
+        proc.stdout_fd = tarout;
+        proc.args      = {"tar", "atf",
+                          checker->segment().abspath().native() + ".tar"};
+        proc.run();
+        tarout.close();
+        if (proc.wait() != 0)
+            throw std::runtime_error("tar exited with error");
+        wassert(actual_file("tar.out").contents_equal(
+            {"000000." + format_name(f.td.format),
+             "000001." + format_name(f.td.format),
+             "000002." + format_name(f.td.format)}));
+        sys::unlink("tar.out");
+    });
 }
-}
+} // namespace
 
 #include "tests.tcc"

@@ -4,23 +4,24 @@
 /// Pool of datasets, opened on demand
 
 #include <arki/core/fwd.h>
-#include <arki/metadata/fwd.h>
 #include <arki/dataset/fwd.h>
-#include <unordered_map>
-#include <string>
+#include <arki/metadata/fwd.h>
 #include <map>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace arki {
 namespace dataset {
 
-class Pool: public std::enable_shared_from_this<Pool>
+class Pool : public std::enable_shared_from_this<Pool>
 {
 protected:
     std::shared_ptr<Session> m_session;
 
     /// Pool of known, reusable datasets
-    std::unordered_map<std::string, std::shared_ptr<dataset::Dataset>> dataset_pool;
+    std::unordered_map<std::string, std::shared_ptr<dataset::Dataset>>
+        dataset_pool;
 
 public:
     Pool(std::shared_ptr<Session> session) : m_session(session) {}
@@ -37,7 +38,7 @@ public:
      * added to the session alias database. If different servers define some
      * aliases differently, it throws std::runtime_error
      */
-    void add_dataset(const core::cfg::Section& cfg, bool load_aliases=true);
+    void add_dataset(const core::cfg::Section& cfg, bool load_aliases = true);
 
     /// Check if the dataset pool has a dataset with the given name
     bool has_dataset(const std::string& name) const;
@@ -71,7 +72,8 @@ public:
      *
      * If dest returns false, stop iteration and return false.
      */
-    bool foreach_dataset(std::function<bool(std::shared_ptr<dataset::Dataset>)> dest);
+    bool foreach_dataset(
+        std::function<bool(std::shared_ptr<dataset::Dataset>)> dest);
 
     /**
      * Check if all the datasets in the session pool are remote and from the
@@ -85,7 +87,8 @@ public:
     /**
      * Create a QueryMacro dataset querying datasets from this session's pool.
      */
-    std::shared_ptr<Dataset> querymacro(const std::string& macro_name, const std::string& macro_query);
+    std::shared_ptr<Dataset> querymacro(const std::string& macro_name,
+                                        const std::string& macro_query);
 
     /**
      * Create a Merged dataset querying datasets from this session's pool.
@@ -101,7 +104,6 @@ public:
      */
     std::shared_ptr<dataset::Dataset> locate_metadata(Metadata& md);
 };
-
 
 class DispatchPool
 {
@@ -143,7 +145,6 @@ public:
     void flush();
 };
 
-
 class CheckPool
 {
 protected:
@@ -170,6 +171,6 @@ public:
     void remove(const arki::metadata::Collection& todolist, bool simulate);
 };
 
-}
-}
+} // namespace dataset
+} // namespace arki
 #endif

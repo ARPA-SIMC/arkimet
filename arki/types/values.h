@@ -1,14 +1,14 @@
 #ifndef ARKI_VALUES_H
 #define ARKI_VALUES_H
 
+#include <arki/core/binary.h>
 #include <arki/core/fwd.h>
 #include <arki/structured/fwd.h>
-#include <arki/core/binary.h>
+#include <cstdint>
+#include <iosfwd>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-#include <iosfwd>
-#include <cstdint>
 
 struct lua_State;
 
@@ -75,15 +75,14 @@ public:
     ValueBag build() const;
 };
 
-}
-
+} // namespace values
 
 class ValueBag
 {
 protected:
     const uint8_t* data = nullptr;
-    unsigned size = 0;
-    bool owned = false;
+    unsigned size       = 0;
+    bool owned          = false;
 
 public:
     ValueBag() = default;
@@ -97,8 +96,8 @@ public:
     {
         typedef values::Value value_type;
         typedef ptrdiff_t difference_type;
-        typedef value_type *pointer;
-        typedef value_type &reference;
+        typedef value_type* pointer;
+        typedef value_type& reference;
         typedef std::forward_iterator_tag iterator_category;
 
         core::BinaryDecoder dec;
@@ -117,8 +116,14 @@ public:
         const values::Value* operator->() const { return value; }
     };
 
-    const_iterator begin() const { return const_iterator(core::BinaryDecoder(data, size)); }
-    const_iterator end() const { return const_iterator(core::BinaryDecoder(data + size, 0)); }
+    const_iterator begin() const
+    {
+        return const_iterator(core::BinaryDecoder(data, size));
+    }
+    const_iterator end() const
+    {
+        return const_iterator(core::BinaryDecoder(data + size, 0));
+    }
 
     bool operator==(const ValueBag& vb) const;
     bool operator!=(const ValueBag& vb) const { return !operator==(vb); }
@@ -130,10 +135,10 @@ public:
      */
     void encode(core::BinaryEncoder& enc) const;
 
-	/**
-	 * Encode into a string representation
-	 */
-	std::string toString() const;
+    /**
+     * Encode into a string representation
+     */
+    std::string toString() const;
 
     /// Send contents to an emitter
     void serialise(structured::Emitter& e) const;
@@ -160,8 +165,8 @@ public:
     /// Parse from structured data
     static ValueBag parse(const structured::Reader& reader);
 
-    // Lua functions are still here because they are needed by arki::utils::vm2::find_*
-    // and can be removed otherwise
+    // Lua functions are still here because they are needed by
+    // arki::utils::vm2::find_* and can be removed otherwise
 
     // Fill in the ValueBag from the Lua table on top of the stack.
     // The values can be string or integer (numbers will be truncated).
@@ -201,7 +206,7 @@ static inline std::ostream& operator<<(std::ostream& o, const ValueBag& v)
     return o << v.toString();
 }
 
-}
-}
+} // namespace types
+} // namespace arki
 
 #endif

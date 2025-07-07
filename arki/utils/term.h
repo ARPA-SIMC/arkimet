@@ -11,9 +11,7 @@
 #include <cstdio>
 #include <string>
 
-namespace arki {
-namespace utils {
-namespace term {
+namespace arki::utils::term {
 
 struct Terminal
 {
@@ -51,7 +49,6 @@ struct Terminal
     operator FILE*() { return out; }
 };
 
-} // namespace term
-} // namespace arki::utils
+} // namespace arki::utils::term
 
 #endif

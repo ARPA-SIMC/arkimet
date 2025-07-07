@@ -3,9 +3,9 @@
 
 /// dataset/iseg/writer - Writer for datasets with one index per segment
 
-#include <arki/dataset/iseg.h>
 #include <arki/dataset/impl.h>
 #include <arki/dataset/index/summarycache.h>
+#include <arki/dataset/iseg.h>
 #include <string>
 
 namespace arki {
@@ -24,13 +24,15 @@ public:
 
     std::string type() const override;
 
-    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch,
+                       const AcquireConfig& cfg = AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session,
+                             const core::cfg::Section& cfg,
+                             metadata::InboundBatch& batch);
 };
 
-
-}
-}
-}
+} // namespace iseg
+} // namespace dataset
+} // namespace arki
 #endif

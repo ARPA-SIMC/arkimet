@@ -1,15 +1,15 @@
 #include "dispatch.h"
-#include "python/cmdline/processor.h"
 #include "arki/dispatcher.h"
-#include "arki/utils/string.h"
-#include "arki/utils/sys.h"
-#include "arki/stream.h"
-#include "arki/nag.h"
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
-#include "arki/types/source/blob.h"
+#include "arki/nag.h"
 #include "arki/query.h"
 #include "arki/scan.h"
+#include "arki/stream.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "python/cmdline/processor.h"
 #include "python/dataset.h"
 
 using namespace std;
@@ -19,10 +19,14 @@ namespace arki {
 namespace python {
 namespace arki_scan {
 
-MetadataDispatch::MetadataDispatch(std::shared_ptr<arki::dataset::Pool> pool, cmdline::DatasetProcessor& next)
+MetadataDispatch::MetadataDispatch(std::shared_ptr<arki::dataset::Pool> pool,
+                                   cmdline::DatasetProcessor& next)
     : pool(pool),
-      partial_batch(std::make_shared<arki::dataset::memory::Dataset>(pool->session())),
-      results(std::make_shared<arki::dataset::memory::Dataset>(pool->session())), next(next)
+      partial_batch(
+          std::make_shared<arki::dataset::memory::Dataset>(pool->session())),
+      results(
+          std::make_shared<arki::dataset::memory::Dataset>(pool->session())),
+      next(next)
 {
 }
 
@@ -32,7 +36,8 @@ MetadataDispatch::~MetadataDispatch()
         delete dispatcher;
 }
 
-DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesystem::path& name)
+DispatchResults MetadataDispatch::process(dataset::Reader& ds,
+                                          const std::filesystem::path& name)
 {
     DispatchResults stats;
     stats.name = name;
@@ -52,7 +57,8 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesy
         copyko.reset();
 
     // Read
-    try {
+    try
+    {
         ds.query_data(Matcher(), [&](std::shared_ptr<Metadata> md) {
             auto scanner = scan::Scanner::get_scanner(md->source().format);
             scanner->normalize_before_dispatch(*md);
@@ -65,7 +71,9 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesy
         });
         if (!partial_batch->empty())
             process_partial_batch(name, stats);
-    } catch (std::exception& e) {
+    }
+    catch (std::exception& e)
+    {
         nag::warning("%s: cannot read contents: %s", name.c_str(), e.what());
         next.process(*results->create_reader(), name);
         throw;
@@ -81,42 +89,58 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds, const std::filesy
     return stats;
 }
 
-void MetadataDispatch::process_partial_batch(const std::filesystem::path& name, DispatchResults& stats)
+void MetadataDispatch::process_partial_batch(const std::filesystem::path& name,
+                                             DispatchResults& stats)
 {
     bool drop_cached_data_on_commit = !(copyok || copyko);
 
     // Dispatch
     auto batch = partial_batch->make_batch();
-    try {
+    try
+    {
         dispatcher->dispatch(batch, drop_cached_data_on_commit);
-    } catch (std::exception& e) {
-        nag::warning("%s: cannot dispatch contents: %s", name.c_str(), e.what());
+    }
+    catch (std::exception& e)
+    {
+        nag::warning("%s: cannot dispatch contents: %s", name.c_str(),
+                     e.what());
         partial_batch->move_to(results->inserter_func());
         throw;
     }
 
     // Evaluate results
-    for (auto& e: batch)
+    for (auto& e : batch)
     {
         if (e->destination.empty())
         {
             do_copyko(*e->md);
             // If dispatching failed, add a big note about it.
-            e->md->add_note("WARNING: The data has not been imported in ANY dataset");
+            e->md->add_note(
+                "WARNING: The data has not been imported in ANY dataset");
             ++stats.not_imported;
-        } else if (e->destination == "error") {
+        }
+        else if (e->destination == "error")
+        {
             do_copyko(*e->md);
             ++stats.in_error_dataset;
-        } else if (e->destination == "duplicates") {
+        }
+        else if (e->destination == "duplicates")
+        {
             do_copyko(*e->md);
             ++stats.duplicates;
-        } else if (e->result == metadata::Inbound::Result::OK) {
+        }
+        else if (e->result == metadata::Inbound::Result::OK)
+        {
             do_copyok(*e->md);
             ++stats.successful;
-        } else {
+        }
+        else
+        {
             do_copyko(*e->md);
             // If dispatching failed, add a big note about it.
-            e->md->add_note("WARNING: The data failed to be imported into dataset " + e->destination);
+            e->md->add_note(
+                "WARNING: The data failed to be imported into dataset " +
+                e->destination);
             ++stats.not_imported;
         }
         e->md->drop_cached_data();
@@ -159,9 +183,10 @@ void MetadataDispatch::do_copyko(Metadata& md)
 
 void MetadataDispatch::flush()
 {
-    if (dispatcher) dispatcher->flush();
+    if (dispatcher)
+        dispatcher->flush();
 }
 
-}
-}
-}
+} // namespace arki_scan
+} // namespace python
+} // namespace arki

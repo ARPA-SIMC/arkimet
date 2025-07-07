@@ -3,8 +3,7 @@
 #include <system_error>
 #include <unistd.h>
 
-namespace arki {
-namespace utils {
+namespace arki::utils {
 namespace term {
 
 const unsigned Terminal::black   = 1;

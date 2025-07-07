@@ -7,14 +7,9 @@ namespace core {
 
 Transaction::~Transaction() {}
 
-Pending::Pending(Transaction* trans) : trans(trans)
-{
-}
+Pending::Pending(Transaction* trans) : trans(trans) {}
 
-Pending::Pending(Pending&& p) : trans(p.trans)
-{
-    p.trans = nullptr;
-}
+Pending::Pending(Pending&& p) : trans(p.trans) { p.trans = nullptr; }
 
 Pending::~Pending()
 {
@@ -28,7 +23,8 @@ Pending::~Pending()
 Pending& Pending::operator=(Pending&& p)
 {
     // Prevent damage on assignment to self
-    if (&p == this) return *this;
+    if (&p == this)
+        return *this;
 
     // There should not be two pendings with the same transaction, but handle
     // it just in case
@@ -38,7 +34,7 @@ Pending& Pending::operator=(Pending&& p)
         delete trans;
     }
 
-    trans = p.trans;
+    trans   = p.trans;
     p.trans = nullptr;
 
     return *this;
@@ -74,5 +70,5 @@ void Pending::rollback_nothrow() noexcept
     }
 }
 
-}
-}
+} // namespace core
+} // namespace arki

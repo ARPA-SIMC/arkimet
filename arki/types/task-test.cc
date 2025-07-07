@@ -1,5 +1,5 @@
-#include "tests.h"
 #include "task.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -12,13 +12,10 @@ class Tests : public TypeTestCase<types::Task>
     void register_tests() override;
 } test("arki_types_task");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_generic_test("task",
-    { "pask" },
-    "task",
-    { "zask" });
-
+    add_generic_test("task", {"pask"}, "task", {"zask"});
 }
 
-}
+} // namespace

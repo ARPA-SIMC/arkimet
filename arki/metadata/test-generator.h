@@ -38,12 +38,12 @@ namespace test {
  */
 struct Generator
 {
-    typedef std::map<types::Code, std::vector<types::Type*> > Samples;
+    typedef std::map<types::Code, std::vector<types::Type*>> Samples;
     Samples samples;
     DataFormat format;
     int variant;
 
-    Generator(DataFormat format=DataFormat::GRIB, int variant=0);
+    Generator(DataFormat format = DataFormat::GRIB, int variant = 0);
     ~Generator();
 
     /// @return true if some sample has been set for the given code
@@ -81,13 +81,13 @@ struct Generator
      */
     void generate(metadata_dest_func cons);
 
-    bool _generate(const Samples::const_iterator& i, Metadata& md, metadata_dest_func cons) const;
+    bool _generate(const Samples::const_iterator& i, Metadata& md,
+                   metadata_dest_func cons) const;
 };
 
-
-}
-}
-}
+} // namespace test
+} // namespace metadata
+} // namespace arki
 
 // vim:set ts=4 sw=4:
 #endif

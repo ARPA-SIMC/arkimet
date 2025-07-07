@@ -1,9 +1,9 @@
 #ifndef ARKI_RUNTIME_H
 #define ARKI_RUNTIME_H
 
+#include <filesystem>
 #include <string>
 #include <vector>
-#include <filesystem>
 
 namespace arki {
 
@@ -23,14 +23,17 @@ struct Config
          *
          * @return the pathname if found, raises an exception if not found
          */
-        std::filesystem::path find_file(const std::filesystem::path& fname, bool executable=false) const;
+        std::filesystem::path find_file(const std::filesystem::path& fname,
+                                        bool executable = false) const;
 
         /**
          * Look for the file in all directories.
          *
          * @return the pathname if found, or the empty path if not found
          */
-        std::filesystem::path find_file_noerror(const std::filesystem::path& fname, bool executable=false) const;
+        std::filesystem::path
+        find_file_noerror(const std::filesystem::path& fname,
+                          bool executable = false) const;
 
         /**
          * List the files if the first directory found
@@ -38,11 +41,13 @@ struct Config
          * The file list is sorted by directory order and then by file name.
          *
          * @param ext
-         *   The extension (including the dot) that files must have to be considered
+         *   The extension (including the dot) that files must have to be
+         * considered
          * @param first_only
          *   If true, limit the list to the first directory found
          */
-        std::vector<std::filesystem::path> list_files(const std::string& ext, bool first_only=true) const;
+        std::vector<std::filesystem::path>
+        list_files(const std::string& ext, bool first_only = true) const;
 
         /**
          * Add the directory from the envirnment variable \a envname (if set)
@@ -92,5 +97,5 @@ struct Config
  */
 void init();
 
-}
+} // namespace arki
 #endif

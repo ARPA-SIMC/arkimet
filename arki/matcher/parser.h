@@ -63,8 +63,7 @@ public:
     stream::SendResult debug_dump_aliases(StreamOutput& out) const;
 };
 
-}
-}
+} // namespace matcher
+} // namespace arki
 
 #endif
-

@@ -6,13 +6,9 @@ using namespace arki::types;
 namespace arki {
 namespace summary {
 
-TypeIntern::TypeIntern()
-{
-}
+TypeIntern::TypeIntern() {}
 
-TypeIntern::~TypeIntern()
-{
-}
+TypeIntern::~TypeIntern() {}
 
 const types::Type* TypeIntern::lookup(const Type& item) const
 {
@@ -22,16 +18,18 @@ const types::Type* TypeIntern::lookup(const Type& item) const
 const Type* TypeIntern::intern(const Type& item)
 {
     const Type* res = known_items.find(item);
-    if (res) return res;
+    if (res)
+        return res;
     return known_items.insert(item);
 }
 
 const types::Type* TypeIntern::intern(std::unique_ptr<types::Type>&& item)
 {
     const Type* res = known_items.find(*item);
-    if (res) return res;
+    if (res)
+        return res;
     return known_items.insert(move(item));
 }
 
-}
-}
+} // namespace summary
+} // namespace arki

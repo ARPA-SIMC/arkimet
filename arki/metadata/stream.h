@@ -4,9 +4,9 @@
 /// Read metadata incrementally from a data stream
 
 #include <arki/defs.h>
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace arki {
 namespace metadata {
@@ -24,34 +24,36 @@ class Stream
     size_t dataToGet;
     bool canceled = false;
 
-	bool checkMetadata();
-	bool checkData();
+    bool checkMetadata();
+    bool checkData();
     bool check();
 
 public:
     Stream(metadata_dest_func consumer, const std::string& streamname)
-        : consumer(consumer), streamname(streamname), state(METADATA) {}
+        : consumer(consumer), streamname(streamname), state(METADATA)
+    {
+    }
 
     /**
      * Return true if the consumer canceled receiving data
      */
     bool consumer_canceled() const { return canceled; }
 
-	/**
-	 * Return the number of bytes that have not been processed yet
-	 */
-	size_t countBytesUnprocessed() const { return buffer.size(); }
+    /**
+     * Return the number of bytes that have not been processed yet
+     */
+    size_t countBytesUnprocessed() const { return buffer.size(); }
 
-	/**
-	 * Send some data to the stream.
-	 *
-	 * If the data completes one or more metadata and (when appropriate) the
-	 * attached inline data, then they will be sent to the consumer
-	 */
-	void readData(const void* buf, size_t size);
+    /**
+     * Send some data to the stream.
+     *
+     * If the data completes one or more metadata and (when appropriate) the
+     * attached inline data, then they will be sent to the consumer
+     */
+    void readData(const void* buf, size_t size);
 };
 
-}
-}
+} // namespace metadata
+} // namespace arki
 
 #endif

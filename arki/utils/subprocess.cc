@@ -12,8 +12,7 @@
 #include <system_error>
 #include <unistd.h>
 
-namespace arki {
-namespace utils {
+namespace arki::utils {
 namespace subprocess {
 
 Child::~Child()

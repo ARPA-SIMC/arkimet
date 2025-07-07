@@ -29,6 +29,6 @@ namespace types {
 void init_default_types();
 
 }
-}
+} // namespace arki
 
 #endif

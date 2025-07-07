@@ -2,11 +2,11 @@
 #define ARKI_CORE_CFG_H
 
 #include <arki/core/fwd.h>
-#include <stdexcept>
-#include <map>
-#include <string>
-#include <memory>
 #include <iosfwd>
+#include <map>
+#include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace arki {
 namespace core {
@@ -19,18 +19,21 @@ protected:
     int m_line;
     std::string m_error;
 
-    static std::string describe(const std::string& name, int line, const std::string& error);
+    static std::string describe(const std::string& name, int line,
+                                const std::string& error);
 
 public:
     ParseError(const std::string& name, int line, const std::string& error)
-        : std::runtime_error(describe(name, line, error)), m_name(name), m_line(line), m_error(error) {}
-    ~ParseError() throw () {}
+        : std::runtime_error(describe(name, line, error)), m_name(name),
+          m_line(line), m_error(error)
+    {
+    }
+    ~ParseError() throw() {}
 };
 
 class Parser;
 class SectionParser;
 class Sections;
-
 
 /**
  * key -> value mapping of configuration options
@@ -62,10 +65,10 @@ public:
 
     /**
      * Retrieve the value for a key as a bool.
-     * 
+     *
      * The given default value is returned if the key is not found
      */
-    bool value_bool(const std::string& key, bool def=false) const;
+    bool value_bool(const std::string& key, bool def = false) const;
 
     /// Set a value
     void set(const std::string& key, const std::string& value);
@@ -86,15 +89,16 @@ public:
     void dump(FILE* out) const;
 
     /// Parse configuration from the given LineReader
-    static std::shared_ptr<Section> parse(core::LineReader& in, const std::string& pathname);
+    static std::shared_ptr<Section> parse(core::LineReader& in,
+                                          const std::string& pathname);
 
     /// Parse configuration from the given input file
     static std::shared_ptr<Section> parse(core::NamedFileDescriptor& in);
 
     /// Parse configuration from the given string
-    static std::shared_ptr<Section> parse(const std::string& in, const std::string& pathname="memory buffer");
+    static std::shared_ptr<Section>
+    parse(const std::string& in, const std::string& pathname = "memory buffer");
 };
-
 
 /**
  * name -> section mapping of configuration file sections
@@ -118,7 +122,7 @@ public:
     Sections(const Sections&);
     Sections(Sections&&) = default;
     Sections& operator=(const Sections&);
-    Sections& operator=(Sections &&) = default;
+    Sections& operator=(Sections&&) = default;
 
     /**
      * Retrieve a section from this config file.
@@ -147,19 +151,21 @@ public:
     void dump(FILE* out) const;
 
     /// Parse configuration from the given LineReader
-    static std::shared_ptr<Sections> parse(core::LineReader& in, const std::string& pathname);
+    static std::shared_ptr<Sections> parse(core::LineReader& in,
+                                           const std::string& pathname);
 
     /// Parse configuration from the given input file.
     static std::shared_ptr<Sections> parse(core::NamedFileDescriptor& in);
 
     /// Parse configuration from the given string
-    static std::shared_ptr<Sections> parse(const std::string& in, const std::string& pathname="memory buffer");
+    static std::shared_ptr<Sections>
+    parse(const std::string& in, const std::string& pathname = "memory buffer");
 
     friend class SectionParser;
 };
 
-}
-}
-}
+} // namespace cfg
+} // namespace core
+} // namespace arki
 
 #endif

@@ -1,22 +1,22 @@
 #include "session.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
-#include "arki/segment/data.h"
-#include "arki/segment/data/fd.h"
-#include "arki/segment/data/dir.h"
+#include "arki/dataset/empty.h"
+#include "arki/dataset/file.h"
+#include "arki/dataset/fromfunction.h"
+#include "arki/dataset/iseg.h"
+#include "arki/dataset/ondisk2.h"
+#include "arki/dataset/outbound.h"
+#include "arki/dataset/simple.h"
+#include "arki/dataset/testlarge.h"
+#include "arki/libconfig.h"
+#include "arki/nag.h"
 #include "arki/scan.h"
+#include "arki/segment/data.h"
+#include "arki/segment/data/dir.h"
+#include "arki/segment/data/fd.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/dataset/file.h"
-#include "arki/dataset/ondisk2.h"
-#include "arki/dataset/iseg.h"
-#include "arki/dataset/simple.h"
-#include "arki/dataset/outbound.h"
-#include "arki/dataset/empty.h"
-#include "arki/dataset/fromfunction.h"
-#include "arki/dataset/testlarge.h"
-#include "arki/nag.h"
-#include "arki/libconfig.h"
 #include <memory>
 
 #ifdef HAVE_LIBCURL
@@ -35,36 +35,45 @@ Session::Session(bool load_aliases)
         matcher_parser.load_system_aliases();
 }
 
-Session::~Session()
-{
-}
+Session::~Session() {}
 
 std::shared_ptr<Dataset> Session::dataset(const core::cfg::Section& cfg)
 {
     std::string type = str::lower(cfg.value("type"));
 
     if (type == "iseg")
-        return std::make_shared<iseg::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<iseg::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "ondisk2")
-        return std::make_shared<ondisk2::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<ondisk2::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "simple" || type == "error" || type == "duplicates")
-        return std::make_shared<simple::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<simple::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
 #ifdef HAVE_LIBCURL
     if (type == "remote")
-        return std::make_shared<http::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<http::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
 #endif
     if (type == "outbound")
-        return std::make_shared<outbound::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<outbound::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "discard")
-        return std::make_shared<empty::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<empty::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "file")
-        return file::Dataset::from_config(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return file::Dataset::from_config(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "fromfunction")
-        return std::make_shared<fromfunction::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<fromfunction::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
     if (type == "testlarge")
-        return std::make_shared<testlarge::Dataset>(std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
+        return std::make_shared<testlarge::Dataset>(
+            std::dynamic_pointer_cast<Session>(shared_from_this()), cfg);
 
-    throw std::runtime_error("cannot use configuration for \"" + cfg.value("name") + "\": unknown dataset type \""+type+"\"");
+    throw std::runtime_error("cannot use configuration for \"" +
+                             cfg.value("name") + "\": unknown dataset type \"" +
+                             type + "\"");
 }
 
 #if 0
@@ -77,7 +86,8 @@ static std::string geturlprefix(const std::string& s)
 }
 #endif
 
-std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::path& path)
+std::shared_ptr<core::cfg::Section>
+Session::read_config(const std::filesystem::path& path)
 {
     if (path == "-")
     {
@@ -95,7 +105,8 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::
         if (pos == std::string::npos)
         {
             std::stringstream ss;
-            ss << "cannot read configuration from " << path << " because it does not exist";
+            ss << "cannot read configuration from " << path
+               << " because it does not exist";
             throw std::runtime_error(ss.str());
         }
 
@@ -105,7 +116,8 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::
             return dataset::http::Reader::load_cfg_section(path);
         else
 #endif
-            return dataset::file::read_config(prefix, path.native().substr(pos+1));
+            return dataset::file::read_config(prefix,
+                                              path.native().substr(pos + 1));
     }
 
     if (S_ISDIR(st->st_mode))
@@ -118,7 +130,8 @@ std::shared_ptr<core::cfg::Section> Session::read_config(const std::filesystem::
         throw std::runtime_error("unsupported input file " + path.native());
 }
 
-std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem::path& path)
+std::shared_ptr<core::cfg::Sections>
+Session::read_configs(const std::filesystem::path& path)
 {
     if (path == "-")
     {
@@ -135,7 +148,8 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem
         if (pos == std::string::npos)
         {
             std::stringstream ss;
-            ss << "cannot read configuration from " << path << " because it does not exist";
+            ss << "cannot read configuration from " << path
+               << " because it does not exist";
             throw std::runtime_error(ss.str());
         }
 
@@ -145,7 +159,8 @@ std::shared_ptr<core::cfg::Sections> Session::read_configs(const std::filesystem
             return dataset::http::Reader::load_cfg_sections(path);
         else
 #endif
-            return dataset::file::read_configs(prefix, path.native().substr(pos+1));
+            return dataset::file::read_configs(prefix,
+                                               path.native().substr(pos + 1));
     }
 
     if (S_ISDIR(st->st_mode))
@@ -185,7 +200,9 @@ void Session::load_remote_aliases(const std::string& url)
     matcher_parser.load_remote_aliases(url);
 }
 
-std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes, const std::string& query)
+std::string
+Session::expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes,
+                             const std::string& query)
 {
     // Resolve the query on each server (including the local system, if
     // queried). If at least one server can expand it, send that
@@ -195,21 +212,27 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
     std::string expanded;
     std::string resolved_by;
     bool first = true;
-    for (auto si: *remotes)
+    for (auto si : *remotes)
     {
         std::string server = si.second->value("server");
-        if (servers_seen.find(server) != servers_seen.end()) continue;
+        if (servers_seen.find(server) != servers_seen.end())
+            continue;
         std::string got;
-        try {
+        try
+        {
             if (server.empty())
             {
-                got = matcher_parser.parse(query).toStringExpanded();
+                got         = matcher_parser.parse(query).toStringExpanded();
                 resolved_by = "local system";
-            } else {
+            }
+            else
+            {
                 got = dataset::http::Reader::expandMatcher(query, server);
                 resolved_by = server;
             }
-        } catch (std::exception& e) {
+        }
+        catch (std::exception& e)
+        {
             // If the server cannot expand the query, we're
             // ok as we send it expanded. What we are
             // checking here is that the server does not
@@ -219,10 +242,15 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
         }
         if (!first && got != expanded)
         {
-            nag::warning("%s expands the query as %s", server.c_str(), got.c_str());
-            nag::warning("%s expands the query as %s", resolved_by.c_str(), expanded.c_str());
-            throw std::runtime_error("cannot check alias consistency: two systems queried disagree about the query alias expansion");
-        } else if (first)
+            nag::warning("%s expands the query as %s", server.c_str(),
+                         got.c_str());
+            nag::warning("%s expands the query as %s", resolved_by.c_str(),
+                         expanded.c_str());
+            throw std::runtime_error(
+                "cannot check alias consistency: two systems queried disagree "
+                "about the query alias expansion");
+        }
+        else if (first)
             expanded = got;
         first = false;
     }
@@ -232,6 +260,5 @@ std::string Session::expand_remote_query(std::shared_ptr<const core::cfg::Sectio
     return query;
 }
 
-
-}
-}
+} // namespace dataset
+} // namespace arki

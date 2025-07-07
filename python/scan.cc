@@ -1,31 +1,30 @@
 #include "scan.h"
-#include "common.h"
-#include "structured.h"
-#include "metadata.h"
-#include "utils/methods.h"
-#include "utils/type.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
-#include "arki/types/values.h"
-#include "arki/utils/vm2.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/string.h"
-#include "arki/runtime.h"
-#include "arki/scan/grib.h"
-#include "arki/scan/bufr.h"
-#include "arki/scan/odimh5.h"
-#include "arki/scan/netcdf.h"
-#include "arki/scan/jpeg.h"
 #include "arki/nag.h"
+#include "arki/runtime.h"
+#include "arki/scan/bufr.h"
+#include "arki/scan/grib.h"
+#include "arki/scan/jpeg.h"
+#include "arki/scan/netcdf.h"
+#include "arki/scan/odimh5.h"
+#include "arki/types/values.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "arki/utils/vm2.h"
+#include "common.h"
+#include "metadata.h"
+#include "structured.h"
+#include "utils/methods.h"
+#include "utils/type.h"
 #include <grib_api.h>
 #ifdef HAVE_DBALLE
-#include "utils/wreport.h"
 #include "utils/dballe.h"
+#include "utils/wreport.h"
 #include <dballe/message.h>
 #include <dballe/var.h>
 #include <wreport/python.h>
 #endif
-
 
 using namespace std;
 using namespace arki;
@@ -35,11 +34,10 @@ using namespace arki::python;
 
 extern "C" {
 
-PyTypeObject* arkipy_scan_Grib_Type = nullptr;
+PyTypeObject* arkipy_scan_Grib_Type        = nullptr;
 PyTypeObject* arkipy_scan_BufrMessage_Type = nullptr;
 
 PyTypeObject* arkipy_scan_Scanner_Type = nullptr;
-
 }
 
 namespace {
@@ -62,19 +60,22 @@ void load_scanners()
 
     // Get the name of the scanners module
     if (!module_scanners || !module_arkimet)
-        throw std::runtime_error("load_scanners was called before the _arkimet.scan module has been initialized");
+        throw std::runtime_error("load_scanners was called before the "
+                                 "_arkimet.scan module has been initialized");
 
     std::string base = PyModule_GetName(module_arkimet);
     base += ".";
     base += PyModule_GetName(module_scanners);
 
-    std::vector<std::filesystem::path> sources = arki::Config::get().dir_scan.list_files(".py");
-    for (const auto& source: sources)
+    std::vector<std::filesystem::path> sources =
+        arki::Config::get().dir_scan.list_files(".py");
+    for (const auto& source : sources)
     {
         std::string basename = source.filename();
 
         // Check if the scanner module had already been imported
-        std::string module_name = base + "." + basename.substr(0, basename.size() - 3);
+        std::string module_name =
+            base + "." + basename.substr(0, basename.size() - 3);
         pyo_unique_ptr py_module_name(string_to_python(module_name));
         pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
         if (PyErr_Occurred())
@@ -84,23 +85,23 @@ void load_scanners()
         if (!module)
         {
             std::string source_code = utils::sys::read_file(source);
-            pyo_unique_ptr code(throw_ifnull(Py_CompileStringExFlags(
-                            source_code.c_str(), source.c_str(),
-                            Py_file_input, nullptr, -1)));
-            module = pyo_unique_ptr(throw_ifnull(PyImport_ExecCodeModule(
-                            module_name.c_str(), code)));
+            pyo_unique_ptr code(throw_ifnull(
+                Py_CompileStringExFlags(source_code.c_str(), source.c_str(),
+                                        Py_file_input, nullptr, -1)));
+            module = pyo_unique_ptr(throw_ifnull(
+                PyImport_ExecCodeModule(module_name.c_str(), code)));
         }
     }
 
     scanners_loaded = true;
 }
 
-
 inline void check_grib_error(int res, const char* msg)
 {
     if (res)
     {
-        PyErr_Format(PyExc_KeyError, "%s: %s", msg, grib_get_error_message(res));
+        PyErr_Format(PyExc_KeyError, "%s: %s", msg,
+                     grib_get_error_message(res));
         throw PythonException();
     }
 }
@@ -109,19 +110,21 @@ inline void check_grib_lookup_error(int res, const char* key, const char* msg)
 {
     if (res)
     {
-        PyErr_Format(PyExc_KeyError, "%s, key: %s: %s", msg, key, grib_get_error_message(res));
+        PyErr_Format(PyExc_KeyError, "%s, key: %s: %s", msg, key,
+                     grib_get_error_message(res));
         throw PythonException();
     }
 }
 
 arkipy_scan_Grib* grib_create(grib_handle* gh)
 {
-    arkipy_scan_Grib* result = PyObject_New(arkipy_scan_Grib, arkipy_scan_Grib_Type);
-    if (!result) throw PythonException();
+    arkipy_scan_Grib* result =
+        PyObject_New(arkipy_scan_Grib, arkipy_scan_Grib_Type);
+    if (!result)
+        throw PythonException();
     result->gh = gh;
     return result;
 }
-
 
 /*
  * scan.grib module functions
@@ -134,14 +137,14 @@ void load_gribscanner_object()
     load_scanners();
 
     // Get arkimet.scan.grib.GribScanner
-    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.grib")));
+    pyo_unique_ptr module(
+        throw_ifnull(PyImport_ImportModule("arkimet.scan.grib")));
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
     // Hold a reference to arki.python.BBox forever once loaded the first time
     gribscanner_object = obj.release();
 }
-
 
 class PythonGribScanner : public arki::scan::GribScanner
 {
@@ -157,7 +160,7 @@ protected:
         pyo_unique_ptr pygh((PyObject*)grib_create(gh));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        gribscanner_object, "scan", "OO", pygh.get(), pymd.get())));
+            gribscanner_object, "scan", "OO", pygh.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -165,54 +168,57 @@ protected:
         // metadata at a time
         pymd.reset(nullptr);
         if (md.use_count() != 1)
-            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
 
         return md;
     }
 
 public:
-    PythonGribScanner()
-    {
-    }
-    virtual ~PythonGribScanner()
-    {
-    }
+    PythonGribScanner() {}
+    virtual ~PythonGribScanner() {}
 };
-
 
 struct edition : public Getter<edition, arkipy_scan_Grib>
 {
     constexpr static const char* name = "edition";
-    constexpr static const char* doc = "return the GRIB edition";
-    constexpr static void* closure = nullptr;
+    constexpr static const char* doc  = "return the GRIB edition";
+    constexpr static void* closure    = nullptr;
 
     static PyObject* get(Impl* self, void* closure)
     {
-        try {
+        try
+        {
             long edition;
-            check_grib_error(grib_get_long(self->gh, "editionNumber", &edition), "cannot read edition number");
+            check_grib_error(grib_get_long(self->gh, "editionNumber", &edition),
+                             "cannot read edition number");
             return to_python((int)edition);
-        } ARKI_CATCH_RETURN_PYO;
+        }
+        ARKI_CATCH_RETURN_PYO;
     }
 };
 
 struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
 {
-    constexpr static const char* name = "get_long";
+    constexpr static const char* name      = "get_long";
     constexpr static const char* signature = "str, int | None";
-    constexpr static const char* returns = "int";
-    constexpr static const char* summary = "return the long value of a grib key";
+    constexpr static const char* returns   = "int";
+    constexpr static const char* summary =
+        "return the long value of a grib key";
     constexpr static const char* doc = nullptr;
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "key", "default", NULL };
-        const char* key = nullptr;
-        PyObject* arg_default = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O", pass_kwlist(kwlist), &key, &arg_default))
+        static const char* kwlist[] = {"key", "default", NULL};
+        const char* key             = nullptr;
+        PyObject* arg_default       = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O", pass_kwlist(kwlist),
+                                         &key, &arg_default))
             return nullptr;
 
-        try {
+        try
+        {
             // Push the function result for lua
             long val;
             int res = grib_get_long(self->gh, key, &val);
@@ -230,45 +236,39 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
             check_grib_error(res, "cannot read long value from grib");
 
             return to_python(val);
-        } ARKI_CATCH_RETURN_PYO
+        }
+        ARKI_CATCH_RETURN_PYO
     }
 };
 
 struct GribDef : public Type<GribDef, arkipy_scan_Grib>
 {
-    constexpr static const char* name = "Grib";
+    constexpr static const char* name      = "Grib";
     constexpr static const char* qual_name = "arkimet.scan.grib.Grib";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc       = R"(
 Access grib message contents
 )";
     GetSetters<edition> getsetters;
     Methods<get_long> methods;
 
-    static void _dealloc(Impl* self)
-    {
-        Py_TYPE(self)->tp_free(self);
-    }
+    static void _dealloc(Impl* self) { Py_TYPE(self)->tp_free(self); }
 
-    static PyObject* _str(Impl* self)
-    {
-        return PyUnicode_FromString("Grib");
-    }
+    static PyObject* _str(Impl* self) { return PyUnicode_FromString("Grib"); }
 
-    static PyObject* _repr(Impl* self)
-    {
-        return PyUnicode_FromString("Grib");
-    }
+    static PyObject* _repr(Impl* self) { return PyUnicode_FromString("Grib"); }
 
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         // Grib() should not be invoked as a constructor
-        PyErr_SetString(PyExc_NotImplementedError, "Grib objects cannot be constructed explicitly");
+        PyErr_SetString(PyExc_NotImplementedError,
+                        "Grib objects cannot be constructed explicitly");
         return -1;
     }
 
     static int sq_contains(Impl* self, PyObject* py_key)
     {
-        try {
+        try
+        {
             std::string key = from_python<std::string>(py_key);
 
             // Get information about the type
@@ -277,15 +277,18 @@ Access grib message contents
             if (res == GRIB_NOT_FOUND)
                 return 0;
             else
-                check_grib_lookup_error(res, key.c_str(), "cannot get type of key");
+                check_grib_lookup_error(res, key.c_str(),
+                                        "cannot get type of key");
 
             return 1;
-        } ARKI_CATCH_RETURN_INT
+        }
+        ARKI_CATCH_RETURN_INT
     }
 
     static PyObject* mp_subscript(Impl* self, PyObject* py_key)
     {
-        try {
+        try
+        {
             std::string key = from_python<std::string>(py_key);
 
             // Get information about the type
@@ -294,21 +297,26 @@ Access grib message contents
             if (res == GRIB_NOT_FOUND)
                 type = GRIB_TYPE_MISSING;
             else
-                check_grib_lookup_error(res, key.c_str(), "cannot get type of key");
+                check_grib_lookup_error(res, key.c_str(),
+                                        "cannot get type of key");
 
             // Look up the value
             switch (type)
             {
                 case GRIB_TYPE_LONG: {
                     long val;
-                    check_grib_lookup_error(grib_get_long(self->gh, key.c_str(), &val), key.c_str(), "cannot read reading long value");
+                    check_grib_lookup_error(
+                        grib_get_long(self->gh, key.c_str(), &val), key.c_str(),
+                        "cannot read reading long value");
                     if (val == GRIB_MISSING_LONG)
                         Py_RETURN_NONE;
                     return to_python(val);
                 }
                 case GRIB_TYPE_DOUBLE: {
                     double val;
-                    check_grib_lookup_error(grib_get_double(self->gh, key.c_str(), &val), key.c_str(), "cannot read double value");
+                    check_grib_lookup_error(
+                        grib_get_double(self->gh, key.c_str(), &val),
+                        key.c_str(), "cannot read double value");
                     if (val == GRIB_MISSING_DOUBLE)
                         Py_RETURN_NONE;
                     return to_python(val);
@@ -317,20 +325,20 @@ Access grib message contents
                     const int maxsize = 1000;
                     char buf[maxsize];
                     size_t len = maxsize;
-                    check_grib_lookup_error(grib_get_string(self->gh, key.c_str(), buf, &len), key.c_str(), "cannot read string value");
+                    check_grib_lookup_error(
+                        grib_get_string(self->gh, key.c_str(), buf, &len),
+                        key.c_str(), "cannot read string value");
                     buf[len] = 0;
                     return to_python(buf);
                 }
-                default:
-                    Py_RETURN_NONE;
+                default: Py_RETURN_NONE;
             }
-        } ARKI_CATCH_RETURN_PYO
+        }
+        ARKI_CATCH_RETURN_PYO
     }
-
 };
 
 GribDef* grib_def = nullptr;
-
 
 /*
  * scan.bufr module contents
@@ -350,7 +358,8 @@ void load_bufrscanner_object()
     load_scanners();
 
     // Get arkimet.scan.bufr.BufrScanner
-    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.bufr")));
+    pyo_unique_ptr module(
+        throw_ifnull(PyImport_ImportModule("arkimet.scan.bufr")));
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
@@ -358,11 +367,12 @@ void load_bufrscanner_object()
     bufrscanner_object = obj.release();
 }
 
-
 class PythonBufrScanner : public arki::scan::BufrScanner
 {
 protected:
-    void scan_extra(dballe::BinaryMessage& rmsg, std::shared_ptr<dballe::Message> msg, std::shared_ptr<Metadata> md) override
+    void scan_extra(dballe::BinaryMessage& rmsg,
+                    std::shared_ptr<dballe::Message> msg,
+                    std::shared_ptr<Metadata> md) override
     {
         auto orig_use_count = md.use_count();
 
@@ -373,7 +383,7 @@ protected:
         pyo_unique_ptr pymsg(dballe_api.message_create(msg));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        bufrscanner_object, "scan", "OO", pymsg.get(), pymd.get())));
+            bufrscanner_object, "scan", "OO", pymsg.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -381,16 +391,14 @@ protected:
         // metadata at a time
         pymd.reset(nullptr);
         if (md.use_count() != orig_use_count)
-            arki::nag::warning("metadata use count after scanning is %ld instead of %ld", md.use_count(), orig_use_count);
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of %ld",
+                md.use_count(), orig_use_count);
     }
 
 public:
-    PythonBufrScanner()
-    {
-    }
-    virtual ~PythonBufrScanner()
-    {
-    }
+    PythonBufrScanner() {}
+    virtual ~PythonBufrScanner() {}
 };
 #endif
 
@@ -405,7 +413,8 @@ void load_odimh5scanner_object()
     load_scanners();
 
     // Get arkimet.scan.odimh5.BufrScanner
-    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.odimh5")));
+    pyo_unique_ptr module(
+        throw_ifnull(PyImport_ImportModule("arkimet.scan.odimh5")));
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
@@ -413,11 +422,11 @@ void load_odimh5scanner_object()
     odimh5scanner_object = obj.release();
 }
 
-
 class PythonOdimh5Scanner : public arki::scan::OdimScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_h5_file(const std::filesystem::path& pathname) override
+    std::shared_ptr<Metadata>
+    scan_h5_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -428,7 +437,7 @@ protected:
         pyo_unique_ptr pyfname(to_python(pathname));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        odimh5scanner_object, "scan", "OO", pyfname.get(), pymd.get())));
+            odimh5scanner_object, "scan", "OO", pyfname.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -436,20 +445,17 @@ protected:
         // metadata at a time
         pymd.reset(nullptr);
         if (md.use_count() != 1)
-            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
 
         return md;
     }
 
 public:
-    PythonOdimh5Scanner()
-    {
-    }
-    virtual ~PythonOdimh5Scanner()
-    {
-    }
+    PythonOdimh5Scanner() {}
+    virtual ~PythonOdimh5Scanner() {}
 };
-
 
 /*
  * scan.netcdf module contents
@@ -462,7 +468,8 @@ void load_ncscanner_object()
     load_scanners();
 
     // Get arkimet.scan.nc.BufrScanner
-    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.nc")));
+    pyo_unique_ptr module(
+        throw_ifnull(PyImport_ImportModule("arkimet.scan.nc")));
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
@@ -470,11 +477,11 @@ void load_ncscanner_object()
     ncscanner_object = obj.release();
 }
 
-
 class PythonNetCDFScanner : public arki::scan::NetCDFScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_nc_file(const std::filesystem::path& pathname) override
+    std::shared_ptr<Metadata>
+    scan_nc_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -485,7 +492,7 @@ protected:
         pyo_unique_ptr pyfname(to_python(pathname));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        ncscanner_object, "scan", "OO", pyfname.get(), pymd.get())));
+            ncscanner_object, "scan", "OO", pyfname.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -493,20 +500,17 @@ protected:
         // metadata at a time
         pymd.reset(nullptr);
         if (md.use_count() != 1)
-            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
 
         return md;
     }
 
 public:
-    PythonNetCDFScanner()
-    {
-    }
-    virtual ~PythonNetCDFScanner()
-    {
-    }
+    PythonNetCDFScanner() {}
+    virtual ~PythonNetCDFScanner() {}
 };
-
 
 /*
  * scan.jpeg module contents
@@ -519,7 +523,8 @@ void load_jpegscanner_object()
     load_scanners();
 
     // Get arkimet.scan.nc.BufrScanner
-    pyo_unique_ptr module(throw_ifnull(PyImport_ImportModule("arkimet.scan.jpeg")));
+    pyo_unique_ptr module(
+        throw_ifnull(PyImport_ImportModule("arkimet.scan.jpeg")));
     pyo_unique_ptr cls(throw_ifnull(PyObject_GetAttrString(module, "Scanner")));
     pyo_unique_ptr obj(throw_ifnull(PyObject_CallFunction(cls, nullptr)));
 
@@ -527,11 +532,11 @@ void load_jpegscanner_object()
     jpegscanner_object = obj.release();
 }
 
-
 class PythonJPEGScanner : public arki::scan::JPEGScanner
 {
 protected:
-    std::shared_ptr<Metadata> scan_jpeg_file(const std::filesystem::path& pathname) override
+    std::shared_ptr<Metadata>
+    scan_jpeg_file(const std::filesystem::path& pathname) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -542,7 +547,7 @@ protected:
         pyo_unique_ptr pyfname(to_python(pathname));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        jpegscanner_object, "scan_file", "OO", pyfname.get(), pymd.get())));
+            jpegscanner_object, "scan_file", "OO", pyfname.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -550,12 +555,15 @@ protected:
         // metadata at a time
         pymd.reset(nullptr);
         if (md.use_count() != 1)
-            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
 
         return md;
     }
 
-    std::shared_ptr<Metadata> scan_jpeg_data(const std::vector<uint8_t>& data) override
+    std::shared_ptr<Metadata>
+    scan_jpeg_data(const std::vector<uint8_t>& data) override
     {
         auto md = std::make_shared<Metadata>();
 
@@ -566,7 +574,7 @@ protected:
         pyo_unique_ptr pydata(to_python(data));
         pyo_unique_ptr pymd((PyObject*)metadata_create(md));
         pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                        jpegscanner_object, "scan_data", "OO", pydata.get(), pymd.get())));
+            jpegscanner_object, "scan_data", "OO", pydata.get(), pymd.get())));
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -574,20 +582,17 @@ protected:
         // metadata at a time
         pymd.reset(nullptr);
         if (md.use_count() != 1)
-            arki::nag::warning("metadata use count after scanning is %ld instead of 1", md.use_count());
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
 
         return md;
     }
 
 public:
-    PythonJPEGScanner()
-    {
-    }
-    virtual ~PythonJPEGScanner()
-    {
-    }
+    PythonJPEGScanner() {}
+    virtual ~PythonJPEGScanner() {}
 };
-
 
 /*
  * scan.vm2 module functions
@@ -595,51 +600,57 @@ public:
 
 struct vm2_get_station : public MethKwargs<vm2_get_station, PyObject>
 {
-    constexpr static const char* name = "get_station";
+    constexpr static const char* name      = "get_station";
     constexpr static const char* signature = "id: int";
-    constexpr static const char* returns = "Dict[str, Any]";
-    constexpr static const char* summary = "Read the station attributes for a VM2 station ID";
+    constexpr static const char* returns   = "Dict[str, Any]";
+    constexpr static const char* summary =
+        "Read the station attributes for a VM2 station ID";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "id", nullptr };
+        static const char* kwlist[] = {"id", nullptr};
         int id;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", pass_kwlist(kwlist), &id))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", pass_kwlist(kwlist),
+                                         &id))
             return nullptr;
 
-        try {
+        try
+        {
             arki::types::ValueBag values(arki::utils::vm2::get_station(id));
             arki::python::PythonEmitter e;
             values.serialise(e);
             return e.release();
-        } ARKI_CATCH_RETURN_PYO
+        }
+        ARKI_CATCH_RETURN_PYO
     }
 };
 
 struct vm2_get_variable : public MethKwargs<vm2_get_variable, PyObject>
 {
-    constexpr static const char* name = "get_variable";
+    constexpr static const char* name      = "get_variable";
     constexpr static const char* signature = "id: int";
-    constexpr static const char* returns = "Dict[str, Any]";
-    constexpr static const char* summary = "Read the variable attributes for a VM2 variable ID";
+    constexpr static const char* returns   = "Dict[str, Any]";
+    constexpr static const char* summary =
+        "Read the variable attributes for a VM2 variable ID";
 
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "id", nullptr };
+        static const char* kwlist[] = {"id", nullptr};
         int id;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", pass_kwlist(kwlist), &id))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "i", pass_kwlist(kwlist),
+                                         &id))
             return nullptr;
 
-        try {
+        try
+        {
             arki::types::ValueBag values(arki::utils::vm2::get_variable(id));
             arki::python::PythonEmitter e;
             values.serialise(e);
             return e.release();
-        } ARKI_CATCH_RETURN_PYO
+        }
+        ARKI_CATCH_RETURN_PYO
     }
 };
-
-
 
 Methods<> scan_methods;
 Methods<> scanners_methods;
@@ -650,70 +661,80 @@ Methods<> odimh5_methods;
 Methods<> nc_methods;
 Methods<> jpeg_methods;
 
-
 struct get_scanner : public ClassMethKwargs<get_scanner>
 {
-    constexpr static const char* name = "get_scanner";
+    constexpr static const char* name      = "get_scanner";
     constexpr static const char* signature = "format: str";
-    constexpr static const char* returns = "arkimet.scan.Scanner";
-    constexpr static const char* summary = "Return a Scanner for the given data format";
+    constexpr static const char* returns   = "arkimet.scan.Scanner";
+    constexpr static const char* summary =
+        "Return a Scanner for the given data format";
 
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "format", nullptr };
-        PyObject* arg_format = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist), &arg_format))
-            return nullptr ;
+        static const char* kwlist[] = {"format", nullptr};
+        PyObject* arg_format        = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
+                                         &arg_format))
+            return nullptr;
 
-        try {
-            auto scanner = arki::scan::Scanner::get_scanner(dataformat_from_python(arg_format));
+        try
+        {
+            auto scanner = arki::scan::Scanner::get_scanner(
+                dataformat_from_python(arg_format));
             return (PyObject*)arki::python::scan::scanner_create(scanner);
-        } ARKI_CATCH_RETURN_PYO
+        }
+        ARKI_CATCH_RETURN_PYO
     }
 };
 
 struct scan_data : public MethKwargs<scan_data, arkipy_scan_Scanner>
 {
-    constexpr static const char* name = "scan_data";
+    constexpr static const char* name      = "scan_data";
     constexpr static const char* signature = "data: bytes";
-    constexpr static const char* returns = "arkimet.Metadata";
-    constexpr static const char* summary = "Scan a memory buffer";
-    constexpr static const char* doc = R"(
+    constexpr static const char* returns   = "arkimet.Metadata";
+    constexpr static const char* summary   = "Scan a memory buffer";
+    constexpr static const char* doc       = R"(
 Returns a Metadata with inline source.
 )";
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = { "data", nullptr };
-        PyObject* arg_data = nullptr;
+        static const char* kwlist[] = {"data", nullptr};
+        PyObject* arg_data          = nullptr;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist), &arg_data))
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
+                                         &arg_data))
             return nullptr;
 
-        try {
+        try
+        {
             char* buffer;
             Py_ssize_t length;
             if (PyBytes_Check(arg_data))
             {
                 if (PyBytes_AsStringAndSize(arg_data, &buffer, &length) == -1)
                     throw PythonException();
-            } else {
-                PyErr_Format(PyExc_TypeError, "data has type %R instead of bytes", arg_data);
+            }
+            else
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "data has type %R instead of bytes", arg_data);
                 return nullptr;
             }
 
             // FIXME: memory copy, seems unavoidable at the moment
-            std::vector<uint8_t> data(buffer, buffer+length);
+            std::vector<uint8_t> data(buffer, buffer + length);
             auto md = self->scanner->scan_data(data);
             return (PyObject*)metadata_create(md);
-        } ARKI_CATCH_RETURN_PYO
+        }
+        ARKI_CATCH_RETURN_PYO
     }
 };
 
 struct ScannerDef : public Type<ScannerDef, arkipy_scan_Scanner>
 {
-    constexpr static const char* name = "Scanner";
+    constexpr static const char* name      = "Scanner";
     constexpr static const char* qual_name = "arkimet.scan.Scanner";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc       = R"(
 Scanner for binary data.
 )";
     GetSetters<> getsetters;
@@ -740,11 +761,13 @@ Scanner for binary data.
     // static int _init(Impl* self, PyObject* args, PyObject* kw)
     // {
     //     static const char* kwlist[] = { nullptr };
-    //     if (!PyArg_ParseTupleAndKeywords(args, kw, "", const_cast<char**>(kwlist)))
+    //     if (!PyArg_ParseTupleAndKeywords(args, kw, "",
+    //     const_cast<char**>(kwlist)))
     //         return -1;
 
     //     try {
-    //         new(&(self->scanner)) std::shared_ptr<arki::scan::Scanner>(make_shared<arki:scan::Scanner>());
+    //         new(&(self->scanner))
+    //         std::shared_ptr<arki::scan::Scanner>(make_shared<arki:scan::Scanner>());
     //     } ARKI_CATCH_RETURN_INT
 
     //     return 0;
@@ -753,106 +776,105 @@ Scanner for binary data.
 
 ScannerDef* scanner_def = nullptr;
 
-}
+} // namespace
 
 extern "C" {
 
 static PyModuleDef scan_module = {
     PyModuleDef_HEAD_INIT,
-    "scan",            /* m_name */
-    "Arkimet format-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    scan_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "scan",                              /* m_name */
+    "Arkimet format-specific functions", /* m_doc */
+    -1,                                  /* m_size */
+    scan_methods.as_py(),                /* m_methods */
+    nullptr,                             /* m_slots */
+    nullptr,                             /* m_traverse */
+    nullptr,                             /* m_clear */
+    nullptr,                             /* m_free */
 };
 
 static PyModuleDef scanners_module = {
     PyModuleDef_HEAD_INIT,
-    "scanners",            /* m_name */
-    "Arkimet scanner code",  /* m_doc */
-    -1,                /* m_size */
-    scanners_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "scanners",               /* m_name */
+    "Arkimet scanner code",   /* m_doc */
+    -1,                       /* m_size */
+    scanners_methods.as_py(), /* m_methods */
+    nullptr,                  /* m_slots */
+    nullptr,                  /* m_traverse */
+    nullptr,                  /* m_clear */
+    nullptr,                  /* m_free */
 };
 
 static PyModuleDef grib_module = {
     PyModuleDef_HEAD_INIT,
-    "grib",            /* m_name */
-    "Arkimet GRIB-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    grib_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "grib",                            /* m_name */
+    "Arkimet GRIB-specific functions", /* m_doc */
+    -1,                                /* m_size */
+    grib_methods.as_py(),              /* m_methods */
+    nullptr,                           /* m_slots */
+    nullptr,                           /* m_traverse */
+    nullptr,                           /* m_clear */
+    nullptr,                           /* m_free */
 };
 
 static PyModuleDef bufr_module = {
     PyModuleDef_HEAD_INIT,
-    "bufr",            /* m_name */
-    "Arkimet BUFR-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    bufr_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "bufr",                            /* m_name */
+    "Arkimet BUFR-specific functions", /* m_doc */
+    -1,                                /* m_size */
+    bufr_methods.as_py(),              /* m_methods */
+    nullptr,                           /* m_slots */
+    nullptr,                           /* m_traverse */
+    nullptr,                           /* m_clear */
+    nullptr,                           /* m_free */
 };
 
 static PyModuleDef odimh5_module = {
     PyModuleDef_HEAD_INIT,
-    "odimh5",             /* m_name */
-    "Arkimet ODIMh5-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    odimh5_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "odimh5",                            /* m_name */
+    "Arkimet ODIMh5-specific functions", /* m_doc */
+    -1,                                  /* m_size */
+    odimh5_methods.as_py(),              /* m_methods */
+    nullptr,                             /* m_slots */
+    nullptr,                             /* m_traverse */
+    nullptr,                             /* m_clear */
+    nullptr,                             /* m_free */
 };
 
 static PyModuleDef nc_module = {
     PyModuleDef_HEAD_INIT,
-    "nc",             /* m_name */
-    "Arkimet NetCDF-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    nc_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "nc",                                /* m_name */
+    "Arkimet NetCDF-specific functions", /* m_doc */
+    -1,                                  /* m_size */
+    nc_methods.as_py(),                  /* m_methods */
+    nullptr,                             /* m_slots */
+    nullptr,                             /* m_traverse */
+    nullptr,                             /* m_clear */
+    nullptr,                             /* m_free */
 };
 
 static PyModuleDef jpeg_module = {
     PyModuleDef_HEAD_INIT,
-    "jpeg",            /* m_name */
-    "Arkimet JPEG-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    jpeg_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "jpeg",                            /* m_name */
+    "Arkimet JPEG-specific functions", /* m_doc */
+    -1,                                /* m_size */
+    jpeg_methods.as_py(),              /* m_methods */
+    nullptr,                           /* m_slots */
+    nullptr,                           /* m_traverse */
+    nullptr,                           /* m_clear */
+    nullptr,                           /* m_free */
 };
 
 static PyModuleDef vm2_module = {
     PyModuleDef_HEAD_INIT,
-    "vm2",             /* m_name */
-    "Arkimet VM2-specific functions",  /* m_doc */
-    -1,                /* m_size */
-    vm2_methods.as_py(),  /* m_methods */
-    nullptr,           /* m_slots */
-    nullptr,           /* m_traverse */
-    nullptr,           /* m_clear */
-    nullptr,           /* m_free */
+    "vm2",                            /* m_name */
+    "Arkimet VM2-specific functions", /* m_doc */
+    -1,                               /* m_size */
+    vm2_methods.as_py(),              /* m_methods */
+    nullptr,                          /* m_slots */
+    nullptr,                          /* m_traverse */
+    nullptr,                          /* m_clear */
+    nullptr,                          /* m_free */
 };
-
 }
 
 namespace arki {
@@ -860,16 +882,18 @@ namespace python {
 
 namespace scan {
 
-arkipy_scan_Scanner* scanner_create(std::shared_ptr<arki::scan::Scanner> scanner)
+arkipy_scan_Scanner*
+scanner_create(std::shared_ptr<arki::scan::Scanner> scanner)
 {
-    arkipy_scan_Scanner* result = PyObject_New(arkipy_scan_Scanner, arkipy_scan_Scanner_Type);
-    if (!result) throw PythonException();
+    arkipy_scan_Scanner* result =
+        PyObject_New(arkipy_scan_Scanner, arkipy_scan_Scanner_Type);
+    if (!result)
+        throw PythonException();
     new (&(result->scanner)) std::shared_ptr<arki::scan::Scanner>(scanner);
     return result;
 }
 
-}
-
+} // namespace scan
 
 void register_scan(PyObject* m)
 {
@@ -878,18 +902,18 @@ void register_scan(PyObject* m)
     dballe_api.import();
 #endif
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
-    grib_def = new GribDef;
+    grib_def            = new GribDef;
     grib_def->define(arkipy_scan_Grib_Type, grib);
 
-    pyo_unique_ptr bufr = throw_ifnull(PyModule_Create(&bufr_module));
-    pyo_unique_ptr odimh5 = throw_ifnull(PyModule_Create(&odimh5_module));
-    pyo_unique_ptr nc = throw_ifnull(PyModule_Create(&nc_module));
-    pyo_unique_ptr jpeg = throw_ifnull(PyModule_Create(&jpeg_module));
-    pyo_unique_ptr vm2 = throw_ifnull(PyModule_Create(&vm2_module));
-    pyo_unique_ptr scan = throw_ifnull(PyModule_Create(&scan_module));
+    pyo_unique_ptr bufr     = throw_ifnull(PyModule_Create(&bufr_module));
+    pyo_unique_ptr odimh5   = throw_ifnull(PyModule_Create(&odimh5_module));
+    pyo_unique_ptr nc       = throw_ifnull(PyModule_Create(&nc_module));
+    pyo_unique_ptr jpeg     = throw_ifnull(PyModule_Create(&jpeg_module));
+    pyo_unique_ptr vm2      = throw_ifnull(PyModule_Create(&vm2_module));
+    pyo_unique_ptr scan     = throw_ifnull(PyModule_Create(&scan_module));
     pyo_unique_ptr scanners = throw_ifnull(PyModule_Create(&scanners_module));
 
-    module_arkimet = m;
+    module_arkimet  = m;
     module_scanners = scanners;
 
     scanner_def = new ScannerDef;
@@ -923,13 +947,11 @@ void register_scan(PyObject* m)
 namespace scan {
 void init()
 {
-    arki::scan::Scanner::register_factory(DataFormat::GRIB, [] {
-        return std::make_shared<PythonGribScanner>();
-    });
+    arki::scan::Scanner::register_factory(
+        DataFormat::GRIB, [] { return std::make_shared<PythonGribScanner>(); });
 #ifdef HAVE_DBALLE
-    arki::scan::Scanner::register_factory(DataFormat::BUFR, [] {
-        return std::make_shared<PythonBufrScanner>();
-    });
+    arki::scan::Scanner::register_factory(
+        DataFormat::BUFR, [] { return std::make_shared<PythonBufrScanner>(); });
 #endif
     arki::scan::Scanner::register_factory(DataFormat::ODIMH5, [] {
         return std::make_shared<PythonOdimh5Scanner>();
@@ -937,11 +959,10 @@ void init()
     arki::scan::Scanner::register_factory(DataFormat::NETCDF, [] {
         return std::make_shared<PythonNetCDFScanner>();
     });
-    arki::scan::Scanner::register_factory(DataFormat::JPEG, [] {
-        return std::make_shared<PythonJPEGScanner>();
-    });
+    arki::scan::Scanner::register_factory(
+        DataFormat::JPEG, [] { return std::make_shared<PythonJPEGScanner>(); });
 }
-}
+} // namespace scan
 
-}
-}
+} // namespace python
+} // namespace arki

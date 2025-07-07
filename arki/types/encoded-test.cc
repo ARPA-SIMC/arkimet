@@ -1,5 +1,5 @@
-#include "tests.h"
 #include "encoded.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -12,11 +12,10 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_types_encoded");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

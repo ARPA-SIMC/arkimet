@@ -1,14 +1,14 @@
 #ifndef ARKI_SEGMENT_DIR_H
 #define ARKI_SEGMENT_DIR_H
 
+#include <arki/core/file.h>
 #include <arki/defs.h>
 #include <arki/segment/data.h>
 #include <arki/segment/data/base.h>
 #include <arki/segment/data/seqfile.h>
-#include <arki/core/file.h>
 #include <arki/utils/sys.h>
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace arki {
 class Metadata;
@@ -27,34 +27,45 @@ public:
     bool is_empty() const override;
     size_t size() const override;
     utils::files::PreserveFileTimes preserve_mtime() override;
-    size_t next_offset(size_t offset, size_t size) const override { return offset + 1; }
+    size_t next_offset(size_t offset, size_t size) const override
+    {
+        return offset + 1;
+    }
 
-    std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::data::Writer> writer(const segment::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Reader>
+    reader(std::shared_ptr<const core::ReadLock> lock) const override;
+    std::shared_ptr<segment::data::Writer>
+    writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) override { create(*m_segment, mds, cfg); }
+    void create_segment(
+        arki::metadata::Collection& mds,
+        const data::RepackConfig& cfg = data::RepackConfig()) override
+    {
+        create(*m_segment, mds, cfg);
+    }
 
-    static std::shared_ptr<Checker> create(const Segment& segment, arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig());
+    static std::shared_ptr<Checker>
+    create(const Segment& segment, arki::metadata::Collection& mds,
+           const RepackConfig& cfg = RepackConfig());
     static bool can_store(DataFormat format);
 };
-
 
 class Reader : public data::BaseReader<Data>
 {
 public:
     utils::sys::Path dirfd;
 
-    Reader(std::shared_ptr<const Data> data, std::shared_ptr<const core::ReadLock> lock);
+    Reader(std::shared_ptr<const Data> data,
+           std::shared_ptr<const core::ReadLock> lock);
 
     bool scan_data(metadata_dest_func dest) override;
     utils::sys::File open_src(const types::source::Blob& src);
     std::vector<uint8_t> read(const types::source::Blob& src) override;
-    stream::SendResult stream(const types::source::Blob& src, StreamOutput& out) override;
+    stream::SendResult stream(const types::source::Blob& src,
+                              StreamOutput& out) override;
 };
 
-
-template<typename Data>
-class BaseWriter : public data::BaseWriter<Data>
+template <typename Data> class BaseWriter : public data::BaseWriter<Data>
 {
 public:
     SequenceFile seqfile;
@@ -62,7 +73,8 @@ public:
     std::vector<data::Writer::PendingMetadata> pending;
     size_t current_pos;
 
-    BaseWriter(const segment::WriterConfig& config, std::shared_ptr<const Data> data);
+    BaseWriter(const segment::WriterConfig& config,
+               std::shared_ptr<const Data> data);
     ~BaseWriter();
 
     virtual void write_file(Metadata& md, core::NamedFileDescriptor& fd) = 0;
@@ -75,7 +87,6 @@ public:
     void rollback_nothrow() noexcept override;
 };
 
-
 class Writer : public BaseWriter<Data>
 {
 public:
@@ -83,44 +94,49 @@ public:
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
-class HoleWriter: public BaseWriter<Data>
+class HoleWriter : public BaseWriter<Data>
 {
 public:
     using BaseWriter<Data>::BaseWriter;
     void write_file(Metadata& md, core::NamedFileDescriptor& fd) override;
 };
 
-
-template<typename Data>
-class BaseChecker : public data::BaseChecker<Data>
+template <typename Data> class BaseChecker : public data::BaseChecker<Data>
 {
 public:
     using data::BaseChecker<Data>::BaseChecker;
 
-    /// Call f for each nnnnnn.format file in the directory segment, passing the file name
+    /// Call f for each nnnnnn.format file in the directory segment, passing the
+    /// file name
     void foreach_datafile(std::function<void(const char*)> f);
     void validate(Metadata& md, const arki::scan::Validator& v);
     void move_data(std::shared_ptr<const Segment> new_segment) override;
 
-    bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) override;
-    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
+    bool rescan_data(std::function<void(const std::string&)> reporter,
+                     std::shared_ptr<const core::ReadLock> lock,
+                     metadata_dest_func dest) override;
+    State check(std::function<void(const std::string&)> reporter,
+                const arki::metadata::Collection& mds,
+                bool quick = true) override;
     size_t remove() override;
-    core::Pending repack(arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) override;
+    core::Pending repack(arki::metadata::Collection& mds,
+                         const RepackConfig& cfg = RepackConfig()) override;
 
     void test_truncate(size_t offset) override;
-    void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) override;
-    void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) override;
-    void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) override;
+    void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size,
+                        unsigned data_idx) override;
+    void test_make_overlap(arki::metadata::Collection& mds,
+                           unsigned overlap_size, unsigned data_idx) override;
+    void test_corrupt(const arki::metadata::Collection& mds,
+                      unsigned data_idx) override;
     void test_touch_contents(time_t timestamp) override;
 };
-
 
 class Checker : public BaseChecker<Data>
 {
 public:
     using BaseChecker<Data>::BaseChecker;
 };
-
 
 /**
  * Same as Writer, but uses ftruncate to write dummy empty file with the
@@ -131,9 +147,10 @@ class HoleChecker : public BaseChecker<Data>
 {
 public:
     using BaseChecker<Data>::BaseChecker;
-    State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) override;
+    State check(std::function<void(const std::string&)> reporter,
+                const arki::metadata::Collection& mds,
+                bool quick = true) override;
 };
-
 
 class ScannerData
 {
@@ -146,7 +163,6 @@ public:
     {
     }
 };
-
 
 class Scanner
 {
@@ -168,10 +184,12 @@ public:
     /// Scan the data found in on_disk sending results to dest
     bool scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
 
-    /// Scan the data found in on_disk sending results to dest, reporting scanning errors to the reporter
-    bool scan(std::function<void(const std::string&)> reporter, std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
+    /// Scan the data found in on_disk sending results to dest, reporting
+    /// scanning errors to the reporter
+    bool scan(std::function<void(const std::string&)> reporter,
+              std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
 };
 
-}
-}
+} // namespace segment::data::dir
+} // namespace arki
 #endif

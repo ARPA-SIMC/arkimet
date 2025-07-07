@@ -2,10 +2,10 @@
 #define ARKI_METADATA_VALIDATOR_H
 
 #include <arki/metadata/fwd.h>
-#include <string>
-#include <vector>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace metadata {
@@ -26,25 +26,27 @@ public:
      * @returns
      *   true if there were no validation errors, else false.
      */
-    virtual bool operator()(const Metadata& v, std::vector<std::string>& errors) const = 0;
+    virtual bool operator()(const Metadata& v,
+                            std::vector<std::string>& errors) const = 0;
 };
 
-namespace validators
+namespace validators {
+class FailAlways : public Validator
 {
-    class FailAlways : public Validator
-    {
-    public:
-        FailAlways();
-        bool operator()(const Metadata& v, std::vector<std::string>& errors) const override;
-    };
+public:
+    FailAlways();
+    bool operator()(const Metadata& v,
+                    std::vector<std::string>& errors) const override;
+};
 
-    class DailyImport : public Validator
-    {
-    public:
-        DailyImport();
-        bool operator()(const Metadata& v, std::vector<std::string>& errors) const override;
-    };
-}
+class DailyImport : public Validator
+{
+public:
+    DailyImport();
+    bool operator()(const Metadata& v,
+                    std::vector<std::string>& errors) const override;
+};
+} // namespace validators
 
 class ValidatorRepository : public std::map<std::string, Validator*>
 {
@@ -60,6 +62,6 @@ public:
     static const ValidatorRepository& get();
 };
 
-}
-}
+} // namespace metadata
+} // namespace arki
 #endif

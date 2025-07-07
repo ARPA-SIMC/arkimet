@@ -1,8 +1,8 @@
 #ifndef ARKI_PYTHON_DBALLE_H
 #define ARKI_PYTHON_DBALLE_H
 
-#include <dballe/python.h>
 #include "core.h"
+#include <dballe/python.h>
 
 #define DBALLE_API1_MIN_VERSION 0
 
@@ -23,8 +23,16 @@ public:
     /// Throw a python error if import() was not called
     void require_imported() const;
 
-    dbapy_c_api& api() { require_imported(); return *m_api; }
-    const dbapy_c_api& api() const { require_imported(); return *m_api; }
+    dbapy_c_api& api()
+    {
+        require_imported();
+        return *m_api;
+    }
+    const dbapy_c_api& api() const
+    {
+        require_imported();
+        return *m_api;
+    }
 
     /// Check if an object is a wreport.Var
     bool message_check(PyObject* ob) const
@@ -50,7 +58,7 @@ public:
 #endif
 };
 
-}
-}
+} // namespace python
+} // namespace arki
 
 #endif

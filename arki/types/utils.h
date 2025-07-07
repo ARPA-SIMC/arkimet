@@ -1,41 +1,51 @@
 #ifndef ARKI_TYPES_UTILS_H
 #define ARKI_TYPES_UTILS_H
 
-#include <arki/types.h>
 #include <arki/core/fwd.h>
+#include <arki/types.h>
+#include <cstring>
+#include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <sstream>
-#include <set>
-#include <cstring>
 
 #include <arki/libconfig.h>
 
 namespace arki {
 namespace types {
 
-template<class F>
-struct is_item_decoder;
+template <class F> struct is_item_decoder;
 
-template<class R, class... Args>
-struct is_item_decoder<R(Args...)>
+template <class R, class... Args> struct is_item_decoder<R(Args...)>
 {
     static constexpr bool value = false;
 };
 
-template<class R>
-struct is_item_decoder<R(core::BinaryDecoder&, bool)>
+template <class R> struct is_item_decoder<R(core::BinaryDecoder&, bool)>
 {
     static constexpr bool value = true;
 };
 
-template<typename T>
-struct complete_traits : public arki::types::traits<T>
+template <typename T> struct complete_traits : public arki::types::traits<T>
 {
-    static inline Type* decode(core::BinaryDecoder& dec, bool reuse_buffer) { return T::decode(dec, reuse_buffer).release(); }
-    static inline Type* decodeString(const std::string& val) { return T::decodeString(val).release(); }
-    static inline Type* decode_structure(const structured::Keys& keys, const structured::Reader& reader) { return T::decode_structure(keys, reader).release(); }
-    static inline void write_documentation(stream::Text& out, unsigned heading_level) { return T::write_documentation(out, heading_level); }
+    static inline Type* decode(core::BinaryDecoder& dec, bool reuse_buffer)
+    {
+        return T::decode(dec, reuse_buffer).release();
+    }
+    static inline Type* decodeString(const std::string& val)
+    {
+        return T::decodeString(val).release();
+    }
+    static inline Type* decode_structure(const structured::Keys& keys,
+                                         const structured::Reader& reader)
+    {
+        return T::decode_structure(keys, reader).release();
+    }
+    static inline void write_documentation(stream::Text& out,
+                                           unsigned heading_level)
+    {
+        return T::write_documentation(out, heading_level);
+    }
 };
 
 /**
@@ -48,7 +58,8 @@ struct MetadataType
 {
     typedef Type* (*item_decoder)(core::BinaryDecoder& dec, bool reuse_buffer);
     typedef Type* (*string_decoder)(const std::string& val);
-    typedef Type* (*structure_decoder)(const structured::Keys& keys, const structured::Reader& reader);
+    typedef Type* (*structure_decoder)(const structured::Keys& keys,
+                                       const structured::Reader& reader);
     typedef void (*documenter)(stream::Text& out, unsigned heading_level);
 
     types::Code type_code;
@@ -59,45 +70,39 @@ struct MetadataType
     structure_decoder structure_decode_func;
     documenter document_func;
 
-    MetadataType(
-        types::Code type_code,
-        int serialisationSizeLen,
-        const std::string& tag,
-        item_decoder decode_func,
-        string_decoder string_decode_func,
-        structure_decoder structure_decode_func,
-        documenter document_func
-    );
+    MetadataType(types::Code type_code, int serialisationSizeLen,
+                 const std::string& tag, item_decoder decode_func,
+                 string_decoder string_decode_func,
+                 structure_decoder structure_decode_func,
+                 documenter document_func);
     ~MetadataType();
 
     // Get information about the given metadata
     static const MetadataType* get(types::Code);
 
-    template<typename T>
-    static void register_type()
+    template <typename T> static void register_type()
     {
-        static_assert(is_item_decoder<decltype(T::decode)>::value, "decode function must take a BinaryDecoder and a bool as arguments");
+        static_assert(is_item_decoder<decltype(T::decode)>::value,
+                      "decode function must take a BinaryDecoder and a bool as "
+                      "arguments");
         // FIXME: when we remove create() we can make MetadataType not register
         // itself and remove the need of this awkward new
         auto type = new MetadataType(
-            traits<T>::type_code,
-            traits<T>::type_sersize_bytes,
-            traits<T>::type_tag,
-            complete_traits<T>::decode,
+            traits<T>::type_code, traits<T>::type_sersize_bytes,
+            traits<T>::type_tag, complete_traits<T>::decode,
             complete_traits<T>::decodeString,
             complete_traits<T>::decode_structure,
-            complete_traits<T>::write_documentation
-        );
+            complete_traits<T>::write_documentation);
         register_type(type);
     }
 
     static void register_type(MetadataType* type);
 
-    static void document_types(stream::Text& out, unsigned heading_level=2);
+    static void document_types(stream::Text& out, unsigned heading_level = 2);
 };
 
 // Parse the outer style of a TYPE(val1, val2...) string
-template<typename T>
+template <typename T>
 static typename T::Style outerParse(const std::string& str, std::string& inner)
 {
     if (str.empty())
@@ -126,35 +131,36 @@ static typename T::Style outerParse(const std::string& str, std::string& inner)
         msg += "' does not end with closed parenthesis";
         throw std::runtime_error(std::move(msg));
     }
-    inner = str.substr(pos+1, str.size() - pos - 2);
+    inner = str.substr(pos + 1, str.size() - pos - 2);
     return T::parseStyle(str.substr(0, pos));
 }
 
 // Parse a list of numbers of the given size
-template<int SIZE, int REQUIRED=SIZE>
-struct NumberList
+template <int SIZE, int REQUIRED = SIZE> struct NumberList
 {
-	int vals[SIZE];
+    int vals[SIZE];
     unsigned found;
-	std::string tail;
+    std::string tail;
 
-	unsigned size() const { return SIZE; }
+    unsigned size() const { return SIZE; }
 
-	NumberList(const std::string& str, const std::string& what, bool has_tail=false)
+    NumberList(const std::string& str, const std::string& what,
+               bool has_tail = false)
         : found(0)
-	{
-		const char* start = str.c_str();
-		for (unsigned i = 0; i < SIZE; ++i)
-		{
-			// Skip colons and spaces, if any
-			while (*start && (::isspace(*start) || *start == ','))
-				++start;
+    {
+        const char* start = str.c_str();
+        for (unsigned i = 0; i < SIZE; ++i)
+        {
+            // Skip colons and spaces, if any
+            while (*start && (::isspace(*start) || *start == ','))
+                ++start;
             if (!*start)
             {
                 if (found < REQUIRED)
                 {
                     std::stringstream ss;
-                    ss << "cannot parse " << what << ": found " << i << " values instead of " << SIZE;
+                    ss << "cannot parse " << what << ": found " << i
+                       << " values instead of " << SIZE;
                     throw std::runtime_error(ss.str());
                 }
                 else
@@ -186,21 +192,23 @@ struct NumberList
             msg += '"';
             throw std::runtime_error(std::move(msg));
         }
-		else if (has_tail && *start)
-		{
-			// Skip colons and spaces, if any
-			while (*start && (::isspace(*start) || *start == ','))
-				++start;
-			tail = start;
-		}
-	}
+        else if (has_tail && *start)
+        {
+            // Skip colons and spaces, if any
+            while (*start && (::isspace(*start) || *start == ','))
+                ++start;
+            tail = start;
+        }
+    }
 };
 
 // functions to split strings
-void split(const std::string& str, std::set<std::string>& result, const std::string& delimiters = ",");
-void split(const std::string& str, std::vector<std::string>& result, const std::string& delimiters = ",");
+void split(const std::string& str, std::set<std::string>& result,
+           const std::string& delimiters = ",");
+void split(const std::string& str, std::vector<std::string>& result,
+           const std::string& delimiters = ",");
 
-}
-}
+} // namespace types
+} // namespace arki
 
 #endif

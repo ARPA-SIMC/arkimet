@@ -1,14 +1,14 @@
 #ifndef ARKI_UTILS_COMPRESS_H
 #define ARKI_UTILS_COMPRESS_H
 
+#include <arki/core/binary.h>
 #include <arki/core/fwd.h>
 #include <arki/utils/sys.h>
-#include <arki/core/binary.h>
-#include <sys/types.h>
+#include <cstdint>
 #include <filesystem>
 #include <string>
+#include <sys/types.h>
 #include <vector>
-#include <cstdint>
 
 // zlib forward declaration
 struct z_stream_s;
@@ -48,41 +48,43 @@ std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size);
 class ZlibCompressor
 {
 protected:
-	z_stream* strm;
+    z_stream* strm;
 
 public:
-	ZlibCompressor();
-	~ZlibCompressor();
+    ZlibCompressor();
+    ~ZlibCompressor();
 
     /**
      * Set the data for the encoder/decoder
      */
     void feed_data(const void* buf, size_t len);
 
-	/**
-	 * Run an encoder loop filling in the given buffer
-	 * 
-	 * @returns the count of data written (if the same as len, you need to
-	 *          call run() again before feed_data)
-	 */
-	size_t get(void* buf, size_t len, bool flush = false);
-	size_t get(std::vector<uint8_t>& buf, bool flush = false);
+    /**
+     * Run an encoder loop filling in the given buffer
+     *
+     * @returns the count of data written (if the same as len, you need to
+     *          call run() again before feed_data)
+     */
+    size_t get(void* buf, size_t len, bool flush = false);
+    size_t get(std::vector<uint8_t>& buf, bool flush = false);
 
-	/**
-	 * Restart compression after a flush
-	 */
-	void restart();
+    /**
+     * Restart compression after a flush
+     */
+    void restart();
 };
 
 /**
  * Gunzip the file opened at \a rdfd sending data to the file opened at \a wrfd
  */
-void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd, const std::filesystem::path& wrfname, size_t bufsize=4096);
+void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd,
+            const std::filesystem::path& wrfname, size_t bufsize = 4096);
 
 /**
  * Gunzip the file decompressing it to memory
  */
-std::vector<uint8_t> gunzip(const std::filesystem::path& abspath, size_t bufsize=4096);
+std::vector<uint8_t> gunzip(const std::filesystem::path& abspath,
+                            size_t bufsize = 4096);
 
 /**
  * At constructor time, create an uncompressed version of the given file
@@ -145,17 +147,17 @@ struct IndexWriter
     /// Binary encoder to write to outbuf
     core::BinaryEncoder enc;
     /// Offset of end of last uncompressed data read
-    off_t unc_ofs = 0;
+    off_t unc_ofs      = 0;
     /// Offset of end of last uncompressed block written
     off_t last_unc_ofs = 0;
     /// Offset of end of last compressed data written
-    off_t ofs = 0;
+    off_t ofs          = 0;
     /// Offset of end of last compressed block written
-    off_t last_ofs = 0;
+    off_t last_ofs     = 0;
     /// Number of data compressed so far
-    size_t count = 0;
+    size_t count       = 0;
 
-    IndexWriter(size_t groupsize=512);
+    IndexWriter(size_t groupsize = 512);
 
     /**
      * Update the index to track the addition of a chunk of data.
@@ -193,7 +195,6 @@ struct IndexWriter
     void write(core::NamedFileDescriptor& outidx);
 };
 
-
 /**
  * Create a file with a compressed version of the data described by the
  * metadata that it receives.
@@ -218,12 +219,12 @@ protected:
     size_t flush_compressor();
 
     // End one compressed block
-    void end_block(bool is_final=false);
+    void end_block(bool is_final = false);
 
 public:
     IndexWriter idx;
 
-    GzipWriter(core::NamedFileDescriptor& out, size_t groupsize=512);
+    GzipWriter(core::NamedFileDescriptor& out, size_t groupsize = 512);
     ~GzipWriter();
 
     /**
@@ -237,8 +238,8 @@ public:
     void flush();
 };
 
-}
-}
-}
+} // namespace compress
+} // namespace utils
+} // namespace arki
 
 #endif

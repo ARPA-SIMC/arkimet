@@ -14,9 +14,15 @@ struct SegmentSession : public segment::Session
 public:
     using segment::Session::Session;
 
-    std::shared_ptr<segment::Reader> segment_reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock) const override;
-    std::shared_ptr<segment::Writer> segment_writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock) const override;
-    std::shared_ptr<segment::Checker> segment_checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock) const override;
+    std::shared_ptr<segment::Reader>
+    segment_reader(std::shared_ptr<const Segment> segment,
+                   std::shared_ptr<const core::ReadLock> lock) const override;
+    std::shared_ptr<segment::Writer>
+    segment_writer(std::shared_ptr<const Segment> segment,
+                   std::shared_ptr<core::AppendLock> lock) const override;
+    std::shared_ptr<segment::Checker>
+    segment_checker(std::shared_ptr<const Segment> segment,
+                    std::shared_ptr<core::CheckLock> lock) const override;
 };
 
 struct Dataset : public dataset::segmented::Dataset
@@ -33,7 +39,7 @@ struct Dataset : public dataset::segmented::Dataset
     std::shared_ptr<core::CheckLock> check_lock_dataset() const;
 };
 
-}
-}
-}
+} // namespace simple
+} // namespace dataset
+} // namespace arki
 #endif

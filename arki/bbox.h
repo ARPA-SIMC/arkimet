@@ -3,8 +3,8 @@
 
 #include <arki/types/area.h>
 #include <arki/utils/geosfwd.h>
-#include <string>
 #include <memory>
+#include <string>
 
 namespace arki {
 
@@ -25,6 +25,6 @@ public:
     static void set_factory(std::function<std::unique_ptr<BBox>()> new_factory);
 };
 
-}
+} // namespace arki
 
 #endif

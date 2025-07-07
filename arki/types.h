@@ -2,25 +2,26 @@
 #define ARKI_TYPES_H
 
 /// arkimet metadata type system
-#include <arki/defs.h>
 #include <arki/core/fwd.h>
-#include <arki/types/fwd.h>
-#include <arki/structured/fwd.h>
+#include <arki/defs.h>
 #include <arki/stream/fwd.h>
+#include <arki/structured/fwd.h>
+#include <arki/types/fwd.h>
+#include <cstdint>
 #include <memory>
 #include <set>
-#include <vector>
-#include <string>
 #include <stdexcept>
-#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace arki {
 
 /// dynamic cast between two unique_ptr
-template<typename B, typename A>
+template <typename B, typename A>
 std::unique_ptr<B> downcast(std::unique_ptr<A> orig)
 {
-    if (!orig.get()) return std::unique_ptr<B>();
+    if (!orig.get())
+        return std::unique_ptr<B>();
 
     // Cast, but leave ownership to orig
     B* dst = dynamic_cast<B*>(orig.get());
@@ -43,7 +44,7 @@ std::unique_ptr<B> downcast(std::unique_ptr<A> orig)
 }
 
 /// upcast between two unique_ptr
-template<typename B, typename A>
+template <typename B, typename A>
 std::unique_ptr<B> upcast(std::unique_ptr<A> orig)
 {
     return std::unique_ptr<B>(orig.release());
@@ -56,7 +57,10 @@ Code checkCodeName(const std::string& name);
 // Parse name into a type code, throwing an exception if it does not match
 Code parseCodeName(const std::string& name);
 std::string formatCode(const Code& c);
-static inline std::ostream& operator<<(std::ostream& o, const Code& c) { return o << formatCode(c); }
+static inline std::ostream& operator<<(std::ostream& o, const Code& c)
+{
+    return o << formatCode(c);
+}
 
 /**
  * Convert a [comma and optional spaces]-separated string with metadata
@@ -70,9 +74,9 @@ std::set<Code> parse_code_names(const std::string& names);
 class Type
 {
 public:
-    Type() = default;
+    Type()            = default;
     Type(const Type&) = default;
-    Type(Type&&) = default;
+    Type(Type&&)      = default;
     virtual ~Type() {}
 
     /**
@@ -86,7 +90,10 @@ public:
     virtual Type* clone() const = 0;
 
     /// Make a copy of this type
-    std::unique_ptr<Type> cloneType() const { return std::unique_ptr<Type>(clone()); }
+    std::unique_ptr<Type> cloneType() const
+    {
+        return std::unique_ptr<Type>(clone());
+    }
 
     /**
      * Comparison (<0 if <, 0 if =, >0 if >).
@@ -107,19 +114,19 @@ public:
     /// Compare with a stringified version, useful for testing
     bool operator==(const std::string& o) const;
 
-	/**
-	 * Tag to identify this metadata item.
-	 *
-	 * This is used, for example, when creating error messages, or to identify
-	 * the item when serialising to YAML.
-	 */
-	virtual std::string tag() const = 0;
+    /**
+     * Tag to identify this metadata item.
+     *
+     * This is used, for example, when creating error messages, or to identify
+     * the item when serialising to YAML.
+     */
+    virtual std::string tag() const = 0;
 
-	/// Serialisation code
-	virtual types::Code type_code() const = 0;
+    /// Serialisation code
+    virtual types::Code type_code() const = 0;
 
-	/// Length in bytes of the size field when serialising
-	virtual size_t serialisationSizeLength() const = 0;
+    /// Length in bytes of the size field when serialising
+    virtual size_t serialisationSizeLength() const = 0;
 
     /**
      * Encoding to compact binary representation, without identification
@@ -145,14 +152,17 @@ public:
     std::string to_string() const;
 
     /// Serialise using an emitter
-    virtual void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
-    virtual void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const = 0;
+    virtual void serialise(structured::Emitter& e, const structured::Keys& keys,
+                           const Formatter* f = 0) const;
+    virtual void serialise_local(structured::Emitter& e,
+                                 const structured::Keys& keys,
+                                 const Formatter* f = 0) const = 0;
 
-	/**
-	 * Return a matcher query (without the metadata type prefix) that
-	 * exactly matches this metadata item
-	 */
-	virtual std::string exactQuery() const;
+    /**
+     * Return a matcher query (without the metadata type prefix) that
+     * exactly matches this metadata item
+     */
+    virtual std::string exactQuery() const;
 
     /**
      * Return true of either both pointers are null, or if they are both
@@ -160,12 +170,15 @@ public:
      */
     static inline bool nullable_equals(const Type* a, const Type* b)
     {
-        if (!a && !b) return true;
-        if (!a || !b) return false;
+        if (!a && !b)
+            return true;
+        if (!a || !b)
+            return false;
         return a->equals(*b);
     }
-    template<typename A, typename B>
-    static inline bool nullable_equals(const std::unique_ptr<A>& a, const std::unique_ptr<B>& b)
+    template <typename A, typename B>
+    static inline bool nullable_equals(const std::unique_ptr<A>& a,
+                                       const std::unique_ptr<B>& b)
     {
         return nullable_equals(a.get(), b.get());
     }
@@ -175,13 +188,17 @@ public:
      */
     static inline int nullable_compare(const Type* a, const Type* b)
     {
-        if (!a && !b) return 0;
-        if (!a) return -1;
-        if (!b) return 1;
+        if (!a && !b)
+            return 0;
+        if (!a)
+            return -1;
+        if (!b)
+            return 1;
         return a->compare(*b);
     }
-    template<typename A, typename B>
-    static inline bool nullable_compare(const std::unique_ptr<A>& a, const std::unique_ptr<B>& b)
+    template <typename A, typename B>
+    static inline bool nullable_compare(const std::unique_ptr<A>& a,
+                                        const std::unique_ptr<B>& b)
     {
         return nullable_compare(a.get(), b.get());
     }
@@ -191,8 +208,10 @@ public:
      * decoder
      */
     static std::unique_ptr<Type> decode(core::BinaryDecoder& dec);
-    static std::unique_ptr<Type> decodeInner(types::Code, core::BinaryDecoder& dec);
-    static std::unique_ptr<Type> decode_inner(types::Code, core::BinaryDecoder& dec, bool reuse_buffer);
+    static std::unique_ptr<Type> decodeInner(types::Code,
+                                             core::BinaryDecoder& dec);
+    static std::unique_ptr<Type>
+    decode_inner(types::Code, core::BinaryDecoder& dec, bool reuse_buffer);
 
     /**
      * Write reStructuredText documentation about all known metadata types to
@@ -207,14 +226,16 @@ inline std::ostream& operator<<(std::ostream& o, const Type& t)
     return t.writeToOstream(o);
 }
 
-
 std::unique_ptr<Type> decodeString(types::Code, const std::string& val);
-std::unique_ptr<Type> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
-std::unique_ptr<Type> decode_structure(const structured::Keys& keys, types::Code code, const structured::Reader& reader);
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys,
+                                       const structured::Reader& reader);
+std::unique_ptr<Type> decode_structure(const structured::Keys& keys,
+                                       types::Code code,
+                                       const structured::Reader& reader);
 std::string tag(types::Code);
 
-}
+} // namespace types
 
-}
+} // namespace arki
 
 #endif

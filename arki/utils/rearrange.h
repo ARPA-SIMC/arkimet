@@ -3,8 +3,8 @@
 
 #include <arki/core/file.h>
 #include <cstdint>
-#include <vector>
 #include <iosfwd>
+#include <vector>
 
 namespace arki::utils::rearrange {
 
@@ -35,6 +35,6 @@ public:
     void execute(core::File& in, core::File& out);
 };
 
-}
+} // namespace arki::utils::rearrange
 
 #endif

@@ -1,6 +1,6 @@
 #include "emitter.h"
-#include "arki/types.h"
 #include "arki/core/time.h"
+#include "arki/types.h"
 
 namespace arki {
 namespace structured {
@@ -8,7 +8,11 @@ namespace structured {
 void Emitter::add_break() {}
 void Emitter::add_raw(const std::string& val) {}
 void Emitter::add_raw(const std::vector<uint8_t>& val) {}
-void Emitter::add_type(const types::Type& t, const structured::Keys& keys, const Formatter* f) { t.serialise(*this, keys, f); }
+void Emitter::add_type(const types::Type& t, const structured::Keys& keys,
+                       const Formatter* f)
+{
+    t.serialise(*this, keys, f);
+}
 void Emitter::add_time(const core::Time& val)
 {
     start_list();
@@ -21,5 +25,5 @@ void Emitter::add_time(const core::Time& val)
     end_list();
 }
 
-}
-}
+} // namespace structured
+} // namespace arki

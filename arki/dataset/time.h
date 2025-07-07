@@ -20,7 +20,6 @@ struct SessionTimeOverride
     ~SessionTimeOverride();
 };
 
-
 struct SessionTime
 {
     virtual ~SessionTime() {}
@@ -49,7 +48,7 @@ struct SessionTime
     static SessionTimeOverride local_override(time_t new_value);
 };
 
-}
-}
+} // namespace dataset
+} // namespace arki
 
 #endif

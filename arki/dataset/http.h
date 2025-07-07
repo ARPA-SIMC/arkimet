@@ -3,11 +3,11 @@
 
 /// Remote HTTP dataset access
 
+#include <arki/core/curl.h>
 #include <arki/dataset.h>
 #include <arki/dataset/impl.h>
-#include <arki/core/curl.h>
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace arki {
 class Metadata;
@@ -27,7 +27,6 @@ struct Dataset : public dataset::Dataset
     std::shared_ptr<dataset::Reader> create_reader() override;
 };
 
-
 /**
  * Remote HTTP access to a Dataset.
  *
@@ -45,7 +44,8 @@ protected:
 
     bool impl_query_data(const query::Data& q, metadata_dest_func) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
-    void impl_stream_query_bytes(const query::Bytes& q, StreamOutput& out) override;
+    void impl_stream_query_bytes(const query::Bytes& q,
+                                 StreamOutput& out) override;
 
 public:
     using DatasetAccess::DatasetAccess;
@@ -54,16 +54,19 @@ public:
 
     core::Interval get_stored_time_interval() override;
 
-    static std::shared_ptr<core::cfg::Sections> load_cfg_sections(const std::string& path);
-    static std::shared_ptr<core::cfg::Section> load_cfg_section(const std::string& path);
+    static std::shared_ptr<core::cfg::Sections>
+    load_cfg_sections(const std::string& path);
+    static std::shared_ptr<core::cfg::Section>
+    load_cfg_section(const std::string& path);
 
     /**
      * Expand the given matcher expression using the aliases on this server
      */
-    static std::string expandMatcher(const std::string& matcher, const std::string& server);
+    static std::string expandMatcher(const std::string& matcher,
+                                     const std::string& server);
 };
 
-}
-}
-}
+} // namespace http
+} // namespace dataset
+} // namespace arki
 #endif

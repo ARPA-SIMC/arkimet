@@ -5,17 +5,17 @@
 
 #include <arki/core/transaction.h>
 #include <arki/types/fwd.h>
-#include <sqlite3.h>
-#include <filesystem>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <limits>
 #include <cstdint>
+#include <filesystem>
+#include <limits>
+#include <sqlite3.h>
+#include <sstream>
+#include <string>
+#include <vector>
 
 // Enable compatibility with old sqlite.
 // TODO: use #if macros to test sqlite version instead
-//#define LEGACY_SQLITE
+// #define LEGACY_SQLITE
 
 namespace arki {
 namespace utils {
@@ -38,20 +38,19 @@ struct DuplicateInsert : public std::runtime_error
     DuplicateInsert(sqlite3* db, const std::string& msg);
 };
 
-
 class SQLiteDB
 {
 private:
-	sqlite3* m_db;
-	sqlite3_stmt* m_last_insert_id;
+    sqlite3* m_db;
+    sqlite3_stmt* m_last_insert_id;
 
-	// Disallow copy
-	SQLiteDB(const SQLiteDB&);
-	SQLiteDB& operator=(const SQLiteDB&);
+    // Disallow copy
+    SQLiteDB(const SQLiteDB&);
+    SQLiteDB& operator=(const SQLiteDB&);
 
 public:
-	SQLiteDB() : m_db(0), m_last_insert_id(0) {}
-	~SQLiteDB();
+    SQLiteDB() : m_db(0), m_last_insert_id(0) {}
+    ~SQLiteDB();
 
     operator sqlite3*() const { return m_db; }
 
@@ -61,20 +60,21 @@ public:
      *
      * Note: to open an in-memory database, use ":memory:" as the pathname
      */
-    void open(const std::filesystem::path& pathname, int timeout_ms = 3600*1000);
+    void open(const std::filesystem::path& pathname,
+              int timeout_ms = 3600 * 1000);
 
-	//operator const sqlite3*() const { return m_db; }
-	//operator sqlite3*() { return m_db; }
+    // operator const sqlite3*() const { return m_db; }
+    // operator sqlite3*() { return m_db; }
 
-	/// Prepare a query
-	sqlite3_stmt* prepare(const std::string& query) const;
+    /// Prepare a query
+    sqlite3_stmt* prepare(const std::string& query) const;
 
-	/**
-	 * Run a query that has no return values.
-	 *
-	 * If it fails with SQLITE_BUSY, wait a bit and retry.
-	 */
-	void exec(const std::string& query);
+    /**
+     * Run a query that has no return values.
+     *
+     * If it fails with SQLITE_BUSY, wait a bit and retry.
+     */
+    void exec(const std::string& query);
 
     /**
      * Run a query that has no return values.
@@ -85,24 +85,24 @@ public:
      */
     void exec_nothrow(const std::string& query) noexcept;
 
-	/// Run a SELECT LAST_INSERT_ROWID() statement and return the result
-	int lastInsertID();
+    /// Run a SELECT LAST_INSERT_ROWID() statement and return the result
+    int lastInsertID();
 
     /// Throw a SQLiteError exception with the given extra information
     [[noreturn]] void throwException(const std::string& msg) const;
 
-	/// Get the message describing the last error message
-	std::string errmsg() const { return sqlite3_errmsg(m_db); }
+    /// Get the message describing the last error message
+    std::string errmsg() const { return sqlite3_errmsg(m_db); }
 
-	/// Checkpoint the journal contents into the database file
-	void checkpoint();
+    /// Checkpoint the journal contents into the database file
+    void checkpoint();
 
     /**
      * Enable/change/disable SQLite tracing.
      *
      * See sqlite3_trace_v2 docmentation for values for mask use 0 to disable.
      */
-    void trace(unsigned mask=SQLITE_TRACE_STMT);
+    void trace(unsigned mask = SQLITE_TRACE_STMT);
 };
 
 /**
@@ -125,18 +125,17 @@ public:
     /// Check if the query has already been compiled
     bool compiled() const { return m_stm != nullptr; }
 
-	/// Compile the query
-	void compile(const std::string& query);
+    /// Compile the query
+    void compile(const std::string& query);
 
-	/// Reset the statement status prior to running the query
-	void reset();
-
-	/// Bind a query parameter
-	void bind(int idx, const char* str, int len);
+    /// Reset the statement status prior to running the query
+    void reset();
 
     /// Bind a query parameter
-    template<typename T>
-    void bind(int idx, T val)
+    void bind(int idx, const char* str, int len);
+
+    /// Bind a query parameter
+    template <typename T> void bind(int idx, T val)
     {
         if (std::numeric_limits<T>::is_exact)
         {
@@ -145,7 +144,8 @@ public:
                 if (sqlite3_bind_int(m_stm, idx, val) != SQLITE_OK)
                 {
                     std::stringstream ss;
-                    ss << name << ": cannot bind query parameter #" << idx << " as int";
+                    ss << name << ": cannot bind query parameter #" << idx
+                       << " as int";
                     m_db.throwException(ss.str());
                 }
             }
@@ -154,15 +154,19 @@ public:
                 if (sqlite3_bind_int64(m_stm, idx, val) != SQLITE_OK)
                 {
                     std::stringstream ss;
-                    ss << name << ": cannot bind query parameter #" << idx << " as int64";
+                    ss << name << ": cannot bind query parameter #" << idx
+                       << " as int64";
                     m_db.throwException(ss.str());
                 }
             }
-        } else {
+        }
+        else
+        {
             if (sqlite3_bind_double(m_stm, idx, val) != SQLITE_OK)
             {
                 std::stringstream ss;
-                ss << name << ": cannot bind query parameter #" << idx << " as double";
+                ss << name << ": cannot bind query parameter #" << idx
+                   << " as double";
                 m_db.throwException(ss.str());
             }
         }
@@ -177,27 +181,27 @@ public:
     /// Bind a buffer that will not exist until the query is performed
     void bindTransient(int idx, const std::vector<uint8_t>& buf);
 
-	/// Bind a string that will not exist until the query is performed
-	void bindTransient(int idx, const std::string& str);
+    /// Bind a string that will not exist until the query is performed
+    void bindTransient(int idx, const std::string& str);
 
-	/// Bind a query parameter as a Blob
-	void bindBlob(int idx, const std::string& str);
+    /// Bind a query parameter as a Blob
+    void bindBlob(int idx, const std::string& str);
 
-	/// Bind a blob that will not exist until the query is performed
-	void bindBlobTransient(int idx, const std::string& str);
+    /// Bind a blob that will not exist until the query is performed
+    void bindBlobTransient(int idx, const std::string& str);
 
-	/// Bind NULL to a query parameter
-	void bindNull(int idx);
+    /// Bind NULL to a query parameter
+    void bindNull(int idx);
 
     /// Bind a UItem
     void bindType(int idx, const types::Type& item);
 
-	/**
-	 * Fetch a query row.
-	 *
-	 * Return true when there is another row to fetch, else false
-	 */
-	bool step();
+    /**
+     * Fetch a query row.
+     *
+     * Return true when there is another row to fetch, else false
+     */
+    bool step();
 
     /// Check if an output column is NULL
     bool isNULL(int column)
@@ -205,35 +209,32 @@ public:
         return sqlite3_column_type(m_stm, column) == SQLITE_NULL;
     }
 
-	template<typename T>
-	T fetch(int column)
-	{
-		if (std::numeric_limits<T>::is_exact)
-		{
-			if (sizeof(T) <= 4)
-				return sqlite3_column_int(m_stm, column);
-			else
-				return sqlite3_column_int64(m_stm, column);
-		} else
-			return sqlite3_column_double(m_stm, column);
-	}
+    template <typename T> T fetch(int column)
+    {
+        if (std::numeric_limits<T>::is_exact)
+        {
+            if (sizeof(T) <= 4)
+                return sqlite3_column_int(m_stm, column);
+            else
+                return sqlite3_column_int64(m_stm, column);
+        }
+        else
+            return sqlite3_column_double(m_stm, column);
+    }
 
-	std::string fetchString(int column)
-	{
-		const char* res = (const char*)sqlite3_column_text(m_stm, column);
-		if (res == NULL)
-			return std::string();
-		else
-			return res;
-	}
-	const void* fetchBlob(int column)
-	{
-		return sqlite3_column_blob(m_stm, column);
-	}
-	int fetchBytes(int column)
-	{
-		return sqlite3_column_bytes(m_stm, column);
-	}
+    std::string fetchString(int column)
+    {
+        const char* res = (const char*)sqlite3_column_text(m_stm, column);
+        if (res == NULL)
+            return std::string();
+        else
+            return res;
+    }
+    const void* fetchBlob(int column)
+    {
+        return sqlite3_column_blob(m_stm, column);
+    }
+    int fetchBytes(int column) { return sqlite3_column_bytes(m_stm, column); }
 
     /// Run the query, ignoring all results
     void execute();
@@ -253,13 +254,13 @@ public:
      * calling this function twice will re-bind columns instead of adding new
      * ones.
      */
-    template<typename... Args> void bind_all(const Args& ...args)
+    template <typename... Args> void bind_all(const Args&... args)
     {
         bindn<sizeof...(args)>(args...);
     }
 
     /// bind_all and execute
-    template<typename... Args> void run(const Args& ...args)
+    template <typename... Args> void run(const Args&... args)
     {
         bindn<sizeof...(args)>(args...);
         execute();
@@ -267,9 +268,11 @@ public:
 
 private:
     // Implementation of variadic bind: terminating condition
-    template<size_t total> void bindn() {}
-    // Implementation of variadic bind: recursive iteration over the parameter pack
-    template<size_t total, typename ...Args, typename T> void bindn(const T& first, const Args& ...args)
+    template <size_t total> void bindn() {}
+    // Implementation of variadic bind: recursive iteration over the parameter
+    // pack
+    template <size_t total, typename... Args, typename T>
+    void bindn(const T& first, const Args&... args)
     {
         bind(total - sizeof...(args), first);
         bindn<total>(args...);
@@ -298,14 +301,18 @@ public:
 class OneShotQuery : public Query
 {
 protected:
-	std::string m_query;
+    std::string m_query;
 
 public:
-	OneShotQuery(SQLiteDB& db, const std::string& name, const std::string& query) : Query(name, db), m_query(query) {}
+    OneShotQuery(SQLiteDB& db, const std::string& name,
+                 const std::string& query)
+        : Query(name, db), m_query(query)
+    {
+    }
 
-	void initQueries();
+    void initQueries();
 
-	void operator()();
+    void operator()();
 
     /**
      * Run but avoid throwing exceptions.
@@ -320,18 +327,18 @@ public:
  */
 struct Committer
 {
-	OneShotQuery begin;
-	OneShotQuery commit;
-	OneShotQuery rollback;
+    OneShotQuery begin;
+    OneShotQuery commit;
+    OneShotQuery rollback;
 
-    Committer(SQLiteDB& db, const char* type=nullptr);
+    Committer(SQLiteDB& db, const char* type = nullptr);
 
-	void initQueries()
-	{
-		begin.initQueries();
-		commit.initQueries();
-		rollback.initQueries();
-	}
+    void initQueries()
+    {
+        begin.initQueries();
+        commit.initQueries();
+        rollback.initQueries();
+    }
 };
 
 /**
@@ -344,14 +351,15 @@ struct SqliteTransaction : public core::Transaction
     Committer committer;
     bool fired;
 
-    SqliteTransaction(SQLiteDB& db, const char* type=nullptr)
+    SqliteTransaction(SQLiteDB& db, const char* type = nullptr)
         : _ref(0), committer(db, type), fired(false)
     {
         committer.begin();
     }
     ~SqliteTransaction()
     {
-        if (!fired) committer.rollback();
+        if (!fired)
+            committer.rollback();
     }
 
     void commit() override;
@@ -364,7 +372,10 @@ struct SqliteTransaction : public core::Transaction
  */
 struct InsertQuery : public utils::sqlite::Query
 {
-    InsertQuery(utils::sqlite::SQLiteDB& db) : utils::sqlite::Query("insert", db) {}
+    InsertQuery(utils::sqlite::SQLiteDB& db)
+        : utils::sqlite::Query("insert", db)
+    {
+    }
 
     // Step, but throw DuplicateInsert in case of duplicates
     bool step();
@@ -374,11 +385,11 @@ struct Trace
 {
     SQLiteDB& db;
 
-    Trace(SQLiteDB& db, unsigned mask=SQLITE_TRACE_STMT);
+    Trace(SQLiteDB& db, unsigned mask = SQLITE_TRACE_STMT);
     ~Trace();
 };
 
-}
-}
-}
+} // namespace sqlite
+} // namespace utils
+} // namespace arki
 #endif

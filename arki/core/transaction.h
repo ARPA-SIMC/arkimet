@@ -13,8 +13,8 @@ class Transaction
 {
 public:
     virtual ~Transaction();
-    virtual void commit() = 0;
-    virtual void rollback() = 0;
+    virtual void commit()                    = 0;
+    virtual void rollback()                  = 0;
     virtual void rollback_nothrow() noexcept = 0;
 };
 
@@ -58,7 +58,7 @@ public:
     void rollback_nothrow() noexcept;
 };
 
-}
-}
+} // namespace core
+} // namespace arki
 
 #endif

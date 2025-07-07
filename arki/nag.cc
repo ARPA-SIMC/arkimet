@@ -1,6 +1,6 @@
 #include "nag.h"
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <stdexcept>
 
 using namespace std;
@@ -8,10 +8,9 @@ using namespace std;
 namespace arki {
 namespace nag {
 
-static bool _verbose = false;
-static bool _debug = false;
+static bool _verbose    = false;
+static bool _debug      = false;
 static Handler* handler = nullptr;
-
 
 Handler::~Handler()
 {
@@ -23,8 +22,8 @@ void Handler::install()
 {
     if (installed)
         throw std::runtime_error("Cannot install the same nag handler twice");
-    orig = handler;
-    handler = this;
+    orig      = handler;
+    handler   = this;
     installed = true;
 }
 
@@ -45,7 +44,6 @@ std::string Handler::format(const char* fmt, va_list ap)
     return res;
 }
 
-
 void StderrHandler::warning(const char* fmt, va_list ap)
 {
     vfprintf(stderr, fmt, ap);
@@ -64,7 +62,6 @@ void StderrHandler::debug(const char* fmt, va_list ap)
     putc('\n', stderr);
 }
 
-
 CollectHandler::CollectHandler(bool verbose, bool debug)
     : _verbose(verbose), _debug(debug)
 {
@@ -72,17 +69,14 @@ CollectHandler::CollectHandler(bool verbose, bool debug)
 
 CollectHandler::~CollectHandler()
 {
-    for (const auto& str: collected)
+    for (const auto& str : collected)
     {
         fwrite(str.data(), str.size(), 1, stderr);
         putc('\n', stderr);
     }
 }
 
-void CollectHandler::clear()
-{
-    collected.clear();
-}
+void CollectHandler::clear() { collected.clear(); }
 
 void CollectHandler::warning(const char* fmt, va_list ap)
 {
@@ -103,14 +97,15 @@ void CollectHandler::debug(const char* fmt, va_list ap)
     collected.push_back("D:" + format(fmt, ap));
 }
 
-
 void init(bool verbose, bool debug, bool testing)
 {
     if (testing)
     {
         _verbose = true;
-        _debug = true;
-    } else {
+        _debug   = true;
+    }
+    else
+    {
         _verbose = verbose;
         if (debug)
             _debug = _verbose = true;
@@ -123,16 +118,19 @@ void init(bool verbose, bool debug, bool testing)
 bool is_verbose() { return _verbose; }
 bool is_debug() { return _debug; }
 
-
 void warning(const char* fmt, ...)
 {
-    if (!handler) return;
+    if (!handler)
+        return;
 
     va_list ap;
     va_start(ap, fmt);
-    try {
+    try
+    {
         handler->warning(fmt, ap);
-    } catch (...) {
+    }
+    catch (...)
+    {
         va_end(ap);
         throw;
     }
@@ -141,19 +139,24 @@ void warning(const char* fmt, ...)
 
 void warning(const char* fmt, va_list ap)
 {
-    if (!handler) return;
+    if (!handler)
+        return;
     handler->warning(fmt, ap);
 }
 
 void verbose(const char* fmt, ...)
 {
-    if (!_verbose || !handler) return;
+    if (!_verbose || !handler)
+        return;
 
     va_list ap;
     va_start(ap, fmt);
-    try {
+    try
+    {
         handler->verbose(fmt, ap);
-    } catch (...) {
+    }
+    catch (...)
+    {
         va_end(ap);
         throw;
     }
@@ -162,19 +165,24 @@ void verbose(const char* fmt, ...)
 
 void verbose(const char* fmt, va_list ap)
 {
-    if (!handler) return;
+    if (!handler)
+        return;
     handler->verbose(fmt, ap);
 }
 
 void debug(const char* fmt, ...)
 {
-    if (!_debug || !handler) return;
+    if (!_debug || !handler)
+        return;
 
     va_list ap;
     va_start(ap, fmt);
-    try {
+    try
+    {
         handler->debug(fmt, ap);
-    } catch (...) {
+    }
+    catch (...)
+    {
         va_end(ap);
         throw;
     }
@@ -183,7 +191,8 @@ void debug(const char* fmt, ...)
 
 void debug(const char* fmt, va_list ap)
 {
-    if (!handler) return;
+    if (!handler)
+        return;
     handler->debug(fmt, ap);
 }
 
@@ -201,6 +210,5 @@ void debug_tty(const char* fmt, ...)
     fclose(tty);
 }
 
-
-}
-}
+} // namespace nag
+} // namespace arki

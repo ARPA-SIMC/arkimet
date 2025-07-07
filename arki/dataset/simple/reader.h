@@ -3,9 +3,9 @@
 
 /// Reader for simple datasets with no duplicate checks
 
+#include <arki/dataset/impl.h>
 #include <arki/dataset/simple.h>
 #include <arki/dataset/simple/manifest.h>
-#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki::dataset::simple {
@@ -15,8 +15,10 @@ class Reader : public DatasetAccess<simple::Dataset, segmented::Reader>
 protected:
     manifest::Reader manifest;
 
-    void query_segments_for_summary(const Matcher& matcher, Summary& summary, std::shared_ptr<core::ReadLock> lock);
-    bool impl_query_data(const query::Data& q, metadata_dest_func dest) override;
+    void query_segments_for_summary(const Matcher& matcher, Summary& summary,
+                                    std::shared_ptr<core::ReadLock> lock);
+    bool impl_query_data(const query::Data& q,
+                         metadata_dest_func dest) override;
     void impl_query_summary(const Matcher& matcher, Summary& summary) override;
 
 public:
@@ -37,5 +39,5 @@ public:
     bool hasWorkingIndex() const;
 };
 
-}
+} // namespace arki::dataset::simple
 #endif

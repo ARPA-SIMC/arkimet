@@ -7,7 +7,7 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-template<class Data, class FixtureData>
+template <class Data, class FixtureData>
 class Tests : public SegmentTests<Data, FixtureData>
 {
     using SegmentTests<Data, FixtureData>::SegmentTests;
@@ -15,69 +15,87 @@ class Tests : public SegmentTests<Data, FixtureData>
     void register_tests() override;
 };
 
-Tests<segment::data::gzconcat::Data, GRIBData> test1("arki_segment_data_gz_grib_nogroup", segment::data::RepackConfig(0));
-Tests<segment::data::gzconcat::Data, BUFRData> test2("arki_segment_data_gz_bufr_nogroup", segment::data::RepackConfig(0));
-Tests<segment::data::gzlines::Data, VM2Data> test3("arki_segment_data_gzlines_vm2_nogroup", segment::data::RepackConfig(0));
-Tests<segment::data::gzconcat::Data, GRIBData> test4("arki_segment_data_gz_grib", segment::data::RepackConfig(2));
-Tests<segment::data::gzconcat::Data, BUFRData> test5("arki_segment_data_gz_bufr", segment::data::RepackConfig(2));
-Tests<segment::data::gzlines::Data, VM2Data> test6("arki_segment_data_gzlines_vm2", segment::data::RepackConfig(2));
+Tests<segment::data::gzconcat::Data, GRIBData>
+    test1("arki_segment_data_gz_grib_nogroup", segment::data::RepackConfig(0));
+Tests<segment::data::gzconcat::Data, BUFRData>
+    test2("arki_segment_data_gz_bufr_nogroup", segment::data::RepackConfig(0));
+Tests<segment::data::gzlines::Data, VM2Data>
+    test3("arki_segment_data_gzlines_vm2_nogroup",
+          segment::data::RepackConfig(0));
+Tests<segment::data::gzconcat::Data, GRIBData>
+    test4("arki_segment_data_gz_grib", segment::data::RepackConfig(2));
+Tests<segment::data::gzconcat::Data, BUFRData>
+    test5("arki_segment_data_gz_bufr", segment::data::RepackConfig(2));
+Tests<segment::data::gzlines::Data, VM2Data>
+    test6("arki_segment_data_gzlines_vm2", segment::data::RepackConfig(2));
 
-std::filesystem::path gz(const std::filesystem::path& path) { return sys::with_suffix(path, ".gz"); }
-std::filesystem::path gzidx(const std::filesystem::path& path) { return sys::with_suffix(path, ".gz.idx"); }
+std::filesystem::path gz(const std::filesystem::path& path)
+{
+    return sys::with_suffix(path, ".gz");
+}
+std::filesystem::path gzidx(const std::filesystem::path& path)
+{
+    return sys::with_suffix(path, ".gz.idx");
+}
 
-template<class Data, class FixtureData>
-void Tests<Data, FixtureData>::register_tests() {
-SegmentTests<Data, FixtureData>::register_tests();
+template <class Data, class FixtureData>
+void Tests<Data, FixtureData>::register_tests()
+{
+    SegmentTests<Data, FixtureData>::register_tests();
 
-this->add_method("noidx", [&](Fixture& f) {
-    auto checker = f.create(segment::data::RepackConfig(0));
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
+    this->add_method("noidx", [&](Fixture& f) {
+        auto checker = f.create(segment::data::RepackConfig(0));
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    auto p = wcallchecked(checker->repack(f.seg_mds, segment::data::RepackConfig(0)));
-    wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
+        auto p = wcallchecked(
+            checker->repack(f.seg_mds, segment::data::RepackConfig(0)));
+        wassert(p.commit());
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    p = wcallchecked(checker->repack(f.seg_mds, segment::data::RepackConfig(1)));
-    wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).exists());
-});
+        p = wcallchecked(
+            checker->repack(f.seg_mds, segment::data::RepackConfig(1)));
+        wassert(p.commit());
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).exists());
+    });
 
-this->add_method("idx", [&](Fixture& f) {
-    auto checker = f.create(segment::data::RepackConfig(1));
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).exists());
+    this->add_method("idx", [&](Fixture& f) {
+        auto checker = f.create(segment::data::RepackConfig(1));
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).exists());
 
-    auto p = wcallchecked(checker->repack(f.seg_mds, segment::data::RepackConfig(1)));
-    wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).exists());
+        auto p = wcallchecked(
+            checker->repack(f.seg_mds, segment::data::RepackConfig(1)));
+        wassert(p.commit());
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).exists());
 
-    p = wcallchecked(checker->repack(f.seg_mds, segment::data::RepackConfig(0)));
-    wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
-});
+        p = wcallchecked(
+            checker->repack(f.seg_mds, segment::data::RepackConfig(0)));
+        wassert(p.commit());
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
+    });
 
-this->add_method("onegroup", [&](Fixture& f) {
-    auto checker = f.create(segment::data::RepackConfig(1024));
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
+    this->add_method("onegroup", [&](Fixture& f) {
+        auto checker = f.create(segment::data::RepackConfig(1024));
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    auto p = wcallchecked(checker->repack(f.seg_mds, segment::data::RepackConfig(1024)));
-    wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
+        auto p = wcallchecked(
+            checker->repack(f.seg_mds, segment::data::RepackConfig(1024)));
+        wassert(p.commit());
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
-    p = wcallchecked(checker->repack(f.seg_mds, segment::data::RepackConfig(0)));
-    wassert(p.commit());
-    wassert(actual_file(gz(f.segment->abspath())).exists());
-    wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
-});
-
-
+        p = wcallchecked(
+            checker->repack(f.seg_mds, segment::data::RepackConfig(0)));
+        wassert(p.commit());
+        wassert(actual_file(gz(f.segment->abspath())).exists());
+        wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
+    });
 }
 #if 0
 
@@ -206,6 +224,6 @@ add_method("uncompressible", [] {
 }
 #endif
 
-}
+} // namespace
 
 #include "tests.tcc"

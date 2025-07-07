@@ -1,20 +1,19 @@
-#include "config.h"
 #include "postprocess.h"
-#include "arki/exceptions.h"
-#include "arki/stream.h"
 #include "arki/core/cfg.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/utils/string.h"
-#include "arki/utils/regexp.h"
 #include "arki/runtime.h"
+#include "arki/stream.h"
 #include "arki/stream/filter.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <signal.h>
+#include "arki/utils/regexp.h"
+#include "arki/utils/string.h"
+#include "config.h"
 #include <cerrno>
+#include <fcntl.h>
 #include <set>
-
+#include <signal.h>
+#include <unistd.h>
 
 #ifdef __xlC__
 typedef void (*sighandler_t)(int);
@@ -27,7 +26,9 @@ using namespace arki::core;
 namespace arki {
 namespace metadata {
 
-std::vector<std::string> Postprocess::validate_command(const std::string& command, const core::cfg::Section& cfg)
+std::vector<std::string>
+Postprocess::validate_command(const std::string& command,
+                              const core::cfg::Section& cfg)
 {
     // Parse command into its components
     std::vector<std::string> args;
@@ -48,7 +49,8 @@ std::vector<std::string> Postprocess::validate_command(const std::string& comman
 
     // Validate the command
     if (args.empty())
-        throw std::runtime_error("cannot initialize postprocessing filter: postprocess command is empty");
+        throw std::runtime_error("cannot initialize postprocessing filter: "
+                                 "postprocess command is empty");
 
     std::filesystem::path argv0(args[0]);
     auto scriptname = argv0.filename();
@@ -57,7 +59,9 @@ std::vector<std::string> Postprocess::validate_command(const std::string& comman
         stringstream ss;
         ss << "cannot initialize postprocessing filter: postprocess command "
            << command
-           << " is not supported by all the requested datasets (allowed postprocessors are: " + str::join(", ", allowed.begin(), allowed.end())
+           << " is not supported by all the requested datasets (allowed "
+              "postprocessors are: " +
+                  str::join(", ", allowed.begin(), allowed.end())
            << ")";
         throw std::runtime_error(ss.str());
     }
@@ -77,20 +81,20 @@ bool Postprocess::send(std::shared_ptr<Metadata> md, StreamOutput& out)
     // we are sending that as well
     md->makeInline();
 
-    auto encoded = md->encodeBinary();
+    auto encoded           = md->encodeBinary();
     stream::SendResult res = out.send_buffer(encoded.data(), encoded.size());
     if (res.flags & stream::SendResult::SEND_PIPE_EOF_DEST)
         return false;
 
     // TODO: we can sendfile() here
     const auto& data = md->get_data();
-    const auto buf = data.read();
-    res = out.send_buffer(buf.data(), buf.size());
+    const auto buf   = data.read();
+    res              = out.send_buffer(buf.data(), buf.size());
     if (res.flags & stream::SendResult::SEND_PIPE_EOF_DEST)
         return false;
 
     return true;
 }
 
-}
-}
+} // namespace metadata
+} // namespace arki

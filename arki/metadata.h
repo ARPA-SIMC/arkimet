@@ -4,15 +4,15 @@
 /// metadata - Handle arkimet metadata
 
 #include <arki/core/fwd.h>
-#include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/types/fwd.h>
+#include <arki/stream/fwd.h>
 #include <arki/structured/fwd.h>
+#include <arki/types/fwd.h>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace arki {
 namespace metadata {
@@ -45,9 +45,9 @@ struct ReadContext
      * A file to read, with metadata source filenames rooted in the given
      * directory.
      */
-    ReadContext(const std::filesystem::path& pathname, const std::filesystem::path& basedir);
+    ReadContext(const std::filesystem::path& pathname,
+                const std::filesystem::path& basedir);
 };
-
 
 /**
  * Store Type elements, in the order Metadata encodes them.
@@ -68,10 +68,10 @@ public:
     Index() = default;
     ~Index();
 
-    Index(const Index&) = delete;
-    Index(Index&&) = delete;
+    Index(const Index&)            = delete;
+    Index(Index&&)                 = delete;
     Index& operator=(const Index&) = delete;
-    Index& operator=(Index&&) = delete;
+    Index& operator=(Index&&)      = delete;
 
     const_iterator begin() const { return items.begin(); }
     const_iterator end() const { return items.end(); }
@@ -172,7 +172,7 @@ public:
     void unset_value(types::Code code);
 };
 
-}
+} // namespace metadata
 
 class Formatter;
 
@@ -192,7 +192,8 @@ class Metadata
 {
 protected:
     /**
-     * Buffer pointing to the encoded version of this metadata, to reuse for items
+     * Buffer pointing to the encoded version of this metadata, to reuse for
+     * items
      *
      * This holds the storage for types::Encoded items
      */
@@ -224,11 +225,11 @@ public:
     bool has(types::Code code) const { return m_index.has(code); }
     const types::Type* get(types::Code code) const { return m_index.get(code); }
 
-    template<typename T>
-    const T* get() const
+    template <typename T> const T* get() const
     {
         const types::Type* i = m_index.get(types::traits<T>::type_code);
-        if (!i) return 0;
+        if (!i)
+            return 0;
         // Since we checked the type code, we can use reinterpret_cast instead
         // of slow dynamic_cast
         return reinterpret_cast<const T*>(i);
@@ -241,29 +242,31 @@ public:
     /// Set a value (not Note or Source)
     void set(const types::Type& item);
     /// Set a value (not Note or Source)
-    template<typename T>
-    void set(std::unique_ptr<T> i) { m_index.set_value(std::move(i)); }
+    template <typename T> void set(std::unique_ptr<T> i)
+    {
+        m_index.set_value(std::move(i));
+    }
     /// Unset a value (not Note or Source)
     void unset(types::Code code) { m_index.unset_value(code); }
 
     /// Copy all types from md into this metadata, excluding Notes and Source
     void merge(const Metadata& md);
 
-    template<typename T, typename ...Args>
-    void set(Args&&... args)
+    template <typename T, typename... Args> void set(Args&&... args)
     {
         set(T::create(std::forward<Args>(args)...));
     }
 
-    template<typename T, typename ...Args>
-    void test_set(Args&&... args)
+    template <typename T, typename... Args> void test_set(Args&&... args)
     {
         test_set(T::create(std::forward<Args>(args)...));
     }
     void test_set(const types::Type& item);
     void test_set(std::unique_ptr<types::Type> item);
-    template<typename T>
-    void test_set(std::unique_ptr<T> i) { test_set(std::unique_ptr<types::Type>(i.release())); }
+    template <typename T> void test_set(std::unique_ptr<T> i)
+    {
+        test_set(std::unique_ptr<types::Type>(i.release()));
+    }
     void test_set(const std::string& type, const std::string& val);
 
     /*
@@ -283,14 +286,16 @@ public:
     /// Set a new source, replacing the old one if present
     void set_source(std::unique_ptr<types::Source> s);
     /// Set the source of this metadata as Inline, with the given data
-    void set_source_inline(DataFormat format, std::shared_ptr<metadata::Data> data);
+    void set_source_inline(DataFormat format,
+                           std::shared_ptr<metadata::Data> data);
     /// Unsets the source
     void unset_source();
     /// Read the data and inline them in the metadata
     void makeInline();
     /// Make all source blobs absolute
     void make_absolute();
-    /// Preprocess to be efficiently stored as segment metadata alongside the data
+    /// Preprocess to be efficiently stored as segment metadata alongside the
+    /// data
     void prepare_for_segment_metadata();
 
     /*
@@ -298,7 +303,11 @@ public:
      */
 
     void clear_notes();
-    std::pair<metadata::Index::const_iterator, metadata::Index::const_iterator> notes() const { return m_index.notes(); }
+    std::pair<metadata::Index::const_iterator, metadata::Index::const_iterator>
+    notes() const
+    {
+        return m_index.notes();
+    }
     void encode_notes(core::BinaryEncoder& enc) const;
     void set_notes_encoded(const uint8_t* data, unsigned size);
     void add_note(const std::string& note);
@@ -333,10 +342,15 @@ public:
      * dest called with both first and second set, means an item that is in
      * both but has a different value.
      */
-    void diff_items(const Metadata& o, std::function<void(types::Code code, const types::Type* first, const types::Type* second)> dest) const;
+    void
+    diff_items(const Metadata& o,
+               std::function<void(types::Code code, const types::Type* first,
+                                  const types::Type* second)>
+                   dest) const;
 
     /// Decode from structured data
-    static std::shared_ptr<Metadata> read_structure(const structured::Keys& keys, const structured::Reader& val);
+    static std::shared_ptr<Metadata>
+    read_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /**
      * Read a metadata document from the given input stream.
@@ -352,7 +366,9 @@ public:
      *
      * @returns an empty shared_ptr when end-of-file is reached
      */
-    static std::shared_ptr<Metadata> read_binary(int in, const metadata::ReadContext& filename, bool readInline=true);
+    static std::shared_ptr<Metadata>
+    read_binary(int in, const metadata::ReadContext& filename,
+                bool readInline = true);
 
     /**
      * Read a metadata document from the given memory buffer.
@@ -368,12 +384,17 @@ public:
      *
      * @returns an empty shared_ptr when end-of-file is reached
      */
-    static std::shared_ptr<Metadata> read_binary(core::BinaryDecoder& dec, const metadata::ReadContext& filename, bool readInline=true);
+    static std::shared_ptr<Metadata>
+    read_binary(core::BinaryDecoder& dec, const metadata::ReadContext& filename,
+                bool readInline = true);
 
     /**
-     * Decode the metadata, without the outer bundle headers, from the given buffer.
+     * Decode the metadata, without the outer bundle headers, from the given
+     * buffer.
      */
-    static std::shared_ptr<Metadata> read_binary_inner(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& filename);
+    static std::shared_ptr<Metadata>
+    read_binary_inner(core::BinaryDecoder& dec, unsigned version,
+                      const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
     void read_inline_data(core::NamedFileDescriptor& fd);
@@ -382,7 +403,8 @@ public:
     void read_inline_data(core::AbstractInputFile& fd);
 
     /// Read the inline data from the given memory buffer
-    void readInlineData(core::BinaryDecoder& dec, const std::filesystem::path& filename);
+    void readInlineData(core::BinaryDecoder& dec,
+                        const std::filesystem::path& filename);
 
     /**
      * Read a metadata document encoded in Yaml from the given file descriptor.
@@ -392,30 +414,31 @@ public:
      *
      * @returns an empty shared_ptr when end-of-file is reached
      */
-    static std::shared_ptr<Metadata> read_yaml(core::LineReader& in, const std::filesystem::path& filename);
+    static std::shared_ptr<Metadata>
+    read_yaml(core::LineReader& in, const std::filesystem::path& filename);
 
     /**
      * Write the metadata to the given output stream.
      */
-    void write(core::NamedFileDescriptor& out, bool skip_data=false) const;
+    void write(core::NamedFileDescriptor& out, bool skip_data = false) const;
 
     /**
      * Write the metadata to the stream output.
      */
-    void write(StreamOutput& out, bool skip_data=false) const;
+    void write(StreamOutput& out, bool skip_data = false) const;
 
     /// Format the metadata as a yaml string
-    std::string to_yaml(const Formatter* formatter=nullptr) const;
+    std::string to_yaml(const Formatter* formatter = nullptr) const;
 
     /// Serialise using an emitter
-    void serialise(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const;
+    void serialise(structured::Emitter& e, const structured::Keys& keys,
+                   const Formatter* f = 0) const;
 
     /// Encode to a buffer. Inline data will not be added.
     std::vector<uint8_t> encodeBinary() const;
 
     /// Encode to an Encoder. Inline data will not be added.
     void encodeBinary(core::BinaryEncoder& enc) const;
-
 
     /// Get the raw data described by this metadata
     const metadata::Data& get_data();
@@ -452,34 +475,48 @@ public:
     void dump_internals(FILE* out) const;
 
     /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const std::vector<uint8_t>& buf, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_buffer(const std::vector<uint8_t>& buf,
+                            const metadata::ReadContext& file,
+                            metadata_dest_func dest);
 
     /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const uint8_t* buf, std::size_t size, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_buffer(const uint8_t* buf, std::size_t size,
+                            const metadata::ReadContext& file,
+                            metadata_dest_func dest);
 
     /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(core::BinaryDecoder& dec, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_buffer(core::BinaryDecoder& dec,
+                            const metadata::ReadContext& file,
+                            metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(const std::filesystem::path& fname, metadata_dest_func dest);
+    static bool read_file(const std::filesystem::path& fname,
+                          metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(const metadata::ReadContext& fname, metadata_dest_func dest);
+    static bool read_file(const metadata::ReadContext& fname,
+                          metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(int in, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_file(int in, const metadata::ReadContext& file,
+                          metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(core::NamedFileDescriptor& fd, metadata_dest_func dest);
+    static bool read_file(core::NamedFileDescriptor& fd,
+                          metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
-    static bool read_file(core::AbstractInputFile& fd, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_file(core::AbstractInputFile& fd,
+                          const metadata::ReadContext& file,
+                          metadata_dest_func dest);
 
     /**
      * Read a metadata group into the given consumer
      */
-    static bool read_group(core::BinaryDecoder& dec, unsigned version, const metadata::ReadContext& file, metadata_dest_func dest);
+    static bool read_group(core::BinaryDecoder& dec, unsigned version,
+                           const metadata::ReadContext& file,
+                           metadata_dest_func dest);
 };
 
-}
+} // namespace arki
 #endif

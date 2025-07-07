@@ -8,8 +8,7 @@ using namespace arki::utils;
 namespace arki {
 namespace tests {
 
-Daemon::Daemon(std::initializer_list<std::string> args)
-    : Popen(args)
+Daemon::Daemon(std::initializer_list<std::string> args) : Popen(args)
 {
     const char* top_srcdir = getenv("TOP_SRCDIR");
     if (top_srcdir)
@@ -20,7 +19,7 @@ Daemon::Daemon(std::initializer_list<std::string> args)
     sys::NamedFileDescriptor in(this->get_stdout(), "child stdout");
     char buf[128];
     size_t size = in.read(buf, 128);
-    buf[size] = 0;
+    buf[size]   = 0;
     if (strncmp(buf, "OK", 2) != 0)
     {
         std::stringstream msg;
@@ -39,5 +38,5 @@ Daemon::~Daemon()
     }
 }
 
-}
-}
+} // namespace tests
+} // namespace arki

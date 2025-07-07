@@ -1,6 +1,6 @@
-#include "tests.h"
-#include "base.h"
 #include "arki/core/file.h"
+#include "base.h"
+#include "tests.h"
 #include <vector>
 
 using namespace std;
@@ -20,11 +20,10 @@ class Tests : public TestCase
 
 Tests test("arki_stream_discard");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

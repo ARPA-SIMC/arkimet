@@ -3,8 +3,8 @@
 
 /// Cluster a metadata stream and run a progrgam on each batch
 
-#include <arki/metadata/clusterer.h>
 #include <arki/core/file.h>
+#include <arki/metadata/clusterer.h>
 #include <arki/stream/fwd.h>
 
 namespace arki {
@@ -47,16 +47,16 @@ public:
 
     Xargs();
     Xargs(const Xargs&) = delete;
-    Xargs(Xargs&&) = delete;
+    Xargs(Xargs&&)      = delete;
     ~Xargs();
     Xargs& operator=(const Xargs&) = delete;
-    Xargs& operator=(Xargs&&) = delete;
+    Xargs& operator=(Xargs&&)      = delete;
 
     void set_max_bytes(size_t val);
     void set_interval(const std::string& val);
 };
 
-}
-}
+} // namespace metadata
+} // namespace arki
 
 #endif

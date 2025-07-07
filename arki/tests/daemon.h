@@ -1,10 +1,10 @@
 #ifndef ARKI_TEST_DAEMON_H
 #define ARKI_TEST_DAEMON_H
 
-#include <vector>
+#include <arki/utils/subprocess.h>
 #include <string>
 #include <sys/types.h>
-#include <arki/utils/subprocess.h>
+#include <vector>
 
 namespace arki {
 namespace tests {
@@ -20,7 +20,7 @@ struct Daemon : public utils::subprocess::Popen
     ~Daemon();
 };
 
-}
-}
+} // namespace tests
+} // namespace arki
 
 #endif

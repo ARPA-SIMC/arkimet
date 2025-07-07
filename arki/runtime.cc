@@ -1,12 +1,12 @@
-#include "config.h"
 #include "runtime.h"
+#include "arki/dataset/querymacro.h"
+#include "arki/iotrace.h"
+#include "arki/nag.h"
+#include "arki/scan.h"
+#include "arki/types-init.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/types-init.h"
-#include "arki/nag.h"
-#include "arki/iotrace.h"
-#include "arki/scan.h"
-#include "arki/dataset/querymacro.h"
+#include "config.h"
 #include <algorithm>
 #include <cmath>
 
@@ -17,7 +17,6 @@ using namespace arki::types;
 namespace {
 std::filesystem::path conf_dir(CONF_DIR);
 }
-
 
 namespace arki {
 
@@ -57,7 +56,8 @@ Config::Config()
         // Try environment first...
         file_aliases = envfile;
         if (!sys::stat(file_aliases))
-            arki::nag::warning("%s: file specified in ARKI_ALIASES not found", file_aliases.c_str());
+            arki::nag::warning("%s: file specified in ARKI_ALIASES not found",
+                               file_aliases.c_str());
     }
     else
     {
@@ -77,7 +77,8 @@ Config& Config::get()
     return *instance;
 }
 
-void Config::Dirlist::init_config_and_env(const char* confdir, const char* envname)
+void Config::Dirlist::init_config_and_env(const char* confdir,
+                                          const char* envname)
 {
     // TODO: colon-separated $PATH-like semantics
     if (const char* envdir = getenv(envname))
@@ -85,13 +86,16 @@ void Config::Dirlist::init_config_and_env(const char* confdir, const char* envna
     push_back(conf_dir / confdir);
 }
 
-std::filesystem::path Config::Dirlist::find_file(const std::filesystem::path& fname, bool executable) const
+std::filesystem::path
+Config::Dirlist::find_file(const std::filesystem::path& fname,
+                           bool executable) const
 {
     auto res = find_file_noerror(fname, executable);
     if (res.empty())
     {
         stringstream s;
-        s << (executable ? "program" : "file") << " " << fname << " not found; tried: " << str::join(" ", begin(), end());
+        s << (executable ? "program" : "file") << " " << fname
+          << " not found; tried: " << str::join(" ", begin(), end());
         // Build a nice error message
         throw std::runtime_error(s.str());
     }
@@ -99,7 +103,9 @@ std::filesystem::path Config::Dirlist::find_file(const std::filesystem::path& fn
         return res;
 }
 
-std::filesystem::path Config::Dirlist::find_file_noerror(const std::filesystem::path& fname, bool executable) const
+std::filesystem::path
+Config::Dirlist::find_file_noerror(const std::filesystem::path& fname,
+                                   bool executable) const
 {
     int mode = executable ? X_OK : F_OK;
     for (const_iterator i = begin(); i != end(); ++i)
@@ -111,11 +117,12 @@ std::filesystem::path Config::Dirlist::find_file_noerror(const std::filesystem::
     return std::string();
 }
 
-std::vector<std::filesystem::path> Config::Dirlist::list_files(const std::string& ext, bool first_only) const
+std::vector<std::filesystem::path>
+Config::Dirlist::list_files(const std::string& ext, bool first_only) const
 {
     std::vector<filesystem::path> res;
 
-    for (const auto& path: *this)
+    for (const auto& path : *this)
     {
         if (!std::filesystem::is_directory(path))
             continue;
@@ -125,11 +132,14 @@ std::vector<std::filesystem::path> Config::Dirlist::list_files(const std::string
         {
             std::string file = di->d_name;
             // Skip hidden files
-            if (file[0] == '.') continue;
+            if (file[0] == '.')
+                continue;
             // Skip files with different ending
-            if (not str::endswith(file, ext)) continue;
+            if (not str::endswith(file, ext))
+                continue;
             // Skip non-files
-            if (!di.isreg()) continue;
+            if (!di.isreg())
+                continue;
             files.push_back(file);
         }
 
@@ -137,7 +147,7 @@ std::vector<std::filesystem::path> Config::Dirlist::list_files(const std::string
         std::sort(files.begin(), files.end());
 
         // Append the sorted file list to the result
-        for (const auto& fn: files)
+        for (const auto& fn : files)
             res.push_back(path / fn);
 
         // Stop here if we got results and only a dir is needed
@@ -148,12 +158,12 @@ std::vector<std::filesystem::path> Config::Dirlist::list_files(const std::string
     return res;
 }
 
-
 void init()
 {
     static bool initialized = false;
 
-    if (initialized) return;
+    if (initialized)
+        return;
     types::init_default_types();
     iotrace::init();
     scan::init();
@@ -161,4 +171,4 @@ void init()
     initialized = true;
 }
 
-}
+} // namespace arki

@@ -6,14 +6,11 @@
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace utils {
-
-namespace term {
+namespace arki::utils::term {
 struct Terminal;
 }
 
-namespace tests {
+namespace arki::utils::tests {
 
 struct TestFailed;
 struct TestStack;
@@ -306,6 +303,5 @@ struct TestResultStats
     void print_summary(arki::utils::term::Terminal& out);
 };
 
-} // namespace tests
-} // namespace arki::utils
+} // namespace arki::utils::tests
 #endif

@@ -1,12 +1,12 @@
 #ifndef ARKI_TYPES_SOURCE_BLOB_H
 #define ARKI_TYPES_SOURCE_BLOB_H
 
+#include <arki/core/fwd.h>
+#include <arki/segment/fwd.h>
+#include <arki/stream/fwd.h>
+#include <arki/types/source.h>
 #include <cstdint>
 #include <filesystem>
-#include <arki/types/source.h>
-#include <arki/core/fwd.h>
-#include <arki/stream/fwd.h>
-#include <arki/segment/fwd.h>
 
 namespace arki {
 namespace types {
@@ -16,7 +16,7 @@ class Blob : public Source
 {
 public:
     constexpr static const char* name = "Blob";
-    constexpr static const char* doc = R"(
+    constexpr static const char* doc  = R"(
 The data is available in the local file system:
 
 * ``filename`` points to the file that has the data
@@ -62,11 +62,11 @@ zip file segment implementation.
      */
     std::shared_ptr<segment::data::Reader> reader;
 
-
     Style style() const override;
     void encodeWithoutEnvelope(core::BinaryEncoder& enc) const override;
     std::ostream& writeToOstream(std::ostream& o) const override;
-    void serialise_local(structured::Emitter& e, const structured::Keys& keys, const Formatter* f=0) const override;
+    void serialise_local(structured::Emitter& e, const structured::Keys& keys,
+                         const Formatter* f = 0) const override;
 
     int compare_local(const Source& o) const override;
     bool equals(const Type& o) const override;
@@ -97,7 +97,8 @@ zip file segment implementation.
      * Throws an exception if path is not a directory that contains the current
      * absolute source pathname.
      */
-    std::unique_ptr<Blob> makeRelativeTo(const std::filesystem::path& path) const;
+    std::unique_ptr<Blob>
+    makeRelativeTo(const std::filesystem::path& path) const;
 
     /**
      * Return a new source for storing in segment metadata.
@@ -108,7 +109,8 @@ zip file segment implementation.
     std::unique_ptr<Blob> for_segment_metadata() const;
 
     /**
-     * Make sure this blob has a reader that keeps a read lock on the source file
+     * Make sure this blob has a reader that keeps a read lock on the source
+     * file
      */
     void lock(std::shared_ptr<segment::data::Reader> reader);
 
@@ -124,7 +126,8 @@ zip file segment implementation.
      * If rlock is true, the file descriptor will be locked for reading during
      * I/O
      */
-    std::vector<uint8_t> read_data(core::NamedFileDescriptor& fd, bool rlock=true) const;
+    std::vector<uint8_t> read_data(core::NamedFileDescriptor& fd,
+                                   bool rlock = true) const;
 
     /**
      * Get the data referred by this blob via its reader.
@@ -142,13 +145,23 @@ zip file segment implementation.
      */
     stream::SendResult stream_data(StreamOutput& out) const;
 
-    static std::unique_ptr<Blob> create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Blob> create(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size, std::shared_ptr<segment::data::Reader> reader);
-    static std::unique_ptr<Blob> create_unlocked(DataFormat format, const std::filesystem::path& basedir, const std::filesystem::path& filename, uint64_t offset, uint64_t size);
-    static std::unique_ptr<Blob> decode_structure(const structured::Keys& keys, const structured::Reader& reader);
+    static std::unique_ptr<Blob>
+    create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset,
+           uint64_t size);
+    static std::unique_ptr<Blob>
+    create(DataFormat format, const std::filesystem::path& basedir,
+           const std::filesystem::path& filename, uint64_t offset,
+           uint64_t size, std::shared_ptr<segment::data::Reader> reader);
+    static std::unique_ptr<Blob>
+    create_unlocked(DataFormat format, const std::filesystem::path& basedir,
+                    const std::filesystem::path& filename, uint64_t offset,
+                    uint64_t size);
+    static std::unique_ptr<Blob>
+    decode_structure(const structured::Keys& keys,
+                     const structured::Reader& reader);
 };
 
-}
-}
-}
+} // namespace source
+} // namespace types
+} // namespace arki
 #endif

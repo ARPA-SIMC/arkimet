@@ -1,14 +1,14 @@
 #ifndef ARKI_UTILS_FILES_H
 #define ARKI_UTILS_FILES_H
 
-#include <arki/defs.h>
-#include <arki/utils/sys.h>
-#include <arki/exceptions.h>
 #include <arki/core/transaction.h>
+#include <arki/defs.h>
+#include <arki/exceptions.h>
+#include <arki/utils/sys.h>
 #include <filesystem>
+#include <set>
 #include <string>
 #include <sys/types.h>
-#include <set>
 #include <vector>
 
 #define FLAGFILE_INDEX "index-out-of-sync"
@@ -49,13 +49,14 @@ bool hasDontpackFlagfile(const std::filesystem::path& dir);
  * @param pathname
  *   The path name to resolve. It can be absolute or relative.
  * @retval basedir
- *   The base directory to use with path concatenation to make the file name absolute.
- *   It is set to the empty string if \a pathname is an absolute path
+ *   The base directory to use with path concatenation to make the file name
+ * absolute. It is set to the empty string if \a pathname is an absolute path
  * @retval relpath
  *   The normalised version of \a pathname
  */
-void resolve_path(const std::filesystem::path& pathname, std::filesystem::path& basedir, std::filesystem::path& relpath);
-
+void resolve_path(const std::filesystem::path& pathname,
+                  std::filesystem::path& basedir,
+                  std::filesystem::path& relpath);
 
 /**
  * Recursively visit a directory and all its subdirectories, depth-first.
@@ -64,12 +65,14 @@ void resolve_path(const std::filesystem::path& pathname, std::filesystem::path& 
  */
 struct PathWalk
 {
-    typedef std::function<bool(const std::filesystem::path& relpath, sys::Path::iterator& entry, struct stat& st)> Consumer;
+    typedef std::function<bool(const std::filesystem::path& relpath,
+                               sys::Path::iterator& entry, struct stat& st)>
+        Consumer;
     std::filesystem::path root;
     Consumer consumer;
     std::set<ino_t> seen;
 
-    PathWalk(const std::filesystem::path& root, Consumer consumer=nullptr);
+    PathWalk(const std::filesystem::path& root, Consumer consumer = nullptr);
 
     /// Start the visit
     void walk();
@@ -77,7 +80,6 @@ struct PathWalk
 protected:
     void walk(const std::filesystem::path& relpath, sys::Path& path);
 };
-
 
 struct PreserveFileTimes
 {
@@ -94,7 +96,8 @@ struct RenameTransaction : public core::Transaction
     std::filesystem::path abspath;
     bool fired = false;
 
-    RenameTransaction(const std::filesystem::path& tmpabspath, const std::filesystem::path& abspath);
+    RenameTransaction(const std::filesystem::path& tmpabspath,
+                      const std::filesystem::path& abspath);
     virtual ~RenameTransaction();
 
     void commit() override;
@@ -110,7 +113,8 @@ struct RenameTransaction : public core::Transaction
 struct FinalizeTempfilesTransaction : public core::Transaction
 {
     std::vector<std::filesystem::path> tmpfiles;
-    std::function<void(const std::vector<std::filesystem::path>& tmpfiles)> on_commit;
+    std::function<void(const std::vector<std::filesystem::path>& tmpfiles)>
+        on_commit;
     bool fired = false;
 
     virtual ~FinalizeTempfilesTransaction();
@@ -134,16 +138,13 @@ struct RAIIFILE
             throw_file_error(ifd.path(), "cannot fdopen file");
     }
     RAIIFILE(const RAIIFILE&) = delete;
-    RAIIFILE(RAIIFILE&& o)
-        : fd(o.fd)
-    {
-        o.fd = nullptr;
-    }
+    RAIIFILE(RAIIFILE&& o) : fd(o.fd) { o.fd = nullptr; }
     RAIIFILE& operator=(const RAIIFILE&) = delete;
-    RAIIFILE& operator=(RAIIFILE&&) = delete;
+    RAIIFILE& operator=(RAIIFILE&&)      = delete;
     ~RAIIFILE()
     {
-        if (fd) fclose(fd);
+        if (fd)
+            fclose(fd);
     }
     operator FILE*() { return fd; }
 };
@@ -157,11 +158,8 @@ struct Chdir
     {
         std::filesystem::current_path(cwd);
     }
-    ~Chdir()
-    {
-        std::filesystem::current_path(oldcwd);
-    }
+    ~Chdir() { std::filesystem::current_path(oldcwd); }
 };
 
-}
+} // namespace arki::utils::files
 #endif

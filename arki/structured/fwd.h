@@ -13,9 +13,9 @@ namespace memory {
 class Node;
 class List;
 class Mapping;
-}
+} // namespace memory
 
-}
-}
+} // namespace structured
+} // namespace arki
 
 #endif

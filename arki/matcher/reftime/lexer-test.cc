@@ -13,12 +13,10 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_matcher_reftime_lexer");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
-
+} // namespace

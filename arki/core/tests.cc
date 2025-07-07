@@ -1,10 +1,10 @@
 #include "tests.h"
 #include "arki/core/binary.h"
 #include "arki/core/file.h"
-#include "arki/structured/json.h"
-#include "arki/structured/memory.h"
 #include "arki/exceptions.h"
 #include "arki/libconfig.h"
+#include "arki/structured/json.h"
+#include "arki/structured/memory.h"
 #include "arki/utils/files.h"
 #include <cstdlib>
 
@@ -48,7 +48,7 @@ void ActualTime::serializes() const
         json.add(_actual);
         structured::Memory parsed;
         std::string str = jbuf.str();
-        auto reader = core::BufferedReader::from_string(str);
+        auto reader     = core::BufferedReader::from_string(str);
         structured::JSON::parse(*reader, parsed);
         wassert(actual(parsed.root().type()) == structured::NodeType::LIST);
         Time iparsed = parsed.root().as_time("time");
@@ -76,7 +76,7 @@ void ActualTime::compares(const Time& higher) const
     wassert(actual(higher == higher2).istrue());
     wassert(actual(higher != higher2).isfalse());
     wassert(actual(higher >= higher2).istrue());
-    wassert(actual(higher >  higher2).isfalse());
+    wassert(actual(higher > higher2).isfalse());
 }
 
 void ActualTime::is(int ye, int mo, int da, int ho, int mi, int se)
@@ -106,7 +106,6 @@ void skip_unless_grib()
 #ifndef HAVE_GRIBAPI
     throw TestSkipped("GRIB support not available");
 #endif
-
 }
 void skip_unless_bufr()
 {
@@ -153,5 +152,5 @@ void delete_if_exists(const std::string& name)
         sys::unlink(name);
 }
 
-}
-}
+} // namespace tests
+} // namespace arki

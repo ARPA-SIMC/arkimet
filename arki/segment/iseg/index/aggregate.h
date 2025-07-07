@@ -23,89 +23,87 @@
  * Author: Enrico Zini <enrico@enricozini.com>
  */
 #include <arki/matcher/fwd.h>
-#include <arki/utils/sqlite.h>
 #include <arki/segment/iseg/index/attr.h>
+#include <arki/utils/sqlite.h>
 
-#include <vector>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace arki::segment::iseg::index {
 
 class Aggregate
 {
 protected:
-	utils::sqlite::SQLiteDB& m_db;
-	std::string m_table_name;
+    utils::sqlite::SQLiteDB& m_db;
+    std::string m_table_name;
     Attrs m_attrs;
-	mutable std::map< int, std::vector<int> > m_cache;
+    mutable std::map<int, std::vector<int>> m_cache;
 
-	mutable utils::sqlite::PrecompiledQuery q_select;
-	mutable utils::sqlite::PrecompiledQuery q_select_by_id;
-	mutable utils::sqlite::PrecompiledQuery q_insert;
+    mutable utils::sqlite::PrecompiledQuery q_select;
+    mutable utils::sqlite::PrecompiledQuery q_select_by_id;
+    mutable utils::sqlite::PrecompiledQuery q_insert;
 
     void init_select() const;
     void init_select_by_id() const;
     void init_insert() const;
 
 public:
-	Aggregate(utils::sqlite::SQLiteDB& db,
-		  const std::string& table_name,
-		  const std::set<types::Code>& members)
-		: m_db(db), m_table_name(table_name), m_attrs(db, members),
-		  q_select("sel", db),
-		  q_select_by_id("selbyid", db),
-		  q_insert("ins", db) {}
-	~Aggregate() {}
+    Aggregate(utils::sqlite::SQLiteDB& db, const std::string& table_name,
+              const std::set<types::Code>& members)
+        : m_db(db), m_table_name(table_name), m_attrs(db, members),
+          q_select("sel", db), q_select_by_id("selbyid", db),
+          q_insert("ins", db)
+    {
+    }
+    ~Aggregate() {}
 
-	/**
-	 * Get the set of types::Code handled by this aggregate
-	 */
-	std::set<types::Code> members() const;
+    /**
+     * Get the set of types::Code handled by this aggregate
+     */
+    std::set<types::Code> members() const;
 
-	/**
-	 * Get the ID of the row that matches the given metadata.
-	 *
-	 * @returns the ID, or -1 if it was not found.
-	 */
-	int get(const Metadata& md) const;
+    /**
+     * Get the ID of the row that matches the given metadata.
+     *
+     * @returns the ID, or -1 if it was not found.
+     */
+    int get(const Metadata& md) const;
 
-	/**
-	 * Read the metadata fields corresponding to the given ID from the
-	 * database and store them into the metadata
-	 */
-	void read(int id, Metadata& md) const;
+    /**
+     * Read the metadata fields corresponding to the given ID from the
+     * database and store them into the metadata
+     */
+    void read(int id, Metadata& md) const;
 
-	/**
-	 * Add to a vector of strings representing SQL WHERE constraints, the
-	 * constraints on this table that can be computed from the relevant
-	 * parts of the given matcher.
-	 *
-	 * @param prefix
-	 *   The prefix to add to the table name, useful in JOINs
-	 * @returns
-	 *   The number of constraints added to the vector
-	 */
-	int add_constraints(
-		const Matcher& m,
-		std::vector<std::string>& constraints,
-		const std::string& prefix) const;
+    /**
+     * Add to a vector of strings representing SQL WHERE constraints, the
+     * constraints on this table that can be computed from the relevant
+     * parts of the given matcher.
+     *
+     * @param prefix
+     *   The prefix to add to the table name, useful in JOINs
+     * @returns
+     *   The number of constraints added to the vector
+     */
+    int add_constraints(const Matcher& m, std::vector<std::string>& constraints,
+                        const std::string& prefix) const;
 
-	/**
-	 * Create a subquery selecting the IDs corresponding to the given
-	 * matcher
-	 */
-	std::string make_subquery(const Matcher& m) const;
+    /**
+     * Create a subquery selecting the IDs corresponding to the given
+     * matcher
+     */
+    std::string make_subquery(const Matcher& m) const;
 
-	/**
-	 * Obtain the aggregate ID for this metadata, inserting the new
-	 * aggregate item in the database if it is missing
-	 */
-	int obtain(const Metadata& md);
+    /**
+     * Obtain the aggregate ID for this metadata, inserting the new
+     * aggregate item in the database if it is missing
+     */
+    int obtain(const Metadata& md);
 
-	void initDB(const std::set<types::Code>& components_indexed);
+    void initDB(const std::set<types::Code>& components_indexed);
 };
 
-}
+} // namespace arki::segment::iseg::index
 
 #endif

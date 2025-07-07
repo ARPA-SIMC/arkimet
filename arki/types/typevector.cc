@@ -25,7 +25,8 @@ TypeVector::~TypeVector()
 
 bool TypeVector::operator==(const TypeVector& o) const
 {
-    if (size() != o.size()) return false;
+    if (size() != o.size())
+        return false;
     const_iterator a = begin();
     const_iterator b = o.begin();
     while (a != end() && b != o.end())
@@ -58,7 +59,8 @@ void TypeVector::set(size_t pos, const Type* val)
 
 void TypeVector::unset(size_t pos)
 {
-    if (pos >= vals.size()) return;
+    if (pos >= vals.size())
+        return;
     delete vals[pos];
     vals[pos] = 0;
 }
@@ -77,7 +79,6 @@ void TypeVector::resize(size_t new_size)
     // zeroes
     vals.resize(new_size);
     return;
-
 }
 
 void TypeVector::rtrim()
@@ -107,21 +108,28 @@ void TypeVector::push_back(const types::Type& val)
 namespace {
 struct TypeptrLt
 {
-    inline bool operator()(const types::Type* a, const types::Type* b) const { return *a < *b; }
+    inline bool operator()(const types::Type* a, const types::Type* b) const
+    {
+        return *a < *b;
+    }
 };
-}
+} // namespace
 
 TypeVector::const_iterator TypeVector::sorted_find(const Type& type) const
 {
-    const_iterator lb = lower_bound(vals.begin(), vals.end(), &type, TypeptrLt());
-    if (lb == vals.end()) return vals.end();
-    if (**lb != type) return vals.end();
+    const_iterator lb =
+        lower_bound(vals.begin(), vals.end(), &type, TypeptrLt());
+    if (lb == vals.end())
+        return vals.end();
+    if (**lb != type)
+        return vals.end();
     return lb;
 }
 
 bool TypeVector::sorted_insert(const Type& item)
 {
-    vector<Type*>::iterator lb = lower_bound(vals.begin(), vals.end(), &item, TypeptrLt());
+    vector<Type*>::iterator lb =
+        lower_bound(vals.begin(), vals.end(), &item, TypeptrLt());
     if (lb == vals.end())
         push_back(item);
     else if (**lb != item)
@@ -133,7 +141,8 @@ bool TypeVector::sorted_insert(const Type& item)
 
 bool TypeVector::sorted_insert(std::unique_ptr<types::Type>&& item)
 {
-    vector<Type*>::iterator lb = lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
+    vector<Type*>::iterator lb =
+        lower_bound(vals.begin(), vals.end(), item.get(), TypeptrLt());
     if (lb == vals.end())
         push_back(move(item));
     else if (**lb != *item)
@@ -143,5 +152,5 @@ bool TypeVector::sorted_insert(std::unique_ptr<types::Type>&& item)
     return true;
 }
 
-}
-}
+} // namespace types
+} // namespace arki

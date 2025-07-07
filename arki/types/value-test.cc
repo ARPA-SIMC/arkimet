@@ -12,26 +12,17 @@ class Tests : public TypeTestCase<types::Value>
     void register_tests() override;
 } test("arki_types_value");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Check text value
-add_generic_test("text",
-    { "cia" },
-    "ciao",
-    { "ciap" });
+    // Check text value
+    add_generic_test("text", {"cia"}, "ciao", {"ciap"});
 
-// Check binary value
-add_generic_test("binary",
-    { "ciao" },
-    "ciao♥",
-    { "cia♥" });
+    // Check binary value
+    add_generic_test("binary", {"ciao"}, "ciao♥", {"cia♥"});
 
-// Check binary value with zeros
-add_generic_test("zeroes",
-    { "ci" },
-    string("ci\0ao", 5),
-    { "cia♥" });
-
+    // Check binary value with zeros
+    add_generic_test("zeroes", {"ci"}, string("ci\0ao", 5), {"cia♥"});
 }
 
-}
+} // namespace

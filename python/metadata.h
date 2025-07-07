@@ -9,29 +9,27 @@
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    std::shared_ptr<arki::Metadata> md;
+typedef struct
+{
+    PyObject_HEAD std::shared_ptr<arki::Metadata> md;
 } arkipy_Metadata;
 
 extern PyTypeObject* arkipy_Metadata_Type;
 
-#define arkipy_Metadata_Check(ob) \
-    (Py_TYPE(ob) == arkipy_Metadata_Type || \
+#define arkipy_Metadata_Check(ob)                                              \
+    (Py_TYPE(ob) == arkipy_Metadata_Type ||                                    \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_Metadata_Type))
 
-
-typedef struct {
-    PyObject_HEAD
-    arki::metadata_dest_func func;
+typedef struct
+{
+    PyObject_HEAD arki::metadata_dest_func func;
 } arkipy_metadata_dest_func;
 
 extern PyTypeObject* arkipy_metadata_dest_func_Type;
 
-#define arkipy_metadata_dest_func_Check(ob) \
-    (Py_TYPE(ob) == arkipy_metadata_dest_func_Type || \
+#define arkipy_metadata_dest_func_Check(ob)                                    \
+    (Py_TYPE(ob) == arkipy_metadata_dest_func_Type ||                          \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_metadata_dest_func_Type))
-
 }
 
 namespace arki {
@@ -47,7 +45,6 @@ arkipy_Metadata* metadata_create(std::unique_ptr<Metadata> md);
 
 arkipy_Metadata* metadata_create(std::shared_ptr<Metadata> md);
 
-
 /**
  * Create a metadata_dest_func from a python object.
  *
@@ -59,11 +56,13 @@ arki::metadata_dest_func dest_func_from_python(PyObject* o);
 /// Create a python callable that proxies to a metadata_dest_func
 PyObject* dest_func_to_python(arki::metadata_dest_func func);
 
-inline PyObject* to_python(arki::metadata_dest_func func) { return dest_func_to_python(func); }
-
+inline PyObject* to_python(arki::metadata_dest_func func)
+{
+    return dest_func_to_python(func);
+}
 
 void register_metadata(PyObject* m);
 
-}
-}
+} // namespace python
+} // namespace arki
 #endif

@@ -10,6 +10,6 @@ namespace scan {
 class Validator;
 }
 
-}
+} // namespace arki
 
 #endif

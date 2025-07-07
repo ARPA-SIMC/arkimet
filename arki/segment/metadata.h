@@ -1,10 +1,10 @@
 #ifndef ARKI_SEGMENT_METADATA_H
 #define ARKI_SEGMENT_METADATA_H
 
-#include <arki/types/fwd.h>
-#include <arki/segment/fwd.h>
-#include <arki/segment.h>
 #include <arki/metadata/collection.h>
+#include <arki/segment.h>
+#include <arki/segment/fwd.h>
+#include <arki/types/fwd.h>
 
 namespace arki::segment::metadata {
 
@@ -16,8 +16,11 @@ class Index
 public:
     explicit Index(const Segment& segment);
 
-    bool read_all(std::shared_ptr<arki::segment::data::Reader> reader, metadata_dest_func dest);
-    arki::metadata::Collection query_data(const Matcher& matcher, std::shared_ptr<arki::segment::data::Reader> reader);
+    bool read_all(std::shared_ptr<arki::segment::data::Reader> reader,
+                  metadata_dest_func dest);
+    arki::metadata::Collection
+    query_data(const Matcher& matcher,
+               std::shared_ptr<arki::segment::data::Reader> reader);
     void query_summary(const Matcher& matcher, Summary& summary);
 };
 
@@ -26,7 +29,8 @@ class Reader : public segment::Reader
     Index index;
 
 public:
-    Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock);
+    Reader(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<const core::ReadLock> lock);
     ~Reader();
 
     bool read_all(metadata_dest_func dest) override;
@@ -44,10 +48,12 @@ protected:
     void write_metadata();
 
 public:
-    Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
+    Writer(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<core::AppendLock> lock);
     ~Writer();
 
-    AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) override;
+    AcquireResult acquire(arki::metadata::InboundBatch& batch,
+                          const WriterConfig& config) override;
 };
 
 class Checker : public segment::Checker
@@ -56,7 +62,7 @@ public:
     using segment::Checker::Checker;
 
     arki::metadata::Collection scan() override;
-    FsckResult fsck(segment::Reporter& reporter, bool quick=true) override;
+    FsckResult fsck(segment::Reporter& reporter, bool quick = true) override;
 
     std::shared_ptr<segment::Fixer> fixer() override;
 };
@@ -67,7 +73,9 @@ public:
     using segment::Fixer::Fixer;
 
     MarkRemovedResult mark_removed(const std::set<uint64_t>& offsets) override;
-    ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) override;
+    ReorderResult
+    reorder(arki::metadata::Collection& mds,
+            const segment::data::RepackConfig& repack_config) override;
     size_t remove(bool with_data) override;
     ConvertResult tar() override;
     ConvertResult zip() override;
@@ -76,10 +84,11 @@ public:
     void move(std::shared_ptr<arki::Segment> dest) override;
     void test_touch_contents(time_t timestamp) override;
     void test_mark_all_removed() override;
-    void test_make_overlap(unsigned overlap_size, unsigned data_idx=1) override;
-    void test_make_hole(unsigned hole_size, unsigned data_idx=0) override;
+    void test_make_overlap(unsigned overlap_size,
+                           unsigned data_idx = 1) override;
+    void test_make_hole(unsigned hole_size, unsigned data_idx = 0) override;
 };
 
-}
+} // namespace arki::segment::metadata
 
 #endif

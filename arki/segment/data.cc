@@ -1,18 +1,18 @@
 #include "data.h"
-#include "data/missing.h"
-#include "data/fd.h"
-#include "data/dir.h"
-#include "data/tar.h"
-#include "data/zip.h"
-#include "data/gz.h"
 #include "arki/exceptions.h"
-#include "arki/stream.h"
-#include "arki/metadata/collection.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
+#include "arki/scan.h"
+#include "arki/stream.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "arki/scan.h"
+#include "data/dir.h"
+#include "data/fd.h"
+#include "data/gz.h"
+#include "data/missing.h"
+#include "data/tar.h"
+#include "data/zip.h"
 
 using namespace std;
 using namespace std::string_literals;
@@ -21,40 +21,30 @@ using arki::metadata::Collection;
 
 namespace arki::segment {
 
-Data::Data(std::shared_ptr<const Segment> segment) : m_segment(segment)
-{
-}
+Data::Data(std::shared_ptr<const Segment> segment) : m_segment(segment) {}
 
-Data::~Data()
-{
-}
-
+Data::~Data() {}
 
 namespace data {
 
-Reader::Reader(std::shared_ptr<const core::ReadLock> lock)
-    : lock(lock)
-{
-}
+Reader::Reader(std::shared_ptr<const core::ReadLock> lock) : lock(lock) {}
 
-Reader::~Reader()
-{
-}
+Reader::~Reader() {}
 
-stream::SendResult Reader::stream(const types::source::Blob& src, StreamOutput& out)
+stream::SendResult Reader::stream(const types::source::Blob& src,
+                                  StreamOutput& out)
 {
     vector<uint8_t> buf = read(src);
     switch (src.format)
     {
-        case DataFormat::VM2:
-            return out.send_line(buf.data(), buf.size());
-        default:
-            return out.send_buffer(buf.data(), buf.size());
+        case DataFormat::VM2: return out.send_line(buf.data(), buf.size());
+        default:              return out.send_buffer(buf.data(), buf.size());
     }
 }
 
-
-Writer::PendingMetadata::PendingMetadata(const segment::WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source)
+Writer::PendingMetadata::PendingMetadata(
+    const segment::WriterConfig& config, Metadata& md,
+    std::unique_ptr<types::source::Blob> new_source)
     : config(config), md(md), new_source(new_source.release())
 {
 }
@@ -65,10 +55,7 @@ Writer::PendingMetadata::PendingMetadata(PendingMetadata&& o)
     o.new_source = nullptr;
 }
 
-Writer::PendingMetadata::~PendingMetadata()
-{
-    delete new_source;
-}
+Writer::PendingMetadata::~PendingMetadata() { delete new_source; }
 
 void Writer::PendingMetadata::set_source()
 {
@@ -79,13 +66,11 @@ void Writer::PendingMetadata::set_source()
         md.drop_cached_data();
 }
 
-
 RepackConfig::RepackConfig() {}
 RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
     : gz_group_size(gz_group_size), test_flags(test_flags)
 {
 }
-
 
 std::shared_ptr<segment::data::Checker> Checker::tar(Collection& mds)
 {
@@ -101,20 +86,23 @@ std::shared_ptr<segment::data::Checker> Checker::zip(Collection& mds)
     return checker;
 }
 
-std::shared_ptr<segment::data::Checker> Checker::compress(Collection& mds, unsigned groupsize)
+std::shared_ptr<segment::data::Checker> Checker::compress(Collection& mds,
+                                                          unsigned groupsize)
 {
     std::shared_ptr<segment::data::Checker> res;
     switch (segment().format())
     {
         case DataFormat::VM2:
-            res = segment::data::gzlines::Data::create(segment(), mds, RepackConfig(groupsize));
+            res = segment::data::gzlines::Data::create(segment(), mds,
+                                                       RepackConfig(groupsize));
             break;
         default:
-            res = segment::data::gzconcat::Data::create(segment(), mds, RepackConfig(groupsize));
+            res = segment::data::gzconcat::Data::create(
+                segment(), mds, RepackConfig(groupsize));
     }
     remove();
     return res;
 }
 
-}
-}
+} // namespace data
+} // namespace arki::segment

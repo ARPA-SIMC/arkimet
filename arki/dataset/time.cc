@@ -9,13 +9,9 @@ namespace {
 
 static SessionTime* current_session_time = nullptr;
 
-
 struct CurrentTime : public SessionTime
 {
-    time_t now() const override
-    {
-        return time(nullptr);
-    }
+    time_t now() const override { return time(nullptr); }
 };
 
 struct FixedTime : public SessionTime
@@ -24,27 +20,23 @@ struct FixedTime : public SessionTime
 
     FixedTime(time_t val) : val(val) {}
 
-    time_t now() const override
-    {
-        return val;
-    }
+    time_t now() const override { return val; }
 };
 
-}
+} // namespace
 
-SessionTimeOverride::SessionTimeOverride(SessionTime* orig)
-    : orig(orig) {}
+SessionTimeOverride::SessionTimeOverride(SessionTime* orig) : orig(orig) {}
 
-SessionTimeOverride::SessionTimeOverride(SessionTimeOverride&& o)
-    : orig(o.orig)
+SessionTimeOverride::SessionTimeOverride(SessionTimeOverride&& o) : orig(o.orig)
 {
     o.orig = nullptr;
 }
 
 SessionTimeOverride& SessionTimeOverride::operator=(SessionTimeOverride&& o)
 {
-    if (&o == this) return *this;
-    orig = o.orig;
+    if (&o == this)
+        return *this;
+    orig   = o.orig;
     o.orig = nullptr;
     return *this;
 }
@@ -71,7 +63,7 @@ core::Time SessionTime::age_threshold(unsigned age) const
     time_t tnow = now();
 
     // Go to the beginning of the day
-    tnow -= (tnow % (3600*24));
+    tnow -= (tnow % (3600 * 24));
 
     time_t thr = tnow - age * 3600 * 24;
 
@@ -91,5 +83,5 @@ SessionTimeOverride SessionTime::local_override(time_t new_value)
     return res;
 }
 
-}
-}
+} // namespace dataset
+} // namespace arki

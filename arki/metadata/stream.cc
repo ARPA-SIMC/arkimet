@@ -1,9 +1,9 @@
 #include "stream.h"
-#include "data.h"
 #include "arki/core/binary.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/types/source.h"
+#include "data.h"
 #include <cstring>
 
 using namespace std;
@@ -14,7 +14,8 @@ namespace metadata {
 
 bool Stream::checkMetadata()
 {
-    if (buffer.size() < 8) return false;
+    if (buffer.size() < 8)
+        return false;
 
     core::BinaryDecoder dec(buffer);
 
@@ -23,12 +24,13 @@ bool Stream::checkMetadata()
     header[0] = dec.pop_byte("metadata header");
     header[1] = dec.pop_byte("metadata header");
     if (header[0] != 'M' || header[1] != 'D')
-        throw std::runtime_error("partial buffer contains data that is not encoded metadata");
+        throw std::runtime_error(
+            "partial buffer contains data that is not encoded metadata");
 
     // Get version from next 2 bytes
     unsigned int version = dec.pop_uint(2, "metadata version");
     // Get length from next 4 bytes
-    unsigned int len = dec.pop_uint(4, "metadata length");
+    unsigned int len     = dec.pop_uint(4, "metadata length");
 
     // Check if we have a full metadata, in that case read it, remove it
     // from the beginning of the string, then consume it it
@@ -44,9 +46,11 @@ bool Stream::checkMetadata()
     if (md->source().style() == types::Source::Style::INLINE)
     {
         dataToGet = md->data_size();
-        state = DATA;
+        state     = DATA;
         return true;
-    } else {
+    }
+    else
+    {
         if (!canceled)
             if (!consumer(move(md)))
                 canceled = true;
@@ -60,10 +64,12 @@ bool Stream::checkData()
         return false;
 
     vector<uint8_t> buf(buffer.begin(), buffer.begin() + dataToGet);
-    buffer = vector<uint8_t>(buffer.begin() + dataToGet, buffer.end());
+    buffer    = vector<uint8_t>(buffer.begin() + dataToGet, buffer.end());
     dataToGet = 0;
-    state = METADATA;
-    md->set_source_inline(md->source().format, metadata::DataManager::get().to_data(md->source().format, move(buf)));
+    state     = METADATA;
+    md->set_source_inline(
+        md->source().format,
+        metadata::DataManager::get().to_data(md->source().format, move(buf)));
     if (!canceled)
         if (!consumer(move(md)))
             canceled = true;
@@ -75,19 +81,22 @@ bool Stream::check()
     switch (state)
     {
         case METADATA: return checkMetadata(); break;
-        case DATA: return checkData(); break;
+        case DATA:     return checkData(); break;
         default:
-            throw_consistency_error("checking inbound data", "metadata stream state is in invalid state");
+            throw_consistency_error(
+                "checking inbound data",
+                "metadata stream state is in invalid state");
     }
 }
 
 void Stream::readData(const void* buf, size_t size)
 {
-    buffer.insert(buffer.end(), (const uint8_t*)buf, (const uint8_t*)buf + size);
+    buffer.insert(buffer.end(), (const uint8_t*)buf,
+                  (const uint8_t*)buf + size);
 
     while (check())
         ;
 }
 
-}
-}
+} // namespace metadata
+} // namespace arki

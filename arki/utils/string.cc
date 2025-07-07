@@ -4,8 +4,7 @@
 
 using namespace std;
 
-namespace arki {
-namespace utils {
+namespace arki::utils {
 namespace str {
 
 namespace {

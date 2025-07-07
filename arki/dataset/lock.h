@@ -31,23 +31,25 @@ public:
 class SegmentReadLock : public core::lock::FileReadLock
 {
 public:
-    SegmentReadLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
+    SegmentReadLock(const local::Dataset& dataset,
+                    const std::filesystem::path& relpath);
 };
 
 class SegmentAppendLock : public core::lock::FileAppendLock
 {
 public:
-    SegmentAppendLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
+    SegmentAppendLock(const local::Dataset& dataset,
+                      const std::filesystem::path& relpath);
 };
 
 class SegmentCheckLock : public core::lock::FileCheckLock
 {
 public:
-    SegmentCheckLock(const local::Dataset& dataset, const std::filesystem::path& relpath);
+    SegmentCheckLock(const local::Dataset& dataset,
+                     const std::filesystem::path& relpath);
 };
 
-
-}
-}
+} // namespace dataset
+} // namespace arki
 
 #endif

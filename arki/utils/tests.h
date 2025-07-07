@@ -18,13 +18,9 @@
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace utils {
-namespace tests {
+namespace arki::utils::tests {
 struct LocationInfo;
-}
-}
-} // namespace arki::utils
+} // namespace arki::utils::tests
 
 /*
  * These global arguments will be shadowed by local variables in functions that
@@ -35,9 +31,7 @@ struct LocationInfo;
  */
 extern const arki::utils::tests::LocationInfo arki_utils_test_location_info;
 
-namespace arki {
-namespace utils {
-namespace tests {
+namespace arki::utils::tests {
 
 /**
  * Add information to the test backtrace for the tests run in the current
@@ -854,6 +848,5 @@ public:
     }
 };
 
-} // namespace tests
-} // namespace arki::utils
+} // namespace arki::utils::tests
 #endif

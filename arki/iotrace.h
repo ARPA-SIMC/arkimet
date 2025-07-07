@@ -7,13 +7,13 @@
  * I/O profiling
  */
 
-#include <arki/libconfig.h>
 #include <arki/core/fwd.h>
+#include <arki/libconfig.h>
 #include <arki/stream/fwd.h>
-#include <vector>
-#include <filesystem>
 #include <cstddef>
+#include <filesystem>
 #include <sys/types.h>
+#include <vector>
 
 namespace arki {
 namespace iotrace {
@@ -78,16 +78,19 @@ void init();
  *   Description of the I/O operation. It MUST be some static string, since its
  *   contents are not copied but only a pointer to it is kepy.
  */
-void trace_file(const std::filesystem::path& name, off_t offset, size_t size, const char* desc);
+void trace_file(const std::filesystem::path& name, off_t offset, size_t size,
+                const char* desc);
 
 /// Specialised implementation for C-style filenames
 void trace_file(const char* name, off_t offset, size_t size, const char* desc);
 
 /// Specialised implementation NamedFileDescriptor
-void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size, const char* desc);
+void trace_file(core::NamedFileDescriptor& fd, off_t offset, size_t size,
+                const char* desc);
 
 /// Specialised implementation AbstractInputFile
-void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size, const char* desc);
+void trace_file(core::AbstractInputFile& fd, off_t offset, size_t size,
+                const char* desc);
 
 /// Specialised implementation StreamOutput
 void trace_file(StreamOutput& fd, off_t offset, size_t size, const char* desc);
@@ -98,12 +101,17 @@ void remove_listener(Listener& l);
 #else
 
 void init() {}
-void trace_file(const std::filesystem::path& name, off_t offset, size_t size, const char* desc) {}
-void trace_file(const char* name, off_t offset, size_t size, const char* desc) {}
+void trace_file(const std::filesystem::path& name, off_t offset, size_t size,
+                const char* desc)
+{
+}
+void trace_file(const char* name, off_t offset, size_t size, const char* desc)
+{
+}
 
 #endif
 
-}
-}
+} // namespace iotrace
+} // namespace arki
 
 #endif

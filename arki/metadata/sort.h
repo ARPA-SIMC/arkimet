@@ -5,8 +5,8 @@
 
 #include <arki/metadata/collection.h>
 #include <arki/types/fwd.h>
-#include <string>
 #include <memory>
+#include <string>
 
 namespace arki {
 namespace metadata {
@@ -28,26 +28,19 @@ namespace sort {
 class Compare
 {
 public:
-	/// Allowed types of sort intervals
-	enum Interval {
-		NONE,
-		MINUTE,
-		HOUR,
-		DAY,
-		MONTH,
-		YEAR
-	};
+    /// Allowed types of sort intervals
+    enum Interval { NONE, MINUTE, HOUR, DAY, MONTH, YEAR };
 
-	virtual ~Compare() {}
+    virtual ~Compare() {}
 
-	/// Comparison function for metadata
-	virtual int compare(const Metadata& a, const Metadata& b) const = 0;
+    /// Comparison function for metadata
+    virtual int compare(const Metadata& a, const Metadata& b) const = 0;
 
-	/// Return the sort interval
-	virtual Interval interval() const { return NONE; }
+    /// Return the sort interval
+    virtual Interval interval() const { return NONE; }
 
-	/// Compute the string representation of this sorter
-	virtual std::string toString() const = 0;
+    /// Compute the string representation of this sorter
+    virtual std::string toString() const = 0;
 
     /// Parse a string representation into a sorter
     static std::unique_ptr<Compare> parse(const std::string& expr);
@@ -56,11 +49,12 @@ public:
 /// Adaptor to use compare in STL sort functions
 struct STLCompare
 {
-	const Compare& cmp;
+    const Compare& cmp;
 
-	STLCompare(const Compare& cmp) : cmp(cmp) {}
+    STLCompare(const Compare& cmp) : cmp(cmp) {}
 
-    bool operator()(const std::shared_ptr<Metadata>& a, const std::shared_ptr<Metadata>& b) const
+    bool operator()(const std::shared_ptr<Metadata>& a,
+                    const std::shared_ptr<Metadata>& b) const
     {
         return cmp.compare(*a, *b) < 0;
     }
@@ -109,7 +103,7 @@ private:
     Stream& operator=(const Stream&);
 };
 
-}
-}
-}
+} // namespace sort
+} // namespace metadata
+} // namespace arki
 #endif

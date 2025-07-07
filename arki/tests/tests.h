@@ -10,6 +10,6 @@ namespace tests {
 using namespace arki::utils::tests;
 using arki::utils::tests::actual;
 
-}
-}
+} // namespace tests
+} // namespace arki
 #endif

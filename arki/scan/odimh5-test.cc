@@ -1,7 +1,7 @@
-#include "arki/metadata/tests.h"
-#include "arki/scan/odimh5.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
+#include "arki/metadata/tests.h"
+#include "arki/scan/odimh5.h"
 #include "arki/types/source.h"
 #include "arki/utils/sys.h"
 #include <iostream>
@@ -19,12 +19,11 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_scan_odimh5");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// TODO: check the validator
-add_method("empty", []() noexcept {
-});
-
+    // TODO: check the validator
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

@@ -1,7 +1,7 @@
-#include "arki/dataset/tests.h"
 #include "arki/dataset/iseg/checker.h"
 #include "arki/dataset/iseg/reader.h"
 #include "arki/dataset/reporter.h"
+#include "arki/dataset/tests.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 
@@ -15,7 +15,8 @@ using namespace arki::utils;
 
 namespace {
 
-struct Fixture : public DatasetTest {
+struct Fixture : public DatasetTest
+{
     using DatasetTest::DatasetTest;
 
     void test_setup()
@@ -28,7 +29,6 @@ struct Fixture : public DatasetTest {
     }
 };
 
-
 class Tests : public FixtureTestCase<Fixture>
 {
     using FixtureTestCase::FixtureTestCase;
@@ -36,12 +36,10 @@ class Tests : public FixtureTestCase<Fixture>
     void register_tests() override;
 } test("arki_dataset_iseg_checker");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", [](Fixture& f) noexcept {
-});
-
+    add_method("empty", [](Fixture& f) noexcept {});
 }
 
-}
-
+} // namespace

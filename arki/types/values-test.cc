@@ -1,6 +1,6 @@
+#include "arki/core/binary.h"
 #include "arki/types/tests.h"
 #include "values.h"
-#include "arki/core/binary.h"
 #include <memory>
 
 namespace {
@@ -24,7 +24,8 @@ static unsigned vbsize(const ValueBag& vb)
     return res;
 }
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
 // Check comparison
 #if 0
@@ -55,42 +56,41 @@ add_method("comparison", [] {
 });
 #endif
 
-// Check encoding
-add_method("encode_int", [] {
-    auto encode = [](int value) {
-        std::vector<uint8_t> buf;
-        core::BinaryEncoder enc(buf);
-        values::encode_int(enc, value);
-        return buf;
-    };
+    // Check encoding
+    add_method("encode_int", [] {
+        auto encode = [](int value) {
+            std::vector<uint8_t> buf;
+            core::BinaryEncoder enc(buf);
+            values::encode_int(enc, value);
+            return buf;
+        };
 
-    auto test_codec = [&](int value, unsigned encsize) {
-        auto enc = encode(value);
-        wassert(actual(enc.size()) == encsize);
+        auto test_codec = [&](int value, unsigned encsize) {
+            auto enc = encode(value);
+            wassert(actual(enc.size()) == encsize);
 
-        core::BinaryDecoder dec(enc);
-        uint8_t lead = dec.pop_byte("lead byte");
-        int decoded = values::decode_int(dec, lead);
-        wassert(actual(decoded) == value);
+            core::BinaryDecoder dec(enc);
+            uint8_t lead = dec.pop_byte("lead byte");
+            int decoded  = values::decode_int(dec, lead);
+            wassert(actual(decoded) == value);
 
-        wassert(actual(dec.size) == 0u);
-    };
+            wassert(actual(dec.size) == 0u);
+        };
 
-    wassert(test_codec(0, 1u));
-    wassert(test_codec(1, 1u));
-    wassert(test_codec(-1, 1u));
-    wassert(test_codec(30, 1u)); // unsigned that fits in 6 bits
-    wassert(test_codec(-31, 1u)); // signed that fits in 6 bits
-    wassert(test_codec(1000000, 4u));
-    wassert(test_codec(-1234567, 4u));
-    // Not 6 bits, but 1 byte
-    wassert(test_codec(43, 2u));
-    wassert(test_codec(-43, 2u));
-    // 2 bytes
-    wassert(test_codec(10000, 3u));
-    wassert(test_codec(-10000, 3u));
-});
-
+        wassert(test_codec(0, 1u));
+        wassert(test_codec(1, 1u));
+        wassert(test_codec(-1, 1u));
+        wassert(test_codec(30, 1u));  // unsigned that fits in 6 bits
+        wassert(test_codec(-31, 1u)); // signed that fits in 6 bits
+        wassert(test_codec(1000000, 4u));
+        wassert(test_codec(-1234567, 4u));
+        // Not 6 bits, but 1 byte
+        wassert(test_codec(43, 2u));
+        wassert(test_codec(-43, 2u));
+        // 2 bytes
+        wassert(test_codec(10000, 3u));
+        wassert(test_codec(-10000, 3u));
+    });
 
 #if 0
 #warning reenable this
@@ -127,10 +127,11 @@ add_method("encoding", [] {
 });
 #endif
 
-// Check ValueBag
-add_method("valuebag", [] {
-    ValueBag v1 = ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
-    ValueBag v2;
+    // Check ValueBag
+    add_method("valuebag", [] {
+        ValueBag v1 =
+            ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
+        ValueBag v2;
 
 #if 0
     // Test accessors
@@ -145,56 +146,58 @@ add_method("valuebag", [] {
     wassert_true(*v1.test_get("test4") == *val);
 #endif
 
-    wassert(actual(vbsize(v1)) == 4u);
-    wassert(actual(vbsize(v2)) == 0u);
+        wassert(actual(vbsize(v1)) == 4u);
+        wassert(actual(vbsize(v2)) == 0u);
 
-    // Test copy and comparison
-    wassert_true(v1 != v2);
+        // Test copy and comparison
+        wassert_true(v1 != v2);
 
-    v2 = ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
-    wassert(actual(vbsize(v1)) == 4u);
-    wassert(actual(vbsize(v2)) == 4u);
+        v2 = ValueBag::parse("test1=1, test2=1000000, test3=-20, test4=\"1\"");
+        wassert(actual(vbsize(v1)) == 4u);
+        wassert(actual(vbsize(v2)) == 4u);
 
-    wassert(actual(v1) == v2);
+        wassert(actual(v1) == v2);
 
-    // Test clear
-    v2 = ValueBag();
-    wassert(actual(vbsize(v1)) == 4u);
-    wassert(actual(vbsize(v2)) == 0u);
+        // Test clear
+        v2 = ValueBag();
+        wassert(actual(vbsize(v1)) == 4u);
+        wassert(actual(vbsize(v2)) == 0u);
 
-    // Test encoding and decoding
-    std::vector<uint8_t> enc;
-    core::BinaryEncoder e(enc);
+        // Test encoding and decoding
+        std::vector<uint8_t> enc;
+        core::BinaryEncoder e(enc);
 
-    v1.encode(e);
-    core::BinaryDecoder dec(enc);
-    v2 = ValueBag::decode(dec);
-    wassert(actual(v1) == v2);
+        v1.encode(e);
+        core::BinaryDecoder dec(enc);
+        v2 = ValueBag::decode(dec);
+        wassert(actual(v1) == v2);
 
-    wassert(actual(vbsize(v1)) == 4u);
-    wassert(actual(vbsize(v2)) == 4u);
+        wassert(actual(vbsize(v1)) == 4u);
+        wassert(actual(vbsize(v2)) == 4u);
 
-    v2 = ValueBag();
-    wassert(actual(vbsize(v1)) == 4u);
-    wassert(actual(vbsize(v2)) == 0u);
+        v2 = ValueBag();
+        wassert(actual(vbsize(v1)) == 4u);
+        wassert(actual(vbsize(v2)) == 0u);
 
-    string enc1 = v1.toString();
-    wassert(actual(enc1) == "test1=1, test2=1000000, test3=-20, test4=\"1\"");
-    v2 = ValueBag::parse(enc1);
+        string enc1 = v1.toString();
+        wassert(actual(enc1) ==
+                "test1=1, test2=1000000, test3=-20, test4=\"1\"");
+        v2 = ValueBag::parse(enc1);
 
-    wassert(actual(vbsize(v1)) == 4u);
-    wassert(actual(vbsize(v2)) == 4u);
+        wassert(actual(vbsize(v1)) == 4u);
+        wassert(actual(vbsize(v2)) == 4u);
 
-    wassert(actual(v2) == v1);
-});
+        wassert(actual(v2) == v1);
+    });
 
-// Check a case where ValueBag seemed to fail (but it actually didn't, the
-// problem was elsewhere)
-add_method("regression1", [] {
-    ValueBag v1 = ValueBag::parse("blo=10, lat=5480000, lon=895000, sta=22");
-    auto v2 = ValueBagMatcher::parse("sta=88");
-    wassert_false(v2.is_subset(v1));
-});
+    // Check a case where ValueBag seemed to fail (but it actually didn't, the
+    // problem was elsewhere)
+    add_method("regression1", [] {
+        ValueBag v1 =
+            ValueBag::parse("blo=10, lat=5480000, lon=895000, sta=22");
+        auto v2 = ValueBagMatcher::parse("sta=88");
+        wassert_false(v2.is_subset(v1));
+    });
 
 #if 0
 add_method("iteration", [] {
@@ -205,7 +208,6 @@ add_method("iteration", [] {
     wassert(actual(iterated) == ":10:5480000:895000:\"22\"");
 });
 #endif
-
 }
 
-}
+} // namespace

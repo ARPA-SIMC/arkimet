@@ -10,22 +10,21 @@ namespace utils {
 namespace acct {
 class Counter;
 }
-}
-}
+} // namespace utils
+} // namespace arki
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::utils::acct::Counter* counter;
+typedef struct
+{
+    PyObject_HEAD arki::utils::acct::Counter* counter;
 } arkipy_countersCounter;
 
 extern PyTypeObject* arkipy_countersCounter_Type;
 
-#define arkipy_countersCounter_Check(ob) \
-    (Py_TYPE(ob) == arkipy_countersCounter_Type || \
+#define arkipy_countersCounter_Check(ob)                                       \
+    (Py_TYPE(ob) == arkipy_countersCounter_Type ||                             \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_countersCounter_Type))
-
 }
 
 namespace arki {
@@ -34,6 +33,6 @@ namespace python {
 void register_counters(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

@@ -2,14 +2,14 @@
 #define ARKI_UTILS_ZIP_H
 
 #include <arki/core/fwd.h>
-#include <arki/segment/fwd.h>
-#include <arki/segment/defs.h>
 #include <arki/libconfig.h>
+#include <arki/segment/defs.h>
+#include <arki/segment/fwd.h>
+#include <cstdint>
 #include <filesystem>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-#include <cstdint>
 #ifdef HAVE_LIBZIP
 #include <zip.h>
 #endif
@@ -91,7 +91,7 @@ public:
     void rename(const segment::Span& old_span, const segment::Span& new_span);
 };
 
-}
-}
+} // namespace utils
+} // namespace arki
 
 #endif

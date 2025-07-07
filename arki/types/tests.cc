@@ -1,18 +1,18 @@
 #include "tests.h"
+#include "arki/core/binary.h"
+#include "arki/core/file.h"
+#include "arki/matcher.h"
+#include "arki/matcher/parser.h"
+#include "arki/structured/json.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/memory.h"
+#include "arki/types.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
+#include "reftime.h"
 #include "source/blob.h"
 #include "source/inline.h"
 #include "source/url.h"
-#include "reftime.h"
-#include "arki/types.h"
-#include "arki/matcher.h"
-#include "arki/matcher/parser.h"
-#include "arki/core/binary.h"
-#include "arki/core/file.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/string.h"
-#include "arki/structured/json.h"
-#include "arki/structured/memory.h"
-#include "arki/structured/keys.h"
 #include <cxxabi.h>
 #include <sstream>
 
@@ -26,9 +26,14 @@ using arki::core::Time;
 namespace arki {
 namespace tests {
 
-TestGenericType::TestGenericType(const std::string& tag, const std::string& sample) : tag(tag), sample(sample) {}
+TestGenericType::TestGenericType(const std::string& tag,
+                                 const std::string& sample)
+    : tag(tag), sample(sample)
+{
+}
 
-std::unique_ptr<types::Type> TestGenericType::check_item(const std::string& encoded) const
+std::unique_ptr<types::Type>
+TestGenericType::check_item(const std::string& encoded) const
 {
     ARKI_UTILS_TEST_INFO(tinfo);
     tinfo() << "current: " << encoded;
@@ -61,7 +66,7 @@ void TestGenericType::check() const
     // Decode and run all single-item tests
     unique_ptr<Type> item = wcallchecked(check_item(sample));
 
-    for (const auto& i: alternates)
+    for (const auto& i : alternates)
     {
         tinfo() << "current: " << i << " == " << sample;
         unique_ptr<Type> aitem = wcallchecked(check_item(i));
@@ -69,7 +74,7 @@ void TestGenericType::check() const
     }
 
     // Test equality and comparisons
-    for (const auto& i: lower)
+    for (const auto& i : lower)
     {
         tinfo() << "current (lo): " << i << " < " << sample;
 
@@ -83,7 +88,7 @@ void TestGenericType::check() const
         wassert(actual(lower_item).compares(*item));
     }
 
-    for (const auto& i: higher)
+    for (const auto& i : higher)
     {
         tinfo() << "current (hi): " << sample << " < " << i;
 
@@ -113,12 +118,11 @@ void TestGenericType::check() const
     }
 }
 
-
-
 void ActualType::operator==(const Type* expected) const
 {
     bool res = Type::nullable_equals(_actual, expected);
-    if (res) return;
+    if (res)
+        return;
     std::stringstream ss;
     ss << "item ";
     if (_actual)
@@ -137,7 +141,8 @@ void ActualType::operator==(const Type* expected) const
 void ActualType::operator!=(const Type* expected) const
 {
     bool res = Type::nullable_equals(_actual, expected);
-    if (!res) return;
+    if (!res)
+        return;
     std::stringstream ss;
     ss << "item ";
     if (_actual)
@@ -179,8 +184,9 @@ void ActualType::serializes() const
     enc.clear();
     _actual->encodeBinary(e);
     // Rewritten in the next two lines due to, it seems, a bug in old gccs
-    // inner_ensure_equals(types::decode((const unsigned char*)enc.data(), enc.size()).upcast<T>(), _actual);
-    dec = core::BinaryDecoder(enc);
+    // inner_ensure_equals(types::decode((const unsigned char*)enc.data(),
+    // enc.size()).upcast<T>(), _actual);
+    dec                      = core::BinaryDecoder(enc);
     unique_ptr<Type> decoded = types::Type::decode(dec);
     wassert(actual(decoded) == _actual);
 
@@ -208,14 +214,16 @@ void ActualType::serializes() const
         structured::JSON::parse(*reader, parsed);
         wassert(actual(parsed.root().type()) == structured::NodeType::MAPPING);
 
-        unique_ptr<Type> iparsed = wcallchecked(types::decode_structure(structured::keys_json, parsed.root()));
+        unique_ptr<Type> iparsed = wcallchecked(
+            types::decode_structure(structured::keys_json, parsed.root()));
         wassert(actual(iparsed) == _actual);
     }
 }
 
 void ActualType::compares(const types::Type& higher) const
 {
-    if (!_actual) throw TestFailed("actual item to compare is undefined");
+    if (!_actual)
+        throw TestFailed("actual item to compare is undefined");
 
     std::unique_ptr<types::Type> higher2(higher.clone());
 
@@ -235,13 +243,14 @@ void ActualType::compares(const types::Type& higher) const
     wassert(actual(higher == *higher2).istrue());
     wassert(actual(higher != *higher2).isfalse());
     wassert(actual(higher >= *higher2).istrue());
-    wassert(actual(higher >  *higher2).isfalse());
+    wassert(actual(higher > *higher2).isfalse());
 }
 
-template<typename T>
+template <typename T>
 static const T* get_specific_type(const types::Type* actual)
 {
-    if (!actual) throw TestFailed("item to check is undefined");
+    if (!actual)
+        throw TestFailed("item to check is undefined");
 
     const T* item = dynamic_cast<const T*>(actual);
     if (!item)
@@ -261,12 +270,10 @@ static const T* get_specific_type(const types::Type* actual)
     return item;
 }
 
-void ActualType::is_source_blob(
-    DataFormat format,
-    const std::filesystem::path& basedir,
-    const std::filesystem::path& fname,
-    uint64_t ofs,
-    uint64_t size)
+void ActualType::is_source_blob(DataFormat format,
+                                const std::filesystem::path& basedir,
+                                const std::filesystem::path& fname,
+                                uint64_t ofs, uint64_t size)
 {
     const source::Blob* item = get_specific_type<source::Blob>(_actual);
     wassert(actual(item->format) == format);
@@ -285,10 +292,9 @@ void ActualType::is_source_blob(
     }
 }
 
-void ActualType::is_source_blob(
-    DataFormat format,
-    const std::filesystem::path& basedir,
-    const std::filesystem::path& fname)
+void ActualType::is_source_blob(DataFormat format,
+                                const std::filesystem::path& basedir,
+                                const std::filesystem::path& fname)
 {
     const source::Blob* item = get_specific_type<source::Blob>(_actual);
     wassert(actual(item->format) == format);
@@ -321,9 +327,10 @@ void ActualType::is_source_inline(DataFormat format, uint64_t size)
 
 void ActualType::is_reftime_position(const Time& time)
 {
-    const reftime::Position* item = get_specific_type<reftime::Position>(_actual);
+    const reftime::Position* item =
+        get_specific_type<reftime::Position>(_actual);
     wassert(actual(item->get_Position()) == time);
 }
 
-}
-}
+} // namespace tests
+} // namespace arki

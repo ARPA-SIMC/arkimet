@@ -27,12 +27,11 @@ public:
     int timeout_ms;
 
     /// Accumulated stream result
-    size_t size_stdin = 0;
+    size_t size_stdin  = 0;
     size_t size_stdout = 0;
 
     /// Captured stderr from the child (unless sent elsewhere)
     std::stringstream errors;
-
 
     FilterProcess(const std::vector<std::string>& args, int timeout_ms = -1);
 
@@ -46,7 +45,7 @@ public:
     void check_for_errors();
 };
 
-}
-}
+} // namespace stream
+} // namespace arki
 
 #endif

@@ -1,8 +1,8 @@
 #include "time.h"
 #include "binary.h"
+#include <algorithm>
 #include <cstdio>
 #include <stdexcept>
-#include <algorithm>
 
 using namespace std;
 
@@ -30,16 +30,19 @@ void TimeBase::set_tm(struct tm& t)
 
 void TimeBase::set_iso8601(const std::string& str)
 {
-    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
+    int count =
+        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
     if (count < 6)
-        count = sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
+        count = sscanf(str.c_str(), "%d-%d-%dT%d:%d:%d", &ye, &mo, &da, &ho,
+                       &mi, &se);
     if (count < 6)
         throw std::runtime_error("Cannot parse ISO-8601 string '" + str + "'");
 }
 
 void TimeBase::set_sql(const std::string& str)
 {
-    int count = sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
+    int count =
+        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &ye, &mo, &da, &ho, &mi, &se);
     if (count == 0)
         throw std::runtime_error("Cannot parse SQL string '" + str + "'");
 }
@@ -68,36 +71,40 @@ void TimeBase::set_easter(int year)
     int k = c % 4;
     int L = (32 + 2 * e + 2 * i - h - k) % 7;
     int m = (a + 11 * h + 22 * L) / 451;
-    ye = year;
-    mo = (h + L - 7 * m + 114) / 31;
-    da = ((h + L - 7 * m + 114) % 31) + 1;
-    ho = 0;
-    mi = 0;
-    se = 0;
+    ye    = year;
+    mo    = (h + L - 7 * m + 114) / 31;
+    da    = ((h + L - 7 * m + 114) % 31) + 1;
+    ho    = 0;
+    mi    = 0;
+    se    = 0;
 }
 
 int TimeBase::compare(const TimeBase& o) const
 {
-    if (int res = ye - o.ye) return res;
-    if (int res = mo - o.mo) return res;
-    if (int res = da - o.da) return res;
-    if (int res = ho - o.ho) return res;
-    if (int res = mi - o.mi) return res;
+    if (int res = ye - o.ye)
+        return res;
+    if (int res = mo - o.mo)
+        return res;
+    if (int res = da - o.da)
+        return res;
+    if (int res = ho - o.ho)
+        return res;
+    if (int res = mi - o.mi)
+        return res;
     return se - o.se;
 }
 
 bool TimeBase::operator==(const TimeBase& o) const
 {
-    return ye == o.ye && mo == o.mo && da == o.da
-        && ho == o.ho && mi == o.mi && se == o.se;
+    return ye == o.ye && mo == o.mo && da == o.da && ho == o.ho && mi == o.mi &&
+           se == o.se;
 }
 
 bool TimeBase::operator!=(const TimeBase& o) const
 {
-    return ye != o.ye || mo != o.mo || da != o.da
-        || ho != o.ho || mi != o.mi || se != o.se;
+    return ye != o.ye || mo != o.mo || da != o.da || ho != o.ho || mi != o.mi ||
+           se != o.se;
 }
-
 
 /*
  * Time
@@ -141,7 +148,8 @@ Time Time::create_upperbound(int ye, int mo, int da, int ho, int mi, int se)
 
 bool Time::isset() const
 {
-    return not (ye == 0 and mo == 0 and da == 0 and ho == 0 and mi == 0 and se == 0);
+    return not(ye == 0 and mo == 0 and da == 0 and ho == 0 and mi == 0 and
+               se == 0);
 }
 
 void Time::unset()
@@ -227,10 +235,7 @@ bool Time::operator==(const std::string& o) const
     return TimeBase::operator==(Time::create_iso8601(o));
 }
 
-Time Time::start_of_month() const
-{
-    return Time(ye, mo, 1);
-}
+Time Time::start_of_month() const { return Time(ye, mo, 1); }
 
 Time Time::start_of_next_month() const
 {
@@ -283,11 +288,14 @@ static inline void normalN(int& lo, int& hi, int N)
 {
     if (lo < 0)
     {
-        int m = (-lo)/N;
-        if (lo % N) ++m;
+        int m = (-lo) / N;
+        if (lo % N)
+            ++m;
         hi -= m;
-        lo = (lo + (m*N)) % N;
-    } else {
+        lo = (lo + (m * N)) % N;
+    }
+    else
+    {
         hi += lo / N;
         lo = lo % N;
     }
@@ -319,7 +327,8 @@ void Time::normalise()
     {
         normalN(mo, ye, 12);
         int dim = days_in_month(ye, mo + 1);
-        if (da < dim) break;
+        if (da < dim)
+            break;
         da -= dim;
         ++mo;
     }
@@ -334,7 +343,8 @@ void Time::normalise()
 std::string Time::to_iso8601(char sep) const
 {
     char buf[25];
-    snprintf(buf, 25, "%04d-%02d-%02d%c%02d:%02d:%02dZ", ye, mo, da, sep, ho, mi, se);
+    snprintf(buf, 25, "%04d-%02d-%02d%c%02d:%02d:%02dZ", ye, mo, da, sep, ho,
+             mi, se);
     return buf;
 }
 
@@ -347,13 +357,14 @@ std::string Time::to_sql() const
 
 time_t Time::to_unix() const
 {
-    if (ye < 1970) return 0;
+    if (ye < 1970)
+        return 0;
     struct tm t;
-    t.tm_sec = se;
-    t.tm_min = mi;
+    t.tm_sec  = se;
+    t.tm_min  = mi;
     t.tm_hour = ho;
     t.tm_mday = da;
-    t.tm_mon = mo - 1;
+    t.tm_mon  = mo - 1;
     t.tm_year = ye - 1900;
     return timegm(&t);
 }
@@ -362,13 +373,8 @@ Time Time::decode(core::BinaryDecoder& dec)
 {
     uint32_t a = dec.pop_uint(4, "first 32 bits of encoded time");
     uint32_t b = dec.pop_uint(1, "last 8 bits of encoded time");
-    return Time(
-        a >> 18,
-        (a >> 14) & 0xf,
-        (a >> 9) & 0x1f,
-        (a >> 4) & 0x1f,
-        ((a & 0xf) << 2) | ((b >> 6) & 0x3),
-        b & 0x3f);
+    return Time(a >> 18, (a >> 14) & 0xf, (a >> 9) & 0x1f, (a >> 4) & 0x1f,
+                ((a & 0xf) << 2) | ((b >> 6) & 0x3), b & 0x3f);
 }
 
 Time Time::decodeString(const std::string& val)
@@ -378,26 +384,18 @@ Time Time::decodeString(const std::string& val)
 
 void Time::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
 {
-    uint32_t a = ((ye & 0x3fff) << 18)
-               | ((mo & 0xf)    << 14)
-               | ((da & 0x1f)   << 9)
-               | ((ho & 0x1f)   << 4)
-               | ((mi >> 2) & 0xf);
-    uint8_t b = ((mi & 0x3) << 6)
-               | (se & 0x3f);
+    uint32_t a = ((ye & 0x3fff) << 18) | ((mo & 0xf) << 14) |
+                 ((da & 0x1f) << 9) | ((ho & 0x1f) << 4) | ((mi >> 2) & 0xf);
+    uint8_t b = ((mi & 0x3) << 6) | (se & 0x3f);
     enc.add_unsigned(a, 4);
     enc.add_unsigned(b, 1);
 }
 
 void Time::encode_binary(uint8_t* buf) const
 {
-    uint32_t a = ((ye & 0x3fff) << 18)
-               | ((mo & 0xf)    << 14)
-               | ((da & 0x1f)   << 9)
-               | ((ho & 0x1f)   << 4)
-               | ((mi >> 2) & 0xf);
-    uint8_t b = ((mi & 0x3) << 6)
-               | (se & 0x3f);
+    uint32_t a = ((ye & 0x3fff) << 18) | ((mo & 0xf) << 14) |
+                 ((da & 0x1f) << 9) | ((ho & 0x1f) << 4) | ((mi >> 2) & 0xf);
+    uint8_t b = ((mi & 0x3) << 6) | (se & 0x3f);
     core::BinaryEncoder::set_unsigned(buf, a, 4);
     core::BinaryEncoder::set_unsigned(buf + 4, b, 1);
 }
@@ -406,45 +404,53 @@ int Time::days_in_month(int year, int month)
 {
     switch (month)
     {
-        case  1: return 31;
-        case  2:
-            if (year % 400 == 0 || (year % 4 == 0 && ! (year % 100 == 0)))
+        case 1: return 31;
+        case 2:
+            if (year % 400 == 0 || (year % 4 == 0 && !(year % 100 == 0)))
                 return 29;
             return 28;
-        case  3: return 31;
-        case  4: return 30;
-        case  5: return 31;
-        case  6: return 30;
-        case  7: return 31;
-        case  8: return 31;
-        case  9: return 30;
+        case 3:  return 31;
+        case 4:  return 30;
+        case 5:  return 31;
+        case 6:  return 30;
+        case 7:  return 31;
+        case 8:  return 31;
+        case 9:  return 30;
         case 10: return 31;
         case 11: return 30;
         case 12: return 31;
-        default: throw runtime_error("cannot compute number of days in month " + std::to_string(month) + " (needs to be between 1 and 12)");
+        default:
+            throw runtime_error("cannot compute number of days in month " +
+                                std::to_string(month) +
+                                " (needs to be between 1 and 12)");
     }
 }
 
 int Time::days_in_year(int year)
 {
-    if (year % 400 == 0 || (year % 4 == 0 && ! (year % 100 == 0)))
+    if (year % 400 == 0 || (year % 4 == 0 && !(year % 100 == 0)))
         return 366;
     return 365;
 }
 
-bool Time::range_overlaps(
-        const Time* ts1, const Time* te1,
-        const Time* ts2, const Time* te2)
+bool Time::range_overlaps(const Time* ts1, const Time* te1, const Time* ts2,
+                          const Time* te2)
 {
     // If any of the intervals are open at both ends, they obviously overlap
-    if (!ts1 && !te1) return true;
-    if (!ts2 && !te2) return true;
+    if (!ts1 && !te1)
+        return true;
+    if (!ts2 && !te2)
+        return true;
 
-    if (!ts1) return !ts2 || ts2->compare(*te1) < 0;
-    if (!te1) return !te2 || te2->compare(*ts1) > 0;
+    if (!ts1)
+        return !ts2 || ts2->compare(*te1) < 0;
+    if (!te1)
+        return !te2 || te2->compare(*ts1) > 0;
 
-    if (!ts2) return te2->compare(*ts1) > 0;
-    if (!te2) return ts2->compare(*te1) < 0;
+    if (!ts2)
+        return te2->compare(*ts1) > 0;
+    if (!te2)
+        return ts2->compare(*te1) < 0;
 
     return te1->compare(*ts2) > 0 && ts1->compare(*te2) < 0;
 }
@@ -452,11 +458,7 @@ bool Time::range_overlaps(
 static long long int seconds_from(int year, const Time& t)
 {
     // Duration since the beginning of the month
-    long long int res =
-          t.se
-        + t.mi * 60
-        + t.ho * 3600
-        + (t.da - 1) * 3600 * 24;
+    long long int res = t.se + t.mi * 60 + t.ho * 3600 + (t.da - 1) * 3600 * 24;
 
     // Add duration of months since the beginning of the year
     for (int i = 1; i < t.mo; ++i)
@@ -484,7 +486,7 @@ long long int Time::duration(const core::Interval& interval)
 std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
 {
     vector<Time> res;
-    for (Time cur = begin; cur < end; )
+    for (Time cur = begin; cur < end;)
     {
         res.push_back(cur);
         cur.se += step;
@@ -493,25 +495,22 @@ std::vector<Time> Time::generate(const Time& begin, const Time& end, int step)
     return res;
 }
 
-
 /*
  * Interval
  */
 
-Interval::Interval(const Time& begin, const Time& end)
-    : begin(begin), end(end)
+Interval::Interval(const Time& begin, const Time& end) : begin(begin), end(end)
 {
 }
 
-bool Interval::is_unbounded() const
-{
-    return !begin.is_set() && !end.is_set();
-}
+bool Interval::is_unbounded() const { return !begin.is_set() && !end.is_set(); }
 
 bool Interval::contains(const Time& time) const
 {
-    if (begin.is_set() && time < begin) return false;
-    if (end.is_set() && time >= end) return false;
+    if (begin.is_set() && time < begin)
+        return false;
+    if (end.is_set() && time >= end)
+        return false;
     return true;
 }
 
@@ -523,7 +522,8 @@ bool Interval::contains(const Interval& interval) const
             return true;
         else
         {
-            if (interval.begin.is_set() && interval.begin >= end) return false;
+            if (interval.begin.is_set() && interval.begin >= end)
+                return false;
             return interval.end.is_set() && interval.end <= end;
         }
     }
@@ -532,14 +532,17 @@ bool Interval::contains(const Interval& interval) const
 
     if (!end.is_set())
     {
-        if (interval.end.is_set() && interval.end <= begin) return false;
+        if (interval.end.is_set() && interval.end <= begin)
+            return false;
         return interval.begin.is_set() && interval.begin >= begin;
     }
 
     // begin and end are set
 
-    if (!interval.begin.is_set()) return false;
-    if (!interval.end.is_set()) return false;
+    if (!interval.begin.is_set())
+        return false;
+    if (!interval.end.is_set())
+        return false;
 
     return interval.begin >= begin && interval.begin < end &&
            interval.end > begin && interval.end <= end;
@@ -593,7 +596,9 @@ void Interval::iter_months(std::function<bool(const Interval&)> f) const
         {
             f(Interval(pos, end));
             break;
-        } else {
+        }
+        else
+        {
             f(Interval(pos, next));
             pos = next;
         }
@@ -615,7 +620,9 @@ bool Interval::intersect(const Interval& other)
         {
             // other is open ended at both ends, we stay unchanged
             return true;
-        } else {
+        }
+        else
+        {
             // other has an endpoint, and we know we are not disjoint, so it
             // ends after we begin
             if (!end.is_set() || end > other.end)
@@ -664,5 +671,5 @@ std::string Interval::to_string() const
     return res;
 }
 
-}
-}
+} // namespace core
+} // namespace arki

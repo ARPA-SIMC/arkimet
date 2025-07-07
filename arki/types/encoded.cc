@@ -5,8 +5,7 @@
 namespace arki {
 namespace types {
 
-Encoded::Encoded(const std::vector<uint8_t>& buf)
-    : size(buf.size())
+Encoded::Encoded(const std::vector<uint8_t>& buf) : size(buf.size())
 {
     uint8_t* tdata = new uint8_t[size];
     memcpy(tdata, buf.data(), size);
@@ -18,8 +17,7 @@ Encoded::Encoded(const uint8_t* buf, unsigned size, bool owned)
 {
 }
 
-Encoded::Encoded(const uint8_t* buf, unsigned size)
-    : size(size)
+Encoded::Encoded(const uint8_t* buf, unsigned size) : size(size)
 {
     uint8_t* tdata = new uint8_t[size];
     memcpy(tdata, buf, size);
@@ -32,15 +30,17 @@ Encoded::~Encoded()
         delete[] data;
 }
 
-
 bool Encoded::equals(const Type& o) const
 {
-    if (type_code() != o.type_code()) return false;
+    if (type_code() != o.type_code())
+        return false;
     // This can be a reinterpret_cast for performance, since we just validated
     // the type code
     const Encoded* v = reinterpret_cast<const Encoded*>(&o);
-    if (!v) return false;
-    if (size != v->size) return false;
+    if (!v)
+        return false;
+    if (size != v->size)
+        return false;
     return memcmp(data, v->data, size) == 0;
 }
 
@@ -49,6 +49,5 @@ void Encoded::encodeWithoutEnvelope(core::BinaryEncoder& enc) const
     enc.add_raw(data, size);
 }
 
-
-}
-}
+} // namespace types
+} // namespace arki

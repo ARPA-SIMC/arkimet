@@ -46,7 +46,7 @@ private:
     TypeIntern& operator=(const TypeIntern&);
 };
 
-}
-}
+} // namespace summary
+} // namespace arki
 
 #endif

@@ -1,10 +1,10 @@
 #include "reader.h"
-#include "arki/segment/iseg/index.h"
 #include "arki/dataset/step.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
-#include "arki/utils/sys.h"
+#include "arki/segment/iseg/index.h"
 #include "arki/summary.h"
+#include "arki/utils/sys.h"
 #include <algorithm>
 
 using namespace std;
@@ -23,27 +23,27 @@ Reader::Reader(std::shared_ptr<iseg::Dataset> dataset)
     scache.openRW();
 }
 
-Reader::~Reader()
-{
-}
+Reader::~Reader() {}
 
 std::string Reader::type() const { return "iseg"; }
 
-bool Reader::is_dataset(const std::filesystem::path& dir)
-{
-    return true;
-}
+bool Reader::is_dataset(const std::filesystem::path& dir) { return true; }
 
-bool Reader::list_segments(const Matcher& matcher, std::function<bool(std::shared_ptr<arki::Segment>)> dest)
+bool Reader::list_segments(
+    const Matcher& matcher,
+    std::function<bool(std::shared_ptr<arki::Segment>)> dest)
 {
     std::vector<filesystem::path> seg_relpaths;
-    step::SegmentQuery squery(dataset().path, dataset().iseg_segment_session->format, "\\.index$", matcher);
+    step::SegmentQuery squery(dataset().path,
+                              dataset().iseg_segment_session->format,
+                              "\\.index$", matcher);
     dataset().step().list_segments(squery, [&](std::filesystem::path&& s) {
         seg_relpaths.emplace_back(std::move(s));
     });
     std::sort(seg_relpaths.begin(), seg_relpaths.end());
-    for (const auto& relpath: seg_relpaths)
-        if (!dest(dataset().segment_session->segment_from_relpath_and_format(relpath, dataset().iseg_segment_session->format)))
+    for (const auto& relpath : seg_relpaths)
+        if (!dest(dataset().segment_session->segment_from_relpath_and_format(
+                relpath, dataset().iseg_segment_session->format)))
             return false;
     return true;
 }
@@ -57,7 +57,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
         return false;
 
     bool res = list_segments(q.matcher, [&](std::shared_ptr<Segment> segment) {
-        auto reader = segment->reader(dataset().read_lock_segment(segment->relpath()));
+        auto reader =
+            segment->reader(dataset().read_lock_segment(segment->relpath()));
         return reader->query_data(q, dest);
     });
     return track.done(res);
@@ -66,7 +67,8 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 {
     list_segments(matcher, [&](std::shared_ptr<Segment> segment) {
-        auto reader = segment->reader(dataset().read_lock_segment(segment->relpath()));
+        auto reader =
+            segment->reader(dataset().read_lock_segment(segment->relpath()));
         reader->query_summary(matcher, summary);
         return true;
     });
@@ -74,7 +76,8 @@ void Reader::summary_from_indices(const Matcher& matcher, Summary& summary)
 
 void Reader::summary_for_month(int year, int month, Summary& out)
 {
-    if (scache.read(out, year, month)) return;
+    if (scache.read(out, year, month))
+        return;
 
     Matcher matcher = Matcher::for_month(year, month);
 
@@ -87,19 +90,24 @@ void Reader::summary_for_month(int year, int month, Summary& out)
 
 void Reader::summary_for_all(Summary& out)
 {
-    if (scache.read(out)) return;
+    if (scache.read(out))
+        return;
 
     // Find the datetime extremes in the database
     core::Interval interval;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg_segment_session->format), interval);
+    dataset().step().time_extremes(
+        step::SegmentQuery(dataset().path,
+                           dataset().iseg_segment_session->format),
+        interval);
 
     // If there is data in the database, get all the involved
     // monthly summaries
     if (!interval.is_unbounded())
     {
-        int year = interval.begin.ye;
+        int year  = interval.begin.ye;
         int month = interval.begin.mo;
-        while (year < interval.end.ye || (year == interval.end.ye && month <= interval.end.mo))
+        while (year < interval.end.ye ||
+               (year == interval.end.ye && month <= interval.end.mo))
         {
             summary_for_month(year, month, out);
 
@@ -121,7 +129,8 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     // Check if the matcher discriminates on reference times
     core::Interval interval;
     if (!matcher.intersect_interval(interval))
-        return; // If the matcher contains an impossible reftime, return right away
+        return; // If the matcher contains an impossible reftime, return right
+                // away
 
     if (!interval.begin.is_set() && !interval.end.is_set())
     {
@@ -135,7 +144,10 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
     // Amend open ends with the bounds from the database
     core::Interval db_interval;
-    dataset().step().time_extremes(step::SegmentQuery(dataset().path, dataset().iseg_segment_session->format), db_interval);
+    dataset().step().time_extremes(
+        step::SegmentQuery(dataset().path,
+                           dataset().iseg_segment_session->format),
+        db_interval);
     // If the database is empty then the result is empty:
     // we are done
     if (!db_interval.begin.is_set())
@@ -144,13 +156,13 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
     if (!interval.begin.is_set() || interval.begin < db_interval.begin)
     {
         interval.begin = db_interval.begin;
-        begin_from_db = true;
+        begin_from_db  = true;
     }
     bool end_from_db = false;
     if (!interval.end.is_set() || interval.end > db_interval.end)
     {
         interval.end = db_interval.end;
-        end_from_db = true;
+        end_from_db  = true;
     }
 
     // If the interval is under a week, query the DB directly
@@ -190,7 +202,9 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
             Summary s;
             summary_for_month(month.begin.ye, month.begin.mo, s);
             s.filter(matcher, summary);
-        } else {
+        }
+        else
+        {
             Summary s;
             summary_from_indices(Matcher::for_interval(month), s);
             s.filter(matcher, summary);
@@ -201,9 +215,10 @@ void Reader::impl_query_summary(const Matcher& matcher, Summary& summary)
 
 core::Interval Reader::get_stored_time_interval()
 {
-    throw std::runtime_error("iseg::Reader::get_stored_time_interval not yet implemented");
+    throw std::runtime_error(
+        "iseg::Reader::get_stored_time_interval not yet implemented");
 }
 
-}
-}
-}
+} // namespace iseg
+} // namespace dataset
+} // namespace arki

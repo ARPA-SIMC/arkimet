@@ -2,8 +2,8 @@
 #define ARKI_DISPATCHER_H
 
 #include <arki/dataset/pool.h>
-#include <arki/metadata/fwd.h>
 #include <arki/matcher.h>
+#include <arki/metadata/fwd.h>
 #include <string>
 #include <vector>
 
@@ -15,8 +15,8 @@ protected:
     std::shared_ptr<dataset::Pool> pool;
 
     // Dispatching information
-    std::vector< std::pair<std::string, Matcher> > datasets;
-    std::vector< std::pair<std::string, Matcher> > outbounds;
+    std::vector<std::pair<std::string, Matcher>> datasets;
+    std::vector<std::pair<std::string, Matcher>> outbounds;
     std::vector<const metadata::Validator*> validators;
 
     /// True if we can import another one
@@ -25,7 +25,9 @@ protected:
     /// Number of failed acquires to outbound datasets
     int m_outbound_failures;
 
-    virtual void raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit) = 0;
+    virtual void raw_dispatch_dataset(const std::string& name,
+                                      metadata::InboundBatch& batch,
+                                      bool drop_cached_data_on_commit) = 0;
 
 public:
     Dispatcher(std::shared_ptr<dataset::Pool> pool);
@@ -39,27 +41,28 @@ public:
      */
     void add_validator(const metadata::Validator& v);
 
-	/**
-	 * Return true if the metadata consumer called by the last dispatch()
-	 * invocation returned true.
-	 */
-	bool canContinue() const { return m_can_continue; }
+    /**
+     * Return true if the metadata consumer called by the last dispatch()
+     * invocation returned true.
+     */
+    bool canContinue() const { return m_can_continue; }
 
-	/**
-	 * Return the number of failed acquires to outbound datasets since the
-	 * creation of the dispatcher.
-	 *
-	 * Details on the failures can be found in the notes of the metadata after
-	 * acquire.
-	 */
-	size_t outboundFailures() const { return m_outbound_failures; }
+    /**
+     * Return the number of failed acquires to outbound datasets since the
+     * creation of the dispatcher.
+     *
+     * Details on the failures can be found in the notes of the metadata after
+     * acquire.
+     */
+    size_t outboundFailures() const { return m_outbound_failures; }
 
     /**
      * Dispatch the metadata and their data.
      *
      * @returns The outcome of the dispatch, one element per metadata in mds.
      */
-    virtual void dispatch(metadata::InboundBatch& batch, bool drop_cached_data_on_commit);
+    virtual void dispatch(metadata::InboundBatch& batch,
+                          bool drop_cached_data_on_commit);
 
     virtual void flush() = 0;
 };
@@ -83,7 +86,9 @@ class RealDispatcher : public Dispatcher
 protected:
     dataset::DispatchPool pool;
 
-    void raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit) override;
+    void raw_dispatch_dataset(const std::string& name,
+                              metadata::InboundBatch& batch,
+                              bool drop_cached_data_on_commit) override;
 
 public:
     explicit RealDispatcher(std::shared_ptr<dataset::Pool> pool);
@@ -106,13 +111,16 @@ public:
 class TestDispatcher : public Dispatcher
 {
 protected:
-    void raw_dispatch_dataset(const std::string& name, metadata::InboundBatch& batch, bool drop_cached_data_on_commit) override;
+    void raw_dispatch_dataset(const std::string& name,
+                              metadata::InboundBatch& batch,
+                              bool drop_cached_data_on_commit) override;
 
 public:
     explicit TestDispatcher(std::shared_ptr<dataset::Pool> pool);
     ~TestDispatcher() override;
 
-    void dispatch(metadata::InboundBatch& batch, bool drop_cached_data_on_commit) override;
+    void dispatch(metadata::InboundBatch& batch,
+                  bool drop_cached_data_on_commit) override;
 
     /**
      * Flush all dataset data do disk
@@ -120,5 +128,5 @@ public:
     void flush() override;
 };
 
-}
+} // namespace arki
 #endif

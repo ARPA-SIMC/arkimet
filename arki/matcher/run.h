@@ -28,11 +28,12 @@ struct MatchRunMinute : public MatchRun
     MatchRunMinute(const std::string& pattern);
     MatchRunMinute* clone() const override;
     bool matchItem(const types::Type& o) const override;
-    bool match_buffer(types::Code code, const uint8_t* data, unsigned size) const override;
+    bool match_buffer(types::Code code, const uint8_t* data,
+                      unsigned size) const override;
     std::string toString() const override;
 };
 
-}
-}
+} // namespace matcher
+} // namespace arki
 
 #endif

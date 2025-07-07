@@ -14,13 +14,12 @@ SequenceFile::SequenceFile(const std::filesystem::path& dirname)
 {
 }
 
-SequenceFile::~SequenceFile()
-{
-}
+SequenceFile::~SequenceFile() {}
 
 void SequenceFile::open()
 {
-    core::File::open(O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW, 0666);
+    core::File::open(O_RDWR | O_CREAT | O_CLOEXEC | O_NOATIME | O_NOFOLLOW,
+                     0666);
 }
 
 size_t SequenceFile::read_sequence()
@@ -31,7 +30,9 @@ size_t SequenceFile::read_sequence()
     {
         new_file = true;
         return 0;
-    } else {
+    }
+    else
+    {
         new_file = false;
         return cur;
     }
@@ -39,7 +40,7 @@ size_t SequenceFile::read_sequence()
 
 void SequenceFile::write_sequence(size_t val)
 {
-    uint64_t cur = val;
+    uint64_t cur  = val;
     ssize_t count = pwrite(&cur, sizeof(cur), 0);
     if (count != sizeof(cur))
         throw_runtime_error("cannot write the whole sequence file");
@@ -52,5 +53,5 @@ std::filesystem::path SequenceFile::data_fname(size_t pos, DataFormat format)
     return buf;
 }
 
-}
-}
+} // namespace segment
+} // namespace arki

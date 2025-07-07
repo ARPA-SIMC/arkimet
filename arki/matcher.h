@@ -3,13 +3,13 @@
 
 /// Metadata match expressions
 #include <arki/core/fwd.h>
-#include <arki/types/fwd.h>
-#include <arki/metadata/fwd.h>
 #include <arki/matcher/fwd.h>
-#include <string>
-#include <set>
-#include <memory>
+#include <arki/metadata/fwd.h>
+#include <arki/types/fwd.h>
 #include <cstdint>
+#include <memory>
+#include <set>
+#include <string>
 
 namespace arki {
 
@@ -41,12 +41,12 @@ public:
     Matcher(std::unique_ptr<matcher::AND>&& impl);
     Matcher(std::shared_ptr<matcher::AND> impl);
     Matcher(const Matcher& val) = default;
-    Matcher(Matcher&& val) = default;
+    Matcher(Matcher&& val)      = default;
     ~Matcher() {}
 
     /// Assignment
     Matcher& operator=(const Matcher& val) = default;
-    Matcher& operator=(Matcher&& val) = default;
+    Matcher& operator=(Matcher&& val)      = default;
 
     bool empty() const;
 
@@ -72,9 +72,11 @@ public:
 
     std::shared_ptr<matcher::OR> get(types::Code code) const;
 
-    void foreach_type(std::function<void(types::Code, const matcher::OR&)> dest) const;
+    void foreach_type(
+        std::function<void(types::Code, const matcher::OR&)> dest) const;
 
-    void split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const;
+    void split(const std::set<types::Code>& codes, Matcher& with,
+               Matcher& without) const;
 
     /**
      * Restrict date extremes to be no wider than what is matched by this
@@ -116,7 +118,8 @@ public:
      */
     Matcher update(const Matcher& m) const;
 
-    /// Return a matcher matching a time interval (from begin included, to end excluded)
+    /// Return a matcher matching a time interval (from begin included, to end
+    /// excluded)
     static Matcher for_interval(const core::Interval& interval);
 
     /// Return a matcher matching a whole month
@@ -126,6 +129,6 @@ public:
 /// Write as a string to an output stream
 std::ostream& operator<<(std::ostream& o, const Matcher& m);
 
-}
+} // namespace arki
 
 #endif

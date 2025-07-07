@@ -12,29 +12,30 @@ ItemSet::ItemSet() {}
 ItemSet::ItemSet(const ItemSet& o)
 {
     m_vals.reserve(o.size());
-    for (const auto& i: o)
+    for (const auto& i : o)
         m_vals.emplace_back(i.first, i.second->clone());
 }
 
 ItemSet::~ItemSet()
 {
-    for (auto& i: m_vals)
+    for (auto& i : m_vals)
         delete i.second;
 }
 
 ItemSet& ItemSet::operator=(const ItemSet& o)
 {
-    if (this == &o) return *this;
+    if (this == &o)
+        return *this;
     clear();
     m_vals.reserve(o.size());
-    for (const auto& i: o)
+    for (const auto& i : o)
         m_vals.emplace_back(i.first, i.second->clone());
     return *this;
 }
 
 bool ItemSet::has(types::Code code) const
 {
-    for (const auto& i: m_vals)
+    for (const auto& i : m_vals)
         if (i.first == code)
             return true;
     return false;
@@ -42,7 +43,7 @@ bool ItemSet::has(types::Code code) const
 
 const Type* ItemSet::get(Code code) const
 {
-    for (const auto& i: m_vals)
+    for (const auto& i : m_vals)
         if (i.first == code)
             return i.second;
     return nullptr;
@@ -67,7 +68,9 @@ void ItemSet::set(std::unique_ptr<Type> item)
             delete i->second;
             i->second = item.release();
             return;
-        } else if (i->first > code) {
+        }
+        else if (i->first > code)
+        {
             m_vals.emplace(i, code, item.release());
             return;
         }
@@ -94,7 +97,7 @@ void ItemSet::unset(Code code)
 
 void ItemSet::clear()
 {
-    for (auto& i: m_vals)
+    for (auto& i : m_vals)
         delete i.second;
     m_vals.clear();
 }
@@ -105,8 +108,10 @@ bool ItemSet::operator==(const ItemSet& m) const
     auto it2 = m.m_vals.begin();
     while (it1 != m_vals.end() && it2 != m.m_vals.end())
     {
-        if (it1->first != it2->first) return false;
-        if (!it1->second->equals(*it2->second)) return false;
+        if (it1->first != it2->first)
+            return false;
+        if (!it1->second->equals(*it2->second))
+            return false;
         ++it1;
         ++it2;
     }
@@ -117,13 +122,14 @@ int ItemSet::compare(const ItemSet& m) const
 {
     auto a = begin();
     auto b = m.begin();
-    for ( ; a != end() && b != m.end(); ++a, ++b)
+    for (; a != end() && b != m.end(); ++a, ++b)
     {
         if (a->first < b->first)
             return -1;
         if (a->first > b->first)
             return 1;
-        if (int res = a->second->compare(*b->second)) return res;
+        if (int res = a->second->compare(*b->second))
+            return res;
     }
     if (a == end() && b == m.end())
         return 0;
@@ -132,5 +138,5 @@ int ItemSet::compare(const ItemSet& m) const
     return 1;
 }
 
-}
-}
+} // namespace types
+} // namespace arki

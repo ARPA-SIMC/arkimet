@@ -1,15 +1,15 @@
 #ifndef ARKI_SEGMENT_H
 #define ARKI_SEGMENT_H
 
+#include <arki/core/time.h>
+#include <arki/metadata/fwd.h>
+#include <arki/query/fwd.h>
+#include <arki/segment/fwd.h>
+#include <arki/segment/session.h>
+#include <arki/summary.h>
 #include <filesystem>
 #include <memory>
 #include <string>
-#include <arki/segment/fwd.h>
-#include <arki/segment/session.h>
-#include <arki/query/fwd.h>
-#include <arki/metadata/fwd.h>
-#include <arki/core/time.h>
-#include <arki/summary.h>
 
 namespace arki {
 
@@ -23,7 +23,8 @@ protected:
     std::filesystem::path m_abspath;
 
 public:
-    Segment(std::shared_ptr<const segment::Session> session, DataFormat format, const std::filesystem::path& relpath);
+    Segment(std::shared_ptr<const segment::Session> session, DataFormat format,
+            const std::filesystem::path& relpath);
     virtual ~Segment();
 
     const segment::Session& session() const { return *m_session; }
@@ -35,26 +36,36 @@ public:
     std::filesystem::path abspath_summary() const;
     std::filesystem::path abspath_iseg_index() const;
 
-    std::shared_ptr<segment::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const;
-    std::shared_ptr<segment::Writer> writer(std::shared_ptr<core::AppendLock> lock) const;
-    std::shared_ptr<segment::Checker> checker(std::shared_ptr<core::CheckLock> lock) const;
+    std::shared_ptr<segment::Reader>
+    reader(std::shared_ptr<const core::ReadLock> lock) const;
+    std::shared_ptr<segment::Writer>
+    writer(std::shared_ptr<core::AppendLock> lock) const;
+    std::shared_ptr<segment::Checker>
+    checker(std::shared_ptr<core::CheckLock> lock) const;
 
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> data() const;
 
-    /// Instantiate the right Reader implementation for a segment that already exists
-    std::shared_ptr<segment::data::Reader> data_reader(std::shared_ptr<const core::ReadLock> lock) const;
+    /// Instantiate the right Reader implementation for a segment that already
+    /// exists
+    std::shared_ptr<segment::data::Reader>
+    data_reader(std::shared_ptr<const core::ReadLock> lock) const;
 
-    /// Instantiate the right Writer implementation for a segment that already exists
-    std::shared_ptr<segment::data::Writer> data_writer(const segment::WriterConfig& config) const;
+    /// Instantiate the right Writer implementation for a segment that already
+    /// exists
+    std::shared_ptr<segment::data::Writer>
+    data_writer(const segment::WriterConfig& config) const;
 
-    /// Instantiate the right Checker implementation for a segment that already exists
+    /// Instantiate the right Checker implementation for a segment that already
+    /// exists
     std::shared_ptr<segment::data::Checker> data_checker() const;
 
     /**
-     * Return the segment path for this pathname, stripping .gz, .tar, and .zip extensions
+     * Return the segment path for this pathname, stripping .gz, .tar, and .zip
+     * extensions
      */
-    static std::filesystem::path basename(const std::filesystem::path& pathname);
+    static std::filesystem::path
+    basename(const std::filesystem::path& pathname);
 };
 
 namespace segment {
@@ -66,11 +77,12 @@ protected:
     std::shared_ptr<const core::ReadLock> lock;
 
 public:
-    explicit Reader(std::shared_ptr<const Segment> segment, std::shared_ptr<const core::ReadLock> lock);
-    Reader(const Reader&) = delete;
-    Reader(Reader&&) = delete;
+    explicit Reader(std::shared_ptr<const Segment> segment,
+                    std::shared_ptr<const core::ReadLock> lock);
+    Reader(const Reader&)            = delete;
+    Reader(Reader&&)                 = delete;
     Reader& operator=(const Reader&) = delete;
-    Reader& operator=(Reader&&) = delete;
+    Reader& operator=(Reader&&)      = delete;
     virtual ~Reader();
 
     /// Access the segment
@@ -107,7 +119,6 @@ public:
 #endif
 };
 
-
 struct WriterConfig
 {
     /**
@@ -124,7 +135,6 @@ struct WriterConfig
     bool drop_cached_data_on_commit = false;
 };
 
-
 class Writer : public std::enable_shared_from_this<Writer>
 {
 protected:
@@ -134,26 +144,26 @@ protected:
 public:
     struct AcquireResult
     {
-        size_t count_ok = 0;
-        size_t count_failed = 0;
+        size_t count_ok      = 0;
+        size_t count_failed  = 0;
         time_t segment_mtime = 0;
         arki::core::Interval data_timespan;
     };
 
-
-    Writer(std::shared_ptr<const Segment> segment, std::shared_ptr<core::AppendLock> lock);
-    Writer(const Writer&) = delete;
-    Writer(Writer&&) = delete;
+    Writer(std::shared_ptr<const Segment> segment,
+           std::shared_ptr<core::AppendLock> lock);
+    Writer(const Writer&)            = delete;
+    Writer(Writer&&)                 = delete;
     Writer& operator=(const Writer&) = delete;
-    Writer& operator=(Writer&&) = delete;
+    Writer& operator=(Writer&&)      = delete;
     virtual ~Writer();
 
     /// Access the segment
     const Segment& segment() const { return *m_segment; }
 
-    virtual AcquireResult acquire(arki::metadata::InboundBatch& batch, const WriterConfig& config) = 0;
+    virtual AcquireResult acquire(arki::metadata::InboundBatch& batch,
+                                  const WriterConfig& config) = 0;
 };
-
 
 class Checker : public std::enable_shared_from_this<Checker>
 {
@@ -165,17 +175,18 @@ protected:
 public:
     struct FsckResult
     {
-        size_t size = 0;
+        size_t size  = 0;
         time_t mtime = 0;
         core::Interval interval;
         segment::State state = SEGMENT_OK;
     };
 
-    Checker(std::shared_ptr<const Segment> segment, std::shared_ptr<core::CheckLock> lock);
-    Checker(const Checker&) = delete;
-    Checker(Checker&&) = delete;
+    Checker(std::shared_ptr<const Segment> segment,
+            std::shared_ptr<core::CheckLock> lock);
+    Checker(const Checker&)            = delete;
+    Checker(Checker&&)                 = delete;
     Checker& operator=(const Checker&) = delete;
-    Checker& operator=(Checker&&) = delete;
+    Checker& operator=(Checker&&)      = delete;
     virtual ~Checker();
 
     const Segment& segment() const { return *m_segment; }
@@ -198,7 +209,7 @@ public:
     /**
      * Run consistency checks on the segment
      */
-    virtual FsckResult fsck(segment::Reporter& reporter, bool quick=true) = 0;
+    virtual FsckResult fsck(segment::Reporter& reporter, bool quick = true) = 0;
 
     /**
      * Lock for writing and return a Fixer for this segment
@@ -229,15 +240,15 @@ protected:
 public:
     struct ReorderResult
     {
-        size_t size_pre = 0;
-        size_t size_post = 0;
+        size_t size_pre      = 0;
+        size_t size_post     = 0;
         time_t segment_mtime = 0;
     };
 
     struct ConvertResult
     {
-        size_t size_pre = 0;
-        size_t size_post = 0;
+        size_t size_pre      = 0;
+        size_t size_post     = 0;
         time_t segment_mtime = 0;
     };
 
@@ -247,11 +258,12 @@ public:
         arki::core::Interval data_timespan;
     };
 
-    Fixer(std::shared_ptr<Checker> checker, std::shared_ptr<core::CheckWriteLock> lock);
-    Fixer(const Fixer&) = delete;
-    Fixer(Fixer&&) = delete;
+    Fixer(std::shared_ptr<Checker> checker,
+          std::shared_ptr<core::CheckWriteLock> lock);
+    Fixer(const Fixer&)            = delete;
+    Fixer(Fixer&&)                 = delete;
     Fixer& operator=(const Fixer&) = delete;
-    Fixer& operator=(Fixer&&) = delete;
+    Fixer& operator=(Fixer&&)      = delete;
     virtual ~Fixer();
 
     const Segment& segment() const { return m_checker->segment(); }
@@ -266,7 +278,8 @@ public:
      * If the segment has an index, the data segment remains unchanged until
      * the next repack
      */
-    virtual MarkRemovedResult mark_removed(const std::set<uint64_t>& offsets) = 0;
+    virtual MarkRemovedResult
+    mark_removed(const std::set<uint64_t>& offsets) = 0;
 
     /**
      * Rewrite the segment so that the data has the same order as `mds`.
@@ -276,7 +289,9 @@ public:
      * @returns The size difference between the initial segment size and the
      * final segment size.
      */
-    virtual ReorderResult reorder(arki::metadata::Collection& mds, const segment::data::RepackConfig& repack_config) = 0;
+    virtual ReorderResult
+    reorder(arki::metadata::Collection& mds,
+            const segment::data::RepackConfig& repack_config) = 0;
 
     /**
      * Convert the segment to use tar for the data.
@@ -300,7 +315,8 @@ public:
     /**
      * Remove the segment.
      *
-     * @param with_data: if false, only metadata is removed, and data is preserved.
+     * @param with_data: if false, only metadata is removed, and data is
+     * preserved.
      * @returns the number of bytes freed
      */
     virtual size_t remove(bool with_data) = 0;
@@ -322,7 +338,8 @@ public:
     virtual void reindex(arki::metadata::Collection& mds) = 0;
 
     /**
-     * Mark everything as removed in the index, scheduling the segment for removal.
+     * Mark everything as removed in the index, scheduling the segment for
+     * removal.
      *
      * If the segment has no index, it does nothing.
      */
@@ -343,7 +360,8 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_make_overlap(unsigned overlap_size, unsigned data_idx=1) = 0;
+    virtual void test_make_overlap(unsigned overlap_size,
+                                   unsigned data_idx = 1) = 0;
 
     /**
      * All data in the segment starting from the one at position `data_idx` are
@@ -352,13 +370,13 @@ public:
      *
      * This is used to simulate anomalies in the dataset during tests.
      */
-    virtual void test_make_hole(unsigned hole_size, unsigned data_idx=0) = 0;
+    virtual void test_make_hole(unsigned hole_size, unsigned data_idx = 0) = 0;
 };
 
 /**
  * Reader that always returns no results
  */
-class EmptyReader: public Reader
+class EmptyReader : public Reader
 {
 public:
     using Reader::Reader;
@@ -368,8 +386,8 @@ public:
     void query_summary(const Matcher& matcher, Summary& summary) override;
 };
 
-}
+} // namespace segment
 
-}
+} // namespace arki
 
 #endif

@@ -1,6 +1,6 @@
-#include "tests.h"
 #include "arki/matcher.h"
 #include "arki/query.h"
+#include "tests.h"
 
 namespace {
 using namespace std;
@@ -30,26 +30,26 @@ class Tests : public FixtureTestCase<Fixture>
 
 Tests test("arki_dataset_empty");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Test accessing the data
-add_method("read", [](Fixture& f) {
-    auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
-    wassert(actual(mdc.size()) == 0u);
-});
+    // Test accessing the data
+    add_method("read", [](Fixture& f) {
+        auto reader = f.config().create_reader();
+        metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
+        wassert(actual(mdc.size()) == 0u);
+    });
 
-// Test acquiring the data
-add_method("write", [](Fixture& f) {
-    // Import data into the datasets
-    f.clean_and_import();
+    // Test acquiring the data
+    add_method("write", [](Fixture& f) {
+        // Import data into the datasets
+        f.clean_and_import();
 
-    // Ensure that nothing can be read back
-    auto reader = f.config().create_reader();
-    metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
-    wassert(actual(mdc.size()) == 0u);
-});
-
+        // Ensure that nothing can be read back
+        auto reader = f.config().create_reader();
+        metadata::Collection mdc(*reader, "origin:GRIB1 or BUFR or GRIB2");
+        wassert(actual(mdc.size()) == 0u);
+    });
 }
 
-}
+} // namespace

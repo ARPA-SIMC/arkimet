@@ -11,15 +11,15 @@ class Summary;
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::Summary* summary;
+typedef struct
+{
+    PyObject_HEAD arki::Summary* summary;
 } arkipy_Summary;
 
 extern PyTypeObject* arkipy_Summary_Type;
 
-#define arkipy_Summary_Check(ob) \
-    (Py_TYPE(ob) == arkipy_Summary_Type || \
+#define arkipy_Summary_Check(ob)                                               \
+    (Py_TYPE(ob) == arkipy_Summary_Type ||                                     \
      PyType_IsSubtype(Py_TYPE(ob), arkipy_Summary_Type))
 }
 
@@ -31,8 +31,6 @@ arkipy_Summary* summary_create(std::unique_ptr<Summary>&& summary);
 
 void register_summary(PyObject* m);
 
-}
-}
+} // namespace python
+} // namespace arki
 #endif
-
-

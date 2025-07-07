@@ -1,12 +1,12 @@
 #include "sort.h"
-#include "arki/types/reftime.h"
-#include "arki/metadata.h"
 #include "arki/exceptions.h"
-#include "arki/utils/string.h"
+#include "arki/metadata.h"
+#include "arki/types/reftime.h"
 #include "arki/utils/regexp.h"
-#include <vector>
+#include "arki/utils/string.h"
 #include <cctype>
 #include <cstring>
+#include <vector>
 
 using namespace std;
 using namespace arki::types;
@@ -26,13 +26,23 @@ struct Item
     Item(const std::string& expr)
     {
         if (expr.empty())
-            throw_consistency_error("parsing sort expression", "metadata name is the empty string");
+            throw_consistency_error("parsing sort expression",
+                                    "metadata name is the empty string");
         size_t start = 0;
         switch (expr[0])
         {
-            case '+': reverse = false; start = 1; break;
-            case '-': reverse = true; start = 1; break;
-            default: reverse = false; start = 0; break;
+            case '+':
+                reverse = false;
+                start   = 1;
+                break;
+            case '-':
+                reverse = true;
+                start   = 1;
+                break;
+            default:
+                reverse = false;
+                start   = 0;
+                break;
         }
         while (start < expr.size() && isspace(expr[start]))
             ++start;
@@ -50,7 +60,8 @@ struct Item
 /// Serializer for Item
 static ostream& operator<<(ostream& out, const Item& i)
 {
-    if (i.reverse) out << "-";
+    if (i.reverse)
+        out << "-";
     out << str::lower(types::formatCode(i.code));
     return out;
 }
@@ -65,7 +76,7 @@ public:
     {
         Splitter splitter("[ \t]*,[ \t]*", REG_EXTENDED);
         for (Splitter::const_iterator i = splitter.begin(expr);
-                i != splitter.end(); ++i)
+             i != splitter.end(); ++i)
             push_back(Item(*i));
         if (empty())
             push_back(Item("reftime"));
@@ -77,7 +88,8 @@ public:
         for (const_iterator i = begin(); i != end(); ++i)
         {
             int cmp = i->compare(a, b);
-            if (cmp != 0) return cmp;
+            if (cmp != 0)
+                return cmp;
         }
         return 0;
     }
@@ -93,7 +105,9 @@ struct IntervalCompare : public Items
     Interval m_interval;
 
     IntervalCompare(Interval interval, const std::string& expr)
-        : Items(expr), m_interval(interval) {}
+        : Items(expr), m_interval(interval)
+    {
+    }
 
     Interval interval() const override { return m_interval; }
 
@@ -106,16 +120,16 @@ struct IntervalCompare : public Items
     {
         switch (m_interval)
         {
-            case NONE: return Items::toString();
-            case MINUTE: return "minute:"+Items::toString();
-            case HOUR: return "hour:"+Items::toString();
-            case DAY: return "day:"+Items::toString();
-            case MONTH: return "month:"+Items::toString();
-            case YEAR: return "year:"+Items::toString();
-            default:
-            {
+            case NONE:   return Items::toString();
+            case MINUTE: return "minute:" + Items::toString();
+            case HOUR:   return "hour:" + Items::toString();
+            case DAY:    return "day:" + Items::toString();
+            case MONTH:  return "month:" + Items::toString();
+            case YEAR:   return "year:" + Items::toString();
+            default:     {
                 stringstream ss;
-                ss << "cannot format sort expression: interval code " << (int)m_interval << " is not valid";
+                ss << "cannot format sort expression: interval code "
+                   << (int)m_interval << " is not valid";
                 throw std::runtime_error(ss.str());
             }
         }
@@ -127,12 +141,20 @@ static Compare::Interval parseInterval(const std::string& name)
 {
     // TODO: convert into something faster, like a hash lookup or a gperf lookup
     string nname = str::lower(str::strip(name));
-    if (nname == "minute") return Compare::MINUTE;
-    if (nname == "hour") return Compare::HOUR;
-    if (nname == "day") return Compare::DAY;
-    if (nname == "month") return Compare::MONTH;
-    if (nname == "year") return Compare::YEAR;
-    throw_consistency_error("parsing interval name", "unsupported interval: " + name + ".  Valid intervals are minute, hour, day, month and year");
+    if (nname == "minute")
+        return Compare::MINUTE;
+    if (nname == "hour")
+        return Compare::HOUR;
+    if (nname == "day")
+        return Compare::DAY;
+    if (nname == "month")
+        return Compare::MONTH;
+    if (nname == "year")
+        return Compare::YEAR;
+    throw_consistency_error(
+        "parsing interval name",
+        "unsupported interval: " + name +
+            ".  Valid intervals are minute, hour, day, month and year");
 }
 
 unique_ptr<Compare> Compare::parse(const std::string& expr)
@@ -141,8 +163,11 @@ unique_ptr<Compare> Compare::parse(const std::string& expr)
     if (pos == string::npos)
     {
         return unique_ptr<Compare>(new sort::Items(expr));
-    } else {
-        return unique_ptr<Compare>(new sort::IntervalCompare(sort::parseInterval(expr.substr(0, pos)), expr.substr(pos+1)));
+    }
+    else
+    {
+        return unique_ptr<Compare>(new sort::IntervalCompare(
+            sort::parseInterval(expr.substr(0, pos)), expr.substr(pos + 1)));
     }
 }
 
@@ -155,15 +180,15 @@ void Stream::setEndOfPeriod(const core::Time& time)
     int se = time.se;
     switch (sorter.interval())
     {
-        case Compare::YEAR: mo = -1; // Falls through
-        case Compare::MONTH: da = -1; // Falls through
-        case Compare::DAY: ho = -1; // Falls through
-        case Compare::HOUR: mi = -1; // Falls through
+        case Compare::YEAR:   mo = -1; // Falls through
+        case Compare::MONTH:  da = -1; // Falls through
+        case Compare::DAY:    ho = -1; // Falls through
+        case Compare::HOUR:   mi = -1; // Falls through
         case Compare::MINUTE: se = -1; break;
-        default:
-        {
+        default:              {
             stringstream ss;
-            ss << "cannot set end of period: interval type has invalid value: " << (int)sorter.interval();
+            ss << "cannot set end of period: interval type has invalid value: "
+               << (int)sorter.interval();
             throw std::runtime_error(ss.str());
         }
     }
@@ -184,7 +209,9 @@ bool Stream::add(std::shared_ptr<Metadata> m)
         }
         else
             buffer.push_back(m);
-    } else {
+    }
+    else
+    {
         if (hasInterval)
             flush();
         buffer.push_back(m);
@@ -194,11 +221,12 @@ bool Stream::add(std::shared_ptr<Metadata> m)
 
 bool Stream::flush()
 {
-    if (buffer.empty()) return true;
+    if (buffer.empty())
+        return true;
     buffer.sort(sorter);
     return buffer.move_to(next_dest);
 }
 
-}
-}
-}
+} // namespace sort
+} // namespace metadata
+} // namespace arki

@@ -21,25 +21,23 @@ MatchQuantity::MatchQuantity(const MatchQuantity& o)
 
 MatchQuantity::MatchQuantity(const std::string& pattern)
 {
-	arki::types::split(pattern, values);
+    arki::types::split(pattern, values);
 }
 
-MatchQuantity* MatchQuantity::clone() const
-{
-    return new MatchQuantity(*this);
-}
+MatchQuantity* MatchQuantity::clone() const { return new MatchQuantity(*this); }
 
 bool MatchQuantity::matchItem(const Type& o) const
 {
-	const types::Quantity* v = dynamic_cast<const types::Quantity*>(&o);
-	if (!v) return false;
+    const types::Quantity* v = dynamic_cast<const types::Quantity*>(&o);
+    if (!v)
+        return false;
 
     // If the matcher has values to match
     if (values.size())
     {
         auto vvalues = v->get();
-        //allora tutti i valori indicati devono essere presenti nell'oggetto
-        for (const auto& i: values)
+        // allora tutti i valori indicati devono essere presenti nell'oggetto
+        for (const auto& i : values)
             if (vvalues.find(i) == vvalues.end())
                 return false;
     }
@@ -51,7 +49,7 @@ std::string MatchQuantity::toString() const
 {
     CommaJoiner res;
     for (std::set<std::string>::const_iterator i = values.begin();
-            i != values.end(); ++i)
+         i != values.end(); ++i)
         res.add(*i);
     return res.join();
 }
@@ -63,8 +61,10 @@ Implementation* MatchQuantity::parse(const std::string& pattern)
 
 void MatchQuantity::init()
 {
-    MatcherType::register_matcher("quantity", TYPE_QUANTITY, (MatcherType::subexpr_parser)MatchQuantity::parse);
+    MatcherType::register_matcher(
+        "quantity", TYPE_QUANTITY,
+        (MatcherType::subexpr_parser)MatchQuantity::parse);
 }
 
-}
-}
+} // namespace matcher
+} // namespace arki

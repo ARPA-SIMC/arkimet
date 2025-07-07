@@ -11,16 +11,13 @@ class SaveIOState
 {
     std::ios_base& s;
     std::ios_base::fmtflags f;
-    public:
-    SaveIOState(std::ios_base& s) : s(s), f(s.flags())
-    {}
-    ~SaveIOState()
-    {
-        s.flags(f);
-    }
+
+public:
+    SaveIOState(std::ios_base& s) : s(s), f(s.flags()) {}
+    ~SaveIOState() { s.flags(f); }
 };
 
-}
-}
+} // namespace utils
+} // namespace arki
 
 #endif

@@ -7,7 +7,9 @@
 namespace arki::segment::iseg::index {
 
 // Exception we can throw if an element was not found
-struct NotFound {};
+struct NotFound
+{
+};
 
 /**
  * Format a vector of ints to a SQL match expression.
@@ -18,5 +20,5 @@ struct NotFound {};
  */
 std::string fmtin(const std::vector<int>& vals);
 
-}
+} // namespace arki::segment::iseg::index
 #endif

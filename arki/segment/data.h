@@ -3,23 +3,23 @@
 
 /// Dataset segment read/write functions
 
-#include <arki/defs.h>
 #include <arki/core/fwd.h>
-#include <arki/types/fwd.h>
-#include <arki/scan/fwd.h>
-#include <arki/metadata/fwd.h>
-#include <arki/stream/fwd.h>
-#include <arki/segment/fwd.h>
-#include <arki/segment/defs.h>
-#include <arki/segment.h>
 #include <arki/core/transaction.h>
+#include <arki/defs.h>
+#include <arki/metadata/fwd.h>
+#include <arki/scan/fwd.h>
+#include <arki/segment.h>
+#include <arki/segment/defs.h>
+#include <arki/segment/fwd.h>
+#include <arki/stream/fwd.h>
+#include <arki/types/fwd.h>
 #include <arki/utils/files.h>
-#include <filesystem>
-#include <string>
-#include <memory>
-#include <vector>
-#include <optional>
 #include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace arki::segment {
 
@@ -27,7 +27,8 @@ namespace data {
 struct RepackConfig
 {
     /**
-     * When repacking gzidx segments, how many data items are compressed together.
+     * When repacking gzidx segments, how many data items are compressed
+     * together.
      */
     unsigned gz_group_size = 512;
 
@@ -40,10 +41,9 @@ struct RepackConfig
     static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
 
     RepackConfig();
-    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags=0);
+    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags = 0);
 };
-}
-
+} // namespace data
 
 /**
  * Interface for managing a segment.
@@ -125,12 +125,14 @@ public:
     /**
      * Instantiate a reader for this segment
      */
-    virtual std::shared_ptr<segment::data::Reader> reader(std::shared_ptr<const core::ReadLock> lock) const = 0;
+    virtual std::shared_ptr<segment::data::Reader>
+    reader(std::shared_ptr<const core::ReadLock> lock) const = 0;
 
     /**
      * Instantiate a writer for this segment
      */
-    virtual std::shared_ptr<segment::data::Writer> writer(const segment::WriterConfig& config) const = 0;
+    virtual std::shared_ptr<segment::data::Writer>
+    writer(const segment::WriterConfig& config) const = 0;
 
     /**
      * Instantiate a checker for this segment
@@ -143,14 +145,15 @@ public:
      * Replace metadata sources with pointers to the data in the newly created
      * segment
      */
-    virtual void create_segment(arki::metadata::Collection& mds, const data::RepackConfig& cfg=data::RepackConfig()) = 0;
+    virtual void
+    create_segment(arki::metadata::Collection& mds,
+                   const data::RepackConfig& cfg = data::RepackConfig()) = 0;
 
     /**
      * Preserve segment mtime
      */
     virtual utils::files::PreserveFileTimes preserve_mtime() = 0;
 };
-
 
 namespace data {
 
@@ -163,7 +166,7 @@ public:
     virtual ~Reader();
 
     virtual const Segment& segment() const = 0;
-    virtual const Data& data() const = 0;
+    virtual const Data& data() const       = 0;
 
     /**
      * Scan the segment contents ignoring all existing metadata (if any).
@@ -175,10 +178,12 @@ public:
     virtual bool scan_data(metadata_dest_func dest) = 0;
 
     virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
-    virtual stream::SendResult stream(const types::source::Blob& src, StreamOutput& out);
+    virtual stream::SendResult stream(const types::source::Blob& src,
+                                      StreamOutput& out);
 };
 
-class Writer : public core::Transaction, public std::enable_shared_from_this<Writer>
+class Writer : public core::Transaction,
+               public std::enable_shared_from_this<Writer>
 {
 public:
     struct PendingMetadata
@@ -187,12 +192,13 @@ public:
         Metadata& md;
         types::source::Blob* new_source;
 
-        PendingMetadata(const segment::WriterConfig& config, Metadata& md, std::unique_ptr<types::source::Blob> new_source);
+        PendingMetadata(const segment::WriterConfig& config, Metadata& md,
+                        std::unique_ptr<types::source::Blob> new_source);
         PendingMetadata(const PendingMetadata&) = delete;
         PendingMetadata(PendingMetadata&& o);
         ~PendingMetadata();
         PendingMetadata& operator=(const PendingMetadata&) = delete;
-        PendingMetadata& operator=(PendingMetadata&&) = delete;
+        PendingMetadata& operator=(PendingMetadata&&)      = delete;
 
         void set_source();
     };
@@ -205,7 +211,7 @@ public:
     virtual ~Writer() {}
 
     virtual const Segment& segment() const = 0;
-    virtual const Data& data() const = 0;
+    virtual const Data& data() const       = 0;
 
     /**
      * Return the write offset for the next append operation
@@ -225,7 +231,6 @@ public:
     virtual const types::source::Blob& append(Metadata& md) = 0;
 };
 
-
 class Checker : public std::enable_shared_from_this<Checker>
 {
 protected:
@@ -235,19 +240,25 @@ public:
     virtual ~Checker() {}
 
     virtual const Segment& segment() const = 0;
-    virtual const Data& data() const = 0;
-    virtual segment::State check(std::function<void(const std::string&)> reporter, const arki::metadata::Collection& mds, bool quick=true) = 0;
-    virtual size_t remove() = 0;
+    virtual const Data& data() const       = 0;
+    virtual segment::State
+    check(std::function<void(const std::string&)> reporter,
+          const arki::metadata::Collection& mds, bool quick = true) = 0;
+    virtual size_t remove()                                         = 0;
 
     /**
-     * Rescan the segment, possibly fixing fixable issues found during the rescan
+     * Rescan the segment, possibly fixing fixable issues found during the
+     * rescan
      */
-    virtual bool rescan_data(std::function<void(const std::string&)> reporter, std::shared_ptr<const core::ReadLock> lock, metadata_dest_func dest) = 0;
+    virtual bool rescan_data(std::function<void(const std::string&)> reporter,
+                             std::shared_ptr<const core::ReadLock> lock,
+                             metadata_dest_func dest) = 0;
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
      */
-    virtual core::Pending repack(arki::metadata::Collection& mds, const RepackConfig& cfg=RepackConfig()) = 0;
+    virtual core::Pending repack(arki::metadata::Collection& mds,
+                                 const RepackConfig& cfg = RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to
@@ -265,7 +276,8 @@ public:
      * Replace this segment with a compressed segment, updating the metadata in
      * mds to point to the right locations if needed
      */
-    virtual std::shared_ptr<Checker> compress(arki::metadata::Collection& mds, unsigned groupsize);
+    virtual std::shared_ptr<Checker> compress(arki::metadata::Collection& mds,
+                                              unsigned groupsize);
 
     /**
      * Move this segment to a new location.
@@ -274,7 +286,9 @@ public:
      *
      * Returns a Checker pointing to the new location
      */
-    virtual std::shared_ptr<Checker> move(std::shared_ptr<const segment::Session> segment_session, const std::filesystem::path& new_relpath) = 0;
+    virtual std::shared_ptr<Checker>
+    move(std::shared_ptr<const segment::Session> segment_session,
+         const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Truncate the segment at the given offset
@@ -288,7 +302,8 @@ public:
      * `mds` represents the state of the segment before the move, and is
      * updated to reflect the new state of the segment.
      */
-    virtual void test_make_hole(arki::metadata::Collection& mds, unsigned hole_size, unsigned data_idx) = 0;
+    virtual void test_make_hole(arki::metadata::Collection& mds,
+                                unsigned hole_size, unsigned data_idx) = 0;
 
     /**
      * Move all the data in the segment starting from the one in position
@@ -297,13 +312,16 @@ public:
      * `mds` represents the state of the segment before the move, and is
      * updated to reflect the new state of the segment.
      */
-    virtual void test_make_overlap(arki::metadata::Collection& mds, unsigned overlap_size, unsigned data_idx) = 0;
+    virtual void test_make_overlap(arki::metadata::Collection& mds,
+                                   unsigned overlap_size,
+                                   unsigned data_idx) = 0;
 
     /**
      * Corrupt the data at position `data_idx`, by replacing its first byte
      * with the value 0.
      */
-    virtual void test_corrupt(const arki::metadata::Collection& mds, unsigned data_idx) = 0;
+    virtual void test_corrupt(const arki::metadata::Collection& mds,
+                              unsigned data_idx) = 0;
 
     /**
      * Set the modification time of everything in the segment
@@ -311,7 +329,6 @@ public:
     virtual void test_touch_contents(time_t timestamp) = 0;
 };
 
-}
-}
+} // namespace data
+} // namespace arki::segment
 #endif
-

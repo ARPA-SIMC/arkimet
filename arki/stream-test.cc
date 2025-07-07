@@ -1,9 +1,8 @@
-#include "stream/tests.h"
-#include "stream.h"
-#include "arki/utils/sys.h"
 #include "arki/core/file.h"
+#include "arki/utils/sys.h"
+#include "stream.h"
+#include "stream/tests.h"
 #include <sys/ioctl.h>
-
 
 using namespace std;
 using namespace arki;
@@ -22,11 +21,10 @@ class Tests : public TestCase
 
 Tests test("arki_stream");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace

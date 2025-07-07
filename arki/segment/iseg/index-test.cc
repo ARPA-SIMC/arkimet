@@ -1,6 +1,6 @@
-#include "index.h"
 #include "arki/types/tests.h"
 #include "arki/utils/sys.h"
+#include "index.h"
 
 namespace {
 using namespace std;
@@ -14,9 +14,10 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_segment_iseg_index");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("locks", []() noexcept {
+    add_method("locks", []() noexcept {
     // We cannot rely on sqlite transactions to protect readers from a repack
 #if 0
     std::shared_ptr<const iseg::Config> cfg = iseg::Config::create(ConfigFile(R"(
@@ -46,8 +47,7 @@ path=testds
     p1.commit();
     p2.commit();
 #endif
-});
-
+    });
 }
 
-}
+} // namespace

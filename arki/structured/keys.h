@@ -89,7 +89,7 @@ struct Keys
 extern const Keys keys_json;
 extern const Keys keys_python;
 
-}
-}
+} // namespace structured
+} // namespace arki
 
 #endif

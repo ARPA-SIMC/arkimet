@@ -7,14 +7,15 @@
 
 extern "C" {
 
-typedef struct {
+typedef struct
+{
     PyObject_HEAD
 } arkipy_ArkiXargs;
 
 extern PyTypeObject* arkipy_ArkiXargs_Type;
 
-#define arkipy_ArkiXargs_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_ArkiXargs_Type || \
+#define arkipy_ArkiXargs_Check(ob)                                             \
+    (Py_TYPE(ob) == &arkipy_ArkiXargs_Type ||                                  \
      PyType_IsSubtype(Py_TYPE(ob), &arkipy_ArkiXargs_Type))
 }
 
@@ -24,6 +25,6 @@ namespace python {
 void register_arki_xargs(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

@@ -13,9 +13,6 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_segment_defs");
 
-void Tests::register_tests() {
+void Tests::register_tests() {}
 
-}
-
-}
-
+} // namespace

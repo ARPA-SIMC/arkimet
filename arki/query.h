@@ -1,9 +1,9 @@
 #ifndef ARKI_QUERY_H
 #define ARKI_QUERY_H
 
-#include <arki/stream/fwd.h>
-#include <arki/query/fwd.h>
 #include <arki/matcher.h>
+#include <arki/query/fwd.h>
+#include <arki/stream/fwd.h>
 #include <string>
 
 namespace arki {
@@ -37,18 +37,18 @@ public:
 
     Data();
     Data(const Data&) = default;
-    Data(Data&&) = default;
-    Data(const Matcher& matcher, bool with_data=false);
+    Data(Data&&)      = default;
+    Data(const Matcher& matcher, bool with_data = false);
     ~Data();
     Data& operator=(const Data&) = default;
-    Data& operator=(Data&&) = default;
+    Data& operator=(Data&&)      = default;
 };
 
 class Bytes : public Data
 {
 public:
     enum Type {
-        BQ_DATA = 0,
+        BQ_DATA        = 0,
         BQ_POSTPROCESS = 1,
     };
 
@@ -61,8 +61,7 @@ public:
     void setPostprocess(const Matcher& m, const std::string& procname);
 };
 
-}
-}
+} // namespace query
+} // namespace arki
 
 #endif
-

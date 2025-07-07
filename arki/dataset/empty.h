@@ -23,14 +23,16 @@ struct Dataset : public dataset::Dataset
     std::shared_ptr<dataset::Checker> create_checker() override;
 };
 
-
 /**
  * Dataset that is always empty
  */
 class Reader : public DatasetAccess<dataset::Dataset, dataset::Reader>
 {
 protected:
-    bool impl_query_data(const query::Data&, metadata_dest_func) override { return true; }
+    bool impl_query_data(const query::Data&, metadata_dest_func) override
+    {
+        return true;
+    }
     void impl_query_summary(const Matcher&, Summary&) override {}
     void impl_stream_query_bytes(const query::Bytes&, StreamOutput&) override {}
 
@@ -42,7 +44,6 @@ public:
     core::Interval get_stored_time_interval() override;
 };
 
-
 /**
  * Writer that successfully discards all data
  */
@@ -53,11 +54,13 @@ public:
 
     std::string type() const override { return "discard"; }
 
-    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch,
+                       const AcquireConfig& cfg = AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session,
+                             const core::cfg::Section& cfg,
+                             metadata::InboundBatch& batch);
 };
-
 
 /**
  * Checker that does nothing
@@ -75,13 +78,12 @@ public:
     void tar(CheckerConfig&) override {}
     void zip(CheckerConfig&) override {}
     void compress(CheckerConfig&, unsigned groupsize) override {}
-    void repack(CheckerConfig&, unsigned test_flags=0) override {}
+    void repack(CheckerConfig&, unsigned test_flags = 0) override {}
     void check(CheckerConfig&) override {}
     void state(CheckerConfig&) override {}
 };
 
-
-}
-}
-}
+} // namespace empty
+} // namespace dataset
+} // namespace arki
 #endif

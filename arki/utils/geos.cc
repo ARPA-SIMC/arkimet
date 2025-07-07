@@ -8,8 +8,10 @@ namespace geos {
 static thread_local Context context;
 static thread_local std::string last_error;
 
-static void geos_notice_handler(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
-static void geos_error_handler(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+static void geos_notice_handler(const char* fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+static void geos_error_handler(const char* fmt, ...)
+    __attribute__((format(printf, 1, 2)));
 
 static void geos_notice_handler(const char* fmt, ...)
 {
@@ -37,47 +39,39 @@ static void geos_error_handler(const char* fmt, ...)
     last_error.resize(size);
 }
 
-
-GEOSError::GEOSError()
-    : msg(last_error)
+GEOSError::GEOSError() : msg(last_error)
 {
     if (msg.empty())
-        msg = "GEOS returned an error code but no logged error message can be found to explain it";
+        msg = "GEOS returned an error code but no logged error message can be "
+              "found to explain it";
 }
 
-const char* GEOSError::what() const noexcept
-{
-    return msg.c_str();
-}
+const char* GEOSError::what() const noexcept { return msg.c_str(); }
 
-
-#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 5)
-Context::Context()
-    : ctx(GEOS_init_r())
+#if GEOS_VERSION_MAJOR > 3 ||                                                  \
+    (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 5)
+Context::Context() : ctx(GEOS_init_r())
 {
     GEOSContext_setNoticeHandler_r(ctx, geos_notice_handler);
     GEOSContext_setErrorHandler_r(ctx, geos_error_handler);
 }
 #else
-Context::Context()
-    : ctx(initGEOS_r(geos_notice_handler, geos_error_handler))
-{
-}
+Context::Context() : ctx(initGEOS_r(geos_notice_handler, geos_error_handler)) {}
 #endif
 
 Context::~Context()
 {
-#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 5)
+#if GEOS_VERSION_MAJOR > 3 ||                                                  \
+    (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 5)
     GEOS_finish_r(ctx);
 #else
     finishGEOS_r(ctx);
 #endif
 }
 
-
 GeometryVector::~GeometryVector()
 {
-    for (auto g: *this)
+    for (auto g : *this)
         GEOSGeom_destroy_r(context, g);
 }
 
@@ -86,20 +80,19 @@ void GeometryVector::emplace_back(Geometry&& g)
     std::vector<GEOSGeometry*>::emplace_back(g.release());
 }
 
-
-template<typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
+template <typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
 Wrapper<Pointer, Deleter>::~Wrapper()
 {
     if (ptr)
         Deleter(context, ptr);
 }
 
-
-template<typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
+template <typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
 Wrapper<Pointer, Deleter>& Wrapper<Pointer, Deleter>::operator=(Pointer o)
 {
     // Prevent damage on assignment of same pointer
-    if (ptr == o) return *this;
+    if (ptr == o)
+        return *this;
 
     if (ptr)
     {
@@ -111,23 +104,23 @@ Wrapper<Pointer, Deleter>& Wrapper<Pointer, Deleter>::operator=(Pointer o)
     return *this;
 }
 
-template<typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
+template <typename Pointer, void Deleter(GEOSContextHandle_t, Pointer)>
 Wrapper<Pointer, Deleter>& Wrapper<Pointer, Deleter>::operator=(Wrapper&& o)
 {
     // Prevent damage on assignment to self
-    if (&o == this) return *this;
+    if (&o == this)
+        return *this;
 
     if (ptr && o.ptr != ptr)
     {
         Deleter(context, ptr);
     }
 
-    ptr = o.ptr;
+    ptr   = o.ptr;
     o.ptr = nullptr;
 
     return *this;
 }
-
 
 CoordinateSequence::CoordinateSequence(unsigned size, unsigned dims)
 {
@@ -138,7 +131,8 @@ CoordinateSequence::CoordinateSequence(unsigned size, unsigned dims)
 
 void CoordinateSequence::setxy(unsigned idx, double x, double y)
 {
-#if GEOS_VERSION_MAJOR > 3 || (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 8)
+#if GEOS_VERSION_MAJOR > 3 ||                                                  \
+    (GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR >= 8)
     int res = GEOSCoordSeq_setXY_r(context, ptr, idx, x, y);
     if (!res)
         throw GEOSError();
@@ -151,7 +145,6 @@ void CoordinateSequence::setxy(unsigned idx, double x, double y)
         throw GEOSError();
 #endif
 }
-
 
 Geometry Geometry::clone() const
 {
@@ -228,9 +221,11 @@ Geometry Geometry::create_linear_ring(CoordinateSequence&& seq)
     return res;
 }
 
-Geometry Geometry::create_polygon(Geometry&& exterior, GeometryVector&& interior)
+Geometry Geometry::create_polygon(Geometry&& exterior,
+                                  GeometryVector&& interior)
 {
-    Geometry res(GEOSGeom_createPolygon_r(context, exterior.release(), interior.data(), interior.size()));
+    Geometry res(GEOSGeom_createPolygon_r(context, exterior.release(),
+                                          interior.data(), interior.size()));
     if (!res)
         throw GEOSError();
 
@@ -240,7 +235,8 @@ Geometry Geometry::create_polygon(Geometry&& exterior, GeometryVector&& interior
 
 Geometry Geometry::create_collection(GeometryVector&& geoms)
 {
-    Geometry res(GEOSGeom_createCollection_r(context, GEOS_GEOMETRYCOLLECTION, geoms.data(), geoms.size()));
+    Geometry res(GEOSGeom_createCollection_r(context, GEOS_GEOMETRYCOLLECTION,
+                                             geoms.data(), geoms.size()));
     if (!res)
         throw GEOSError();
 
@@ -249,11 +245,7 @@ Geometry Geometry::create_collection(GeometryVector&& geoms)
     return res;
 }
 
-
-WKTReader::WKTReader()
-{
-    ptr = GEOSWKTReader_create_r(context);
-}
+WKTReader::WKTReader() { ptr = GEOSWKTReader_create_r(context); }
 
 Geometry WKTReader::read(const char* str)
 {
@@ -271,11 +263,7 @@ Geometry WKTReader::read(const std::string& str)
     return res;
 }
 
-
-WKTWriter::WKTWriter()
-{
-    ptr = GEOSWKTWriter_create_r(context);
-}
+WKTWriter::WKTWriter() { ptr = GEOSWKTWriter_create_r(context); }
 
 std::string WKTWriter::write(const Geometry& g)
 {
@@ -289,12 +277,11 @@ std::string WKTWriter::write(const Geometry& g)
     return res;
 }
 
-
 template class Wrapper<GEOSGeometry*, GEOSGeom_destroy_r>;
 template class Wrapper<GEOSCoordSequence*, GEOSCoordSeq_destroy_r>;
 template class Wrapper<GEOSWKTReader*, GEOSWKTReader_destroy_r>;
 template class Wrapper<GEOSWKTWriter*, GEOSWKTWriter_destroy_r>;
 
-}
-}
-}
+} // namespace geos
+} // namespace utils
+} // namespace arki

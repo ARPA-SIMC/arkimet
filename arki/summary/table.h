@@ -3,16 +3,16 @@
 
 /// summary/table - Arkimet summary implementation in tabular form
 
-#include <arki/types/fwd.h>
 #include <arki/core/fwd.h>
-#include <arki/structured/fwd.h>
-#include <arki/metadata/fwd.h>
 #include <arki/matcher/fwd.h>
+#include <arki/metadata/fwd.h>
+#include <arki/structured/fwd.h>
 #include <arki/summary/stats.h>
-#include <filesystem>
-#include <vector>
+#include <arki/types/fwd.h>
 #include <array>
 #include <cstring>
+#include <filesystem>
+#include <vector>
 
 namespace arki {
 namespace summary {
@@ -25,24 +25,22 @@ struct ItemVisitor;
 class Row
 {
 public:
-    /// Number of item types that contribute to a summary context (same as Table::msoSize)
+    /// Number of item types that contribute to a summary context (same as
+    /// Table::msoSize)
     static const unsigned mso_size = 10;
     std::array<const types::Type*, mso_size> items;
     Stats stats;
 
     Row() {}
     Row(const Row& row) = default;
-    Row(Row&& row) = default;
+    Row(Row&& row)      = default;
     Row(const Metadata& md) : stats(Stats(md)) {}
     Row(const Stats& stats) : stats(stats) {}
 
     Row& operator=(const Row&) = default;
-    Row& operator=(Row&&) = default;
+    Row& operator=(Row&&)      = default;
 
-    void set_to_zero()
-    {
-        items.fill(nullptr);
-    }
+    void set_to_zero() { items.fill(nullptr); }
 
     void set_to_zero(unsigned first_el)
     {
@@ -79,12 +77,17 @@ public:
     ~Table();
 
     bool empty() const { return rows.empty(); }
-    size_t size() { want_clean(); return rows.size(); }
+    size_t size()
+    {
+        want_clean();
+        return rows.size();
+    }
 
     bool equals(Table& table);
 
     /// Return the intern version of an item
-    const types::Type* intern(unsigned pos, std::unique_ptr<types::Type>&& item);
+    const types::Type* intern(unsigned pos,
+                              std::unique_ptr<types::Type>&& item);
 
     /// Merge a row into the table
     void merge(const Metadata& md);
@@ -95,8 +98,10 @@ public:
     /// Merge a row into the table
     void merge(const std::vector<const types::Type*>& md, const Stats& st);
 
-    /// Merge a row into the table, keeping only the items whose mso index is in \a positions
-    void merge(const std::vector<const types::Type*>& md, const Stats& st, const std::vector<unsigned>& positions);
+    /// Merge a row into the table, keeping only the items whose mso index is in
+    /// \a positions
+    void merge(const std::vector<const types::Type*>& md, const Stats& st,
+               const std::vector<unsigned>& positions);
 
     /// Merge an entry decoded from a mapping
     void merge(const structured::Keys& keys, const structured::Reader& val);
@@ -105,12 +110,14 @@ public:
     void merge(const Row& row);
 
     /// Merge rows read from a yaml input stream
-    bool merge_yaml(core::LineReader& in, const std::filesystem::path& filename);
+    bool merge_yaml(core::LineReader& in,
+                    const std::filesystem::path& filename);
 
     void dump(std::ostream& out);
 
     // Notifies the visitor of all the values of the given metadata item.
-    // Due to the internal structure, the same item can be notified more than once.
+    // Due to the internal structure, the same item can be notified more than
+    // once.
     bool visitItem(size_t msoidx, ItemVisitor& visitor);
 
     /**
@@ -136,7 +143,7 @@ private:
     Table& operator=(const Table&);
 };
 
-}
-}
+} // namespace summary
+} // namespace arki
 
 #endif

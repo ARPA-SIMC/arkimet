@@ -18,22 +18,22 @@ namespace arki_scan {
 class MetadataDispatch;
 }
 
-}
-}
+} // namespace python
+} // namespace arki
 
 extern "C" {
 
-typedef struct {
-    PyObject_HEAD
-    arki::python::cmdline::DatasetProcessor* processor = nullptr;
-    arki::python::arki_scan::MetadataDispatch* dispatcher = nullptr;
+typedef struct
+{
+    PyObject_HEAD arki::python::cmdline::DatasetProcessor* processor = nullptr;
+    arki::python::arki_scan::MetadataDispatch* dispatcher            = nullptr;
     std::shared_ptr<arki::dataset::Pool> pool;
 } arkipy_ArkiScan;
 
 extern PyTypeObject* arkipy_ArkiScan_Type;
 
-#define arkipy_ArkiScan_Check(ob) \
-    (Py_TYPE(ob) == &arkipy_ArkiScan_Type || \
+#define arkipy_ArkiScan_Check(ob)                                              \
+    (Py_TYPE(ob) == &arkipy_ArkiScan_Type ||                                   \
      PyType_IsSubtype(Py_TYPE(ob), &arkipy_ArkiScan_Type))
 }
 
@@ -43,6 +43,6 @@ namespace python {
 void register_arki_scan(PyObject* m);
 
 }
-}
+} // namespace arki
 
 #endif

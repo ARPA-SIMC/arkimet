@@ -2,10 +2,10 @@
 #define ARKI_METADATA_INBOUND_H
 
 #include <arki/metadata/fwd.h>
+#include <iosfwd>
 #include <memory>
 #include <string>
 #include <vector>
-#include <iosfwd>
 
 namespace arki::metadata {
 
@@ -16,8 +16,7 @@ class Inbound
 {
 public:
     /// Possible ingestion outcomes
-    enum class Result
-    {
+    enum class Result {
         /// Ingestion successful
         OK,
         /// Ingestion failed because the data is already present
@@ -45,14 +44,13 @@ public:
 
     explicit Inbound(std::shared_ptr<Metadata> md);
     ~Inbound();
-    Inbound(const Inbound& o) = delete;
-    Inbound(Inbound&& o) = delete;
+    Inbound(const Inbound& o)            = delete;
+    Inbound(Inbound&& o)                 = delete;
     Inbound& operator=(const Inbound& o) = delete;
-    Inbound& operator=(Inbound&& o) = delete;
+    Inbound& operator=(Inbound&& o)      = delete;
 };
 
 std::ostream& operator<<(std::ostream& o, Inbound::Result res);
-
 
 class InboundBatch : public std::vector<std::shared_ptr<Inbound>>
 {
@@ -68,6 +66,6 @@ public:
     void set_all_error(const std::string& note);
 };
 
-}
+} // namespace arki::metadata
 
 #endif

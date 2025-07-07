@@ -2,9 +2,9 @@
 #define ARKI_TYPES_BUNDLE_H
 
 #include <arki/core/fwd.h>
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace arki {
 namespace types {
@@ -66,8 +66,7 @@ struct Bundle
     bool read(core::AbstractInputFile& fd);
 };
 
-
-}
-}
+} // namespace types
+} // namespace arki
 
 #endif

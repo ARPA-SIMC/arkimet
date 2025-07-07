@@ -3,12 +3,12 @@
 
 /// Generic structured data formatter
 
-#include <string>
-#include <cstdint>
-#include <vector>
 #include <arki/core/fwd.h>
-#include <arki/types/fwd.h>
 #include <arki/structured/fwd.h>
+#include <arki/types/fwd.h>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace arki {
 namespace structured {
@@ -24,18 +24,19 @@ public:
 
     // Implementation
     virtual void start_list() = 0;
-    virtual void end_list() = 0;
+    virtual void end_list()   = 0;
 
     virtual void start_mapping() = 0;
-    virtual void end_mapping() = 0;
+    virtual void end_mapping()   = 0;
 
-    virtual void add_null() = 0;
-    virtual void add_bool(bool val) = 0;
-    virtual void add_int(long long int val) = 0;
-    virtual void add_double(double val) = 0;
+    virtual void add_null()                         = 0;
+    virtual void add_bool(bool val)                 = 0;
+    virtual void add_int(long long int val)         = 0;
+    virtual void add_double(double val)             = 0;
     virtual void add_string(const std::string& val) = 0;
     virtual void add_time(const core::Time& val);
-    void add_type(const types::Type& t, const structured::Keys& keys, const Formatter* f=0);
+    void add_type(const types::Type& t, const structured::Keys& keys,
+                  const Formatter* f = 0);
 
     /// Add a break in the output stream, such as a newline between JSON chunks
     virtual void add_break();
@@ -58,15 +59,14 @@ public:
     void add(const core::Time& val) { add_time(val); }
 
     // Shortcut to add a mapping, which also ensure the key is a string
-    template<typename T>
-    void add(const std::string& a, T b)
+    template <typename T> void add(const std::string& a, T b)
     {
         add(a);
         add(b);
     }
 };
 
-}
-}
+} // namespace structured
+} // namespace arki
 
 #endif

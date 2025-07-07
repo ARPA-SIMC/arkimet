@@ -1,7 +1,7 @@
 #include "arki/utils/sqlite.h"
 #include "arki/core/binary.h"
-#include "arki/types.h"
 #include "arki/nag.h"
+#include "arki/types.h"
 #include <sstream>
 
 using namespace std;
@@ -10,16 +10,18 @@ namespace arki {
 namespace utils {
 namespace sqlite {
 
-static int trace_callback(unsigned T, void* C, void* P,void* X)
+static int trace_callback(unsigned T, void* C, void* P, void* X)
 {
     switch (T)
     {
         case SQLITE_TRACE_STMT:
-            fprintf(stderr, "SQLite: started %s\n", sqlite3_expanded_sql((sqlite3_stmt*)P));
+            fprintf(stderr, "SQLite: started %s\n",
+                    sqlite3_expanded_sql((sqlite3_stmt*)P));
             break;
         case SQLITE_TRACE_PROFILE:
             fprintf(stderr, "SQLite: completed %s in %.9fs\n",
-                    sqlite3_expanded_sql((sqlite3_stmt*)P), *(int64_t*)X / 1000000000.0);
+                    sqlite3_expanded_sql((sqlite3_stmt*)P),
+                    *(int64_t*)X / 1000000000.0);
 
             break;
         case SQLITE_TRACE_ROW:
@@ -49,16 +51,18 @@ DuplicateInsert::DuplicateInsert(sqlite3* db, const std::string& msg)
 {
 }
 
-SQLiteDB::~SQLiteDB() {
-	if (m_last_insert_id) sqlite3_finalize(m_last_insert_id);
-	if (m_db)
-	{
-		// Finalise all pending statements (can't do until sqlite 3.6.0)
-		//while (sqlite3_stmt* stm = sqlite3_next_stmt(m_db, 0))
-		//	sqlite3_finalize(stm);
+SQLiteDB::~SQLiteDB()
+{
+    if (m_last_insert_id)
+        sqlite3_finalize(m_last_insert_id);
+    if (m_db)
+    {
+        // Finalise all pending statements (can't do until sqlite 3.6.0)
+        // while (sqlite3_stmt* stm = sqlite3_next_stmt(m_db, 0))
+        //	sqlite3_finalize(stm);
 
-        //int rc = sqlite3_close(m_db);
-        //if (rc) throw SQLiteError(m_db, "closing database");
+        // int rc = sqlite3_close(m_db);
+        // if (rc) throw SQLiteError(m_db, "closing database");
         sqlite3_close(m_db);
     }
 }
@@ -80,16 +84,18 @@ void SQLiteDB::open(const std::filesystem::path& pathname, int timeout_ms)
 
 sqlite3_stmt* SQLiteDB::prepare(const std::string& query) const
 {
-	sqlite3_stmt* stm_query;
-	const char* dummy;
+    sqlite3_stmt* stm_query;
+    const char* dummy;
 #ifdef LEGACY_SQLITE
-	int rc = sqlite3_prepare(m_db, query.data(), query.size(), &stm_query, &dummy);
+    int rc =
+        sqlite3_prepare(m_db, query.data(), query.size(), &stm_query, &dummy);
 #else
-	int rc = sqlite3_prepare_v2(m_db, query.data(), query.size(), &stm_query, &dummy);
+    int rc = sqlite3_prepare_v2(m_db, query.data(), query.size(), &stm_query,
+                                &dummy);
 #endif
-	if (rc != SQLITE_OK)
-		throw SQLiteError(m_db, "compiling query " + query);
-	return stm_query;
+    if (rc != SQLITE_OK)
+        throw SQLiteError(m_db, "compiling query " + query);
+    return stm_query;
 }
 
 void SQLiteDB::exec(const std::string& query)
@@ -105,12 +111,14 @@ void SQLiteDB::exec_nothrow(const std::string& query) noexcept
     char* err;
     int rc = sqlite3_exec(m_db, query.c_str(), 0, 0, &err);
     if (rc != SQLITE_OK)
-        nag::warning("query failed: %s. Error: %s", query.c_str(), sqlite3_errmsg(m_db));
+        nag::warning("query failed: %s. Error: %s", query.c_str(),
+                     sqlite3_errmsg(m_db));
 }
 
 void SQLiteDB::checkpoint()
 {
-    int rc = sqlite3_wal_checkpoint_v2(m_db, NULL, SQLITE_CHECKPOINT_PASSIVE, NULL, NULL);
+    int rc = sqlite3_wal_checkpoint_v2(m_db, NULL, SQLITE_CHECKPOINT_PASSIVE,
+                                       NULL, NULL);
     if (rc != SQLITE_OK)
         throw SQLiteError(m_db, "checkpointing database");
 }
@@ -136,12 +144,12 @@ int SQLiteDB::lastInsertID()
 	}
 	return id;
 #endif
-	return sqlite3_last_insert_rowid(m_db);
+    return sqlite3_last_insert_rowid(m_db);
 }
 
 void SQLiteDB::throwException(const std::string& msg) const
 {
-	throw SQLiteError(m_db, msg);
+    throw SQLiteError(m_db, msg);
 }
 
 void SQLiteDB::trace(unsigned mask)
@@ -152,19 +160,17 @@ void SQLiteDB::trace(unsigned mask)
 
 Query::~Query()
 {
-	if (m_stm) sqlite3_finalize(m_stm);
+    if (m_stm)
+        sqlite3_finalize(m_stm);
 }
 
-void Query::compile(const std::string& query)
-{
-	m_stm = m_db.prepare(query);
-}
+void Query::compile(const std::string& query) { m_stm = m_db.prepare(query); }
 
 void Query::reset()
 {
-	// SELECT file, ofs FROM md WHERE id=id
-	if (sqlite3_reset(m_stm) != SQLITE_OK)
-		m_db.throwException("resetting " + name + " query");
+    // SELECT file, ofs FROM md WHERE id=id
+    if (sqlite3_reset(m_stm) != SQLITE_OK)
+        m_db.throwException("resetting " + name + " query");
 }
 
 void Query::bind(int idx, const char* str, int len)
@@ -184,7 +190,8 @@ void Query::bind(int idx, const std::string& str)
 {
     // Bind parameters.  We use SQLITE_STATIC assuming that the caller will
     // keep the data alive until the end of the query
-    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) !=
+        SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind string to " << name << " query parameter #" << idx;
@@ -196,7 +203,8 @@ void Query::bind(int idx, const std::vector<uint8_t>& buf)
 {
     // Bind parameters.  We use SQLITE_STATIC assuming that the caller will
     // keep the data alive until the end of the query
-    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_STATIC) != SQLITE_OK)
+    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_STATIC) !=
+        SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind blob to " << name << " query parameter #" << idx;
@@ -206,7 +214,8 @@ void Query::bind(int idx, const std::vector<uint8_t>& buf)
 
 void Query::bindTransient(int idx, const std::vector<uint8_t>& buf)
 {
-    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    if (sqlite3_bind_blob(m_stm, idx, buf.data(), buf.size(),
+                          SQLITE_TRANSIENT) != SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind buffer to " << name << " query parameter #" << idx;
@@ -216,7 +225,8 @@ void Query::bindTransient(int idx, const std::vector<uint8_t>& buf)
 
 void Query::bindTransient(int idx, const std::string& str)
 {
-    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    if (sqlite3_bind_text(m_stm, idx, str.data(), str.size(),
+                          SQLITE_TRANSIENT) != SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind string to " << name << " query parameter #" << idx;
@@ -229,7 +239,8 @@ void Query::bindBlob(int idx, const std::string& str)
     // Bind parameters.  We use SQLITE_STATIC even if the pointers will be
     // pointing to invalid memory at exit of this function, because
     // sqlite3_step will not be called again without rebinding parameters.
-    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) != SQLITE_OK)
+    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_STATIC) !=
+        SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind string to " << name << " query parameter #" << idx;
@@ -239,7 +250,8 @@ void Query::bindBlob(int idx, const std::string& str)
 
 void Query::bindBlobTransient(int idx, const std::string& str)
 {
-    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(), SQLITE_TRANSIENT) != SQLITE_OK)
+    if (sqlite3_bind_blob(m_stm, idx, str.data(), str.size(),
+                          SQLITE_TRANSIENT) != SQLITE_OK)
     {
         stringstream ss;
         ss << "cannot bind string to " << name << " query parameter #" << idx;
@@ -270,10 +282,8 @@ bool Query::step()
     int rc = sqlite3_step(m_stm);
     switch (rc)
     {
-        case SQLITE_DONE:
-            return false;
-        case SQLITE_ROW:
-            return true;
+        case SQLITE_DONE: return false;
+        case SQLITE_ROW:  return true;
         default:
             sqlite3_reset(m_stm);
             m_db.throwException("cannot execute " + name + " query");
@@ -289,9 +299,7 @@ void Query::execute()
         switch (sqlite3_step(m_stm))
         {
             case SQLITE_ROW:
-            case SQLITE_DONE:
-                reset();
-                return;
+            case SQLITE_DONE: reset(); return;
             case SQLITE_BUSY:
             case SQLITE_MISUSE:
             default:
@@ -308,16 +316,17 @@ void Query::execute(std::function<void()> on_row)
         switch (sqlite3_step(m_stm))
         {
             case SQLITE_ROW:
-                try {
+                try
+                {
                     on_row();
-                } catch (...) {
+                }
+                catch (...)
+                {
                     sqlite3_reset(m_stm);
                     throw;
                 }
                 break;
-            case SQLITE_DONE:
-                reset();
-                return;
+            case SQLITE_DONE: reset(); return;
             case SQLITE_BUSY:
             case SQLITE_MISUSE:
             default:
@@ -326,7 +335,6 @@ void Query::execute(std::function<void()> on_row)
         }
     }
 }
-
 
 void OneShotQuery::initQueries()
 {
@@ -369,28 +377,25 @@ void OneShotQuery::operator()()
 #endif
 }
 
-void OneShotQuery::nothrow() noexcept
-{
-    m_db.exec_nothrow(m_query);
-}
-
+void OneShotQuery::nothrow() noexcept { m_db.exec_nothrow(m_query); }
 
 Committer::Committer(SQLiteDB& db, const char* type)
     : begin(db, "begin", type ? string("BEGIN ") + type : "BEGIN"),
-      commit(db, "commit", "COMMIT"),
-      rollback(db, "rollback", "ROLLBACK") {}
+      commit(db, "commit", "COMMIT"), rollback(db, "rollback", "ROLLBACK")
+{
+}
 
 void SqliteTransaction::commit()
 {
-	committer.commit();
-	fired = true;
+    committer.commit();
+    fired = true;
 }
 
 void SqliteTransaction::rollback()
 {
     abort();
-	committer.rollback();
-	fired = true;
+    committer.rollback();
+    fired = true;
 }
 
 void SqliteTransaction::rollback_nothrow() noexcept
@@ -401,33 +406,24 @@ void SqliteTransaction::rollback_nothrow() noexcept
 
 bool InsertQuery::step()
 {
-	int rc = sqlite3_step(m_stm);
-	if (rc != SQLITE_DONE)
-		rc = sqlite3_reset(m_stm);
-	switch (rc)
-	{
-		case SQLITE_DONE:
-			return false;
-		case SQLITE_CONSTRAINT:
-			throw DuplicateInsert(m_db, "cannot execute " + name + " query");
-		default:
-			m_db.throwException("cannot execute " + name + " query");
-	}
-	// Not reached, but makes gcc happy
-	return false;
+    int rc = sqlite3_step(m_stm);
+    if (rc != SQLITE_DONE)
+        rc = sqlite3_reset(m_stm);
+    switch (rc)
+    {
+        case SQLITE_DONE: return false;
+        case SQLITE_CONSTRAINT:
+            throw DuplicateInsert(m_db, "cannot execute " + name + " query");
+        default: m_db.throwException("cannot execute " + name + " query");
+    }
+    // Not reached, but makes gcc happy
+    return false;
 }
 
-Trace::Trace(SQLiteDB& db, unsigned mask)
-    : db(db)
-{
-    db.trace(mask);
-}
+Trace::Trace(SQLiteDB& db, unsigned mask) : db(db) { db.trace(mask); }
 
-Trace::~Trace()
-{
-    db.trace(0);
-}
+Trace::~Trace() { db.trace(0); }
 
-}
-}
-}
+} // namespace sqlite
+} // namespace utils
+} // namespace arki

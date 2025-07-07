@@ -12,12 +12,15 @@ namespace arki {
 namespace tests {
 
 ActualMatcher::ActualMatcher(const std::string& actual)
-    : arki::utils::tests::Actual<Matcher>(matcher::Parser().parse(actual)), orig(actual)
+    : arki::utils::tests::Actual<Matcher>(matcher::Parser().parse(actual)),
+      orig(actual)
 {
 }
 
-ActualMatcher::ActualMatcher(const matcher::Parser& parser, const std::string& actual)
-    : arki::utils::tests::Actual<Matcher>(parser.parse(actual)), parser(&parser), orig(actual)
+ActualMatcher::ActualMatcher(const matcher::Parser& parser,
+                             const std::string& actual)
+    : arki::utils::tests::Actual<Matcher>(parser.parse(actual)),
+      parser(&parser), orig(actual)
 {
 }
 
@@ -36,7 +39,8 @@ void ActualMatcher::matches(const Metadata& md) const
     // Check stringification and reparsing
     Matcher m1 = parse(_actual.toString());
 
-    //fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(), _actual.toString().c_str(), m1.toString().c_str());
+    // fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(),
+    // _actual.toString().c_str(), m1.toString().c_str());
 
     wassert(actual(m1.toString()) == _actual.toString());
     wassert(actual(m1(md)) == _actual(md));
@@ -54,7 +58,8 @@ void ActualMatcher::not_matches(const Metadata& md) const
     // Check stringification and reparsing
     Matcher m1 = parse(_actual.toString());
 
-    //fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(), _actual.toString().c_str(), m1.toString().c_str());
+    // fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(),
+    // _actual.toString().c_str(), m1.toString().c_str());
 
     wassert(actual(m1.toString()) == _actual.toString());
     wassert(actual(m1(md)) == _actual(md));
@@ -67,12 +72,11 @@ void ActualMatcher::not_matches(const Metadata& md) const
 
 static std::unique_ptr<Type> from_string(const std::string& s)
 {
-    auto pos = s.find(":");
+    auto pos  = s.find(":");
     auto type = s.substr(0, pos);
     auto desc = s.substr(pos + 1);
     return decodeString(parseCodeName(type.c_str()), desc);
 }
-
 
 void ActualMatcher::matches(const std::string& sitem) const
 {
@@ -83,7 +87,8 @@ void ActualMatcher::matches(const std::string& sitem) const
     // Check stringification and reparsing
     Matcher m1 = wcallchecked(parse(_actual.toString()));
 
-    //fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(), _actual.toString().c_str(), m1.toString().c_str());
+    // fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(),
+    // _actual.toString().c_str(), m1.toString().c_str());
 
     wassert(actual(m1.toString()) == _actual.toString());
     wassert(actual(m1(*item)) == _actual(*item));
@@ -103,7 +108,8 @@ void ActualMatcher::not_matches(const std::string& sitem) const
     // Check stringification and reparsing
     Matcher m1 = wcallchecked(parse(_actual.toString()));
 
-    //fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(), _actual.toString().c_str(), m1.toString().c_str());
+    // fprintf(stderr, "%s -> %s -> %s\n", expr.c_str(),
+    // _actual.toString().c_str(), m1.toString().c_str());
 
     wassert(actual(m1.toString()) == _actual.toString());
     wassert(actual(m1(*item)) == _actual(*item));
@@ -114,5 +120,5 @@ void ActualMatcher::not_matches(const std::string& sitem) const
     wassert(actual(m2(*item)) == _actual(*item));
 }
 
-}
-}
+} // namespace tests
+} // namespace arki

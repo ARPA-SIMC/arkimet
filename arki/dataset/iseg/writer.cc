@@ -1,17 +1,17 @@
 #include "arki/dataset/iseg/writer.h"
-#include "arki/segment/iseg/index.h"
-#include "arki/dataset/step.h"
 #include "arki/dataset/lock.h"
 #include "arki/dataset/session.h"
-#include "arki/types/source/blob.h"
-#include "arki/types/reftime.h"
-#include "arki/utils/accounting.h"
-#include "arki/scan.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/string.h"
+#include "arki/dataset/step.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
+#include "arki/scan.h"
+#include "arki/segment/iseg/index.h"
+#include "arki/types/reftime.h"
+#include "arki/types/source/blob.h"
+#include "arki/utils/accounting.h"
+#include "arki/utils/string.h"
+#include "arki/utils/sys.h"
 
 using namespace std;
 using namespace arki;
@@ -32,45 +32,57 @@ Writer::Writer(std::shared_ptr<iseg::Dataset> dataset)
     scache.openRW();
 }
 
-Writer::~Writer()
-{
-    flush();
-}
+Writer::~Writer() { flush(); }
 
 std::string Writer::type() const { return "iseg"; }
 
-void Writer::acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg)
+void Writer::acquire_batch(metadata::InboundBatch& batch,
+                           const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
 
-    if (batch.empty()) return;
+    if (batch.empty())
+        return;
     if (batch[0]->md->source().format != dataset().iseg_segment_session->format)
     {
-        batch.set_all_error("cannot acquire into dataset " + name() + ": data is in format " + format_name(batch[0]->md->source().format) + " but the dataset only accepts " + format_name(dataset().iseg_segment_session->format));
+        batch.set_all_error(
+            "cannot acquire into dataset " + name() + ": data is in format " +
+            format_name(batch[0]->md->source().format) +
+            " but the dataset only accepts " +
+            format_name(dataset().iseg_segment_session->format));
         return;
     }
 
     segment::WriterConfig writer_config{dataset().name()};
-    writer_config.replace_strategy = cfg.replace == ReplaceStrategy::DEFAULT ? dataset().default_replace_strategy : cfg.replace;
+    writer_config.replace_strategy = cfg.replace == ReplaceStrategy::DEFAULT
+                                         ? dataset().default_replace_strategy
+                                         : cfg.replace;
     writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
 
     // Import segment by segment
-    std::map<std::string, metadata::InboundBatch> by_segment = batch_by_segment(batch);
-    for (auto& s: by_segment)
+    std::map<std::string, metadata::InboundBatch> by_segment =
+        batch_by_segment(batch);
+    for (auto& s : by_segment)
     {
-        auto segment = dataset().segment_session->segment_from_relpath_and_format(s.first, dataset().iseg_segment_session->format);
+        auto segment =
+            dataset().segment_session->segment_from_relpath_and_format(
+                s.first, dataset().iseg_segment_session->format);
         std::filesystem::create_directories(segment->abspath().parent_path());
-        std::shared_ptr<core::AppendLock> lock(dataset().append_lock_segment(segment->relpath()));
+        std::shared_ptr<core::AppendLock> lock(
+            dataset().append_lock_segment(segment->relpath()));
         auto writer = segment->writer(lock);
         writer->acquire(s.second, writer_config);
         scache.invalidate(s.second);
     }
 }
 
-void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch)
+void Writer::test_acquire(std::shared_ptr<Session> session,
+                          const core::cfg::Section& cfg,
+                          metadata::InboundBatch& batch)
 {
-    std::shared_ptr<const iseg::Dataset> dataset(new iseg::Dataset(session, cfg));
-    for (auto& e: batch)
+    std::shared_ptr<const iseg::Dataset> dataset(
+        new iseg::Dataset(session, cfg));
+    for (auto& e : batch)
     {
         auto age_check = dataset->check_acquire_age(*e->md);
         if (age_check.first)
@@ -80,14 +92,16 @@ void Writer::test_acquire(std::shared_ptr<Session> session, const core::cfg::Sec
                 e->destination = dataset->name();
             else
                 e->destination.clear();
-        } else {
+        }
+        else
+        {
             // TODO: check for duplicates
-            e->result = metadata::Inbound::Result::OK;
+            e->result      = metadata::Inbound::Result::OK;
             e->destination = dataset->name();
         }
     }
 }
 
-}
-}
-}
+} // namespace iseg
+} // namespace dataset
+} // namespace arki

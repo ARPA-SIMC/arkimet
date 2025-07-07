@@ -4,8 +4,9 @@
 /// Core defines common to all arkimet code
 
 #include <functional>
-#include <memory>
 #include <iosfwd>
+#include <memory>
+#include <string>
 
 namespace arki {
 class Metadata;
@@ -15,20 +16,18 @@ class Metadata;
  */
 typedef std::function<bool(std::shared_ptr<Metadata>)> metadata_dest_func;
 
-
 /// Identifier codes used for binary serialisation of Types
-enum TypeCode
-{
-    TYPE_INVALID         =  0,
-    TYPE_ORIGIN          =  1,
-    TYPE_PRODUCT         =  2,
-    TYPE_LEVEL           =  3,
-    TYPE_TIMERANGE       =  4,
-    TYPE_REFTIME         =  5,
-    TYPE_NOTE            =  6,
-    TYPE_SOURCE          =  7,
-    TYPE_ASSIGNEDDATASET =  8,
-    TYPE_AREA            =  9,
+enum TypeCode {
+    TYPE_INVALID         = 0,
+    TYPE_ORIGIN          = 1,
+    TYPE_PRODUCT         = 2,
+    TYPE_LEVEL           = 3,
+    TYPE_TIMERANGE       = 4,
+    TYPE_REFTIME         = 5,
+    TYPE_NOTE            = 6,
+    TYPE_SOURCE          = 7,
+    TYPE_ASSIGNEDDATASET = 8,
+    TYPE_AREA            = 9,
     TYPE_PRODDEF         = 10,
     TYPE_SUMMARYITEM     = 11,
     TYPE_SUMMARYSTATS    = 12,
@@ -42,14 +41,13 @@ enum TypeCode
 };
 
 /// Supported data formats
-enum class DataFormat : int
-{
-    GRIB = 1,
-    BUFR = 2,
-    VM2 = 3,
+enum class DataFormat : int {
+    GRIB   = 1,
+    BUFR   = 2,
+    VM2    = 3,
     ODIMH5 = 4,
     NETCDF = 5,
-    JPEG = 6,
+    JPEG   = 6,
 };
 
 /// String version of a format name
@@ -59,7 +57,6 @@ const std::string& format_name(DataFormat format);
 DataFormat format_from_string(const std::string& format);
 
 std::ostream& operator<<(std::ostream& o, DataFormat format);
-
 
 /// What to do if duplicate data is found
 enum class ReplaceStrategy {
@@ -78,7 +75,6 @@ enum class ReplaceStrategy {
 
 std::ostream& operator<<(std::ostream& o, ReplaceStrategy strategy);
 
-
 /// Intended special user for a dataset
 enum class DatasetUse {
     /// No special use intended
@@ -90,7 +86,6 @@ enum class DatasetUse {
 };
 std::ostream& operator<<(std::ostream& o, DatasetUse use);
 
-
-}
+} // namespace arki
 
 #endif

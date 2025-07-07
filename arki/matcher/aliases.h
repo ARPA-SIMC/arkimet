@@ -1,12 +1,12 @@
 #ifndef ARKI_MATCHER_ALIASES_H
 #define ARKI_MATCHER_ALIASES_H
 
-#include <map>
-#include <string>
-#include <memory>
 #include <arki/core/fwd.h>
 #include <arki/matcher/fwd.h>
 #include <arki/stream/fwd.h>
+#include <map>
+#include <memory>
+#include <string>
 
 namespace arki {
 namespace matcher {
@@ -26,7 +26,6 @@ public:
     void reset();
     void serialise(core::cfg::Section& cfg) const;
 };
-
 
 /**
  * Store aliases to be used by the matcher
@@ -72,14 +71,13 @@ public:
     stream::SendResult debug_dump(StreamOutput& out);
 };
 
-
 /**
  * Read the alias database from the given remote dataset
  */
-std::shared_ptr<core::cfg::Sections> load_remote_alias_database(const std::string& server);
+std::shared_ptr<core::cfg::Sections>
+load_remote_alias_database(const std::string& server);
 
-
-}
-}
+} // namespace matcher
+} // namespace arki
 
 #endif

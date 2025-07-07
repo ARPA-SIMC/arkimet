@@ -1,34 +1,33 @@
 #include "lock.h"
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <limits>
 #include <sstream>
 //
-//#define TRACE_LOCKS
+// #define TRACE_LOCKS
 #ifdef TRACE_LOCKS
 #define trace(...) fprintf(stderr, __VA_ARGS__)
 #else
-#define trace(...) do {} while(0)
+#define trace(...)                                                             \
+    do                                                                         \
+    {                                                                          \
+    } while (0)
 #endif
 
 namespace arki::core {
 
 namespace lock {
 
-static bool test_nowait = false;
-static unsigned count_ofd_setlk = 0;
+static bool test_nowait          = false;
+static unsigned count_ofd_setlk  = 0;
 static unsigned count_ofd_setlkw = 0;
-static unsigned count_ofd_getlk = 0;
+static unsigned count_ofd_getlk  = 0;
 
-}
+} // namespace lock
 
 Lock::~Lock() {}
 
-
-FLock::FLock()
-{
-    memset(this, 0, sizeof(struct ::flock));
-}
+FLock::FLock() { memset(this, 0, sizeof(struct ::flock)); }
 
 bool FLock::ofd_setlk(NamedFileDescriptor& fd)
 {
@@ -79,7 +78,6 @@ bool FLock::ofd_getlk(NamedFileDescriptor& fd)
     return fd.ofd_getlk(*this);
 }
 
-
 namespace lock {
 
 std::shared_ptr<core::CheckWriteLock> NullCheckLock::write_lock()
@@ -87,21 +85,23 @@ std::shared_ptr<core::CheckWriteLock> NullCheckLock::write_lock()
     return std::make_shared<NullCheckWriteLock>();
 }
 
-template<typename Base>
-File<Base>::File(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
+template <typename Base>
+File<Base>::File(const std::filesystem::path& pathname,
+                 const core::lock::Policy* lock_policy)
     : lockfile(pathname, O_RDWR | O_CREAT, 0777), lock_policy(lock_policy)
 {
 }
 
-FileReadLock::FileReadLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
+FileReadLock::FileReadLock(const std::filesystem::path& pathname,
+                           const core::lock::Policy* lock_policy)
     : File(pathname, lock_policy)
 {
     trace("%s [%d] Requesting read lock\n", pathname.c_str(), (int)getpid());
-    ds_lock.l_type = F_RDLCK;
+    ds_lock.l_type   = F_RDLCK;
     ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 0;
-    ds_lock.l_len = 1;
-    ds_lock.l_pid = 0;
+    ds_lock.l_start  = 0;
+    ds_lock.l_len    = 1;
+    ds_lock.l_pid    = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     lock_policy->setlkw(lockfile, ds_lock);
     trace("%s [%d] Obtained read lock\n", pathname.c_str(), (int)getpid());
@@ -109,21 +109,22 @@ FileReadLock::FileReadLock(const std::filesystem::path& pathname, const core::lo
 
 FileReadLock::~FileReadLock()
 {
-    trace("%s [%d] Release read lock\n", lockfile.name().c_str(), (int)getpid());
+    trace("%s [%d] Release read lock\n", lockfile.name().c_str(),
+          (int)getpid());
     ds_lock.l_type = F_UNLCK;
     lock_policy->setlk(lockfile, ds_lock);
 }
 
-
-FileAppendLock::FileAppendLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
+FileAppendLock::FileAppendLock(const std::filesystem::path& pathname,
+                               const core::lock::Policy* lock_policy)
     : File(pathname, lock_policy)
 {
     trace("%s [%d] Requesting append lock\n", pathname.c_str(), (int)getpid());
-    ds_lock.l_type = F_WRLCK;
+    ds_lock.l_type   = F_WRLCK;
     ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 1;
-    ds_lock.l_len = 1;
-    ds_lock.l_pid = 0;
+    ds_lock.l_start  = 1;
+    ds_lock.l_len    = 1;
+    ds_lock.l_pid    = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     lock_policy->setlkw(lockfile, ds_lock);
     trace("%s [%d] Obtained append lock\n", pathname.c_str(), (int)getpid());
@@ -131,32 +132,36 @@ FileAppendLock::FileAppendLock(const std::filesystem::path& pathname, const core
 
 FileAppendLock::~FileAppendLock()
 {
-    trace("%s [%d] Release append lock\n", lockfile.name().c_str(), (int)getpid());
+    trace("%s [%d] Release append lock\n", lockfile.name().c_str(),
+          (int)getpid());
     ds_lock.l_type = F_UNLCK;
     lock_policy->setlk(lockfile, ds_lock);
 }
 
-
-FileCheckLock::FileCheckLock(const std::filesystem::path& pathname, const core::lock::Policy* lock_policy)
+FileCheckLock::FileCheckLock(const std::filesystem::path& pathname,
+                             const core::lock::Policy* lock_policy)
     : File(pathname, lock_policy)
 {
-    trace("%s [%d] Requesting readonly check lock\n", pathname.c_str(), (int)getpid());
-    ds_lock.l_type = F_WRLCK;
+    trace("%s [%d] Requesting readonly check lock\n", pathname.c_str(),
+          (int)getpid());
+    ds_lock.l_type   = F_WRLCK;
     ds_lock.l_whence = SEEK_SET;
-    ds_lock.l_start = 1;
-    ds_lock.l_len = 1;
-    ds_lock.l_pid = 0;
+    ds_lock.l_start  = 1;
+    ds_lock.l_len    = 1;
+    ds_lock.l_pid    = 0;
     // Use SETLKW, so that if it is already locked, we just wait
     lock_policy->setlkw(lockfile, ds_lock);
-    trace("%s [%d] Obtained readonly check lock\n", pathname.c_str(), (int)getpid());
+    trace("%s [%d] Obtained readonly check lock\n", pathname.c_str(),
+          (int)getpid());
 }
 
 FileCheckLock::~FileCheckLock()
 {
-    trace("%s [%d] Release check lock\n", lockfile.name().c_str(), (int)getpid());
-    ds_lock.l_type = F_UNLCK;
+    trace("%s [%d] Release check lock\n", lockfile.name().c_str(),
+          (int)getpid());
+    ds_lock.l_type  = F_UNLCK;
     ds_lock.l_start = 0;
-    ds_lock.l_len = 2;
+    ds_lock.l_len   = 2;
     lock_policy->setlk(lockfile, ds_lock);
 }
 
@@ -169,67 +174,52 @@ struct TemporaryWriteLock : public core::CheckWriteLock
     explicit TemporaryWriteLock(std::shared_ptr<FileCheckLock> parent)
         : parent(parent)
     {
-        trace("%s [%d] Requesting escalate to write check lock\n", parent->lockfile.path().c_str(), (int)getpid());
-        parent->ds_lock.l_type = F_WRLCK;
+        trace("%s [%d] Requesting escalate to write check lock\n",
+              parent->lockfile.path().c_str(), (int)getpid());
+        parent->ds_lock.l_type  = F_WRLCK;
         parent->ds_lock.l_start = 0;
-        parent->ds_lock.l_len = 2;
+        parent->ds_lock.l_len   = 2;
         parent->lock_policy->setlkw(parent->lockfile, parent->ds_lock);
-        trace("%s [%d] Obtained escalate to write check lock\n", parent->lockfile.path().c_str(), (int)getpid());
+        trace("%s [%d] Obtained escalate to write check lock\n",
+              parent->lockfile.path().c_str(), (int)getpid());
     }
 
     ~TemporaryWriteLock() override
     {
-        trace("%s [%d] Deescalate to readonly check lock\n", parent->lockfile.path().c_str(), (int)getpid());
-        parent->ds_lock.l_type = F_UNLCK;
+        trace("%s [%d] Deescalate to readonly check lock\n",
+              parent->lockfile.path().c_str(), (int)getpid());
+        parent->ds_lock.l_type  = F_UNLCK;
         parent->ds_lock.l_start = 0;
-        parent->ds_lock.l_len = 1;
+        parent->ds_lock.l_len   = 1;
         parent->lock_policy->setlk(parent->lockfile, parent->ds_lock);
     }
 };
 
-}
+} // namespace
 
 std::shared_ptr<core::CheckWriteLock> FileCheckLock::write_lock()
 {
     if (!current_write_lock.expired())
         return current_write_lock.lock();
 
-    std::shared_ptr<core::CheckWriteLock> res(new TemporaryWriteLock(std::static_pointer_cast<FileCheckLock>(this->shared_from_this())));
+    std::shared_ptr<core::CheckWriteLock> res(new TemporaryWriteLock(
+        std::static_pointer_cast<FileCheckLock>(this->shared_from_this())));
     current_write_lock = res;
     return res;
 }
 
-TestWait::TestWait()
-    : orig(test_nowait)
-{
-    test_nowait = false;
-}
+TestWait::TestWait() : orig(test_nowait) { test_nowait = false; }
 
-TestWait::~TestWait()
-{
-    test_nowait = orig;
-}
+TestWait::~TestWait() { test_nowait = orig; }
 
-TestNowait::TestNowait()
-    : orig(test_nowait)
-{
-    test_nowait = true;
-}
+TestNowait::TestNowait() : orig(test_nowait) { test_nowait = true; }
 
-TestNowait::~TestNowait()
-{
-    test_nowait = orig;
-}
+TestNowait::~TestNowait() { test_nowait = orig; }
 
-void test_set_nowait_default(bool value)
-{
-    test_nowait = value;
-}
-
+void test_set_nowait_default(bool value) { test_nowait = value; }
 
 TestCount::TestCount()
-    : initial_ofd_setlk(count_ofd_setlk),
-      initial_ofd_setlkw(count_ofd_setlkw),
+    : initial_ofd_setlk(count_ofd_setlk), initial_ofd_setlkw(count_ofd_setlkw),
       initial_ofd_getlk(count_ofd_getlk)
 {
 }
@@ -245,11 +235,10 @@ static unsigned count_diff(unsigned initial, unsigned current) noexcept
 
 void TestCount::measure()
 {
-    ofd_setlk = count_diff(initial_ofd_setlk, count_ofd_setlk);
+    ofd_setlk  = count_diff(initial_ofd_setlk, count_ofd_setlk);
     ofd_setlkw = count_diff(initial_ofd_setlkw, count_ofd_setlkw);
-    ofd_getlk = count_diff(initial_ofd_getlk, count_ofd_getlk);
+    ofd_getlk  = count_diff(initial_ofd_getlk, count_ofd_getlk);
 }
-
 
 Policy::~Policy() {}
 
@@ -269,18 +258,26 @@ struct OFDPolicy : public Policy
     bool getlk(NamedFileDescriptor& fd, FLock&) const override;
 };
 
-
 bool NullPolicy::setlk(NamedFileDescriptor&, FLock&) const { return true; }
 bool NullPolicy::setlkw(NamedFileDescriptor&, FLock&) const { return true; }
 bool NullPolicy::getlk(NamedFileDescriptor&, FLock&) const { return true; }
 
-bool OFDPolicy::setlk(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_setlk(fd); }
-bool OFDPolicy::setlkw(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_setlkw(fd); }
-bool OFDPolicy::getlk(NamedFileDescriptor& fd, FLock& l) const { return l.ofd_getlk(fd); }
+bool OFDPolicy::setlk(NamedFileDescriptor& fd, FLock& l) const
+{
+    return l.ofd_setlk(fd);
+}
+bool OFDPolicy::setlkw(NamedFileDescriptor& fd, FLock& l) const
+{
+    return l.ofd_setlkw(fd);
+}
+bool OFDPolicy::getlk(NamedFileDescriptor& fd, FLock& l) const
+{
+    return l.ofd_getlk(fd);
+}
 
 const Policy* policy_null = new NullPolicy;
-const Policy* policy_ofd = new OFDPolicy;
+const Policy* policy_ofd  = new OFDPolicy;
 
-}
+} // namespace lock
 
-}
+} // namespace arki::core

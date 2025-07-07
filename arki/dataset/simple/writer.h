@@ -3,9 +3,9 @@
 
 /// dataset/simple/writer - Writer for simple datasets with no duplicate checks
 
+#include <arki/dataset/impl.h>
 #include <arki/dataset/simple.h>
 #include <arki/dataset/simple/manifest.h>
-#include <arki/dataset/impl.h>
 #include <string>
 
 namespace arki::dataset::simple {
@@ -24,10 +24,13 @@ public:
 
     std::string type() const override;
 
-    void acquire_batch(metadata::InboundBatch& batch, const AcquireConfig& cfg=AcquireConfig()) override;
+    void acquire_batch(metadata::InboundBatch& batch,
+                       const AcquireConfig& cfg = AcquireConfig()) override;
 
-    static void test_acquire(std::shared_ptr<Session> session, const core::cfg::Section& cfg, metadata::InboundBatch& batch);
+    static void test_acquire(std::shared_ptr<Session> session,
+                             const core::cfg::Section& cfg,
+                             metadata::InboundBatch& batch);
 };
 
-}
+} // namespace arki::dataset::simple
 #endif

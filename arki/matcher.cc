@@ -1,6 +1,6 @@
 #include "matcher.h"
-#include "matcher/utils.h"
 #include "core/time.h"
+#include "matcher/utils.h"
 #include <memory>
 
 using namespace std;
@@ -23,76 +23,91 @@ const matcher::AND* Matcher::operator->() const
 
 std::string Matcher::name() const
 {
-    if (m_impl.get()) return m_impl->name();
+    if (m_impl.get())
+        return m_impl->name();
     return std::string();
 }
 
 bool Matcher::operator()(const types::Type& t) const
 {
-    if (m_impl.get()) return m_impl->matchItem(t);
+    if (m_impl.get())
+        return m_impl->matchItem(t);
     // An empty matcher always matches
     return true;
 }
 
 bool Matcher::operator()(const types::ItemSet& md) const
 {
-    if (m_impl.get()) return m_impl->matchItemSet(md);
+    if (m_impl.get())
+        return m_impl->matchItemSet(md);
     // An empty matcher always matches
     return true;
 }
 
 bool Matcher::operator()(const Metadata& md) const
 {
-    if (m_impl.get()) return m_impl->matchMetadata(md);
+    if (m_impl.get())
+        return m_impl->matchMetadata(md);
     // An empty matcher always matches
     return true;
 }
 
 bool Matcher::operator()(const core::Interval& interval) const
 {
-    if (m_impl.get()) return m_impl->match_interval(interval);
+    if (m_impl.get())
+        return m_impl->match_interval(interval);
     // An empty matcher always matches
     return true;
 }
 
-bool Matcher::operator()(types::Code code, const uint8_t* data, unsigned size) const
+bool Matcher::operator()(types::Code code, const uint8_t* data,
+                         unsigned size) const
 {
-    if (m_impl.get()) return m_impl->match_buffer(code, data, size);
+    if (m_impl.get())
+        return m_impl->match_buffer(code, data, size);
     // An empty matcher always matches
     return true;
 }
 
 std::shared_ptr<matcher::OR> Matcher::get(types::Code code) const
 {
-    if (m_impl) return m_impl->get(code);
+    if (m_impl)
+        return m_impl->get(code);
     return nullptr;
 }
 
-void Matcher::foreach_type(std::function<void(types::Code, const matcher::OR&)> dest) const
+void Matcher::foreach_type(
+    std::function<void(types::Code, const matcher::OR&)> dest) const
 {
-    if (!m_impl) return;
+    if (!m_impl)
+        return;
     return m_impl->foreach_type(dest);
 }
 
 std::string Matcher::toString() const
 {
-    if (m_impl) return m_impl->toString();
+    if (m_impl)
+        return m_impl->toString();
     return std::string();
 }
 
 std::string Matcher::toStringExpanded() const
 {
-    if (m_impl) return m_impl->toStringExpanded();
+    if (m_impl)
+        return m_impl->toStringExpanded();
     return std::string();
 }
 
-void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& without) const
+void Matcher::split(const std::set<types::Code>& codes, Matcher& with,
+                    Matcher& without) const
 {
     if (!m_impl)
     {
-        with = Matcher();
+        with    = Matcher();
         without = Matcher();
-    } else {
+    }
+    else
+    {
         // Create the empty matchers and assign them right away, so we sort out
         // memory management
         unique_ptr<matcher::AND> awith(new matcher::AND);
@@ -104,7 +119,6 @@ void Matcher::split(const std::set<types::Code>& codes, Matcher& with, Matcher& 
             with = Matcher();
         else
             with = Matcher(move(awith));
-
 
         if (awithout->empty())
             without = Matcher();
@@ -118,12 +132,14 @@ bool Matcher::intersect_interval(core::Interval& interval) const
     shared_ptr<matcher::OR> reftime;
 
     // We have nothing to match: we match the open range
-    if (!m_impl) return true;
+    if (!m_impl)
+        return true;
 
     reftime = m_impl->get(TYPE_REFTIME);
 
     // We have no reftime to match: we match the open range
-    if (!reftime) return true;
+    if (!reftime)
+        return true;
 
     if (!reftime->intersect_interval(interval))
         return false;
@@ -138,7 +154,8 @@ Matcher Matcher::merge(const Matcher& m) const
         shared_ptr<matcher::AND> result(m_impl->clone());
         result->merge(*m.m_impl);
         return Matcher(result);
-    } else
+    }
+    else
         return Matcher();
 }
 
@@ -149,13 +166,18 @@ Matcher Matcher::update(const Matcher& m) const
         shared_ptr<matcher::AND> result(m_impl->clone());
         result->update(*m.m_impl);
         return Matcher(result);
-    } else if (m_impl) {
+    }
+    else if (m_impl)
+    {
         shared_ptr<matcher::AND> result(m_impl->clone());
         return Matcher(result);
-    } else if (m.m_impl) {
+    }
+    else if (m.m_impl)
+    {
         shared_ptr<matcher::AND> result(m.m_impl->clone());
         return Matcher(result);
-    } else
+    }
+    else
         return Matcher();
 }
 
@@ -176,4 +198,4 @@ std::ostream& operator<<(std::ostream& o, const Matcher& m)
     return o << m.toString();
 }
 
-}
+} // namespace arki

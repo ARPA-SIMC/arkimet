@@ -2,8 +2,8 @@
 #define ARKI_SEGMENT_FWD_H
 
 #include <arki/defs.h>
-#include <arki/segment/defs.h>
 #include <arki/segment/data/fwd.h>
+#include <arki/segment/defs.h>
 
 namespace arki {
 class Segment;
@@ -23,7 +23,7 @@ class Reader;
 class Writer;
 class Checker;
 struct RepackConfig;
-}
+} // namespace data
 
 namespace metadata {
 class Reader;
@@ -37,11 +37,10 @@ namespace iseg {
 class Segment;
 class Session;
 class Reader;
-}
+} // namespace iseg
 
-}
+} // namespace segment
 
-}
+} // namespace arki
 
 #endif
-

@@ -1,9 +1,9 @@
 #include "parser.h"
 #include "aliases.h"
-#include "utils.h"
 #include "arki/core/cfg.h"
-#include "arki/utils/sys.h"
 #include "arki/runtime.h"
+#include "arki/utils/sys.h"
+#include "utils.h"
 #include <cstdlib>
 
 using namespace std;
@@ -13,21 +13,11 @@ using namespace arki::utils;
 namespace arki {
 namespace matcher {
 
-Parser::Parser()
-    : aliases(new AliasDatabase)
-{
-}
+Parser::Parser() : aliases(new AliasDatabase) {}
 
-Parser::Parser(Parser&& o)
-    : aliases(o.aliases)
-{
-    o.aliases = nullptr;
-}
+Parser::Parser(Parser&& o) : aliases(o.aliases) { o.aliases = nullptr; }
 
-Parser::~Parser()
-{
-    delete aliases;
-}
+Parser::~Parser() { delete aliases; }
 
 Parser& Parser::operator=(Parser&& o)
 {
@@ -35,7 +25,7 @@ Parser& Parser::operator=(Parser&& o)
         return *this;
 
     delete aliases;
-    aliases = o.aliases;
+    aliases   = o.aliases;
     o.aliases = nullptr;
     return *this;
 }
@@ -47,7 +37,8 @@ Matcher Parser::parse(const std::string& pattern) const
 
 void Parser::load_system_aliases()
 {
-    // Otherwise the file given in the environment variable ARKI_ALIASES is tried.
+    // Otherwise the file given in the environment variable ARKI_ALIASES is
+    // tried.
     const Config& cfg = Config::get();
     if (cfg.file_aliases.empty())
         return;
@@ -61,10 +52,7 @@ void Parser::load_system_aliases()
     return;
 }
 
-void Parser::load_aliases(const core::cfg::Sections& cfg)
-{
-    aliases->add(cfg);
-}
+void Parser::load_aliases(const core::cfg::Sections& cfg) { aliases->add(cfg); }
 
 void Parser::load_remote_aliases(const std::string& server_url)
 {
@@ -95,5 +83,5 @@ stream::SendResult Parser::debug_dump_aliases(StreamOutput& out) const
     return aliases->debug_dump(out);
 }
 
-}
-}
+} // namespace matcher
+} // namespace arki

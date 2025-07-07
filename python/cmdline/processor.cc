@@ -1,21 +1,21 @@
 #include "processor.h"
+#include "arki/core/file.h"
+#include "arki/dataset.h"
+#include "arki/formatter.h"
+#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/metadata/archive.h"
-#include "arki/libconfig.h"
-#include "arki/types/source.h"
-#include "arki/formatter.h"
-#include "arki/stream.h"
-#include "arki/dataset.h"
+#include "arki/metadata/sort.h"
+#include "arki/nag.h"
 #include "arki/query.h"
+#include "arki/stream.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
 #include "arki/summary.h"
 #include "arki/summary/short.h"
-#include "arki/metadata/sort.h"
-#include "arki/utils/string.h"
-#include "arki/core/file.h"
 #include "arki/summary/stats.h"
-#include "arki/nag.h"
+#include "arki/types/source.h"
+#include "arki/utils/string.h"
 #include "python/dataset/progress.h"
 #include <cassert>
 
@@ -30,7 +30,6 @@ namespace cmdline {
 typedef std::function<void(const Metadata&)> metadata_print_func;
 typedef std::function<void(const Summary&)> summary_print_func;
 
-
 struct DataProcessor : public DatasetProcessor
 {
     arki::query::Data query;
@@ -38,36 +37,49 @@ struct DataProcessor : public DatasetProcessor
     bool data_inline;
     bool server_side;
 
-    DataProcessor(const arki::query::Data& query, metadata_print_func printer, bool server_side, bool data_inline=false)
-        : query(query), printer(std::move(printer)),
-          data_inline(data_inline), server_side(server_side)
+    DataProcessor(const arki::query::Data& query, metadata_print_func printer,
+                  bool server_side, bool data_inline = false)
+        : query(query), printer(std::move(printer)), data_inline(data_inline),
+          server_side(server_side)
     {
     }
 
     virtual ~DataProcessor() {}
 
-    void process(arki::dataset::Reader& reader, const std::string& name) override
+    void process(arki::dataset::Reader& reader,
+                 const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
         if (data_inline)
         {
-            reader.query_data(query, [&](std::shared_ptr<Metadata> md) { md->makeInline(); printer(*md); return true; });
-        } else if (server_side) {
+            reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
+                md->makeInline();
+                printer(*md);
+                return true;
+            });
+        }
+        else if (server_side)
+        {
             if (reader.config()->has("url"))
             {
                 reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
-                    md->set_source(types::Source::createURL(md->source().format, reader.config()->value("url")));
+                    md->set_source(types::Source::createURL(
+                        md->source().format, reader.config()->value("url")));
                     printer(*md);
                     return true;
                 });
-            } else {
+            }
+            else
+            {
                 reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
                     md->make_absolute();
                     printer(*md);
                     return true;
                 });
             }
-        } else {
+        }
+        else
+        {
             reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
                 md->make_absolute();
                 printer(*md);
@@ -77,34 +89,34 @@ struct DataProcessor : public DatasetProcessor
     }
 };
 
-
 struct LibarchiveProcessor : public DatasetProcessor
 {
     arki::query::Data query;
     std::shared_ptr<arki::metadata::ArchiveOutput> arc_out;
 
-    LibarchiveProcessor(
-            Matcher matcher, std::shared_ptr<StreamOutput> out,
-            const std::string& format, std::shared_ptr<arki::query::Progress> progress)
-        : query(matcher, true), arc_out(arki::metadata::ArchiveOutput::create_stream(format, out))
+    LibarchiveProcessor(Matcher matcher, std::shared_ptr<StreamOutput> out,
+                        const std::string& format,
+                        std::shared_ptr<arki::query::Progress> progress)
+        : query(matcher, true),
+          arc_out(arki::metadata::ArchiveOutput::create_stream(format, out))
     {
         query.progress = progress;
     }
 
     virtual ~LibarchiveProcessor() {}
 
-    void process(arki::dataset::Reader& reader, const std::string& name) override
+    void process(arki::dataset::Reader& reader,
+                 const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
-        reader.query_data(query, [&](std::shared_ptr<Metadata> md) { arc_out->append(*md); return true; });
+        reader.query_data(query, [&](std::shared_ptr<Metadata> md) {
+            arc_out->append(*md);
+            return true;
+        });
     }
 
-    void end() override
-    {
-        arc_out->flush(true);
-    }
+    void end() override { arc_out->flush(true); }
 };
-
 
 struct SummaryProcessor : public DatasetProcessor
 {
@@ -114,14 +126,18 @@ struct SummaryProcessor : public DatasetProcessor
     string summary_restrict;
     Summary summary;
 
-    SummaryProcessor(Matcher& q, summary_print_func printer, const std::string& summary_restrict, std::shared_ptr<StreamOutput> out)
-        : output(out), matcher(q), printer(printer), summary_restrict(summary_restrict)
+    SummaryProcessor(Matcher& q, summary_print_func printer,
+                     const std::string& summary_restrict,
+                     std::shared_ptr<StreamOutput> out)
+        : output(out), matcher(q), printer(printer),
+          summary_restrict(summary_restrict)
     {
     }
 
     virtual ~SummaryProcessor() {}
 
-    void process(arki::dataset::Reader& reader, const std::string& name) override
+    void process(arki::dataset::Reader& reader,
+                 const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
         reader.query_summary(matcher, summary);
@@ -134,14 +150,12 @@ struct SummaryProcessor : public DatasetProcessor
             Summary s;
             s.add(summary, types::parse_code_names(summary_restrict));
             do_output(s);
-        } else
+        }
+        else
             do_output(summary);
     }
 
-    void do_output(const Summary& s)
-    {
-        printer(s);
-    }
+    void do_output(const Summary& s) { printer(s); }
 };
 
 struct SummaryShortProcessor : public DatasetProcessor
@@ -153,17 +167,18 @@ struct SummaryShortProcessor : public DatasetProcessor
     bool annotate;
     bool json;
 
-    SummaryShortProcessor(Matcher& q, bool annotate, bool json, summary_print_func printer, std::shared_ptr<StreamOutput> out)
-        : output(out), matcher(q),
-          printer(printer),
-          annotate(annotate),
+    SummaryShortProcessor(Matcher& q, bool annotate, bool json,
+                          summary_print_func printer,
+                          std::shared_ptr<StreamOutput> out)
+        : output(out), matcher(q), printer(printer), annotate(annotate),
           json(json)
     {
     }
 
     virtual ~SummaryShortProcessor() {}
 
-    void process(arki::dataset::Reader& reader, const std::string& name) override
+    void process(arki::dataset::Reader& reader,
+                 const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
         reader.query_summary(matcher, summary);
@@ -191,18 +206,19 @@ struct SummaryShortProcessor : public DatasetProcessor
     }
 };
 
-
 struct BinaryProcessor : public DatasetProcessor
 {
     std::shared_ptr<StreamOutput> output;
     arki::query::Bytes query;
 
-    BinaryProcessor(const arki::query::Bytes& query, std::shared_ptr<StreamOutput> out)
+    BinaryProcessor(const arki::query::Bytes& query,
+                    std::shared_ptr<StreamOutput> out)
         : output(out), query(query)
     {
     }
 
-    void process(arki::dataset::Reader& reader, const std::string& name) override
+    void process(arki::dataset::Reader& reader,
+                 const std::string& name) override
     {
         arki::nag::verbose("Processing %s...", reader.name().c_str());
         // TODO: validate query's postprocessor with reader' config
@@ -210,15 +226,17 @@ struct BinaryProcessor : public DatasetProcessor
     }
 };
 
-
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, std::shared_ptr<StreamOutput> out)
+std::unique_ptr<DatasetProcessor>
+ProcessorMaker::make_binary(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     // Binary output from the dataset
     arki::query::Bytes query;
     if (!postprocess.empty())
     {
         query.setPostprocess(matcher, postprocess);
-    } else {
+    }
+    else
+    {
         query.setData(matcher);
     }
 
@@ -229,13 +247,15 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_binary(Matcher matcher, s
     return unique_ptr<DatasetProcessor>(new BinaryProcessor(query, out));
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, std::shared_ptr<StreamOutput> out)
+std::unique_ptr<DatasetProcessor>
+ProcessorMaker::make_summary(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     // Summary output from the dataset
     summary_print_func printer;
     if (!json && !yaml && !annotate)
         printer = [out](const Summary& s) { s.write(*out); };
-    else {
+    else
+    {
         shared_ptr<Formatter> formatter;
         if (annotate)
             formatter = Formatter::create();
@@ -257,12 +277,16 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_summary(Matcher matcher, 
     }
 
     if (summary)
-        return std::unique_ptr<DatasetProcessor>(new SummaryProcessor(matcher, printer, summary_restrict, out));
+        return std::unique_ptr<DatasetProcessor>(
+            new SummaryProcessor(matcher, printer, summary_restrict, out));
     else
-        return std::unique_ptr<DatasetProcessor>(new SummaryShortProcessor(matcher, annotate, json, printer, out));
+        return std::unique_ptr<DatasetProcessor>(
+            new SummaryShortProcessor(matcher, annotate, json, printer, out));
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher, std::shared_ptr<StreamOutput> out)
+std::unique_ptr<DatasetProcessor>
+ProcessorMaker::make_metadata(Matcher matcher,
+                              std::shared_ptr<StreamOutput> out)
 {
     // Metadata output from the dataset
     metadata_print_func printer;
@@ -292,10 +316,12 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make_metadata(Matcher matcher,
         query.sorter = metadata::sort::Compare::parse(sort);
     query.progress = progress;
 
-    return std::unique_ptr<DatasetProcessor>(new DataProcessor(query, printer, server_side, data_inline));
+    return std::unique_ptr<DatasetProcessor>(
+        new DataProcessor(query, printer, server_side, data_inline));
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::shared_ptr<StreamOutput> out)
+std::unique_ptr<DatasetProcessor>
+ProcessorMaker::make(Matcher matcher, std::shared_ptr<StreamOutput> out)
 {
     if (!progress)
         progress = std::make_shared<python::dataset::PythonProgress>();
@@ -308,11 +334,14 @@ std::unique_ptr<DatasetProcessor> ProcessorMaker::make(Matcher matcher, std::sha
         return make_metadata(matcher, out);
 }
 
-std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive, std::shared_ptr<arki::query::Progress> progress)
+std::unique_ptr<DatasetProcessor> ProcessorMaker::make_libarchive(
+    Matcher matcher, std::shared_ptr<StreamOutput> out, std::string archive,
+    std::shared_ptr<arki::query::Progress> progress)
 {
-    return std::unique_ptr<DatasetProcessor>(new LibarchiveProcessor(matcher, out, archive, progress));
+    return std::unique_ptr<DatasetProcessor>(
+        new LibarchiveProcessor(matcher, out, archive, progress));
 }
 
-}
-}
-}
+} // namespace cmdline
+} // namespace python
+} // namespace arki

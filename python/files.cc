@@ -1,8 +1,8 @@
 #include "files.h"
-#include "utils/values.h"
-#include "arki/stream/abstract.h"
 #include "arki/runtime.h"
+#include "arki/stream/abstract.h"
 #include "common.h"
+#include "utils/values.h"
 #include <string>
 
 namespace {
@@ -29,25 +29,19 @@ static std::filesystem::path get_fd_name(PyObject* o)
     throw PythonException();
 }
 
-class PythonStreamOutput : public arki::stream::AbstractStreamOutput<arki::stream::LinuxBackend>
+class PythonStreamOutput
+    : public arki::stream::AbstractStreamOutput<arki::stream::LinuxBackend>
 {
 protected:
     PyObject* o;
 
 public:
-    PythonStreamOutput(PyObject* o)
-        : o(o)
-    {
-        Py_INCREF(o);
-    }
-    PythonStreamOutput(const PythonStreamOutput&) = delete;
-    PythonStreamOutput(PythonStreamOutput&&) = delete;
+    PythonStreamOutput(PyObject* o) : o(o) { Py_INCREF(o); }
+    PythonStreamOutput(const PythonStreamOutput&)            = delete;
+    PythonStreamOutput(PythonStreamOutput&&)                 = delete;
     PythonStreamOutput& operator=(const PythonStreamOutput&) = delete;
-    PythonStreamOutput& operator=(PythonStreamOutput&&) = delete;
-    ~PythonStreamOutput()
-    {
-        Py_DECREF(o);
-    }
+    PythonStreamOutput& operator=(PythonStreamOutput&&)      = delete;
+    ~PythonStreamOutput() { Py_DECREF(o); }
 
     std::string name() const override
     {
@@ -62,24 +56,27 @@ public:
     }
 };
 
-
 class PythonTextStreamOutput : public PythonStreamOutput
 {
 protected:
-    arki::stream::SendResult _write_output_buffer(const void* data, size_t size) override
+    arki::stream::SendResult _write_output_buffer(const void* data,
+                                                  size_t size) override
     {
         {
             AcquireGIL gil;
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(
+                o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
         }
         return arki::stream::SendResult();
     }
 
-    arki::stream::SendResult _write_output_line(const void* data, size_t size) override
+    arki::stream::SendResult _write_output_line(const void* data,
+                                                size_t size) override
     {
         {
             AcquireGIL gil;
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(
+                o, "write", "s#", (const char*)data, (Py_ssize_t)size)));
             res = throw_ifnull(PyObject_CallMethod(o, "write", "C", (int)'\n'));
         }
         return arki::stream::SendResult();
@@ -92,20 +89,24 @@ public:
 class PythonBinaryStreamOutput : public PythonStreamOutput
 {
 protected:
-    arki::stream::SendResult _write_output_buffer(const void* data, size_t size) override
+    arki::stream::SendResult _write_output_buffer(const void* data,
+                                                  size_t size) override
     {
         {
             AcquireGIL gil;
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(
+                o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
         }
         return arki::stream::SendResult();
     }
 
-    arki::stream::SendResult _write_output_line(const void* data, size_t size) override
+    arki::stream::SendResult _write_output_line(const void* data,
+                                                size_t size) override
     {
         {
             AcquireGIL gil;
-            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
+            pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(
+                o, "write", "y#", (const char*)data, (Py_ssize_t)size)));
             res = throw_ifnull(PyObject_CallMethod(o, "write", "c", (int)'\n'));
         }
         return arki::stream::SendResult();
@@ -115,25 +116,16 @@ public:
     using PythonStreamOutput::PythonStreamOutput;
 };
 
-
-template<typename Base>
-struct PyFile : public Base
+template <typename Base> struct PyFile : public Base
 {
     PyObject* o;
 
-    PyFile(PyObject* o)
-        : o(o)
-    {
-        Py_INCREF(o);
-    }
-    PyFile(const PyFile&) = delete;
-    PyFile(PyFile&&) = delete;
+    PyFile(PyObject* o) : o(o) { Py_INCREF(o); }
+    PyFile(const PyFile&)            = delete;
+    PyFile(PyFile&&)                 = delete;
     PyFile& operator=(const PyFile&) = delete;
-    PyFile& operator=(PyFile&&) = delete;
-    ~PyFile()
-    {
-        Py_DECREF(o);
-    }
+    PyFile& operator=(PyFile&&)      = delete;
+    ~PyFile() { Py_DECREF(o); }
 
     std::string name() const override
     {
@@ -148,7 +140,6 @@ struct PyFile : public Base
     }
 };
 
-
 struct PyAbstractTextInputFile : public PyFile<arki::core::AbstractInputFile>
 {
     using PyFile::PyFile;
@@ -156,16 +147,21 @@ struct PyAbstractTextInputFile : public PyFile<arki::core::AbstractInputFile>
     size_t read(void* dest, size_t size) override
     {
         AcquireGIL gil;
-        pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "read", "n", (Py_ssize_t)size)));
+        pyo_unique_ptr res(throw_ifnull(
+            PyObject_CallMethod(o, "read", "n", (Py_ssize_t)size)));
         if (res == Py_None)
             return 0;
 
         Py_ssize_t res_len;
-        const char* res_buffer = throw_ifnull(PyUnicode_AsUTF8AndSize(res, &res_len));
+        const char* res_buffer =
+            throw_ifnull(PyUnicode_AsUTF8AndSize(res, &res_len));
 
         if ((size_t)res_len > size)
         {
-            PyErr_Format(PyExc_RuntimeError, "asked to read %zu characters, and got %zi bytes that do not fit in the output buffer", size, res_len);
+            PyErr_Format(PyExc_RuntimeError,
+                         "asked to read %zu characters, and got %zi bytes that "
+                         "do not fit in the output buffer",
+                         size, res_len);
             throw PythonException();
         }
 
@@ -181,7 +177,8 @@ struct PyAbstractBinaryInputFile : public PyFile<arki::core::AbstractInputFile>
     size_t read(void* dest, size_t size) override
     {
         AcquireGIL gil;
-        pyo_unique_ptr res(throw_ifnull(PyObject_CallMethod(o, "read", "n", (Py_ssize_t)size)));
+        pyo_unique_ptr res(throw_ifnull(
+            PyObject_CallMethod(o, "read", "n", (Py_ssize_t)size)));
         if (res == Py_None)
             return 0;
 
@@ -192,7 +189,9 @@ struct PyAbstractBinaryInputFile : public PyFile<arki::core::AbstractInputFile>
 
         if ((size_t)res_len > size)
         {
-            PyErr_Format(PyExc_RuntimeError, "asked to read %zu bytes, and got %zi bytes instead", size, res_len);
+            PyErr_Format(PyExc_RuntimeError,
+                         "asked to read %zu bytes, and got %zi bytes instead",
+                         size, res_len);
             throw PythonException();
         }
 
@@ -201,8 +200,7 @@ struct PyAbstractBinaryInputFile : public PyFile<arki::core::AbstractInputFile>
     }
 };
 
-}
-
+} // namespace
 
 namespace arki {
 namespace python {
@@ -220,7 +218,7 @@ TextInputFile::TextInputFile(PyObject* o)
     if (PyUnicode_Check(o))
     {
         std::string pathname = from_python<std::string>(o);
-        fd = new core::File(pathname, O_RDONLY);
+        fd                   = new core::File(pathname, O_RDONLY);
         return;
     }
 
@@ -231,7 +229,8 @@ TextInputFile::TextInputFile(PyObject* o)
         // It would be nice to give up and fallback to AbstractInputFile if
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
-        fd = new core::NamedFileDescriptor(int_from_python(fileno), get_fd_name(o));
+        fd = new core::NamedFileDescriptor(int_from_python(fileno),
+                                           get_fd_name(o));
         return;
     }
 
@@ -240,7 +239,6 @@ TextInputFile::TextInputFile(PyObject* o)
     // Fall back on calling o.read()
     abstract = new PyAbstractTextInputFile(o);
 }
-
 
 BinaryInputFile::BinaryInputFile(PyObject* o)
 {
@@ -255,7 +253,7 @@ BinaryInputFile::BinaryInputFile(PyObject* o)
     if (PyUnicode_Check(o))
     {
         std::string pathname = from_python<std::string>(o);
-        fd = new core::File(pathname, O_RDONLY);
+        fd                   = new core::File(pathname, O_RDONLY);
         return;
     }
 
@@ -266,7 +264,8 @@ BinaryInputFile::BinaryInputFile(PyObject* o)
         // It would be nice to give up and fallback to AbstractInputFile if
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
-        fd = new core::NamedFileDescriptor(int_from_python(fileno), get_fd_name(o));
+        fd = new core::NamedFileDescriptor(int_from_python(fileno),
+                                           get_fd_name(o));
         return;
     }
 
@@ -276,22 +275,22 @@ BinaryInputFile::BinaryInputFile(PyObject* o)
     abstract = new PyAbstractBinaryInputFile(o);
 }
 
-
 std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
 {
     const auto& cfg = arki::Config::get();
 
     // If it is already an int handle, use it
     if (PyLong_Check(o))
-        return StreamOutput::create(
-                std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(
+                                        int_from_python(o), get_fd_name(o)),
+                                    cfg.io_timeout_ms);
 
     // If it is a string, take it as a file name
     if (PyUnicode_Check(o))
-        return StreamOutput::create(std::make_shared<core::File>(
-                    from_python<std::string>(o),
-                    O_WRONLY | O_CREAT | O_TRUNC, 0666),
-                    cfg.io_timeout_ms);
+        return StreamOutput::create(
+            std::make_shared<core::File>(from_python<std::string>(o),
+                                         O_WRONLY | O_CREAT | O_TRUNC, 0666),
+            cfg.io_timeout_ms);
 
     // Try calling fileno
     pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
@@ -301,7 +300,9 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
         return StreamOutput::create(
-                std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)), cfg.io_timeout_ms);
+            std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno),
+                                                        get_fd_name(o)),
+            cfg.io_timeout_ms);
     }
 
     PyErr_Clear();
@@ -310,22 +311,22 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)
     return std::unique_ptr<StreamOutput>(new PythonTextStreamOutput(o));
 }
 
-
 std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
 {
     const auto& cfg = arki::Config::get();
 
     // If it is already an int handle, use it
     if (PyLong_Check(o))
-        return StreamOutput::create(
-                std::make_shared<core::NamedFileDescriptor>(int_from_python(o), get_fd_name(o)), cfg.io_timeout_ms);
+        return StreamOutput::create(std::make_shared<core::NamedFileDescriptor>(
+                                        int_from_python(o), get_fd_name(o)),
+                                    cfg.io_timeout_ms);
 
     // If it is a string, take it as a file name
     if (PyUnicode_Check(o))
-        return StreamOutput::create(std::make_shared<core::File>(
-                    from_python<std::string>(o),
-                    O_WRONLY | O_CREAT | O_TRUNC, 0666),
-                    cfg.io_timeout_ms);
+        return StreamOutput::create(
+            std::make_shared<core::File>(from_python<std::string>(o),
+                                         O_WRONLY | O_CREAT | O_TRUNC, 0666),
+            cfg.io_timeout_ms);
 
     // Try calling fileno
     pyo_unique_ptr fileno(PyObject_CallMethod(o, "fileno", nullptr));
@@ -335,7 +336,9 @@ std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
         return StreamOutput::create(
-                std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno), get_fd_name(o)), cfg.io_timeout_ms);
+            std::make_shared<core::NamedFileDescriptor>(int_from_python(fileno),
+                                                        get_fd_name(o)),
+            cfg.io_timeout_ms);
     }
 
     PyErr_Clear();
@@ -344,5 +347,5 @@ std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o)
     return std::unique_ptr<StreamOutput>(new PythonBinaryStreamOutput(o));
 }
 
-}
-}
+} // namespace python
+} // namespace arki

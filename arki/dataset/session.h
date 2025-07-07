@@ -1,24 +1,24 @@
 #ifndef ARKI_DATASET_SESSION_H
 #define ARKI_DATASET_SESSION_H
 
-#include <arki/segment/fwd.h>
 #include <arki/core/fwd.h>
 #include <arki/dataset/fwd.h>
 #include <arki/matcher/parser.h>
+#include <arki/segment/fwd.h>
 #include <arki/segment/session.h>
-#include <unordered_map>
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 
 namespace arki::dataset {
 
-class Session: public std::enable_shared_from_this<Session>
+class Session : public std::enable_shared_from_this<Session>
 {
 protected:
     matcher::Parser matcher_parser;
 
 public:
-    explicit Session(bool load_aliases=true);
+    explicit Session(bool load_aliases = true);
     virtual ~Session();
 
     /**
@@ -41,7 +41,9 @@ public:
      * If the results are consistent, return the expanded query. Else, raises
      * std::runtime_error.
      */
-    std::string expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes, const std::string& query);
+    std::string
+    expand_remote_query(std::shared_ptr<const core::cfg::Sections> remotes,
+                        const std::string& query);
 
     /**
      * Return the current alias database
@@ -59,19 +61,20 @@ public:
     /**
      * Read the configuration of the dataset at the given path or URL
      */
-    static std::shared_ptr<core::cfg::Section> read_config(const std::filesystem::path& path);
+    static std::shared_ptr<core::cfg::Section>
+    read_config(const std::filesystem::path& path);
 
     /**
      * Read a multi-dataset configuration at the given path or URL
      */
-    static std::shared_ptr<core::cfg::Sections> read_configs(const std::filesystem::path& path);
+    static std::shared_ptr<core::cfg::Sections>
+    read_configs(const std::filesystem::path& path);
 };
 
-
-struct DirSegmentsSession: public Session
+struct DirSegmentsSession : public Session
 {
     using dataset::Session::Session;
 };
 
-}
+} // namespace arki::dataset
 #endif

@@ -5,9 +5,9 @@
 
 #include <arki/structured/emitter.h>
 #include <arki/structured/reader.h>
-#include <vector>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace arki {
 namespace structured {
@@ -71,7 +71,10 @@ public:
     const char* tag() const override { return "string"; }
     NodeType type() const override { return NodeType::STRING; }
     std::string repr() const override;
-    std::string scalar_as_string(const char* desc) const override { return val; }
+    std::string scalar_as_string(const char* desc) const override
+    {
+        return val;
+    }
 };
 
 class List : public Node
@@ -92,12 +95,30 @@ public:
     std::string repr() const override;
     core::Time scalar_as_time(const char* desc) const override;
     unsigned list_size(const char* desc) const override { return size(); }
-    bool list_as_bool(unsigned idx, const char* desc) const override { return val[idx]->as_bool(desc); }
-    long long int list_as_int(unsigned idx, const char* desc) const override { return val[idx]->as_int(desc); }
-    double list_as_double(unsigned idx, const char* desc) const override { return val[idx]->as_double(desc); }
-    std::string list_as_string(unsigned idx, const char* desc) const override { return val[idx]->as_string(desc); }
-    std::unique_ptr<types::Type> list_as_type(unsigned idx, const char* desc, const structured::Keys& keys) const override;
-    void list_sub(unsigned idx, const char* desc, std::function<void(const Reader&)> func) const override { func(*val[idx]); }
+    bool list_as_bool(unsigned idx, const char* desc) const override
+    {
+        return val[idx]->as_bool(desc);
+    }
+    long long int list_as_int(unsigned idx, const char* desc) const override
+    {
+        return val[idx]->as_int(desc);
+    }
+    double list_as_double(unsigned idx, const char* desc) const override
+    {
+        return val[idx]->as_double(desc);
+    }
+    std::string list_as_string(unsigned idx, const char* desc) const override
+    {
+        return val[idx]->as_string(desc);
+    }
+    std::unique_ptr<types::Type>
+    list_as_type(unsigned idx, const char* desc,
+                 const structured::Keys& keys) const override;
+    void list_sub(unsigned idx, const char* desc,
+                  std::function<void(const Reader&)> func) const override
+    {
+        func(*val[idx]);
+    }
 };
 
 class Mapping : public Node
@@ -118,29 +139,55 @@ public:
     size_t size() const { return val.size(); }
     const memory::Node& operator[](const std::string& idx) const
     {
-        std::map<std::string, const memory::Node*>::const_iterator i = val.find(idx);
-        if (i == val.end()) return default_val;
+        std::map<std::string, const memory::Node*>::const_iterator i =
+            val.find(idx);
+        if (i == val.end())
+            return default_val;
         return *i->second;
     }
 
     NodeType type() const override { return NodeType::MAPPING; }
     std::string repr() const override;
     bool dict_has_key(const std::string& key, NodeType type) const override;
-    bool dict_as_bool(const std::string& key, const char* desc) const override { return (*this)[key].as_bool(desc); }
-    long long int dict_as_int(const std::string& key, const char* desc) const override { return (*this)[key].as_int(desc); }
-    double dict_as_double(const std::string& key, const char* desc) const override { return (*this)[key].as_double(desc); }
-    std::string dict_as_string(const std::string& key, const char* desc) const override { return (*this)[key].as_string(desc); }
-    core::Time dict_as_time(const std::string& key, const char* desc) const override;
-    std::unique_ptr<types::Type> dict_as_type(const std::string& key, const char* desc, const structured::Keys& keys) const override;
-    void dict_sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const override { dest((*this)[key]); }
-    void dict_items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const override
+    bool dict_as_bool(const std::string& key, const char* desc) const override
     {
-        for (const auto& i: val)
+        return (*this)[key].as_bool(desc);
+    }
+    long long int dict_as_int(const std::string& key,
+                              const char* desc) const override
+    {
+        return (*this)[key].as_int(desc);
+    }
+    double dict_as_double(const std::string& key,
+                          const char* desc) const override
+    {
+        return (*this)[key].as_double(desc);
+    }
+    std::string dict_as_string(const std::string& key,
+                               const char* desc) const override
+    {
+        return (*this)[key].as_string(desc);
+    }
+    core::Time dict_as_time(const std::string& key,
+                            const char* desc) const override;
+    std::unique_ptr<types::Type>
+    dict_as_type(const std::string& key, const char* desc,
+                 const structured::Keys& keys) const override;
+    void dict_sub(const std::string& key, const char* desc,
+                  std::function<void(const Reader&)> dest) const override
+    {
+        dest((*this)[key]);
+    }
+    void dict_items(const char* desc,
+                    std::function<void(const std::string&, const Reader&)> dest)
+        const override
+    {
+        for (const auto& i : val)
             dest(i.first, *i.second);
     }
 };
 
-}
+} // namespace memory
 
 /**
  * Emitter storing structured data in memory
@@ -172,7 +219,7 @@ public:
     const memory::Node& root() const { return *m_root; }
 };
 
-}
-}
+} // namespace structured
+} // namespace arki
 
 #endif

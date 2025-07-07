@@ -29,10 +29,10 @@ struct Text
      * rendering is done according to
      * https://devguide.python.org/documenting/#sections
      */
-    void rst_header(const std::string& str, unsigned level=1)
+    void rst_header(const std::string& str, unsigned level = 1)
     {
         bool over = false;
-        char c = '"';
+        char c    = '"';
 
         switch (level)
         {
@@ -44,14 +44,14 @@ struct Text
         }
 
         std::string bar(str.size(), c);
-        if (over) print(bar);
+        if (over)
+            print(bar);
         print(str);
         print(bar);
-
     }
 };
 
-}
-}
+} // namespace stream
+} // namespace arki
 
 #endif

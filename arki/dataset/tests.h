@@ -1,22 +1,22 @@
 #ifndef ARKI_DATASET_TESTS_H
 #define ARKI_DATASET_TESTS_H
 
-#include <arki/metadata/tests.h>
 #include <arki/core/cfg.h>
-#include <arki/types/fwd.h>
-#include <arki/dataset/fwd.h>
-#include <arki/metadata.h>
-#include <arki/metadata/collection.h>
-#include <arki/matcher.h>
 #include <arki/dataset.h>
+#include <arki/dataset/fwd.h>
+#include <arki/dataset/iseg.h>
+#include <arki/dataset/iseg/writer.h>
 #include <arki/dataset/segmented.h>
 #include <arki/dataset/simple.h>
 #include <arki/dataset/simple/writer.h>
-#include <arki/dataset/iseg.h>
-#include <arki/dataset/iseg/writer.h>
 #include <arki/libconfig.h>
-#include <vector>
+#include <arki/matcher.h>
+#include <arki/metadata.h>
+#include <arki/metadata/collection.h>
+#include <arki/metadata/tests.h>
+#include <arki/types/fwd.h>
 #include <string>
+#include <vector>
 
 namespace arki {
 namespace tests {
@@ -34,16 +34,17 @@ struct State : public std::map<std::string, dataset::segmented::SegmentState>
     bool report_on_exit;
     std::stringstream report;
 
-    explicit State(bool report_on_exit=false);
+    explicit State(bool report_on_exit = false);
     State(const State&) = delete;
     State(State&&);
     State& operator=(const State&) = delete;
-    State& operator=(State&&) = delete;
+    State& operator=(State&&)      = delete;
     ~State();
 
     bool has(const std::filesystem::path& relpath) const;
 
-    const dataset::segmented::SegmentState& get(const std::filesystem::path& seg) const;
+    const dataset::segmented::SegmentState&
+    get(const std::filesystem::path& seg) const;
 
     /// Count how many segments have this state
     unsigned count(segment::State state) const;
@@ -53,7 +54,6 @@ struct State : public std::map<std::string, dataset::segmented::SegmentState>
 
     void dump(FILE* out) const;
 };
-
 
 /**
  * Test fixture to test a dataset.
@@ -114,14 +114,15 @@ public:
      * @param cfg_tail
      *   Snippet of configuration that will be parsed by test_setup
      */
-    DatasetTest(const std::string& cfg_instance=std::string(), TestVariant variant=TEST_NORMAL);
+    DatasetTest(const std::string& cfg_instance = std::string(),
+                TestVariant variant             = TEST_NORMAL);
     ~DatasetTest();
 
     /**
      * Build cfg based on cfg_default and cfg_instance, and remove the dataset
      * directory if it exists.
      */
-    void test_setup(const std::string& cfg_default=std::string());
+    void test_setup(const std::string& cfg_default = std::string());
     void test_teardown();
     /// Clear cached dataset::* instantiations
     void test_reread_config();
@@ -129,7 +130,7 @@ public:
      * Teardown and setup test again, to run two different configuration in the
      * same test case
      */
-    void reset_test(const std::string& cfg_default=std::string());
+    void reset_test(const std::string& cfg_default = std::string());
 
     void set_session(std::shared_ptr<dataset::Session> session);
 
@@ -165,10 +166,11 @@ public:
     unsigned count_dataset_files(const metadata::Collection& f) const;
 
     /// Scan the dataset and return its state
-    State scan_state(bool quick=true, bool report_on_exit=false);
+    State scan_state(bool quick = true, bool report_on_exit = false);
 
     /// Scan the dataset and return its state
-    State scan_state(const Matcher& matcher, bool quick=true, bool report_on_exit=false);
+    State scan_state(const Matcher& matcher, bool quick = true,
+                     bool report_on_exit = false);
 
     std::shared_ptr<dataset::segmented::Reader> makeSegmentedReader();
     std::shared_ptr<dataset::segmented::Writer> makeSegmentedWriter();
@@ -184,21 +186,24 @@ public:
     void clean();
 
     // Import a file
-    void import(const std::filesystem::path& testfile="inbound/test.grib1");
+    void import(const std::filesystem::path& testfile = "inbound/test.grib1");
 
     // Import a metadata collection
     void import(metadata::Collection& mds);
 
     // Import a datum
-    void import(Metadata& md, metadata::Inbound::Result expected_result=metadata::Inbound::Result::OK);
+    void import(Metadata& md, metadata::Inbound::Result expected_result =
+                                  metadata::Inbound::Result::OK);
 
     // Recreate the dataset importing data into it
-    void clean_and_import(const std::filesystem::path& testfile="inbound/test.grib1");
+    void clean_and_import(
+        const std::filesystem::path& testfile = "inbound/test.grib1");
 
     metadata::Collection query(const query::Data& q);
     metadata::Collection query(const std::string& q);
 
-    void ensure_localds_clean(size_t filecount, size_t resultcount, bool quick=true);
+    void ensure_localds_clean(size_t filecount, size_t resultcount,
+                              bool quick = true);
 
     /// Test the state of all segments in the local dataset is clean
     void all_clean(size_t segment_count);
@@ -222,13 +227,15 @@ public:
      * extensions. ".metadata" and ".summary" are added in case of "simple"
      * datasets.
      */
-    void online_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
+    void online_segment_exists(const std::filesystem::path& relpath,
+                               const std::vector<std::string>& extensions);
 
     /**
      * Check if the segment exists online on this dataset, with the given
      * extensions. ".metadata" and ".summary" are added automatically.
      */
-    void archived_segment_exists(const std::filesystem::path& relpath, const std::vector<std::string>& extensions);
+    void archived_segment_exists(const std::filesystem::path& relpath,
+                                 const std::vector<std::string>& extensions);
 
     /**
      * Dump spans of each data in each segment to stderr
@@ -241,19 +248,17 @@ public:
     void skip_if_type_simple();
 };
 
-}
+} // namespace tests
 
 namespace tests {
 
-template<typename T>
-static std::string nfiles(const T& val)
+template <typename T> static std::string nfiles(const T& val)
 {
     if (val == 1)
         return std::to_string(val) + " file";
     else
         return std::to_string(val) + " files";
 }
-
 
 struct ReporterExpected
 {
@@ -265,7 +270,8 @@ struct ReporterExpected
         std::string operation;
         std::string message;
 
-        OperationMatch(const std::string& dsname, const std::string& operation, const std::string& message=std::string());
+        OperationMatch(const std::string& dsname, const std::string& operation,
+                       const std::string& message = std::string());
         std::string error_unmatched(const std::string& type) const;
     };
 
@@ -275,7 +281,9 @@ struct ReporterExpected
         std::string name;
         std::string message;
 
-        SegmentMatch(const std::string& dsname, const std::filesystem::path& relpath, const std::string& message=std::string());
+        SegmentMatch(const std::string& dsname,
+                     const std::filesystem::path& relpath,
+                     const std::string& message = std::string());
         std::string error_unmatched(const std::string& operation) const;
     };
 
@@ -294,14 +302,14 @@ struct ReporterExpected
     std::vector<SegmentMatch> issue51;
     std::vector<SegmentMatch> segment_manual_intervention;
 
-    int count_repacked = -1;
-    int count_archived = -1;
-    int count_deleted = -1;
-    int count_deindexed = -1;
-    int count_rescanned = -1;
-    int count_tarred = -1;
-    int count_compressed = -1;
-    int count_issue51 = -1;
+    int count_repacked            = -1;
+    int count_archived            = -1;
+    int count_deleted             = -1;
+    int count_deindexed           = -1;
+    int count_rescanned           = -1;
+    int count_tarred              = -1;
+    int count_compressed          = -1;
+    int count_issue51             = -1;
     int count_manual_intervention = -1;
 
     unsigned flags;
@@ -310,68 +318,141 @@ struct ReporterExpected
 
     static const unsigned ENFORCE_REPORTS = 1 << 0;
 
-    ReporterExpected(unsigned flags=0);
+    ReporterExpected(unsigned flags = 0);
 };
 
-
-template<typename DatasetWriter>
+template <typename DatasetWriter>
 class ActualWriter : public arki::utils::tests::Actual<DatasetWriter*>
 {
 public:
     ActualWriter(DatasetWriter* s) : Actual<DatasetWriter*>(s) {}
-    void acquire_ok(std::shared_ptr<Metadata> md, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
-    void acquire_ok(metadata::Collection& mds, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
-    void acquire_duplicate(std::shared_ptr<Metadata> md, ReplaceStrategy strategy=ReplaceStrategy::DEFAULT);
+    void acquire_ok(std::shared_ptr<Metadata> md,
+                    ReplaceStrategy strategy = ReplaceStrategy::DEFAULT);
+    void acquire_ok(metadata::Collection& mds,
+                    ReplaceStrategy strategy = ReplaceStrategy::DEFAULT);
+    void acquire_duplicate(std::shared_ptr<Metadata> md,
+                           ReplaceStrategy strategy = ReplaceStrategy::DEFAULT);
 };
 
-inline arki::tests::ActualWriter<dataset::local::Writer> actual(arki::dataset::local::Writer* actual)
+inline arki::tests::ActualWriter<dataset::local::Writer>
+actual(arki::dataset::local::Writer* actual)
 {
     return arki::tests::ActualWriter<dataset::local::Writer>(actual);
 }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(std::shared_ptr<arki::dataset::Writer> actual) { return arki::tests::ActualWriter<dataset::Writer>(actual.get()); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer* actual) { return arki::tests::ActualWriter<dataset::Writer>(actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::segmented::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::simple::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(arki::dataset::iseg::Writer& actual) { return arki::tests::ActualWriter<dataset::Writer>(&actual); }
-inline arki::tests::ActualWriter<dataset::Writer> actual(std::shared_ptr<arki::dataset::iseg::Writer> actual) { return arki::tests::ActualWriter<dataset::Writer>(actual.get()); }
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(arki::dataset::Writer* actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(arki::dataset::Writer& actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(&actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(std::shared_ptr<arki::dataset::Writer> actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(actual.get());
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(arki::dataset::segmented::Writer* actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(arki::dataset::segmented::Writer& actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(&actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(arki::dataset::simple::Writer& actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(&actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(arki::dataset::iseg::Writer& actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(&actual);
+}
+inline arki::tests::ActualWriter<dataset::Writer>
+actual(std::shared_ptr<arki::dataset::iseg::Writer> actual)
+{
+    return arki::tests::ActualWriter<dataset::Writer>(actual.get());
+}
 
-
-template<typename DatasetChecker>
+template <typename DatasetChecker>
 class ActualChecker : public arki::utils::tests::Actual<DatasetChecker*>
 {
 public:
     ActualChecker(DatasetChecker* s) : Actual<DatasetChecker*>(s) {}
 
-    void repack(const ReporterExpected& expected, bool write=false);
-    void repack_clean(bool write=false);
-    void repack_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
-    void repack_filtered_clean(const Matcher& matcher, bool write=false);
-    void check(const ReporterExpected& expected, bool write=false, bool quick=true);
+    void repack(const ReporterExpected& expected, bool write = false);
+    void repack_clean(bool write = false);
+    void repack_filtered(const Matcher& matcher,
+                         const ReporterExpected& expected, bool write = false);
+    void repack_filtered_clean(const Matcher& matcher, bool write = false);
+    void check(const ReporterExpected& expected, bool write = false,
+               bool quick = true);
     void check(const ReporterExpected& expected, dataset::CheckerConfig& opts);
-    void check_clean(bool write=false, bool quick=true);
-    void check_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false, bool quick=true);
-    void check_filtered_clean(const Matcher& matcher, bool write=false, bool quick=true);
-    void check_issue51(const ReporterExpected& expected, bool write=false);
-    void check_issue51_clean(bool write=false);
-    void remove_all(const ReporterExpected& expected, bool write=false);
-    void remove_all_filtered(const Matcher& matcher, const ReporterExpected& expected, bool write=false);
+    void check_clean(bool write = false, bool quick = true);
+    void check_filtered(const Matcher& matcher,
+                        const ReporterExpected& expected, bool write = false,
+                        bool quick = true);
+    void check_filtered_clean(const Matcher& matcher, bool write = false,
+                              bool quick = true);
+    void check_issue51(const ReporterExpected& expected, bool write = false);
+    void check_issue51_clean(bool write = false);
+    void remove_all(const ReporterExpected& expected, bool write = false);
+    void remove_all_filtered(const Matcher& matcher,
+                             const ReporterExpected& expected,
+                             bool write = false);
 };
 
-inline arki::tests::ActualChecker<dataset::local::Checker> actual(arki::dataset::local::Checker* actual)
+inline arki::tests::ActualChecker<dataset::local::Checker>
+actual(arki::dataset::local::Checker* actual)
 {
     return arki::tests::ActualChecker<dataset::local::Checker>(actual);
 }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::segmented::Checker* actual) { return arki::tests::ActualChecker<dataset::Checker>(actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::segmented::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>(&actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::simple::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::iseg::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((arki::dataset::segmented::Checker*)&actual); }
-inline arki::tests::ActualChecker<dataset::Checker> actual(arki::dataset::archive::Checker& actual) { return arki::tests::ActualChecker<dataset::Checker>((dataset::Checker*)&actual); }
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::Checker* actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(actual);
+}
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::Checker& actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(&actual);
+}
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::segmented::Checker* actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(actual);
+}
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::segmented::Checker& actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(&actual);
+}
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::simple::Checker& actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(
+        (arki::dataset::segmented::Checker*)&actual);
+}
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::iseg::Checker& actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(
+        (arki::dataset::segmented::Checker*)&actual);
+}
+inline arki::tests::ActualChecker<dataset::Checker>
+actual(arki::dataset::archive::Checker& actual)
+{
+    return arki::tests::ActualChecker<dataset::Checker>(
+        (dataset::Checker*)&actual);
+}
 
-}
-}
+} // namespace tests
+} // namespace arki
 
 #endif

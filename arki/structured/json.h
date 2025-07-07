@@ -3,10 +3,10 @@
 
 /// Emitter implementation that outputs JSON
 
-#include <arki/structured/emitter.h>
 #include <arki/core/fwd.h>
-#include <vector>
+#include <arki/structured/emitter.h>
 #include <iosfwd>
+#include <vector>
 
 namespace arki {
 namespace structured {
@@ -53,6 +53,6 @@ public:
     static void parse(const std::string& str, Emitter& e);
 };
 
-}
-}
+} // namespace structured
+} // namespace arki
 #endif

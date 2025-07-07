@@ -1,10 +1,10 @@
-#include <arki/dataset/tests.h>
 #include <arki/dataset/iseg/reader.h>
 #include <arki/dataset/iseg/writer.h>
+#include <arki/dataset/tests.h>
+#include <arki/matcher.h>
 #include <arki/metadata.h>
 #include <arki/metadata/collection.h>
 #include <arki/summary.h>
-#include <arki/matcher.h>
 #include <arki/utils/files.h>
 #include <arki/utils/sys.h>
 
@@ -18,7 +18,8 @@ using namespace arki::dataset::iseg;
 
 namespace {
 
-struct Fixture : public DatasetTest {
+struct Fixture : public DatasetTest
+{
     using DatasetTest::DatasetTest;
 
     void test_setup()
@@ -43,12 +44,12 @@ class Tests : public FixtureTestCase<Fixture>
 
 Tests test_plain("arki_dataset_iseg_reader");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-// Add here only iseg-specific tests that are not convered by tests in dataset-reader-test.cc
+    // Add here only iseg-specific tests that are not convered by tests in
+    // dataset-reader-test.cc
 
-add_method("empty", [](Fixture& f) noexcept {
-});
-
+    add_method("empty", [](Fixture& f) noexcept {});
 }
-}
+} // namespace

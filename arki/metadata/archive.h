@@ -2,11 +2,11 @@
 #define ARKI_METADATA_LIBARCHIVE_H
 
 #include <arki/core/fwd.h>
-#include <arki/stream/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <string>
+#include <arki/stream/fwd.h>
 #include <filesystem>
 #include <memory>
+#include <string>
 
 namespace arki {
 namespace metadata {
@@ -28,7 +28,7 @@ public:
      * @returns the index used to generate the file name
      */
     virtual size_t append(const Metadata& md) = 0;
-    virtual void flush(bool with_metadata) = 0;
+    virtual void flush(bool with_metadata)    = 0;
 
     /**
      * Create an archive output for the given format and output file.
@@ -36,7 +36,9 @@ public:
      * format is a string corresponding to the output formats supported by
      * libarchive.
      */
-    static std::unique_ptr<ArchiveOutput> create_file(const std::string& format, std::shared_ptr<core::NamedFileDescriptor> out);
+    static std::unique_ptr<ArchiveOutput>
+    create_file(const std::string& format,
+                std::shared_ptr<core::NamedFileDescriptor> out);
 
     /**
      * Create an archive output for the given format and StreamOutput.
@@ -44,10 +46,11 @@ public:
      * format is a string corresponding to the output formats supported by
      * libarchive.
      */
-    static std::unique_ptr<ArchiveOutput> create_stream(const std::string& format, std::shared_ptr<StreamOutput> out);
+    static std::unique_ptr<ArchiveOutput>
+    create_stream(const std::string& format, std::shared_ptr<StreamOutput> out);
 };
 
-}
-}
+} // namespace metadata
+} // namespace arki
 
 #endif

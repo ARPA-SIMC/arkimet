@@ -1,16 +1,16 @@
-#include "config.h"
 #include "arki/utils/compress.h"
-#include "arki/utils/sys.h"
-#include "arki/utils/gzip.h"
 #include "arki/utils/accounting.h"
+#include "arki/utils/gzip.h"
+#include "arki/utils/sys.h"
+#include "config.h"
 #include <algorithm>
 #include <fcntl.h>
+#include <sstream>
 #include <utime.h>
 #include <zlib.h>
-#include <sstream>
 
-#include <lzo/lzoconf.h>
 #include <lzo/lzo1x.h>
+#include <lzo/lzoconf.h>
 
 using namespace std;
 using namespace arki::utils;
@@ -25,11 +25,12 @@ static void require_lzo_init()
     if (!done)
     {
         if (lzo_init() != LZO_E_OK)
-            throw std::runtime_error("cannot initialize LZO library: lzo_init() failed (this usually indicates a compiler bug)");
+            throw std::runtime_error(
+                "cannot initialize LZO library: lzo_init() failed (this "
+                "usually indicates a compiler bug)");
         done = true;
     }
 }
-
 
 std::vector<uint8_t> lzo(const void* in, size_t in_size)
 {
@@ -43,10 +44,9 @@ std::vector<uint8_t> lzo(const void* in, size_t in_size)
     lzo_uint out_len = out.size();
 
     // Compress
-    int r = lzo1x_1_compress(
-            static_cast<const lzo_bytep>(in), in_size,
-            static_cast<lzo_bytep>(out.data()), &out_len,
-            static_cast<lzo_bytep>(wrkmem.data()));
+    int r = lzo1x_1_compress(static_cast<const lzo_bytep>(in), in_size,
+                             static_cast<lzo_bytep>(out.data()), &out_len,
+                             static_cast<lzo_bytep>(wrkmem.data()));
     if (r != LZO_E_OK)
     {
         stringstream ss;
@@ -56,7 +56,8 @@ std::vector<uint8_t> lzo(const void* in, size_t in_size)
 
     // If the size did not decrease, return the uncompressed data
     if (out_len >= in_size)
-        return std::vector<uint8_t>((const uint8_t*)in, (const uint8_t*)in + in_size);
+        return std::vector<uint8_t>((const uint8_t*)in,
+                                    (const uint8_t*)in + in_size);
 
     // Resize output to match the compressed length
     out.resize(out_len);
@@ -70,7 +71,8 @@ std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size)
 
     std::vector<uint8_t> out(out_size);
     lzo_uint new_len = out_size;
-    int r = lzo1x_decompress_safe(static_cast<const lzo_bytep>(in), in_size, (lzo_bytep)out.data(), &new_len, NULL);
+    int r = lzo1x_decompress_safe(static_cast<const lzo_bytep>(in), in_size,
+                                  (lzo_bytep)out.data(), &new_len, NULL);
     if (r != LZO_E_OK || new_len != out_size)
     {
         stringstream ss;
@@ -83,11 +85,11 @@ std::vector<uint8_t> unlzo(const void* in, size_t in_size, size_t out_size)
 
 ZlibCompressor::ZlibCompressor() : strm(0)
 {
-	/* allocate deflate state */
-	strm = new z_stream;
-	strm->zalloc = Z_NULL;
-	strm->zfree = Z_NULL;
-	strm->opaque = Z_NULL;
+    /* allocate deflate state */
+    strm         = new z_stream;
+    strm->zalloc = Z_NULL;
+    strm->zfree  = Z_NULL;
+    strm->opaque = Z_NULL;
     int ret = deflateInit2(strm, 9, Z_DEFLATED, 15 + 16, 9, Z_DEFAULT_STRATEGY);
     if (ret != Z_OK)
         throw std::runtime_error("zlib initialization failed");
@@ -95,25 +97,25 @@ ZlibCompressor::ZlibCompressor() : strm(0)
 
 ZlibCompressor::~ZlibCompressor()
 {
-	if (strm)
-	{
-		(void)deflateEnd(strm);
-		delete strm;
-	}
+    if (strm)
+    {
+        (void)deflateEnd(strm);
+        delete strm;
+    }
 }
 
 void ZlibCompressor::feed_data(const void* buf, size_t len)
 {
     strm->avail_in = len;
-    strm->next_in = const_cast<Bytef*>(static_cast<const Bytef*>(buf));
+    strm->next_in  = const_cast<Bytef*>(static_cast<const Bytef*>(buf));
 }
 
 size_t ZlibCompressor::get(void* buf, size_t len, bool flush)
 {
-	int z_flush = flush ? Z_FINISH : Z_NO_FLUSH;
-	strm->avail_out = len;
-	strm->next_out = (Bytef*)buf;
-	int ret = deflate(strm, z_flush);    /* no bad return value */
+    int z_flush     = flush ? Z_FINISH : Z_NO_FLUSH;
+    strm->avail_out = len;
+    strm->next_out  = (Bytef*)buf;
+    int ret         = deflate(strm, z_flush); /* no bad return value */
     if (ret == Z_STREAM_ERROR)
         throw std::runtime_error("zlib deflate failed");
     return len - strm->avail_out;
@@ -130,7 +132,8 @@ void ZlibCompressor::restart()
         throw runtime_error("zlib deflate stream reset error");
 }
 
-void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd, const std::filesystem::path& wrfname, size_t bufsize)
+void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd,
+            const std::filesystem::path& wrfname, size_t bufsize)
 {
     // (Re)open the compressed file
     int rdfd1 = dup(rdfd);
@@ -147,7 +150,8 @@ void gunzip(int rdfd, const std::filesystem::path& rdfname, int wrfd, const std:
     // Let the caller close file rdfd and wrfd
 }
 
-std::vector<uint8_t> gunzip(const std::filesystem::path& abspath, size_t bufsize)
+std::vector<uint8_t> gunzip(const std::filesystem::path& abspath,
+                            size_t bufsize)
 {
     gzip::File gzfd(abspath, "rb");
     vector<uint8_t> buf(bufsize);
@@ -162,8 +166,7 @@ std::vector<uint8_t> gunzip(const std::filesystem::path& abspath, size_t bufsize
     return res;
 }
 
-TempUnzip::TempUnzip(const std::filesystem::path& fname)
-    : fname(fname)
+TempUnzip::TempUnzip(const std::filesystem::path& fname) : fname(fname)
 {
     // zcat gzfname > fname
     auto gzfname = sys::with_suffix(fname, ".gz");
@@ -178,17 +181,12 @@ TempUnzip::TempUnzip(const std::filesystem::path& fname)
     // Set the same timestamp as the compressed file
     std::unique_ptr<struct stat> st = sys::stat(gzfname);
     struct utimbuf times;
-    times.actime = st->st_atime;
+    times.actime  = st->st_atime;
     times.modtime = st->st_mtime;
     utime(fname.c_str(), &times);
 }
 
-TempUnzip::~TempUnzip()
-{
-	::unlink(fname.c_str());
-}
-
-
+TempUnzip::~TempUnzip() { ::unlink(fname.c_str()); }
 
 SeekIndex::SeekIndex()
 {
@@ -198,14 +196,16 @@ SeekIndex::SeekIndex()
 
 size_t SeekIndex::lookup(size_t unc) const
 {
-	vector<size_t>::const_iterator i = upper_bound(ofs_unc.begin(), ofs_unc.end(), unc);
-	return i - ofs_unc.begin() - 1;
+    vector<size_t>::const_iterator i =
+        upper_bound(ofs_unc.begin(), ofs_unc.end(), unc);
+    return i - ofs_unc.begin() - 1;
 }
 
 bool SeekIndex::read(const std::filesystem::path& fname)
 {
     sys::File fd(fname);
-    if (!fd.open_ifexists(O_RDONLY)) return false;
+    if (!fd.open_ifexists(O_RDONLY))
+        return false;
     read(fd);
     return true;
 }
@@ -227,19 +227,17 @@ void SeekIndex::read(sys::File& fd)
     }
 }
 
-
-SeekIndexReader::SeekIndexReader(core::NamedFileDescriptor& fd)
-    : fd(fd)
-{
-}
+SeekIndexReader::SeekIndexReader(core::NamedFileDescriptor& fd) : fd(fd) {}
 
 std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
 {
-    if (offset < last_group_offset || offset + size > last_group_offset + last_group.size())
+    if (offset < last_group_offset ||
+        offset + size > last_group_offset + last_group.size())
     {
         size_t block = idx.lookup(offset);
         if (block >= idx.ofs_comp.size())
-            throw std::runtime_error("requested read of offset past the end of gzip file");
+            throw std::runtime_error(
+                "requested read of offset past the end of gzip file");
 
         size_t gz_offset = idx.ofs_comp[block];
         fd.lseek(gz_offset, SEEK_SET);
@@ -254,7 +252,9 @@ std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
         {
             // Decompress until the end of the file
             last_group = gzfd.read_all();
-        } else {
+        }
+        else
+        {
             // Read and uncompress the compressed chunk
             size_t unc_size = idx.ofs_unc[block + 1] - idx.ofs_unc[block];
             last_group.resize(unc_size);
@@ -263,13 +263,13 @@ std::vector<uint8_t> SeekIndexReader::read(size_t offset, size_t size)
     }
     size_t group_offset = offset - last_group_offset;
     if (group_offset + size > last_group.size())
-        throw std::runtime_error("requested read of offset past the end of gzip file");
-    return std::vector<uint8_t>(last_group.begin() + group_offset, last_group.begin() + group_offset + size);
+        throw std::runtime_error(
+            "requested read of offset past the end of gzip file");
+    return std::vector<uint8_t>(last_group.begin() + group_offset,
+                                last_group.begin() + group_offset + size);
 }
 
-
-IndexWriter::IndexWriter(size_t groupsize)
-    : groupsize(groupsize), enc(outbuf)
+IndexWriter::IndexWriter(size_t groupsize) : groupsize(groupsize), enc(outbuf)
 {
 }
 
@@ -282,7 +282,8 @@ void IndexWriter::append(size_t size, size_t gz_size)
 bool IndexWriter::close_entry()
 {
     ++count;
-    if (!groupsize) return false;
+    if (!groupsize)
+        return false;
     return (count % groupsize) == 0;
 }
 
@@ -292,10 +293,10 @@ void IndexWriter::close_block(size_t gz_size)
 
     // Write last block size to the index
     size_t unc_size = unc_ofs - last_unc_ofs;
-    size_t size = ofs - last_ofs;
+    size_t size     = ofs - last_ofs;
     enc.add_unsigned(unc_size, 8);
     enc.add_unsigned(size, 8);
-    last_ofs = ofs;
+    last_ofs     = ofs;
     last_unc_ofs = unc_ofs;
 }
 
@@ -314,15 +315,12 @@ void IndexWriter::write(core::NamedFileDescriptor& outidx)
     outidx.write_all_or_throw(outbuf.data(), outbuf.size());
 }
 
-
 GzipWriter::GzipWriter(core::NamedFileDescriptor& out, size_t groupsize)
     : out(out), outbuf(4096 * 2), idx(groupsize)
 {
 }
 
-GzipWriter::~GzipWriter()
-{
-}
+GzipWriter::~GzipWriter() {}
 
 size_t GzipWriter::add(const std::vector<uint8_t>& buf)
 {
@@ -378,9 +376,10 @@ void GzipWriter::end_block(bool is_final)
 {
     size_t gz_size = GzipWriter::flush_compressor();
     idx.close_block(gz_size);
-    if (!is_final) compressor.restart();
+    if (!is_final)
+        compressor.restart();
 }
 
-}
-}
-}
+} // namespace compress
+} // namespace utils
+} // namespace arki

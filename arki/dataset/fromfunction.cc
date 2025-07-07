@@ -1,7 +1,7 @@
 #include "fromfunction.h"
+#include "arki/core/time.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
-#include "arki/core/time.h"
 
 using namespace std;
 
@@ -9,8 +9,10 @@ namespace arki {
 namespace dataset {
 namespace fromfunction {
 
-std::shared_ptr<dataset::Reader> Dataset::create_reader() { return std::make_shared<Reader>(shared_from_this()); }
-
+std::shared_ptr<dataset::Reader> Dataset::create_reader()
+{
+    return std::make_shared<Reader>(shared_from_this());
+}
 
 bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 {
@@ -25,9 +27,10 @@ bool Reader::impl_query_data(const query::Data& q, metadata_dest_func dest)
 
 core::Interval Reader::get_stored_time_interval()
 {
-    throw std::runtime_error("fromfunction::Reader::get_stored_time_interval not yet implemented");
+    throw std::runtime_error(
+        "fromfunction::Reader::get_stored_time_interval not yet implemented");
 }
 
-}
-}
-}
+} // namespace fromfunction
+} // namespace dataset
+} // namespace arki

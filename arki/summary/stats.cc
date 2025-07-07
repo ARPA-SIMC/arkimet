@@ -1,14 +1,14 @@
 #include "arki/summary/stats.h"
-#include "arki/metadata.h"
-#include "arki/core/file.h"
 #include "arki/core/binary.h"
+#include "arki/core/file.h"
+#include "arki/exceptions.h"
+#include "arki/metadata.h"
+#include "arki/structured/emitter.h"
+#include "arki/structured/keys.h"
+#include "arki/structured/reader.h"
 #include "arki/types/reftime.h"
 #include "arki/utils/string.h"
 #include "arki/utils/yaml.h"
-#include "arki/structured/emitter.h"
-#include "arki/structured/reader.h"
-#include "arki/structured/keys.h"
-#include "arki/exceptions.h"
 
 using namespace std;
 using namespace arki::core;
@@ -27,10 +27,7 @@ const size_t traits<summary::Stats>::type_sersize_bytes = 2;
 
 namespace summary {
 
-Stats::Stats()
-    : count(0), size(0), begin(0, 0, 0), end(0, 0, 0)
-{
-}
+Stats::Stats() : count(0), size(0), begin(0, 0, 0), end(0, 0, 0) {}
 
 Stats::Stats(const Metadata& md)
     : count(1), size(md.data_size()), begin(0, 0, 0), end(0, 0, 0)
@@ -38,25 +35,27 @@ Stats::Stats(const Metadata& md)
     if (const Reftime* rt = md.get<types::Reftime>())
         begin = end = rt->get_Position();
     else
-        throw_consistency_error("summarising metadata", "missing reference time");
+        throw_consistency_error("summarising metadata",
+                                "missing reference time");
 }
 
-Stats* Stats::clone() const
-{
-    return new Stats(*this);
-}
+Stats* Stats::clone() const { return new Stats(*this); }
 
 int Stats::compare(const Stats& o) const
 {
-    if (int res = count - o.count) return res;
-    if (int res = size - o.size) return res;
-    if (int res = begin.compare(o.begin)) return res;
+    if (int res = count - o.count)
+        return res;
+    if (int res = size - o.size)
+        return res;
+    if (int res = begin.compare(o.begin))
+        return res;
     return end.compare(o.end);
 }
 
 bool Stats::equals(const Stats& o) const
 {
-    return count == o.count && size == o.size && begin == o.begin && end == o.end;
+    return count == o.count && size == o.size && begin == o.begin &&
+           end == o.end;
 }
 
 void Stats::merge(const Stats& s)
@@ -67,10 +66,14 @@ void Stats::merge(const Stats& s)
     if (count == 0)
     {
         begin = s.begin;
-        end = s.end;
-    } else {
-        if (begin > s.begin) begin = s.begin;
-        if (end < s.end) end = s.end;
+        end   = s.end;
+    }
+    else
+    {
+        if (begin > s.begin)
+            begin = s.begin;
+        if (end < s.end)
+            end = s.end;
     }
     count += s.count;
     size += s.size;
@@ -85,12 +88,15 @@ void Stats::merge(const Metadata& md)
             begin = end = time;
         else
         {
-            if (time < begin) begin = time;
-            if (end < time) end = time;
+            if (time < begin)
+                begin = time;
+            if (end < time)
+                end = time;
         }
     }
     else
-        throw_consistency_error("summarising metadata", "missing reference time");
+        throw_consistency_error("summarising metadata",
+                                "missing reference time");
     ++count;
     size += md.data_size();
 }
@@ -137,22 +143,26 @@ void Stats::serialiseLocal(structured::Emitter& e, const Formatter* f) const
 {
     if (count > 0)
     {
-        e.add("b"); e.add(begin);
-        e.add("e"); e.add(end);
+        e.add("b");
+        e.add(begin);
+        e.add("e");
+        e.add(end);
     }
     e.add("c", count);
     e.add("s", size);
 }
 
-unique_ptr<Stats> Stats::decode_structure(const structured::Keys& keys, const structured::Reader& val)
+unique_ptr<Stats> Stats::decode_structure(const structured::Keys& keys,
+                                          const structured::Reader& val)
 {
     using namespace structured::memory;
     unique_ptr<Stats> res(new Stats);
     res->count = val.as_int(keys.summarystats_count, "summary stats count");
-    res->size = val.as_int(keys.summarystats_size, "summary stats size");
+    res->size  = val.as_int(keys.summarystats_size, "summary stats size");
     if (res->count)
     {
-        res->begin = val.as_time(keys.summarystats_begin, "summary stats begin");
+        res->begin =
+            val.as_time(keys.summarystats_begin, "summary stats begin");
         res->end = val.as_time(keys.summarystats_end, "summary stats end");
     }
     return res;
@@ -185,7 +195,8 @@ unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
     core::BinaryDecoder inner = dec.pop_type_envelope(code);
     if (code == TYPE_REFTIME)
     {
-        reftime::Style sty = static_cast<reftime::Style>(inner.pop_byte("Reftime style"));
+        reftime::Style sty =
+            static_cast<reftime::Style>(inner.pop_byte("Reftime style"));
         switch (sty)
         {
             case reftime::Style::POSITION:
@@ -193,16 +204,19 @@ unique_ptr<Stats> Stats::decode(core::BinaryDecoder& dec)
                 break;
             case reftime::Style::PERIOD:
                 res->begin = Time::decode(inner);
-                res->end = Time::decode(inner);
+                res->end   = Time::decode(inner);
                 break;
             default:
-                throw std::runtime_error("cannot parse Reftime: found unsupported style " + Reftime::formatStyle(sty));
+                throw std::runtime_error(
+                    "cannot parse Reftime: found unsupported style " +
+                    Reftime::formatStyle(sty));
         }
     }
     else
     {
         std::stringstream ss;
-        ss << "cannot parse summary stats: cannot handle element " << formatCode(code);
+        ss << "cannot parse summary stats: cannot handle element "
+           << formatCode(code);
         throw std::runtime_error(ss.str());
     }
 
@@ -221,7 +235,7 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
     auto reader = LineReader::from_chars(str.data(), str.size());
     YamlStream yamlStream;
     for (YamlStream::const_iterator i = yamlStream.begin(*reader);
-            i != yamlStream.end(); ++i)
+         i != yamlStream.end(); ++i)
     {
         string name = str::lower(i->first);
         if (name == "count")
@@ -236,12 +250,12 @@ unique_ptr<Stats> Stats::decodeString(const std::string& str)
             else
             {
                 res->begin = Time::decodeString(i->second.substr(0, pos));
-                res->end = Time::decodeString(i->second.substr(pos + 4));
+                res->end   = Time::decodeString(i->second.substr(pos + 4));
             }
         }
     }
     return res;
 }
 
-}
-}
+} // namespace summary
+} // namespace arki

@@ -1,6 +1,6 @@
 #include "structured.h"
-#include "utils/values.h"
 #include "arki/core/time.h"
+#include "utils/values.h"
 #include <datetime.h>
 
 namespace arki {
@@ -20,31 +20,35 @@ void PythonEmitter::add_object(pyo_unique_ptr o)
     if (stack.empty())
     {
         if (res)
-            throw std::runtime_error("root element emitted twice, outside a container");
+            throw std::runtime_error(
+                "root element emitted twice, outside a container");
         res = std::move(o);
-    } else switch (stack.back().state) {
-        case Target::LIST:
-            if (PyList_Append(stack.back().o, o) == -1)
-                throw PythonException();
-            break;
-        case Target::MAPPING:
-            stack.push_back(Target(Target::MAPPING_KEY, o.release()));
-            break;
-        case Target::MAPPING_KEY:
-        {
-            pyo_unique_ptr key(stack.back().o);
-            stack.pop_back();
-            if (PyDict_SetItem(stack.back().o, key, o) == -1)
-                throw PythonException();
-            break;
-        }
     }
+    else
+        switch (stack.back().state)
+        {
+            case Target::LIST:
+                if (PyList_Append(stack.back().o, o) == -1)
+                    throw PythonException();
+                break;
+            case Target::MAPPING:
+                stack.push_back(Target(Target::MAPPING_KEY, o.release()));
+                break;
+            case Target::MAPPING_KEY: {
+                pyo_unique_ptr key(stack.back().o);
+                stack.pop_back();
+                if (PyDict_SetItem(stack.back().o, key, o) == -1)
+                    throw PythonException();
+                break;
+            }
+        }
 }
 
 void PythonEmitter::start_list()
 {
     PyObject* o = PyList_New(0);
-    if (o == nullptr) throw PythonException();
+    if (o == nullptr)
+        throw PythonException();
     stack.push_back(Target(Target::LIST, o));
 }
 
@@ -100,18 +104,17 @@ void PythonEmitter::add_double(double val)
 
 void PythonEmitter::add_string(const std::string& val)
 {
-    pyo_unique_ptr o(throw_ifnull(PyUnicode_FromStringAndSize(val.data(), val.size())));
+    pyo_unique_ptr o(
+        throw_ifnull(PyUnicode_FromStringAndSize(val.data(), val.size())));
     add_object(std::move(o));
 }
 
 void PythonEmitter::add_time(const core::Time& val)
 {
     pyo_unique_ptr o(throw_ifnull(PyDateTime_FromDateAndTime(
-            val.ye, val.mo, val.da,
-            val.ho, val.mi, val.se, 0)));
+        val.ye, val.mo, val.da, val.ho, val.mi, val.se, 0)));
     add_object(std::move(o));
 }
-
 
 /*
  * PythonReader
@@ -133,7 +136,8 @@ arki::structured::NodeType PythonReader::type() const
         return arki::structured::NodeType::MAPPING;
     if (PySequence_Check(o))
         return arki::structured::NodeType::LIST;
-    throw std::invalid_argument("python object " + repr() + " cannot be understood");
+    throw std::invalid_argument("python object " + repr() +
+                                " cannot be understood");
 }
 
 std::string PythonReader::repr() const
@@ -172,11 +176,11 @@ std::string PythonReader::scalar_as_string(const char* desc) const
     return from_python<std::string>(o);
 }
 
-
 unsigned PythonReader::list_size(const char* desc) const
 {
     int res = PySequence_Size(o);
-    if (res == -1) throw PythonException();
+    if (res == -1)
+        throw PythonException();
     return res;
 }
 
@@ -207,15 +211,16 @@ std::string PythonReader::list_as_string(unsigned idx, const char* desc) const
     return from_python<std::string>(el);
 }
 
-void PythonReader::list_sub(unsigned idx, const char* desc, std::function<void(const Reader&)> dest) const
+void PythonReader::list_sub(unsigned idx, const char* desc,
+                            std::function<void(const Reader&)> dest) const
 {
     pyo_unique_ptr el(throw_ifnull(PySequence_GetItem(o, idx)));
     PythonReader reader(el);
     dest(reader);
 }
 
-
-bool PythonReader::dict_has_key(const std::string& key, arki::structured::NodeType type) const
+bool PythonReader::dict_has_key(const std::string& key,
+                                arki::structured::NodeType type) const
 {
     pyo_unique_ptr el(PyMapping_GetItemString(o, key.c_str()));
     if (!el)
@@ -225,20 +230,14 @@ bool PythonReader::dict_has_key(const std::string& key, arki::structured::NodeTy
     }
     switch (type)
     {
-        case arki::structured::NodeType::NONE:
-            return el == Py_None;
+        case arki::structured::NodeType::NONE: return el == Py_None;
         case arki::structured::NodeType::BOOL:
             return el == Py_True || el == Py_False;
-        case arki::structured::NodeType::INT:
-            return PyLong_Check(el);
-        case arki::structured::NodeType::STRING:
-            return PyUnicode_Check(el);
-        case arki::structured::NodeType::MAPPING:
-            return PyMapping_Check(el);
-        case arki::structured::NodeType::LIST:
-            return PySequence_Check(el);
-        default:
-            return 0;
+        case arki::structured::NodeType::INT:     return PyLong_Check(el);
+        case arki::structured::NodeType::STRING:  return PyUnicode_Check(el);
+        case arki::structured::NodeType::MAPPING: return PyMapping_Check(el);
+        case arki::structured::NodeType::LIST:    return PySequence_Check(el);
+        default:                                  return 0;
     }
 }
 
@@ -248,7 +247,8 @@ bool PythonReader::dict_as_bool(const std::string& key, const char* desc) const
     return from_python<bool>(el);
 }
 
-long long int PythonReader::dict_as_int(const std::string& key, const char* desc) const
+long long int PythonReader::dict_as_int(const std::string& key,
+                                        const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     long long int res = PyLong_AsLongLong(el);
@@ -257,13 +257,15 @@ long long int PythonReader::dict_as_int(const std::string& key, const char* desc
     return res;
 }
 
-double PythonReader::dict_as_double(const std::string& key, const char* desc) const
+double PythonReader::dict_as_double(const std::string& key,
+                                    const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     return from_python<double>(el);
 }
 
-std::string PythonReader::dict_as_string(const std::string& key, const char* desc) const
+std::string PythonReader::dict_as_string(const std::string& key,
+                                         const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     return from_python<std::string>(el);
@@ -275,7 +277,8 @@ static int get_attr_int(PyObject* o, const char* name)
     return from_python<int>(res);
 }
 
-core::Time PythonReader::dict_as_time(const std::string& key, const char* desc) const
+core::Time PythonReader::dict_as_time(const std::string& key,
+                                      const char* desc) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     if (PyDateTime_Check(el))
@@ -295,7 +298,9 @@ core::Time PythonReader::dict_as_time(const std::string& key, const char* desc) 
             throw PythonException();
         if (size != 6)
         {
-            PyErr_Format(PyExc_ValueError, "time should be a sequence of 6 elements, not %d", (int)size);
+            PyErr_Format(PyExc_ValueError,
+                         "time should be a sequence of 6 elements, not %d",
+                         (int)size);
             throw PythonException();
         }
         pyo_unique_ptr py_year(throw_ifnull(PySequence_GetItem(el, 0)));
@@ -315,40 +320,41 @@ core::Time PythonReader::dict_as_time(const std::string& key, const char* desc) 
     else
     {
         // Fall back to duck typing, to catch creative cases such as
-        // cftime.datetime instances. See https://unidata.github.io/cftime/api.html
-        return core::Time(
-            get_attr_int(el, "year"),
-            get_attr_int(el, "month"),
-            get_attr_int(el, "day"),
-            get_attr_int(el, "hour"),
-            get_attr_int(el, "minute"),
-            get_attr_int(el, "second")
-        );
+        // cftime.datetime instances. See
+        // https://unidata.github.io/cftime/api.html
+        return core::Time(get_attr_int(el, "year"), get_attr_int(el, "month"),
+                          get_attr_int(el, "day"), get_attr_int(el, "hour"),
+                          get_attr_int(el, "minute"),
+                          get_attr_int(el, "second"));
     }
 
-    // PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence, non-datetime as a time");
-    // throw PythonException();
+    // PyErr_SetString(PyExc_NotImplementedError, "Cannot parse a non-sequence,
+    // non-datetime as a time"); throw PythonException();
 }
 
-void PythonReader::dict_items(const char* desc, std::function<void(const std::string&, const Reader&)> dest) const
+void PythonReader::dict_items(
+    const char* desc,
+    std::function<void(const std::string&, const Reader&)> dest) const
 {
     PyObject *key, *value;
     Py_ssize_t pos = 0;
 
-    while (PyDict_Next(o, &pos, &key, &value)) {
+    while (PyDict_Next(o, &pos, &key, &value))
+    {
         PythonReader reader(value);
         dest(from_python<std::string>(key), reader);
     }
 }
 
-void PythonReader::dict_sub(const std::string& key, const char* desc, std::function<void(const Reader&)> dest) const
+void PythonReader::dict_sub(const std::string& key, const char* desc,
+                            std::function<void(const Reader&)> dest) const
 {
     pyo_unique_ptr el(throw_ifnull(PyMapping_GetItemString(o, key.c_str())));
     PythonReader reader(el);
     dest(reader);
 }
 
-namespace structured{
+namespace structured {
 
 void init()
 {
@@ -364,7 +370,7 @@ void init()
         PyDateTime_IMPORT;
 }
 
-}
+} // namespace structured
 
-}
-}
+} // namespace python
+} // namespace arki

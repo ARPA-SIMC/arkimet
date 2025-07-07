@@ -1,5 +1,5 @@
-#include "bbox.h"
 #include "arki/types/tests.h"
+#include "bbox.h"
 #include <cmath>
 #include <memory>
 
@@ -15,11 +15,10 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_bbox");
 
-void Tests::register_tests() {
+void Tests::register_tests()
+{
 
-add_method("empty", []() noexcept {
-});
-
+    add_method("empty", []() noexcept {});
 }
 
-}
+} // namespace
