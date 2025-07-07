@@ -2,11 +2,11 @@
 #define ARKI_TYPES_PRODUCT_H
 
 #include <arki/types/encoded.h>
+#include <arki/types/values.h>
 #include <cstdint>
 #include <memory>
 
-namespace arki {
-namespace types {
+namespace arki::types {
 
 namespace product {
 
@@ -273,7 +273,6 @@ Product defined as a VM2 variable ID
 
 } // namespace product
 
-} // namespace types
-} // namespace arki
+} // namespace arki::types
 
 #endif
