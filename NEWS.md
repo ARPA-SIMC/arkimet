@@ -1,3 +1,7 @@
+# New in version UNRELEASED
+
+* Show dataset summary in browser GET requests in arki-server (#354)
+
 # New in version 1.60
 
 * Restore invalidating iseg summaries on import (#352)

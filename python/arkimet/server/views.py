@@ -17,6 +17,7 @@ class ArkiView:
     """
     Base class for Django-CBV-style query handlers
     """
+
     content_type = "application/octet-stream"
 
     def __init__(self, request, handler, **kw):
@@ -196,19 +197,23 @@ class HTMLWriter:
 
     @contextlib.contextmanager
     def tag(self, name, **kw):
-        self.print("<{name}{attrs}>".format(
-            name=name,
-            attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
-        ))
+        self.print(
+            "<{name}{attrs}>".format(
+                name=name,
+                attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
+            )
+        )
         yield
         self.print("</{name}>".format(name=name))
 
     def inline_tag(self, name, text="", **kw):
-        self.print("<{name}{attrs}>{text}</{name}>".format(
-            name=name,
-            attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
-            text=text,
-        ))
+        self.print(
+            "<{name}{attrs}>{text}</{name}>".format(
+                name=name,
+                attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
+                text=text,
+            )
+        )
 
     def head(self, title):
         self.print("<head><title>{title}</title></head>".format(title=html.escape(title)))
@@ -220,8 +225,7 @@ class HTMLWriter:
         self.print("<h1>{text}</h1>".format(text=html.escape(text)))
 
     def a(self, href, text):
-        self.print("<a href='{href}'>{text}</a>".format(
-            href=quote(href), text=html.escape(text)))
+        self.print("<a href='{href}'>{text}</a>".format(href=quote(href), text=html.escape(text)))
 
 
 class ArkiIndex(ArkiView):
@@ -308,6 +312,7 @@ class TempdirMixin:
     """
     Move to a temporary directory while running the ArkiView
     """
+
     @contextlib.contextmanager
     def response(self):
         origdir = os.getcwd()
@@ -337,7 +342,25 @@ class ArkiDatasetQuery(TempdirMixin, ArkiView):
 class ArkiDatasetSummary(ArkiDatasetQuery):
     headers_ext = "summary"
 
+    def __init__(self, request, handler, **kw):
+        super().__init__(request, handler, **kw)
+        self.download = False
+
+    def get_headers_filename(self):
+        if not self.download:
+            return None
+        return super().get_headers_filename()
+
+    def get(self):
+        self.content_type = "text/plain"
+        with self.response():
+            summary = self.get_dataset_reader().query_summary(self.get_query())
+            self.send_headers()
+            summary.write(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
+
     def post(self):
+        self.content_type = "application/octet-stream"
+        self.download = True
         with self.response():
             summary = self.get_dataset_reader().query_summary(self.get_query())
             self.send_headers()
@@ -363,7 +386,8 @@ class DatasetQueryData(ArkiDatasetQuery):
                 file=self.handler.wfile,
                 matcher=self.get_query(),
                 sort=self.get_sort(),
-                data_start_hook=self.send_headers)
+                data_start_hook=self.send_headers,
+            )
 
 
 class DatasetQueryMetadata(ArkiDatasetQuery):
@@ -382,9 +406,8 @@ class DatasetQueryMetadata(ArkiDatasetQuery):
         with self.response():
             self.url = self.get_metadata_url()
             self.get_dataset_reader().query_data(
-                on_metadata=self.on_metadata,
-                matcher=self.get_query(),
-                sort=self.get_sort())
+                on_metadata=self.on_metadata, matcher=self.get_query(), sort=self.get_sort()
+            )
 
 
 class DatasetQueryMetadataInline(ArkiDatasetQuery):
@@ -399,10 +422,8 @@ class DatasetQueryMetadataInline(ArkiDatasetQuery):
     def post(self):
         with self.response():
             self.get_dataset_reader().query_data(
-                on_metadata=self.on_metadata,
-                matcher=self.get_query(),
-                with_data=True,
-                sort=self.get_sort())
+                on_metadata=self.on_metadata, matcher=self.get_query(), with_data=True, sort=self.get_sort()
+            )
 
 
 class DatasetQueryPostprocess(ArkiDatasetQuery):
@@ -435,7 +456,8 @@ class DatasetQueryPostprocess(ArkiDatasetQuery):
                 with_data=True,
                 sort=self.get_sort(),
                 data_start_hook=self.send_headers,
-                postprocess=command)
+                postprocess=command,
+            )
 
 
 def get_view_for_style(style):
@@ -476,10 +498,7 @@ class QMacroMixin:
         if not qmacro:
             return self.session.merged().reader()
         else:
-            return self.session.querymacro(
-                qmacro,
-                self.request.values.get("query", "").strip()
-            ).reader()
+            return self.session.querymacro(qmacro, self.request.values.get("query", "").strip()).reader()
 
     def get_query(self):
         return ""
@@ -491,6 +510,7 @@ def arki_query(request, handler, **kw):
 
     class QMacroView(QMacroMixin, View):
         pass
+
     return QMacroView(request, handler, **kw)
 
 
