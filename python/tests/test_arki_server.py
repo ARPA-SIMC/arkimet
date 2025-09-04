@@ -42,20 +42,20 @@ class Env(arkimet.test.Env):
     def build_config(self):
         config = super().build_config()
 
-        with self.session.dataset_reader(
-                    cfg=arki.dataset.read_config("inbound/fixture.grib1")
-                ) as reader:
+        with self.session.dataset_reader(cfg=arki.dataset.read_config("inbound/fixture.grib1")) as reader:
             mds = reader.query_data()
 
         for idx, name in enumerate(("test200", "test80")):
-            cfg = arki.cfg.Section({
-                "name": name,
-                "path": os.path.abspath(os.path.join("testenv", name)),
-                "type": "iseg",
-                "format": "grib",
-                "step": "daily",
-                "postprocess": "cat,echo,say,checkfiles,error,outthenerr",
-            })
+            cfg = arki.cfg.Section(
+                {
+                    "name": name,
+                    "path": os.path.abspath(os.path.join("testenv", name)),
+                    "type": "iseg",
+                    "format": "grib",
+                    "step": "daily",
+                    "postprocess": "cat,echo,say,checkfiles,error,outthenerr",
+                }
+            )
             config[name] = cfg
 
             os.makedirs(os.path.join("testenv", name))
@@ -69,12 +69,14 @@ class Env(arkimet.test.Env):
                 writer.acquire(mds[idx])
                 writer.flush()
 
-        error_cfg = arki.cfg.Section({
-            "name": "error",
-            "path": os.path.abspath("testenv/error"),
-            "type": "error",
-            "step": "daily",
-        })
+        error_cfg = arki.cfg.Section(
+            {
+                "name": "error",
+                "path": os.path.abspath("testenv/error"),
+                "type": "error",
+                "step": "daily",
+            }
+        )
         config["error"] = error_cfg
 
         with open("testenv/testds/error", "wt") as fd:
@@ -119,10 +121,15 @@ class TestArkiServer(unittest.TestCase):
         with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
             mdc = ds.query_data("origin:GRIB1,200")
             self.assertEqual(len(mdc), 1)
-            self.assertEqual(mdc[0].to_python("source"), {
-                'type': 'source', 'style': 'URL', 'format': 'grib',
-                'url': self.server_url + '/dataset/test200',
-            })
+            self.assertEqual(
+                mdc[0].to_python("source"),
+                {
+                    "type": "source",
+                    "style": "URL",
+                    "format": "grib",
+                    "url": self.server_url + "/dataset/test200",
+                },
+            )
 
             mdc = ds.query_data("origin:GRIB1,80")
             self.assertFalse(mdc)
@@ -138,10 +145,9 @@ class TestArkiServer(unittest.TestCase):
         with self.env.session.dataset_reader(cfg=config["test200"]) as ds:
             mdc = ds.query_data("origin:GRIB1,200", True)
             self.assertEqual(len(mdc), 1)
-            self.assertEqual(mdc[0].to_python("source"), {
-                'type': 'source', 'style': 'INLINE', 'format': 'grib',
-                'size': 7218
-            })
+            self.assertEqual(
+                mdc[0].to_python("source"), {"type": "source", "style": "INLINE", "format": "grib", "size": 7218}
+            )
             self.assertEqual(len(mdc[0].data), 7218)
 
             mdc = ds.query_data("origin:GRIB1,80", True)
@@ -169,16 +175,22 @@ class TestArkiServer(unittest.TestCase):
         """
         Test that queries also work over GET (#289)
         """
-        res = requests.get(self.server_url + "/dataset/test200/query", params={
-            "query": "origin:GRIB1,200",
-        })
+        res = requests.get(
+            self.server_url + "/dataset/test200/query",
+            params={
+                "query": "origin:GRIB1,200",
+            },
+        )
         self.assertEqual(res.status_code, 405)
 
-        res = requests.get(self.server_url + "/dataset/test200/query", params={
-            "query": "origin:GRIB1,200",
-            "style": "postprocess",
-            "command": "say ciao",
-        })
+        res = requests.get(
+            self.server_url + "/dataset/test200/query",
+            params={
+                "query": "origin:GRIB1,200",
+                "style": "postprocess",
+                "command": "say ciao",
+            },
+        )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.content, b"ciao\n")
 
@@ -187,24 +199,33 @@ class TestArkiServer(unittest.TestCase):
         Test the server giving an error
         """
         # Try it on metadata
-        res = requests.post(self.server_url + "/dataset/test200/query", data={
-            "query": "origin:GRIB1,200;MISCHIEF",
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/query",
+            data={
+                "query": "origin:GRIB1,200;MISCHIEF",
+            },
+        )
         self.assertEqual(res.status_code, 500)
         self.assertIn("subexpression 'MISCHIEF' does not contain a colon", res.headers["Arkimet-Exception"])
 
         # Try it on summaries
-        res = requests.post(self.server_url + "/dataset/test200/summary", data={
-            "query": "origin:GRIB1,200;MISCHIEF",
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/summary",
+            data={
+                "query": "origin:GRIB1,200;MISCHIEF",
+            },
+        )
         self.assertEqual(res.status_code, 500)
         self.assertIn("subexpression 'MISCHIEF' does not contain a colon", res.headers["Arkimet-Exception"])
 
         # Try it on streams
-        res = requests.post(self.server_url + "/dataset/test200/query", data={
-            "query": "origin:GRIB1,200;MISCHIEF",
-            "style": "data",
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/query",
+            data={
+                "query": "origin:GRIB1,200;MISCHIEF",
+                "style": "data",
+            },
+        )
         self.assertEqual(res.status_code, 500)
         self.assertIn("subexpression 'MISCHIEF' does not contain a colon", res.headers["Arkimet-Exception"])
 
@@ -215,9 +236,10 @@ class TestArkiServer(unittest.TestCase):
         config = arki.dataset.http.load_cfg_sections(self.server_url)
         query = arki.dataset.http.expand_remote_query(config, "origin:GRIB1,200;product:t")
         self.assertEqual(
-                query,
-                "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167"
-                " or GRIB1,200,200,11 or GRIB2,200,0,200,11")
+            query,
+            "origin:GRIB1,200; product:GRIB1,200,2,11 or GRIB1,98,128,130 or GRIB1,98,128,167"
+            " or GRIB1,200,200,11 or GRIB2,200,0,200,11",
+        )
 
         # Expanding a query that fails returns the query itself: if some
         # servers expanded it consistently and all others errored out, then we
@@ -225,9 +247,12 @@ class TestArkiServer(unittest.TestCase):
         query = arki.dataset.http.expand_remote_query(config, "origin:GRIB1,200;product:pippo")
         self.assertEqual(query, "origin:GRIB1,200;product:pippo")
 
-        res = requests.post(self.server_url + "/qexpand", data={
-            "query": "origin:GRIB1,200;product:pippo",
-        })
+        res = requests.post(
+            self.server_url + "/qexpand",
+            data={
+                "query": "origin:GRIB1,200;product:pippo",
+            },
+        )
         self.assertEqual(res.status_code, 500)
         self.assertIn("cannot parse Product style 'pippo'", res.headers["Arkimet-Exception"])
 
@@ -235,19 +260,20 @@ class TestArkiServer(unittest.TestCase):
         """
         Test querying the datasets via macro
         """
-        cfg = arki.cfg.Section(
-            name="noop",
-            type="remote",
-            path=self.server_url,
-            qmacro="test200")
+        cfg = arki.cfg.Section(name="noop", type="remote", path=self.server_url, qmacro="test200")
         with self.env.session.dataset_reader(cfg=cfg) as ds:
             mdc = ds.query_data()
             self.assertEqual(len(mdc), 1)
             # Check that the source record that comes out is ok
-            self.assertEqual(mdc[0].to_python("source"), {
-                'type': 'source', 'style': 'URL', 'format': 'grib',
-                'url': self.server_url + '/query',
-            })
+            self.assertEqual(
+                mdc[0].to_python("source"),
+                {
+                    "type": "source",
+                    "style": "URL",
+                    "format": "grib",
+                    "url": self.server_url + "/query",
+                },
+            )
 
     def test_qmacro_expa(self):
         """
@@ -263,20 +289,21 @@ class TestArkiServer(unittest.TestCase):
             mdc = ds.query_data()
             self.assertEqual(len(mdc), 1)
             # Check that the source record that comes out is ok
-            self.assertEqual(mdc[0].to_python("source"), {
-                'type': 'source', 'style': 'URL', 'format': 'grib',
-                'url': self.server_url + '/query',
-            })
+            self.assertEqual(
+                mdc[0].to_python("source"),
+                {
+                    "type": "source",
+                    "style": "URL",
+                    "format": "grib",
+                    "url": self.server_url + "/query",
+                },
+            )
 
     def test_qmacro_summary(self):
         """
         Test querying the summary
         """
-        cfg = arki.cfg.Section(
-            name="noop",
-            type="remote",
-            path=self.server_url,
-            qmacro="test200")
+        cfg = arki.cfg.Section(name="noop", type="remote", path=self.server_url, qmacro="test200")
         with self.env.session.dataset_reader(cfg=cfg) as ds:
             summary = ds.query_summary()
             self.assertEqual(summary.count, 1)
@@ -372,9 +399,12 @@ class TestArkiServer(unittest.TestCase):
         """
         Test style=binary summary queries
         """
-        res = requests.post(self.server_url + "/summary?style=binary", data={
-            "query": arki.Matcher().expanded,
-        })
+        res = requests.post(
+            self.server_url + "/summary?style=binary",
+            data={
+                "query": arki.Matcher().expanded,
+            },
+        )
         res.raise_for_status()
         self.assertEqual(res.content[:2], b"SU")
 
@@ -382,9 +412,12 @@ class TestArkiServer(unittest.TestCase):
         """
         Test style=binary summary queries
         """
-        res = requests.post(self.server_url + "/dataset/test200/summary?style=binary", data={
-            "query": arki.Matcher().expanded,
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/summary?style=binary",
+            data={
+                "query": arki.Matcher().expanded,
+            },
+        )
         res.raise_for_status()
         self.assertEqual(res.content[:2], b"SU")
 
@@ -392,9 +425,12 @@ class TestArkiServer(unittest.TestCase):
         """
         Test style=json summary queries
         """
-        res = requests.post(self.server_url + "/dataset/test200/summary?style=json", data={
-            "query": arki.Matcher().expanded,
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/summary?style=json",
+            data={
+                "query": arki.Matcher().expanded,
+            },
+        )
         res.raise_for_status()
         self.assertIn("items", res.json())
 
@@ -402,18 +438,24 @@ class TestArkiServer(unittest.TestCase):
         """
         Test style=yaml summary queries
         """
-        res = requests.post(self.server_url + "/dataset/test200/summary?style=yaml", data={
-            "query": arki.Matcher().expanded,
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/summary?style=yaml",
+            data={
+                "query": arki.Matcher().expanded,
+            },
+        )
         self.assertEqual(res.text[:11], "SummaryItem")
 
     def test_query_summaryshort_style_json(self):
         """
         Test style=json summary short queries
         """
-        res = requests.post(self.server_url + "/dataset/test200/summaryshort?style=json", data={
-            "query": arki.Matcher().expanded,
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/summaryshort?style=json",
+            data={
+                "query": arki.Matcher().expanded,
+            },
+        )
         res.raise_for_status()
         self.assertIn("items", res.json())
 
@@ -421,9 +463,12 @@ class TestArkiServer(unittest.TestCase):
         """
         Test style=yaml summary queries
         """
-        res = requests.post(self.server_url + "/dataset/test200/summaryshort?style=yaml", data={
-            "query": arki.Matcher().expanded,
-        })
+        res = requests.post(
+            self.server_url + "/dataset/test200/summaryshort?style=yaml",
+            data={
+                "query": arki.Matcher().expanded,
+            },
+        )
         res.raise_for_status()
         self.assertEqual(res.text[:12], "SummaryStats")
 
