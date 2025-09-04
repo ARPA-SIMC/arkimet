@@ -1,5 +1,6 @@
-type = ondisk2
+type = iseg
 step = daily
 filter = origin: BUFR,254
 index = origin, reftime
 postprocess = cat
+format = bufr

@@ -1,4 +1,5 @@
-type = ondisk2
+type = iseg
 step = daily
 filter = origin: GRIB1,98
 index = origin, reftime
+format = grib
