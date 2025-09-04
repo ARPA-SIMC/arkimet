@@ -27,8 +27,8 @@ fi
 
 ## Set up the test environment
 
-ORIGDIR=`pwd`
-TESTDIR="`mktemp -d`"
+ORIGDIR=$(pwd)
+TESTDIR=$(mktemp -d "$ORIGDIR"/testdir.XXXXXXXXXX)
 
 echo "Moving to test directory $TESTDIR"
 cd "$TESTDIR"
@@ -91,7 +91,6 @@ trap cleanup EXIT
 #$DEBUGGER $BIN $ARGS 2>&1 | tee `pwd`/testrun-$id
 #echo Output saved in `pwd`/testrun-$id
 
-# Try to debug the libtool executable, if present
 if [ ! -z "$DEBUGGER" ]
 then
     if [ "$DEBUGGER" = "valgrind" ]
