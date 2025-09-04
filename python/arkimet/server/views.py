@@ -342,7 +342,25 @@ class ArkiDatasetQuery(TempdirMixin, ArkiView):
 class ArkiDatasetSummary(ArkiDatasetQuery):
     headers_ext = "summary"
 
+    def __init__(self, request, handler, **kw):
+        super().__init__(request, handler, **kw)
+        self.download = False
+
+    def get_headers_filename(self):
+        if not self.download:
+            return None
+        return super().get_headers_filename()
+
+    def get(self):
+        self.content_type = "text/plain"
+        with self.response():
+            summary = self.get_dataset_reader().query_summary(self.get_query())
+            self.send_headers()
+            summary.write(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
+
     def post(self):
+        self.content_type = "application/octet-stream"
+        self.download = True
         with self.response():
             summary = self.get_dataset_reader().query_summary(self.get_query())
             self.send_headers()

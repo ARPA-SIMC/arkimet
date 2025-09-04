@@ -408,6 +408,22 @@ class TestArkiServer(unittest.TestCase):
         res.raise_for_status()
         self.assertEqual(res.content[:2], b"SU")
 
+    def test_query_summary_get(self):
+        """
+        Test style=binary summary queries
+        """
+        res = requests.get(self.server_url + "/dataset/test200/summary")
+        res.raise_for_status()
+        self.assertEqual(res.content[:7], b"Summary")
+
+    def test_query_summary_get_binary(self):
+        """
+        Test style=binary summary queries
+        """
+        res = requests.get(self.server_url + "/dataset/test200/summary?style=binary")
+        res.raise_for_status()
+        self.assertEqual(res.content[:2], b"SU")
+
     def test_query_summary_style_binary(self):
         """
         Test style=binary summary queries
