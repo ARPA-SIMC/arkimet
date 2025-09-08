@@ -535,7 +535,8 @@ Metadata::read_binary(core::BinaryDecoder& dec,
         throw std::runtime_error("cannot parse "s + filename.pathname.native() +
                                  ": metadata entry does not start with 'MD'");
 
-    auto res = read_binary_inner(inner, version, filename);
+    auto res =
+        read_binary_inner(inner, version, filename.pathname, filename.basedir);
 
     // If the source is inline, then the data follows the metadata
     if (readInline && res->source().style() == types::Source::Style::INLINE)
@@ -546,14 +547,15 @@ Metadata::read_binary(core::BinaryDecoder& dec,
 
 std::shared_ptr<Metadata>
 Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
-                            const metadata::ReadContext& rc)
+                            const std::filesystem::path& path,
+                            const std::filesystem::path& basedir)
 {
     // Check version and ensure we can decode
     if (version != 0)
     {
         std::stringstream s;
-        s << "cannot parse file " << rc.pathname << ": version of the file is "
-          << version << " but I can only decode version 0";
+        s << path.native() << ": version of the file is " << version
+          << " but I can only decode version 0";
         throw std::runtime_error(s.str());
     }
 
@@ -572,8 +574,8 @@ Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
                 if (last_code == TYPE_SOURCE)
                 {
                     std::stringstream s;
-                    s << "cannot parse file " << rc.pathname
-                      << ": element of type " << types::formatCode(el_type)
+                    s << path << ": element of type "
+                      << types::formatCode(el_type)
                       << " should not follow one of type SOURCE";
                     throw std::runtime_error(s.str());
                 }
@@ -582,14 +584,14 @@ Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
                 break;
             case TYPE_SOURCE:
                 res->m_index.raw_append(
-                    types::Source::decodeRelative(inner, rc.basedir));
+                    types::Source::decodeRelative(inner, basedir));
                 break;
             default:
                 if (last_code == TYPE_SOURCE || last_code == TYPE_NOTE)
                 {
                     std::stringstream s;
-                    s << "cannot parse file " << rc.pathname
-                      << ": element of type " << types::formatCode(el_type)
+                    s << path << ": element of type "
+                      << types::formatCode(el_type)
                       << " should not follow one of type "
                       << types::formatCode(last_code);
                     throw std::runtime_error(s.str());

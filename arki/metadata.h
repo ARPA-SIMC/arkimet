@@ -394,7 +394,8 @@ public:
      */
     static std::shared_ptr<Metadata>
     read_binary_inner(core::BinaryDecoder& dec, unsigned version,
-                      const metadata::ReadContext& filename);
+                      const std::filesystem::path& path,
+                      const std::filesystem::path& basedir);
 
     /// Read the inline data from the given file handle
     size_t read_inline_data(core::NamedFileDescriptor& fd);

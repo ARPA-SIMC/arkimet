@@ -293,11 +293,6 @@ stream::SendResult Collection::write_to(StreamOutput& out) const
     return res;
 }
 
-void Collection::read_from_file(const metadata::ReadContext& rc)
-{
-    Metadata::read_file(rc, inserter_func());
-}
-
 void Collection::read_from_file(const std::filesystem::path& pathname)
 {
     Metadata::read_file(pathname, inserter_func());

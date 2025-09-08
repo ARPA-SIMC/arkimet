@@ -2,6 +2,7 @@
 #include "arki/core/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/inbound.h"
+#include "arki/metadata/reader.h"
 #include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
@@ -332,18 +333,17 @@ arki::metadata::Collection Checker::scan()
         {
             // Metadata exists and it looks new enough: use it
             auto data_reader = m_data->reader(lock);
-            std::filesystem::path root(m_segment->abspath().parent_path());
-            arki::Metadata::read_file(
-                arki::metadata::ReadContext(md_abspath, root),
-                [&](std::shared_ptr<Metadata> md) {
-                    const auto& source = md->sourceBlob();
-                    md->set_source(types::Source::createBlob(
-                        segment().format(), segment().root(),
-                        segment().relpath(), source.offset, source.size,
-                        data_reader));
-                    res.acquire(md);
-                    return true;
-                });
+            std::filesystem::path basedir(m_segment->abspath().parent_path());
+            sys::File in(md_abspath, O_RDONLY);
+            arki::metadata::BinaryReader md_reader(in, basedir);
+            md_reader.read_all([&](std::shared_ptr<Metadata> md) {
+                const auto& source = md->sourceBlob();
+                md->set_source(types::Source::createBlob(
+                    segment().format(), segment().root(), segment().relpath(),
+                    source.offset, source.size, data_reader));
+                res.acquire(md);
+                return true;
+            });
         }
         else
         {

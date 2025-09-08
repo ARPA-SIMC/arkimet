@@ -93,7 +93,7 @@ bool BaseReader<FileType>::read_group(const types::Bundle& bundle,
     while (unenc)
     {
         core::BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
-        auto md = Metadata::read_binary_inner(inner, iver, in.path());
+        auto md = Metadata::read_binary_inner(inner, iver, in.path(), basedir);
         if (!dest(move(md)))
             return false;
     }
@@ -116,8 +116,8 @@ std::shared_ptr<Metadata>
 BaseReader<FileType>::decode_metadata(const types::Bundle& bundle) const
 {
     core::BinaryDecoder inner(bundle.data);
-    return Metadata::read_binary_inner(
-        inner, bundle.version, metadata::ReadContext(in.path(), basedir));
+    return Metadata::read_binary_inner(inner, bundle.version, in.path(),
+                                       basedir);
 }
 
 template <typename FileType>

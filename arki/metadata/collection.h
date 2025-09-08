@@ -133,9 +133,6 @@ public:
     stream::SendResult write_to(StreamOutput& out) const;
 
     /// Read metadata from \a pathname and append them to this collection
-    void read_from_file(const metadata::ReadContext& rc);
-
-    /// Read metadata from \a pathname and append them to this collection
     void read_from_file(const std::filesystem::path& pathname);
 
     /// Read metadata from a file descriptor and append them to this collection
