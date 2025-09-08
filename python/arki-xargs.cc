@@ -1,6 +1,7 @@
 #include "arki-xargs.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
+#include "arki/metadata/reader.h"
 #include "arki/metadata/xargs.h"
 #include "arki/utils/sys.h"
 #include "common.h"
@@ -64,18 +65,16 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
 
             if (!py_inputs || py_inputs != Py_None)
             {
-                auto inputs = stringlist_from_python(py_inputs);
+                auto inputs = pathlist_from_python(py_inputs);
                 ReleaseGIL rg;
                 // Process the files
                 for (const auto& i : inputs)
                 {
                     sys::File in(i, O_RDONLY);
-                    arki::metadata::ReadContext rc(
-                        std::filesystem::current_path(), in.path());
-                    arki::Metadata::read_file(
-                        in, rc, [&](std::shared_ptr<arki::Metadata> md) {
-                            return consumer.eat(md);
-                        });
+                    arki::metadata::BinaryReader reader(in);
+                    reader.read_all([&](std::shared_ptr<arki::Metadata> md) {
+                        return consumer.eat(md);
+                    });
                 }
                 consumer.flush();
             }
@@ -84,12 +83,10 @@ struct run_ : public MethKwargs<run_, arkipy_ArkiXargs>
                 ReleaseGIL rg;
                 // Process stdin
                 arki::core::Stdin in;
-                arki::metadata::ReadContext rc(std::filesystem::current_path(),
-                                               in.path());
-                arki::Metadata::read_file(
-                    in, rc, [&](std::shared_ptr<arki::Metadata> md) {
-                        return consumer.eat(md);
-                    });
+                arki::metadata::BinaryReader reader(in);
+                reader.read_all([&](std::shared_ptr<arki::Metadata> md) {
+                    return consumer.eat(md);
+                });
                 consumer.flush();
             }
 
