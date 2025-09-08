@@ -49,10 +49,6 @@ void Tests::register_tests()
         wassert(actual(coll[2]).contains("reftime", "2007-10-09T00:00:00Z"));
     });
 
-    // TODO: check reader offset
-    // TODO: test iterating bundles without decoding
-    // TODO: test reading or not reading inline data
-
     add_method("wrongsize", [] {
         core::File fd("test.md", O_WRONLY | O_CREAT | O_TRUNC);
         fd.write("MD\0\0\x0f\xff\xff\xfftest", 12);
@@ -145,6 +141,32 @@ void Tests::register_tests()
 
         wassert(actual(child.wait()) == 0);
     });
+
+    // Test encoding and decoding with inline data
+    add_method("binary_inline", [] {
+        Metadata md;
+        // Here is some data
+        vector<uint8_t> buf = {'c', 'i', 'a', 'o'};
+        md.set_source_inline(DataFormat::GRIB,
+                             metadata::DataManager::get().to_data(
+                                 DataFormat::GRIB, vector<uint8_t>(buf)));
+
+        // Encode
+        sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        wassert(md.write(temp));
+        temp.close();
+
+        // Decode
+        sys::File temp1("testfile", O_RDONLY);
+        metadata::BinaryReader reader(temp1);
+        auto md1 = reader.read();
+
+        wassert(actual(md1->get_data().read()) == buf);
+    });
+
+    // TODO: check reader offset
+    // TODO: test iterating bundles without decoding
+    // TODO: test reading or not reading inline data
 }
 
 } // namespace

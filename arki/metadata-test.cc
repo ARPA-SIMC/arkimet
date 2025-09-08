@@ -154,10 +154,9 @@ static void dump(const char* name, const std::string& str)
         wassert(actual((char)encoded[1]) == 'D');
         sys::write_file("test.md", encoded.data(), encoded.size());
 
-        std::shared_ptr<Metadata> md1;
-        core::BinaryDecoder dec(encoded);
-        md1 = wcallchecked(Metadata::read_binary(
-            dec, metadata::ReadContext("(test memory buffer)", dir)));
+        core::File in("test.md", O_RDONLY);
+        metadata::BinaryReader reader(in);
+        auto md1 = reader.read();
         wassert_true(md1.get());
 
         wassert(actual_type(md1->source())
@@ -211,29 +210,6 @@ static void dump(const char* name, const std::string& str)
         wassert(f.ensure_md_matches_prefill(*md1));
     });
 
-    // Test encoding and decoding with inline data
-    add_method("binary_inline", [](Fixture& f) {
-        Metadata md;
-        // Here is some data
-        vector<uint8_t> buf = {'c', 'i', 'a', 'o'};
-        md.set_source_inline(DataFormat::GRIB,
-                             metadata::DataManager::get().to_data(
-                                 DataFormat::GRIB, vector<uint8_t>(buf)));
-
-        // Encode
-        sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        wassert(md.write(temp));
-        temp.close();
-
-        // Decode
-        sys::File temp1("testfile", O_RDONLY);
-        auto md1 = wcallchecked(Metadata::read_binary(
-            temp1, metadata::ReadContext("testfile"), true));
-        temp1.close();
-
-        wassert(actual(md1->get_data().read()) == buf);
-    });
-
     // Serialise using unix file descriptors
     add_method("binary_fd", [](Fixture& f) {
         Metadata md;
@@ -249,9 +225,8 @@ static void dump(const char* name, const std::string& str)
 
         // Decode
         sys::File in(tmpfile, O_RDONLY);
-        auto md1 = wcallchecked(
-            Metadata::read_binary(in, metadata::ReadContext(tmpfile)));
-        in.close();
+        metadata::BinaryReader reader(in);
+        auto md1 = wcallchecked(reader.read());
 
         wassert(actual(md) == *md1);
     });

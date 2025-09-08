@@ -17,38 +17,6 @@
 namespace arki {
 namespace metadata {
 
-class Data;
-
-struct ReadContext
-{
-    /**
-     * Absolute path of the root directory for relative paths in the Metadata's
-     * source filenames
-     */
-    std::filesystem::path basedir;
-
-    /**
-     * Absolute path of the file to read if basedir is empty, else relative
-     * path rooted on basedir.
-     */
-    std::filesystem::path pathname;
-
-    ReadContext();
-
-    /**
-     * A file to read, with metadata source filenames rooted in
-     * dirname(pathname)
-     */
-    ReadContext(const std::filesystem::path& pathname);
-
-    /**
-     * A file to read, with metadata source filenames rooted in the given
-     * directory.
-     */
-    ReadContext(const std::filesystem::path& pathname,
-                const std::filesystem::path& basedir);
-};
-
 /**
  * Store Type elements, in the order Metadata encodes them.
  *
@@ -351,42 +319,6 @@ public:
     /// Decode from structured data
     static std::shared_ptr<Metadata>
     read_structure(const structured::Keys& keys, const structured::Reader& val);
-
-    /**
-     * Read a metadata document from the given input stream.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * If readInline is true, in case the data is transmitted inline, it reads
-     * the data as well: this is what you expect.
-     *
-     * If it's false, then the reader needs to check from the Metadata source
-     * if it is inline, and in that case proceed to read the inline data.
-     *
-     * @returns an empty shared_ptr when end-of-file is reached
-     */
-    static std::shared_ptr<Metadata>
-    read_binary(int in, const metadata::ReadContext& filename,
-                bool readInline = true);
-
-    /**
-     * Read a metadata document from the given memory buffer.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * If readInline is true, in case the data is transmitted inline, it reads
-     * the data as well: this is what you expect.
-     *
-     * If it's false, then the reader needs to check from the Metadata source
-     * if it is inline, and in that case proceed to read the inline data.
-     *
-     * @returns an empty shared_ptr when end-of-file is reached
-     */
-    static std::shared_ptr<Metadata>
-    read_binary(core::BinaryDecoder& dec, const metadata::ReadContext& filename,
-                bool readInline = true);
 
     /**
      * Decode the metadata, without the outer bundle headers, from the given

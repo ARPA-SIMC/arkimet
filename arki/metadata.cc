@@ -47,25 +47,6 @@ std::filesystem::path canonical_ifexists(const std::filesystem::path path)
 namespace arki {
 namespace metadata {
 
-ReadContext::ReadContext(const std::filesystem::path& pathname)
-    : basedir(), pathname(pathname)
-{
-    try
-    {
-        basedir = std::filesystem::canonical(pathname).parent_path();
-    }
-    catch (std::filesystem::filesystem_error&)
-    {
-        basedir = std::filesystem::current_path();
-    }
-}
-
-ReadContext::ReadContext(const std::filesystem::path& pathname,
-                         const std::filesystem::path& basedir)
-    : basedir(canonical_ifexists(basedir)), pathname(pathname)
-{
-}
-
 /*
  * Index
  */
@@ -505,41 +486,6 @@ bool Metadata::items_equal(const Metadata& o) const
     bool res = true;
     diff_items(o, [&](types::Code code, const types::Type* first,
                       const types::Type* second) noexcept { res = false; });
-    return res;
-}
-
-std::shared_ptr<Metadata>
-Metadata::read_binary(int in, const metadata::ReadContext& filename,
-                      bool readInline)
-{
-    NamedFileDescriptor f(in, filename.pathname);
-    metadata::BinaryReader reader(f, filename.basedir);
-    return reader.read(readInline);
-}
-
-std::shared_ptr<Metadata>
-Metadata::read_binary(core::BinaryDecoder& dec,
-                      const metadata::ReadContext& filename, bool readInline)
-{
-    if (!dec)
-        return std::shared_ptr<Metadata>();
-
-    string signature;
-    unsigned version;
-    core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
-
-    // Ensure first 2 bytes are MD or !D
-    if (signature != "MD")
-        throw std::runtime_error("cannot parse "s + filename.pathname.native() +
-                                 ": metadata entry does not start with 'MD'");
-
-    auto res =
-        read_binary_inner(inner, version, filename.pathname, filename.basedir);
-
-    // If the source is inline, then the data follows the metadata
-    if (readInline && res->source().style() == types::Source::Style::INLINE)
-        res->readInlineData(dec, filename.pathname);
-
     return res;
 }
 
