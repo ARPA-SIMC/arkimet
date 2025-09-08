@@ -5,6 +5,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
+#include "arki/metadata/reader.h"
 #include "arki/stream.h"
 #include "arki/stream/text.h"
 #include "arki/structured/json.h"
@@ -438,99 +439,71 @@ struct read_bundle : public ClassMethKwargs<read_bundle>
             else
                 dest = dest_func_from_python(py_dest);
 
+            std::filesystem::path basedir;
+            if (py_basedir)
+                basedir = std::string(py_basedir, py_basedir_len);
+
+            std::filesystem::path pathname;
+            if (py_pathname)
+                pathname = std::string(py_basedir, py_basedir_len);
+
             bool res;
             if (PyBytes_Check(py_src))
             {
+                // Read from a memory buffer
                 char* buffer;
                 Py_ssize_t length;
                 if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
                     throw PythonException();
 
-                if (py_basedir && py_pathname)
+                arki::core::MemoryFile in(
+                    buffer, length,
+                    !pathname.empty() ? pathname : "(memory buffer)");
+
+                ReleaseGIL gil;
+
+                if (!basedir.empty())
                 {
-                    arki::metadata::ReadContext ctx(
-                        std::string(py_pathname, py_pathname_len),
-                        std::string(py_basedir, py_basedir_len));
-                    res = arki::Metadata::read_buffer((uint8_t*)buffer, length,
-                                                      ctx, dest);
-                }
-                else if (py_basedir)
-                {
-                    PyErr_SetString(PyExc_ValueError,
-                                    "basedir provided without pathname when "
-                                    "parsing metadata from a memory buffer");
-                    return nullptr;
-                }
-                else if (py_pathname)
-                {
-                    arki::metadata::ReadContext ctx(
-                        std::string(py_pathname, py_pathname_len));
-                    res = arki::Metadata::read_buffer((uint8_t*)buffer, length,
-                                                      ctx, dest);
+                    metadata::AbstractFileBinaryReader reader(in, basedir);
+                    res = reader.read_all(dest);
                 }
                 else
                 {
-                    arki::metadata::ReadContext ctx;
-                    res = arki::Metadata::read_buffer((uint8_t*)buffer, length,
-                                                      ctx, dest);
+                    metadata::AbstractFileBinaryReader reader(in);
+                    res = reader.read_all(dest);
                 }
             }
             else
             {
+                // Read from a file
                 BinaryInputFile in(py_src);
                 ReleaseGIL gil;
 
-                if (py_basedir && py_pathname)
-                {
-                    arki::metadata::ReadContext ctx(
-                        std::string(py_pathname, py_pathname_len),
-                        std::string(py_basedir, py_basedir_len));
-                    if (in.fd)
-                        res = arki::Metadata::read_file(*in.fd, ctx, dest);
-                    else
-                        res =
-                            arki::Metadata::read_file(*in.abstract, ctx, dest);
-                }
-                else if (py_basedir)
+                if (!basedir.empty())
                 {
                     if (in.fd)
                     {
-                        arki::metadata::ReadContext ctx(
-                            in.fd->path(),
-                            std::string(py_basedir, py_basedir_len));
-                        res = arki::Metadata::read_file(*in.fd, ctx, dest);
+                        metadata::BinaryReader reader(*in.fd, basedir);
+                        res = reader.read_all(dest);
                     }
                     else
                     {
-                        arki::metadata::ReadContext ctx(
-                            in.abstract->path(),
-                            std::string(py_basedir, py_basedir_len));
-                        res =
-                            arki::Metadata::read_file(*in.abstract, ctx, dest);
+                        metadata::AbstractFileBinaryReader reader(*in.abstract,
+                                                                  basedir);
+                        res = reader.read_all(dest);
                     }
-                }
-                else if (py_pathname)
-                {
-                    arki::metadata::ReadContext ctx(
-                        std::string(py_pathname, py_pathname_len));
-                    if (in.fd)
-                        res = arki::Metadata::read_file(*in.fd, ctx, dest);
-                    else
-                        res =
-                            arki::Metadata::read_file(*in.abstract, ctx, dest);
                 }
                 else
                 {
                     if (in.fd)
                     {
-                        arki::metadata::ReadContext ctx(in.fd->path());
-                        res = arki::Metadata::read_file(*in.fd, ctx, dest);
+                        metadata::BinaryReader reader(*in.fd);
+                        res = reader.read_all(dest);
                     }
                     else
                     {
-                        arki::metadata::ReadContext ctx(in.abstract->path());
-                        res =
-                            arki::Metadata::read_file(*in.abstract, ctx, dest);
+                        metadata::AbstractFileBinaryReader reader(*in.abstract);
+                        res = reader.read_all(dest);
                     }
                 }
             }

@@ -1077,24 +1077,6 @@ void Metadata::dump_internals(FILE* out) const
                 i->to_string().c_str());
 }
 
-bool Metadata::read_buffer(const uint8_t* buf, std::size_t size,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest)
-{
-    core::MemoryFile in(buf, size, file.pathname);
-    metadata::AbstractFileBinaryReader reader(in, file.basedir);
-    return reader.read_all(dest);
-}
-
-bool Metadata::read_buffer(const std::vector<uint8_t>& buf,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest)
-{
-    core::MemoryFile in(buf.data(), buf.size(), file.pathname);
-    metadata::AbstractFileBinaryReader reader(in, file.basedir);
-    return reader.read_all(dest);
-}
-
 bool Metadata::read_file(const std::filesystem::path& path,
                          metadata_dest_func dest)
 {

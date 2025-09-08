@@ -474,16 +474,6 @@ public:
     /// Dump the contents of the index to the given file descriptor
     void dump_internals(FILE* out) const;
 
-    /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const std::vector<uint8_t>& buf,
-                            const metadata::ReadContext& file,
-                            metadata_dest_func dest);
-
-    /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const uint8_t* buf, std::size_t size,
-                            const metadata::ReadContext& file,
-                            metadata_dest_func dest);
-
     /// Read all metadata from a file into the given consumer
     static bool read_file(const std::filesystem::path& path,
                           metadata_dest_func dest);

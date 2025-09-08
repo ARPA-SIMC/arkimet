@@ -42,13 +42,18 @@ template <typename AbstractFile> struct FileBase
 /// Turn a python object into an open input file
 struct TextInputFile : public FileBase<core::AbstractInputFile>
 {
-    TextInputFile(PyObject* o);
+    explicit TextInputFile(PyObject* o, const std::filesystem::path& name_hint =
+                                            std::filesystem::path()
+
+    );
 };
 
 /// Turn a python object into an open input file
 struct BinaryInputFile : public FileBase<core::AbstractInputFile>
 {
-    BinaryInputFile(PyObject* o);
+    explicit BinaryInputFile(
+        PyObject* o,
+        const std::filesystem::path& name_hint = std::filesystem::path());
 };
 
 /**
