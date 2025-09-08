@@ -397,10 +397,10 @@ public:
                       const metadata::ReadContext& filename);
 
     /// Read the inline data from the given file handle
-    void read_inline_data(core::NamedFileDescriptor& fd);
+    size_t read_inline_data(core::NamedFileDescriptor& fd);
 
     /// Read the inline data from the given file handle
-    void read_inline_data(core::AbstractInputFile& fd);
+    size_t read_inline_data(core::AbstractInputFile& fd);
 
     /// Read the inline data from the given memory buffer
     void readInlineData(core::BinaryDecoder& dec,
@@ -484,13 +484,8 @@ public:
                             const metadata::ReadContext& file,
                             metadata_dest_func dest);
 
-    /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(core::BinaryDecoder& dec,
-                            const metadata::ReadContext& file,
-                            metadata_dest_func dest);
-
     /// Read all metadata from a file into the given consumer
-    static bool read_file(const std::filesystem::path& fname,
+    static bool read_file(const std::filesystem::path& path,
                           metadata_dest_func dest);
 
     /// Read all metadata from a file into the given consumer
@@ -509,13 +504,6 @@ public:
     static bool read_file(core::AbstractInputFile& fd,
                           const metadata::ReadContext& file,
                           metadata_dest_func dest);
-
-    /**
-     * Read a metadata group into the given consumer
-     */
-    static bool read_group(core::BinaryDecoder& dec, unsigned version,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest);
 };
 
 } // namespace arki

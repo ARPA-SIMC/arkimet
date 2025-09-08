@@ -4,6 +4,7 @@
 #include "arki/exceptions.h"
 #include "arki/formatter.h"
 #include "arki/metadata.h"
+#include "arki/metadata/reader.h"
 #include "arki/nag.h"
 #include "arki/stream.h"
 #include "arki/summary.h"
@@ -32,47 +33,37 @@ namespace {
 
 #ifdef HAVE_GEOS
 // Add to \a s the info from all data read from \a in
-template <typename Input> void addToSummary(Input& in, arki::Summary& s)
+template <typename T>
+void addToSummary(arki::metadata::reader::BaseReader<T>& reader,
+                  arki::Summary& s)
 {
-    arki::Summary summary;
-
     arki::types::Bundle bundle;
-    while (bundle.read_header(in))
+    while (reader.read_bundle(bundle))
     {
         if (bundle.signature == "MD" || bundle.signature == "!D")
         {
-            if (!bundle.read_data(in))
-                break;
-            arki::core::BinaryDecoder dec(bundle.data);
-            auto md = arki::Metadata::read_binary_inner(dec, bundle.version,
-                                                        in.path());
+            auto md = reader.decode_metadata(bundle);
             if (md->source().style() == arki::types::Source::Style::INLINE)
-                md->read_inline_data(in);
+                reader.read_inline_data(*md);
             s.add(*md);
         }
         else if (bundle.signature == "SU")
         {
-            if (!bundle.read_data(in))
-                break;
-            arki::core::BinaryDecoder dec(bundle.data);
-            summary.read_inner(dec, bundle.version, in.path());
+            arki::Summary summary;
+            reader.decode_summary(bundle, summary);
             s.add(summary);
         }
         else if (bundle.signature == "MG")
         {
-            if (!bundle.read_data(in))
-                break;
-            arki::core::BinaryDecoder dec(bundle.data);
-            arki::Metadata::read_group(dec, bundle.version, in.path(),
-                                       [&](std::shared_ptr<arki::Metadata> md) {
-                                           s.add(*md);
-                                           return true;
-                                       });
+            reader.read_group(bundle, [&](std::shared_ptr<arki::Metadata> md) {
+                s.add(*md);
+                return true;
+            });
         }
         else
-            arki::throw_runtime_error(in.path(),
-                                      ": metadata entry does not start with "
-                                      "'MD', '!D', 'SU', or 'MG'");
+            throw std::runtime_error(reader.path().native() +
+                                     ": metadata entry does not start "
+                                     "with 'MD', '!D', 'SU', or 'MG'");
     }
 }
 #endif
@@ -101,9 +92,16 @@ struct bbox : public MethKwargs<bbox, arkipy_ArkiDump>
             // Read everything into a single summary
             arki::Summary summary;
             if (input.fd)
-                addToSummary(*input.fd, summary);
+            {
+                arki::metadata::BinaryReader reader(*input.fd);
+                addToSummary(reader, summary);
+            }
             else
-                addToSummary(*input.abstract, summary);
+            {
+                arki::metadata::AbstractFileBinaryReader reader(
+                    *input.abstract);
+                addToSummary(reader, summary);
+            }
 
             // Get the bounding box
             auto hull = summary.getConvexHull();
@@ -229,6 +227,44 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
     constexpr static const char* summary   = "run arki-dump [--annotate]";
     constexpr static const char* doc       = nullptr;
 
+    template <typename T>
+    static void dump(arki::metadata::reader::BaseReader<T>& reader,
+                     std::function<void(const arki::Metadata&)> print_md,
+                     std::function<void(const arki::Summary&)> print_summary)
+    {
+
+        arki::types::Bundle bundle;
+        while (reader.read_bundle(bundle))
+        {
+            if (bundle.signature == "MD" || bundle.signature == "!D")
+            {
+                auto md = reader.decode_metadata(bundle);
+                if (md->source().style() == arki::types::Source::Style::INLINE)
+                    reader.read_inline_data(*md);
+                print_md(*md);
+            }
+            else if (bundle.signature == "SU")
+            {
+                arki::Summary summary;
+                reader.decode_summary(bundle, summary);
+                print_summary(summary);
+            }
+            else if (bundle.signature == "MG")
+            {
+                arki::core::BinaryDecoder dec(bundle.data);
+                reader.read_group(bundle,
+                                  [&](std::shared_ptr<arki::Metadata> md) {
+                                      print_md(*md);
+                                      return true;
+                                  });
+            }
+            else
+                throw std::runtime_error(reader.path().native() +
+                                         ": metadata entry does not start "
+                                         "with 'MD', '!D', 'SU', or 'MG'");
+        }
+    }
+
     static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
     {
         static const char* kwlist[] = {"input", "output", "annotate", nullptr};
@@ -266,78 +302,16 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
                 output->send_buffer(res.data(), res.size());
             };
 
-            arki::Summary summary;
-
-            arki::types::Bundle bundle;
-            std::filesystem::path input_name;
-            std::function<bool()> read_header;
-            std::function<bool()> read_data;
-            std::function<void(arki::Metadata & md)> read_inline_data;
             if (input.fd)
             {
-                input_name  = input.fd->path();
-                read_header = [&bundle, &input] {
-                    return bundle.read_header(*input.fd);
-                };
-                read_data = [&bundle, &input] {
-                    return bundle.read_data(*input.fd);
-                };
-                read_inline_data = [&input](arki::Metadata& md) {
-                    md.read_inline_data(*input.fd);
-                };
+                arki::metadata::BinaryReader reader(*input.fd);
+                dump(reader, print_md, print_summary);
             }
             else
             {
-                input_name  = input.abstract->path();
-                read_header = [&bundle, &input] {
-                    return bundle.read_header(*input.abstract);
-                };
-                read_data = [&bundle, &input] {
-                    return bundle.read_data(*input.abstract);
-                };
-                read_inline_data = [&input](arki::Metadata& md) {
-                    md.read_inline_data(*input.abstract);
-                };
-            }
-
-            while (read_header())
-            {
-                if (bundle.signature == "MD" || bundle.signature == "!D")
-                {
-                    if (!read_data())
-                        break;
-                    arki::core::BinaryDecoder dec(bundle.data);
-                    auto md = arki::Metadata::read_binary_inner(
-                        dec, bundle.version, input_name);
-                    if (md->source().style() ==
-                        arki::types::Source::Style::INLINE)
-                        read_inline_data(*md);
-                    print_md(*md);
-                }
-                else if (bundle.signature == "SU")
-                {
-                    if (!read_data())
-                        break;
-                    arki::core::BinaryDecoder dec(bundle.data);
-                    summary.read_inner(dec, bundle.version, input_name);
-                    print_summary(summary);
-                }
-                else if (bundle.signature == "MG")
-                {
-                    if (!read_data())
-                        break;
-                    arki::core::BinaryDecoder dec(bundle.data);
-                    arki::Metadata::read_group(
-                        dec, bundle.version, input_name,
-                        [&](std::shared_ptr<arki::Metadata> md) {
-                            print_md(*md);
-                            return true;
-                        });
-                }
-                else
-                    throw std::runtime_error(input_name.native() +
-                                             ": metadata entry does not start "
-                                             "with 'MD', '!D', 'SU', or 'MG'");
+                arki::metadata::AbstractFileBinaryReader reader(
+                    *input.abstract);
+                dump(reader, print_md, print_summary);
             }
 
             rg.lock();

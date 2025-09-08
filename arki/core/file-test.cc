@@ -1,5 +1,6 @@
 #include "arki/tests/tests.h"
 #include "file.h"
+#include <cstring>
 
 using namespace std;
 using namespace arki;
@@ -20,6 +21,25 @@ Tests test("arki_core_file");
 
 void Tests::register_tests()
 {
+    add_method("memoryfile", [] {
+        const char* filebuf = "0123456789";
+        MemoryFile mf(filebuf, 8, "memory");
+
+        wassert(actual(mf.path()) == "memory");
+
+        char buf[10];
+
+        wassert(actual(mf.read(buf, 3)) == 3u);
+        wassert(actual(memcmp(buf, "012", 3)) == 0);
+
+        wassert(actual(mf.read(buf, 4)) == 4u);
+        wassert(actual(memcmp(buf, "3456", 4)) == 0);
+
+        wassert(actual(mf.read(buf, 10)) == 1u);
+        wassert(actual(memcmp(buf, "7", 1)) == 0);
+
+        wassert(actual(mf.read(buf, 10)) == 0u);
+    });
 
     add_method("bufferedreader", []() {
         // Generate a sample file

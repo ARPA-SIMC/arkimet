@@ -13,6 +13,24 @@ Stderr::Stderr() : NamedFileDescriptor(2, "(stderr)") {}
 AbstractInputFile::~AbstractInputFile() {}
 
 /*
+ * MemoryFile
+ */
+
+MemoryFile::MemoryFile(const void* buffer, size_t size,
+                       const std::filesystem::path& path)
+    : m_path(path), buffer(buffer), buffer_size(size)
+{
+}
+
+size_t MemoryFile::read(void* dest, size_t size)
+{
+    size_t read_size = std::min(size, buffer_size - pos);
+    memcpy(dest, static_cast<const uint8_t*>(buffer) + pos, read_size);
+    pos += read_size;
+    return read_size;
+}
+
+/*
  * BufferedReader
  */
 

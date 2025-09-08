@@ -349,7 +349,7 @@ static void dump(const char* name, const std::string& str)
         catch (std::runtime_error& e)
         {
             wassert(actual(e.what()).contains(
-                "metadata entry does not start with "));
+                "inbound/issue107.yaml: unsupported metadata signature 'So'"));
         }
         wassert(actual(count) == 0u);
     });
