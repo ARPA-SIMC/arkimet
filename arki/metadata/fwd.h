@@ -9,7 +9,6 @@ class BBox;
 namespace metadata {
 class Data;
 class Collection;
-struct ReadContext;
 class Inbound;
 class InboundBatch;
 

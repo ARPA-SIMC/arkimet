@@ -5,6 +5,7 @@
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/inbound.h"
+#include "arki/metadata/reader.h"
 #include "arki/metadata/sort.h"
 #include "arki/scan.h"
 #include "arki/segment/data.h"
@@ -293,19 +294,17 @@ stream::SendResult Collection::write_to(StreamOutput& out) const
     return res;
 }
 
-void Collection::read_from_file(const metadata::ReadContext& rc)
-{
-    Metadata::read_file(rc, inserter_func());
-}
-
 void Collection::read_from_file(const std::filesystem::path& pathname)
 {
-    Metadata::read_file(pathname, inserter_func());
+    File in(pathname, O_RDONLY);
+    metadata::BinaryReader reader(in);
+    reader.read_all(inserter_func());
 }
 
 void Collection::read_from_file(NamedFileDescriptor& fd)
 {
-    Metadata::read_file(fd, inserter_func());
+    metadata::BinaryReader reader(fd);
+    reader.read_all(inserter_func());
 }
 
 void Collection::writeAtomically(const std::filesystem::path& fname) const

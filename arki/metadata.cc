@@ -4,6 +4,7 @@
 #include "formatter.h"
 #include "iotrace.h"
 #include "metadata/data.h"
+#include "metadata/reader.h"
 #include "scan.h"
 #include "stream.h"
 #include "structured/emitter.h"
@@ -45,27 +46,6 @@ std::filesystem::path canonical_ifexists(const std::filesystem::path path)
 
 namespace arki {
 namespace metadata {
-
-ReadContext::ReadContext() {}
-
-ReadContext::ReadContext(const std::filesystem::path& pathname)
-    : basedir(), pathname(pathname)
-{
-    try
-    {
-        basedir = std::filesystem::canonical(pathname).parent_path();
-    }
-    catch (std::filesystem::filesystem_error&)
-    {
-        basedir = std::filesystem::current_path();
-    }
-}
-
-ReadContext::ReadContext(const std::filesystem::path& pathname,
-                         const std::filesystem::path& basedir)
-    : basedir(canonical_ifexists(basedir)), pathname(pathname)
-{
-}
 
 /*
  * Index
@@ -510,68 +490,16 @@ bool Metadata::items_equal(const Metadata& o) const
 }
 
 std::shared_ptr<Metadata>
-Metadata::read_binary(int in, const metadata::ReadContext& filename,
-                      bool readInline)
-{
-    types::Bundle bundle;
-    NamedFileDescriptor f(in, filename.pathname);
-    if (!bundle.read_header(f))
-        return std::shared_ptr<Metadata>();
-
-    // Ensure first 2 bytes are MD or !D
-    if (bundle.signature != "MD")
-        throw_consistency_error("parsing file "s + filename.pathname.native(),
-                                "metadata entry does not start with 'MD'");
-
-    if (!bundle.read_data(f))
-        return std::shared_ptr<Metadata>();
-
-    core::BinaryDecoder inner(bundle.data);
-
-    auto res = read_binary_inner(inner, bundle.version, filename);
-
-    // If the source is inline, then the data follows the metadata
-    if (readInline && res->source().style() == types::Source::Style::INLINE)
-        res->read_inline_data(f);
-
-    return res;
-}
-
-std::shared_ptr<Metadata>
-Metadata::read_binary(core::BinaryDecoder& dec,
-                      const metadata::ReadContext& filename, bool readInline)
-{
-    if (!dec)
-        return std::shared_ptr<Metadata>();
-
-    string signature;
-    unsigned version;
-    core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
-
-    // Ensure first 2 bytes are MD or !D
-    if (signature != "MD")
-        throw std::runtime_error("cannot parse "s + filename.pathname.native() +
-                                 ": metadata entry does not start with 'MD'");
-
-    auto res = read_binary_inner(inner, version, filename);
-
-    // If the source is inline, then the data follows the metadata
-    if (readInline && res->source().style() == types::Source::Style::INLINE)
-        res->readInlineData(dec, filename.pathname);
-
-    return res;
-}
-
-std::shared_ptr<Metadata>
 Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
-                            const metadata::ReadContext& rc)
+                            const std::filesystem::path& path,
+                            const std::filesystem::path& basedir)
 {
     // Check version and ensure we can decode
     if (version != 0)
     {
         std::stringstream s;
-        s << "cannot parse file " << rc.pathname << ": version of the file is "
-          << version << " but I can only decode version 0";
+        s << path.native() << ": version of the file is " << version
+          << " but I can only decode version 0";
         throw std::runtime_error(s.str());
     }
 
@@ -590,8 +518,8 @@ Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
                 if (last_code == TYPE_SOURCE)
                 {
                     std::stringstream s;
-                    s << "cannot parse file " << rc.pathname
-                      << ": element of type " << types::formatCode(el_type)
+                    s << path << ": element of type "
+                      << types::formatCode(el_type)
                       << " should not follow one of type SOURCE";
                     throw std::runtime_error(s.str());
                 }
@@ -600,14 +528,14 @@ Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
                 break;
             case TYPE_SOURCE:
                 res->m_index.raw_append(
-                    types::Source::decodeRelative(inner, rc.basedir));
+                    types::Source::decodeRelative(inner, basedir));
                 break;
             default:
                 if (last_code == TYPE_SOURCE || last_code == TYPE_NOTE)
                 {
                     std::stringstream s;
-                    s << "cannot parse file " << rc.pathname
-                      << ": element of type " << types::formatCode(el_type)
+                    s << path << ": element of type "
+                      << types::formatCode(el_type)
                       << " should not follow one of type "
                       << types::formatCode(last_code);
                     throw std::runtime_error(s.str());
@@ -623,12 +551,12 @@ Metadata::read_binary_inner(core::BinaryDecoder& dec, unsigned version,
     return res;
 }
 
-void Metadata::read_inline_data(NamedFileDescriptor& fd)
+size_t Metadata::read_inline_data(NamedFileDescriptor& fd)
 {
     // If the source is inline, then the data follows the metadata
     const Source& s = source();
     if (s.style() != types::Source::Style::INLINE)
-        return;
+        return 0;
     const source::Inline* si = reinterpret_cast<const source::Inline*>(&s);
     vector<uint8_t> buf;
     buf.resize(si->size);
@@ -639,14 +567,16 @@ void Metadata::read_inline_data(NamedFileDescriptor& fd)
     if (!fd.read_all_or_retry(buf.data(), si->size))
         fd.throw_runtime_error("inline data not found after arkimet metadata");
     m_data = metadata::DataManager::get().to_data(s.format, std::move(buf));
+
+    return si->size;
 }
 
-void Metadata::read_inline_data(core::AbstractInputFile& fd)
+size_t Metadata::read_inline_data(core::AbstractInputFile& fd)
 {
     // If the source is inline, then the data follows the metadata
     const Source& s = source();
     if (s.style() != types::Source::Style::INLINE)
-        return;
+        return 0;
     const source::Inline* si = reinterpret_cast<const source::Inline*>(&s);
     vector<uint8_t> buf;
     buf.resize(si->size);
@@ -656,6 +586,8 @@ void Metadata::read_inline_data(core::AbstractInputFile& fd)
     // Read the inline data
     fd.read(buf.data(), si->size);
     m_data = metadata::DataManager::get().to_data(s.format, std::move(buf));
+
+    return si->size;
 }
 
 void Metadata::readInlineData(core::BinaryDecoder& dec,
@@ -1089,206 +1021,6 @@ void Metadata::dump_internals(FILE* out) const
     for (const auto& i : m_index)
         fprintf(out, "    %3u: %s: %s\n", idx++, i->tag().c_str(),
                 i->to_string().c_str());
-}
-
-bool Metadata::read_buffer(const uint8_t* buf, std::size_t size,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest)
-{
-    core::BinaryDecoder dec(buf, size);
-    return read_buffer(dec, file, dest);
-}
-
-bool Metadata::read_buffer(const std::vector<uint8_t>& buf,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest)
-{
-    core::BinaryDecoder dec(buf);
-    return read_buffer(dec, file, dest);
-}
-
-bool Metadata::read_buffer(core::BinaryDecoder& dec,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest)
-{
-    bool canceled = false;
-    string signature;
-    unsigned version;
-    while (dec)
-    {
-        if (canceled)
-            continue;
-        core::BinaryDecoder inner = dec.pop_metadata_bundle(signature, version);
-
-        // Ensure first 2 bytes are MD or !D
-        if (signature != "MD" && signature != "!D" && signature != "MG")
-            throw std::runtime_error(
-                "cannot parse file "s + file.pathname.native() +
-                ": metadata entry does not start with 'MD', '!D' or 'MG'");
-
-        if (signature == "MG")
-        {
-            // Handle metadata group
-            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            Metadata::read_group(inner, version, file, dest);
-        }
-        else
-        {
-            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            auto res = read_binary_inner(inner, version, file);
-
-            // If the source is inline, then the data follows the metadata
-            if (res->source().style() == types::Source::Style::INLINE)
-                res->readInlineData(dec, file.pathname);
-            canceled = !dest(move(res));
-        }
-    }
-
-    return !canceled;
-}
-
-bool Metadata::read_file(const std::filesystem::path& fname,
-                         metadata_dest_func dest)
-{
-    metadata::ReadContext context(fname);
-    return read_file(context, dest);
-}
-
-bool Metadata::read_file(const metadata::ReadContext& file,
-                         metadata_dest_func dest)
-{
-    // Read all the metadata
-    sys::File in(file.pathname, O_RDONLY);
-    bool res = read_file(in, file, dest);
-    in.close();
-    return res;
-}
-
-bool Metadata::read_file(int in, const metadata::ReadContext& file,
-                         metadata_dest_func dest)
-{
-    bool canceled = false;
-    NamedFileDescriptor f(in, file.pathname);
-    ;
-    types::Bundle bundle;
-    while (bundle.read_header(f))
-    {
-        // Ensure first 2 bytes are MD or !D
-        if (bundle.signature != "MD" && bundle.signature != "!D" &&
-            bundle.signature != "MG")
-            throw_consistency_error(
-                "parsing file "s + file.pathname.native(),
-                "metadata entry does not start with 'MD', '!D' or 'MG'");
-
-        if (!bundle.read_data(f))
-            break;
-
-        if (canceled)
-            continue;
-
-        if (bundle.signature == "MG")
-        {
-            // Handle metadata group
-            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            core::BinaryDecoder dec(bundle.data);
-            Metadata::read_group(dec, bundle.version, file, dest);
-        }
-        else
-        {
-            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            core::BinaryDecoder dec(bundle.data);
-            auto md = Metadata::read_binary_inner(dec, bundle.version, file);
-
-            // If the source is inline, then the data follows the metadata
-            if (md->source().style() == types::Source::Style::INLINE)
-                md->read_inline_data(f);
-            canceled = !dest(move(md));
-        }
-    }
-    return !canceled;
-}
-
-bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func mdc)
-{
-    return read_file(fd, metadata::ReadContext(fd.path()), mdc);
-}
-
-bool Metadata::read_file(core::AbstractInputFile& fd,
-                         const metadata::ReadContext& file,
-                         metadata_dest_func dest)
-{
-    bool canceled = false;
-    types::Bundle bundle;
-    while (bundle.read_header(fd))
-    {
-        // Ensure first 2 bytes are MD or !D
-        if (bundle.signature != "MD" && bundle.signature != "!D" &&
-            bundle.signature != "MG")
-            throw_consistency_error(
-                "parsing file "s + file.pathname.native(),
-                "metadata entry does not start with 'MD', '!D' or 'MG'");
-
-        if (!bundle.read_data(fd))
-            break;
-
-        if (canceled)
-            continue;
-
-        if (bundle.signature == "MG")
-        {
-            // Handle metadata group
-            iotrace::trace_file(file.pathname, 0, 0, "read metadata group");
-            core::BinaryDecoder dec(bundle.data);
-            Metadata::read_group(dec, bundle.version, file, dest);
-        }
-        else
-        {
-            iotrace::trace_file(file.pathname, 0, 0, "read metadata");
-            core::BinaryDecoder dec(bundle.data);
-            auto md = Metadata::read_binary_inner(dec, bundle.version, file);
-
-            // If the source is inline, then the data follows the metadata
-            if (md->source().style() == types::Source::Style::INLINE)
-                md->read_inline_data(fd);
-            canceled = !dest(move(md));
-        }
-    }
-    return !canceled;
-}
-
-bool Metadata::read_group(core::BinaryDecoder& dec, unsigned version,
-                          const metadata::ReadContext& file,
-                          metadata_dest_func dest)
-{
-    // Handle metadata group
-    if (version != 0)
-    {
-        stringstream ss;
-        ss << "cannot parse file " << file.pathname << ": found version "
-           << version << " but only version 0 (LZO compressed) is supported";
-        throw runtime_error(ss.str());
-    }
-
-    // Read uncompressed size
-    uint32_t uncsize = dec.pop_uint(4, "uncompressed item size");
-
-    vector<uint8_t> decomp = utils::compress::unlzo(dec.buf, dec.size, uncsize);
-    dec.buf += dec.size;
-    dec.size = 0;
-
-    core::BinaryDecoder unenc(decomp);
-
-    string isig;
-    unsigned iver;
-    bool canceled = false;
-    while (!canceled && unenc)
-    {
-        core::BinaryDecoder inner = unenc.pop_metadata_bundle(isig, iver);
-        auto md  = Metadata::read_binary_inner(inner, iver, file);
-        canceled = !dest(move(md));
-    }
-
-    return !canceled;
 }
 
 } // namespace arki

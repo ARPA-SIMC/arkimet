@@ -3,6 +3,7 @@
 #include "metadata.h"
 #include "metadata/collection.h"
 #include "metadata/data.h"
+#include "metadata/reader.h"
 #include "metadata/tests.h"
 #include "stream.h"
 #include "structured/json.h"
@@ -99,7 +100,9 @@ template <typename TESTDATA> void test_inline()
     wfd.close();
 
     unsigned count = 0;
-    Metadata::read_file("test.md", [&](std::shared_ptr<Metadata> md) {
+    core::File in("test.md", O_RDONLY);
+    metadata::BinaryReader md_reader(in);
+    md_reader.read_all([&](std::shared_ptr<Metadata> md) {
         md->get_data();
         ++count;
         return true;
@@ -151,40 +154,16 @@ static void dump(const char* name, const std::string& str)
         wassert(actual((char)encoded[1]) == 'D');
         sys::write_file("test.md", encoded.data(), encoded.size());
 
-        std::shared_ptr<Metadata> md1;
-        core::BinaryDecoder dec(encoded);
-        md1 = wcallchecked(Metadata::read_binary(
-            dec, metadata::ReadContext("(test memory buffer)", dir)));
-        wassert_true(md1);
+        core::File in("test.md", O_RDONLY);
+        metadata::BinaryReader reader(in);
+        auto md1 = reader.read();
+        wassert_true(md1.get());
 
         wassert(actual_type(md1->source())
                     .is_source_blob(DataFormat::GRIB, dir, "inbound/test.grib1",
                                     1, 2));
         wassert(actual(md1->source().format) == DataFormat::GRIB);
         wassert(f.ensure_md_matches_prefill(*md1));
-
-        // Test methods to load metadata from files
-        metadata::Collection mds;
-
-        wassert(Metadata::read_file(metadata::ReadContext("test.md", dir),
-                                    mds.inserter_func()));
-        wassert(actual(mds.size()) == 1u);
-        wassert(actual_type(mds[0].source())
-                    .is_source_blob(DataFormat::GRIB, dir, "inbound/test.grib1",
-                                    1, 2));
-        mds.clear();
-
-        wassert(Metadata::read_file("test.md", mds.inserter_func()));
-        wassert(actual(mds.size()) == 1u);
-        wassert(actual_type(mds[0].source())
-                    .is_source_blob(DataFormat::GRIB, dir, "inbound/test.grib1",
-                                    1, 2));
-
-        /*
-        /// Read all metadata from a file into the given consumer
-        static void read_file(const metadata::ReadContext& fname,
-        metadata_dest_func dest);
-        */
     });
 
     // Test Yaml encoding and decoding
@@ -197,7 +176,7 @@ static void dump(const char* name, const std::string& str)
         string s    = md.to_yaml();
         auto reader = LineReader::from_chars(s.data(), s.size());
         auto md1    = Metadata::read_yaml(*reader, "(test memory buffer)");
-        wassert_true(md1);
+        wassert_true(md1.get());
         wassert(actual(Source::createBlobUnlocked(DataFormat::GRIB, "",
                                                   "inbound/test.grib1", 1,
                                                   2)) == md1->source());
@@ -231,29 +210,6 @@ static void dump(const char* name, const std::string& str)
         wassert(f.ensure_md_matches_prefill(*md1));
     });
 
-    // Test encoding and decoding with inline data
-    add_method("binary_inline", [](Fixture& f) {
-        Metadata md;
-        // Here is some data
-        vector<uint8_t> buf = {'c', 'i', 'a', 'o'};
-        md.set_source_inline(DataFormat::GRIB,
-                             metadata::DataManager::get().to_data(
-                                 DataFormat::GRIB, vector<uint8_t>(buf)));
-
-        // Encode
-        sys::File temp("testfile", O_WRONLY | O_CREAT | O_TRUNC, 0666);
-        wassert(md.write(temp));
-        temp.close();
-
-        // Decode
-        sys::File temp1("testfile", O_RDONLY);
-        auto md1 = wcallchecked(Metadata::read_binary(
-            temp1, metadata::ReadContext("testfile"), true));
-        temp1.close();
-
-        wassert(actual(md1->get_data().read()) == buf);
-    });
-
     // Serialise using unix file descriptors
     add_method("binary_fd", [](Fixture& f) {
         Metadata md;
@@ -269,9 +225,8 @@ static void dump(const char* name, const std::string& str)
 
         // Decode
         sys::File in(tmpfile, O_RDONLY);
-        auto md1 = wcallchecked(
-            Metadata::read_binary(in, metadata::ReadContext(tmpfile)));
-        in.close();
+        metadata::BinaryReader reader(in);
+        auto md1 = wcallchecked(reader.read());
 
         wassert(actual(md) == *md1);
     });
@@ -279,11 +234,12 @@ static void dump(const char* name, const std::string& str)
     // Reproduce decoding error at #24
     add_method("decode_issue_24", [](Fixture& f) {
         unsigned count = 0;
-        Metadata::read_file("inbound/issue24.arkimet",
-                            [&](std::shared_ptr<Metadata> md) noexcept {
-                                ++count;
-                                return true;
-                            });
+        core::File in("inbound/issue24.arkimet", O_RDONLY);
+        metadata::BinaryReader md_reader(in);
+        md_reader.read_all([&](std::shared_ptr<Metadata> md) noexcept {
+            ++count;
+            return true;
+        });
         wassert(actual(count) == 1u);
     });
 
@@ -335,103 +291,14 @@ static void dump(const char* name, const std::string& str)
         wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
     });
 
-    add_method("issue107_binary", [](Fixture& f) {
-        unsigned count = 0;
-        try
-        {
-            Metadata::read_file("inbound/issue107.yaml",
-                                [&](std::shared_ptr<Metadata> md) noexcept {
-                                    ++count;
-                                    return true;
-                                });
-            wassert(actual(0) == 1);
-        }
-        catch (std::runtime_error& e)
-        {
-            wassert(actual(e.what()).contains(
-                "metadata entry does not start with "));
-        }
-        wassert(actual(count) == 0u);
-    });
-
     add_method("issue107_yaml", [](Fixture& f) {
         Metadata md;
         File fd("inbound/issue107.yaml", O_RDONLY);
         auto reader = LineReader::from_fd(fd);
 
-        wassert(actual(Metadata::read_yaml(*reader, "inbound/issue107.yaml"))
-                    .istrue());
-    });
-
-    add_method("wrongsize", [](Fixture& f) {
-        File fd("test.md", O_WRONLY | O_CREAT | O_TRUNC);
-        fd.write("MD\0\0\x0f\xff\xff\xfftest", 12);
-        fd.close();
-
-        unsigned count = 0;
-        Metadata::read_file("test.md",
-                            [&](std::shared_ptr<Metadata> md) noexcept {
-                                ++count;
-                                return true;
-                            });
-        wassert(actual(count) == 0u);
-    });
-
-    add_method("read_partial", [](Fixture& f) {
-        // Create a mock input file with inline data
-        sys::Tempfile tf;
-        metadata::DataManager& data_manager = metadata::DataManager::get();
-        Metadata::read_file(
-            "inbound/test.grib1.arkimet", [&](std::shared_ptr<Metadata> md) {
-                md->set_source_inline(
-                    DataFormat::BUFR,
-                    data_manager.to_data(
-                        DataFormat::BUFR,
-                        std::vector<uint8_t>(md->sourceBlob().size)));
-                md->write(tf);
-                return true;
-            });
-        // fprintf(stderr, "TO READ: %d\n", (int)tf.lseek(0, SEEK_CUR));
-        tf.lseek(0);
-
-        // Read it a bit at a time, to try to cause partial reads in the reader
-        struct Writer : public subprocess::Child
-        {
-            sys::NamedFileDescriptor& in;
-
-            Writer(sys::NamedFileDescriptor& in) : in(in) {}
-
-            int main() noexcept override
-            {
-                sys::NamedFileDescriptor out(1, "stdout");
-                while (true)
-                {
-                    char buf[1];
-                    if (!in.read(buf, 1))
-                        break;
-
-                    out.write_all_or_throw(buf, 1);
-                }
-                return 0;
-            }
-        };
-
-        Writer child(tf);
-        child.pass_fds.push_back(tf);
-        child.set_stdout(subprocess::Redirect::PIPE);
-        child.fork();
-
-        sys::NamedFileDescriptor in(child.get_stdout(), "child pipe");
-
-        unsigned count = 0;
         wassert(
-            Metadata::read_file(in, [&](std::shared_ptr<Metadata>) noexcept {
-                ++count;
-                return true;
-            }));
-        wassert(actual(count) == 3u);
-
-        wassert(actual(child.wait()) == 0);
+            actual(Metadata::read_yaml(*reader, "inbound/issue107.yaml").get())
+                .istrue());
     });
 
     add_method("inline_grib",
@@ -445,14 +312,15 @@ static void dump(const char* name, const std::string& str)
 
     add_method("issue256", [](Fixture& f) {
         std::shared_ptr<Metadata> md;
-        Metadata::read_file("inbound/issue256.arkimet",
-                            [&](std::shared_ptr<Metadata> m) {
-                                wassert_false(md);
-                                md = m;
-                                return true;
-                            });
+        core::File in("inbound/issue256.arkimet", O_RDONLY);
+        metadata::BinaryReader reader(in);
+        reader.read_all([&](std::shared_ptr<Metadata> m) {
+            wassert_false(md.get());
+            md = m;
+            return true;
+        });
 
-        wassert_true(md);
+        wassert_true(md.get());
 
         wassert(actual(md->get(TYPE_TIMERANGE)->to_string()) ==
                 "GRIB1(000, 228h)");

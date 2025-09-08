@@ -397,7 +397,7 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
                 {
                     "type": "source",
                     "style": "BLOB",
-                    "basedir": "",
+                    "basedir": os.getcwd(),
                     "file": os.path.abspath("testenv/testds/2020/10-31.vm2"),
                     "format": "vm2",
                     "offset": 0,

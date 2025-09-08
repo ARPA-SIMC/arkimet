@@ -4,6 +4,7 @@
 #include "arki/dataset/session.h"
 #include "arki/matcher.h"
 #include "arki/metadata.h"
+#include "arki/metadata/reader.h"
 #include "arki/metadata/sort.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
@@ -243,14 +244,15 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
 {
     // TODO: rewrite using Segment's reader query capabilities
     auto sorter = wrap_with_query(q, dest);
+    metadata::BinaryReader md_reader(fd);
     if (!q.with_data)
     {
-        if (!Metadata::read_file(fd, dest))
+        if (!md_reader.read_all(dest))
             return false;
     }
     else
     {
-        if (!Metadata::read_file(fd, [&](std::shared_ptr<Metadata> md) {
+        if (!md_reader.read_all([&](std::shared_ptr<Metadata> md) {
                 if (md->has_source_blob())
                 {
                     const auto& blob = md->sourceBlob();

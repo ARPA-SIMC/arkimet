@@ -10,6 +10,7 @@ class Type;
 typedef TypeCode Code;
 template <typename T> struct traits;
 
+class Bundle;
 class Source;
 namespace source {
 class Blob;

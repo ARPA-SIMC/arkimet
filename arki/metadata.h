@@ -17,38 +17,6 @@
 namespace arki {
 namespace metadata {
 
-class Data;
-
-struct ReadContext
-{
-    /**
-     * Absolute path of the root directory for relative paths in the Metadata's
-     * source filenames
-     */
-    std::filesystem::path basedir;
-
-    /**
-     * Absolute path of the file to read if basedir is empty, else relative
-     * path rooted on basedir.
-     */
-    std::filesystem::path pathname;
-
-    ReadContext();
-
-    /**
-     * A file to read, with metadata source filenames rooted in
-     * dirname(pathname)
-     */
-    ReadContext(const std::filesystem::path& pathname);
-
-    /**
-     * A file to read, with metadata source filenames rooted in the given
-     * directory.
-     */
-    ReadContext(const std::filesystem::path& pathname,
-                const std::filesystem::path& basedir);
-};
-
 /**
  * Store Type elements, in the order Metadata encodes them.
  *
@@ -353,54 +321,19 @@ public:
     read_structure(const structured::Keys& keys, const structured::Reader& val);
 
     /**
-     * Read a metadata document from the given input stream.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * If readInline is true, in case the data is transmitted inline, it reads
-     * the data as well: this is what you expect.
-     *
-     * If it's false, then the reader needs to check from the Metadata source
-     * if it is inline, and in that case proceed to read the inline data.
-     *
-     * @returns an empty shared_ptr when end-of-file is reached
-     */
-    static std::shared_ptr<Metadata>
-    read_binary(int in, const metadata::ReadContext& filename,
-                bool readInline = true);
-
-    /**
-     * Read a metadata document from the given memory buffer.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * If readInline is true, in case the data is transmitted inline, it reads
-     * the data as well: this is what you expect.
-     *
-     * If it's false, then the reader needs to check from the Metadata source
-     * if it is inline, and in that case proceed to read the inline data.
-     *
-     * @returns an empty shared_ptr when end-of-file is reached
-     */
-    static std::shared_ptr<Metadata>
-    read_binary(core::BinaryDecoder& dec, const metadata::ReadContext& filename,
-                bool readInline = true);
-
-    /**
      * Decode the metadata, without the outer bundle headers, from the given
      * buffer.
      */
     static std::shared_ptr<Metadata>
     read_binary_inner(core::BinaryDecoder& dec, unsigned version,
-                      const metadata::ReadContext& filename);
+                      const std::filesystem::path& path,
+                      const std::filesystem::path& basedir);
 
     /// Read the inline data from the given file handle
-    void read_inline_data(core::NamedFileDescriptor& fd);
+    size_t read_inline_data(core::NamedFileDescriptor& fd);
 
     /// Read the inline data from the given file handle
-    void read_inline_data(core::AbstractInputFile& fd);
+    size_t read_inline_data(core::AbstractInputFile& fd);
 
     /// Read the inline data from the given memory buffer
     void readInlineData(core::BinaryDecoder& dec,
@@ -473,49 +406,6 @@ public:
 
     /// Dump the contents of the index to the given file descriptor
     void dump_internals(FILE* out) const;
-
-    /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const std::vector<uint8_t>& buf,
-                            const metadata::ReadContext& file,
-                            metadata_dest_func dest);
-
-    /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(const uint8_t* buf, std::size_t size,
-                            const metadata::ReadContext& file,
-                            metadata_dest_func dest);
-
-    /// Read all metadata from a buffer into the given consumer
-    static bool read_buffer(core::BinaryDecoder& dec,
-                            const metadata::ReadContext& file,
-                            metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(const std::filesystem::path& fname,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(const metadata::ReadContext& fname,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(int in, const metadata::ReadContext& file,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(core::NamedFileDescriptor& fd,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(core::AbstractInputFile& fd,
-                          const metadata::ReadContext& file,
-                          metadata_dest_func dest);
-
-    /**
-     * Read a metadata group into the given consumer
-     */
-    static bool read_group(core::BinaryDecoder& dec, unsigned version,
-                           const metadata::ReadContext& file,
-                           metadata_dest_func dest);
 };
 
 } // namespace arki

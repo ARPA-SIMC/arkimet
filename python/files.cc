@@ -3,13 +3,16 @@
 #include "arki/stream/abstract.h"
 #include "common.h"
 #include "utils/values.h"
+#include <filesystem>
 #include <string>
 
 namespace {
 
 using namespace arki::python;
 
-static std::filesystem::path get_fd_name(PyObject* o)
+static std::filesystem::path
+get_fd_name(PyObject* o,
+            const std::filesystem::path& name_hint = std::filesystem::path())
 {
     // First try reading o.name
     pyo_unique_ptr o_name(PyObject_GetAttrString(o, "name"));
@@ -20,6 +23,9 @@ static std::filesystem::path get_fd_name(PyObject* o)
         return from_python<std::filesystem::path>(o_name);
     }
     PyErr_Clear();
+
+    if (!name_hint.empty())
+        return name_hint;
 
     // Then try repr
     pyo_unique_ptr o_str(PyObject_Str(o));
@@ -119,8 +125,13 @@ public:
 template <typename Base> struct PyFile : public Base
 {
     PyObject* o;
+    std::filesystem::path name_hint;
 
-    PyFile(PyObject* o) : o(o) { Py_INCREF(o); }
+    PyFile(PyObject* o, const std::filesystem::path& name_hint)
+        : o(o), name_hint(name_hint)
+    {
+        Py_INCREF(o);
+    }
     PyFile(const PyFile&)            = delete;
     PyFile(PyFile&&)                 = delete;
     PyFile& operator=(const PyFile&) = delete;
@@ -130,13 +141,13 @@ template <typename Base> struct PyFile : public Base
     std::string name() const override
     {
         AcquireGIL gil;
-        return get_fd_name(o);
+        return get_fd_name(o, name_hint);
     }
 
     std::filesystem::path path() const override
     {
         AcquireGIL gil;
-        return get_fd_name(o);
+        return get_fd_name(o, name_hint);
     }
 };
 
@@ -205,7 +216,8 @@ struct PyAbstractBinaryInputFile : public PyFile<arki::core::AbstractInputFile>
 namespace arki {
 namespace python {
 
-TextInputFile::TextInputFile(PyObject* o)
+TextInputFile::TextInputFile(PyObject* o,
+                             const std::filesystem::path& name_hint)
 {
     // If it is already an int handle, use it
     if (PyLong_Check(o))
@@ -237,15 +249,17 @@ TextInputFile::TextInputFile(PyObject* o)
     PyErr_Clear();
 
     // Fall back on calling o.read()
-    abstract = new PyAbstractTextInputFile(o);
+    abstract = new PyAbstractTextInputFile(o, name_hint);
 }
 
-BinaryInputFile::BinaryInputFile(PyObject* o)
+BinaryInputFile::BinaryInputFile(PyObject* o,
+                                 const std::filesystem::path& name_hint)
 {
     // If it is already an int handle, use it
     if (PyLong_Check(o))
     {
-        fd = new core::NamedFileDescriptor(int_from_python(o), get_fd_name(o));
+        fd = new core::NamedFileDescriptor(int_from_python(o),
+                                           get_fd_name(o, name_hint));
         return;
     }
 
@@ -265,14 +279,14 @@ BinaryInputFile::BinaryInputFile(PyObject* o)
         // there are bytes in the read buffer of o, but there seems to be no
         // way to know
         fd = new core::NamedFileDescriptor(int_from_python(fileno),
-                                           get_fd_name(o));
+                                           get_fd_name(o, name_hint));
         return;
     }
 
     PyErr_Clear();
 
     // Fall back on calling o.read()
-    abstract = new PyAbstractBinaryInputFile(o);
+    abstract = new PyAbstractBinaryInputFile(o, name_hint);
 }
 
 std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o)

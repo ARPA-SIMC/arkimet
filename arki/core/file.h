@@ -46,8 +46,11 @@ struct AbstractInputFile
 {
     virtual ~AbstractInputFile();
 
-    [[deprecated("Use path() instead")]] virtual std::string name() const = 0;
-    virtual std::filesystem::path path() const                            = 0;
+    [[deprecated("Use path() instead")]] virtual std::string name() const
+    {
+        return path().native();
+    }
+    virtual std::filesystem::path path() const = 0;
 
     /**
      * Read up to \a size bytes into dest.
@@ -55,6 +58,23 @@ struct AbstractInputFile
      * Return the number of bytes read, or 0 for EOF
      */
     virtual size_t read(void* dest, size_t size) = 0;
+};
+
+class MemoryFile : public AbstractInputFile
+{
+protected:
+    std::filesystem::path m_path;
+    const void* buffer;
+    size_t buffer_size;
+    size_t pos = 0;
+
+public:
+    MemoryFile(const void* buffer, size_t size,
+               const std::filesystem::path& path);
+
+    std::filesystem::path path() const override { return m_path; }
+
+    size_t read(void* dest, size_t size) override;
 };
 
 /**
