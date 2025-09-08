@@ -97,6 +97,11 @@ actual(std::shared_ptr<const arki::Metadata> actual)
 {
     return arki::tests::ActualMetadata(*actual);
 }
+inline arki::tests::ActualMetadata
+actual(std::shared_ptr<arki::Metadata> actual)
+{
+    return arki::tests::ActualMetadata(*actual);
+}
 
 } // namespace arki::tests
 

@@ -47,8 +47,6 @@ std::filesystem::path canonical_ifexists(const std::filesystem::path path)
 namespace arki {
 namespace metadata {
 
-ReadContext::ReadContext() {}
-
 ReadContext::ReadContext(const std::filesystem::path& pathname)
     : basedir(), pathname(pathname)
 {
@@ -1077,44 +1075,6 @@ void Metadata::dump_internals(FILE* out) const
     for (const auto& i : m_index)
         fprintf(out, "    %3u: %s: %s\n", idx++, i->tag().c_str(),
                 i->to_string().c_str());
-}
-
-bool Metadata::read_file(const std::filesystem::path& path,
-                         metadata_dest_func dest)
-{
-    sys::File in(path, O_RDONLY);
-    metadata::BinaryReader reader(in);
-    return reader.read_all(dest);
-}
-
-bool Metadata::read_file(const metadata::ReadContext& file,
-                         metadata_dest_func dest)
-{
-    sys::File in(file.pathname, O_RDONLY);
-    metadata::BinaryReader reader(in, file.basedir);
-    return reader.read_all(dest);
-}
-
-bool Metadata::read_file(int in, const metadata::ReadContext& file,
-                         metadata_dest_func dest)
-{
-    NamedFileDescriptor f(in, file.pathname);
-    metadata::BinaryReader reader(f, file.basedir);
-    return reader.read_all(dest);
-}
-
-bool Metadata::read_file(NamedFileDescriptor& fd, metadata_dest_func dest)
-{
-    metadata::BinaryReader reader(fd);
-    return reader.read_all(dest);
-}
-
-bool Metadata::read_file(core::AbstractInputFile& fd,
-                         const metadata::ReadContext& file,
-                         metadata_dest_func dest)
-{
-    metadata::AbstractFileBinaryReader reader(fd, file.basedir);
-    return reader.read_all(dest);
 }
 
 } // namespace arki

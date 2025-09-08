@@ -474,27 +474,6 @@ public:
 
     /// Dump the contents of the index to the given file descriptor
     void dump_internals(FILE* out) const;
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(const std::filesystem::path& path,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(const metadata::ReadContext& fname,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(int in, const metadata::ReadContext& file,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(core::NamedFileDescriptor& fd,
-                          metadata_dest_func dest);
-
-    /// Read all metadata from a file into the given consumer
-    static bool read_file(core::AbstractInputFile& fd,
-                          const metadata::ReadContext& file,
-                          metadata_dest_func dest);
 };
 
 } // namespace arki

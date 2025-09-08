@@ -3,6 +3,7 @@
 #include "arki/core/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
+#include "arki/metadata/reader.h"
 #include "arki/segment/data.h"
 #include "arki/stream.h"
 #include "arki/stream/filter.h"
@@ -37,7 +38,10 @@ bool process(const std::string source, const std::string& command,
     try
     {
         for (unsigned i = 0; i < repeat; ++i)
-            if (!Metadata::read_file(source, [&](std::shared_ptr<Metadata> md) {
+        {
+            core::File in(source, O_RDONLY);
+            metadata::BinaryReader md_reader(in);
+            if (!md_reader.read_all([&](std::shared_ptr<Metadata> md) {
                     md->set_source_inline(
                         DataFormat::BUFR,
                         data_manager.to_data(
@@ -46,6 +50,7 @@ bool process(const std::string source, const std::string& command,
                     return metadata::Postprocess::send(md, out);
                 }))
                 return false;
+        }
     }
     catch (...)
     {

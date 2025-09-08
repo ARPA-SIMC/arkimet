@@ -106,10 +106,12 @@ Index::Index(const Segment& segment)
 bool Index::read_all(std::shared_ptr<arki::segment::data::Reader> reader,
                      metadata_dest_func dest)
 {
+    core::File in(md_path, O_RDONLY);
+    arki::metadata::BinaryReader md_reader(in, segment.root());
     // This generates filenames relative to the metadata
     // We need to use m_path as the dirname, and prepend dirname(*i) to the
     // filenames
-    return Metadata::read_file(md_path, [&](std::shared_ptr<Metadata> md) {
+    return md_reader.read_all([&](std::shared_ptr<Metadata> md) {
         // TODO: if metadata has VALUE (using smallfiles) there is no need to
         // lock its source
 
@@ -136,10 +138,13 @@ Index::query_data(const Matcher& matcher,
 {
     arki::metadata::Collection res;
 
+    core::File in(md_path, O_RDONLY);
+    arki::metadata::BinaryReader md_reader(in, segment.root());
+
     // This generates filenames relative to the metadata
     // We need to use m_path as the dirname, and prepend dirname(*i) to the
     // filenames
-    Metadata::read_file(md_path, [&](std::shared_ptr<Metadata> md) {
+    md_reader.read_all([&](std::shared_ptr<Metadata> md) {
         // Filter using the matcher in the query
         if (!matcher(*md))
             return true;
@@ -169,7 +174,9 @@ Index::query_data(const Matcher& matcher,
 
 void Index::query_summary(const Matcher& matcher, Summary& summary)
 {
-    Metadata::read_file(md_path, [&](std::shared_ptr<Metadata> md) {
+    core::File in(md_path, O_RDONLY);
+    arki::metadata::BinaryReader md_reader(in, segment.root());
+    md_reader.read_all([&](std::shared_ptr<Metadata> md) {
         if (!matcher(*md))
             return true;
         summary.add(*md);
