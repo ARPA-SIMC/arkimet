@@ -130,6 +130,9 @@ public:
      * Preserve segment mtime
      */
     virtual utils::files::PreserveFileTimes preserve_mtime() = 0;
+
+    static std::shared_ptr<segment::Data>
+    create(std::shared_ptr<const Segment> segment);
 };
 
 namespace data {
