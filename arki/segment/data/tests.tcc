@@ -91,8 +91,8 @@ void SegmentTests<Data, FixtureData>::register_tests()
 
     this->add_method("repack", [](Fixture& f) {
         auto checker = f.create();
-        auto reader  = checker->data().reader(
-            std::make_shared<core::lock::NullReadLock>());
+        auto reader =
+            f.segment->reader(std::make_shared<core::lock::NullReadLock>());
         for (auto& md : f.seg_mds)
             md->sourceBlob().lock(reader);
         auto p = wcallchecked(checker->repack(f.seg_mds));

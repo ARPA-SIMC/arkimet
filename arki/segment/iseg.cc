@@ -41,13 +41,25 @@ Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
 
 Reader::Reader(std::shared_ptr<const iseg::Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
-    : segment::Reader(segment, lock), m_index(segment->read_index(lock))
+    : segment::Reader(segment, lock),
+      data_reader(segment->data()->reader(lock)),
+      m_index(segment->read_index(lock))
 {
+}
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    return data_reader->read(src);
+}
+stream::SendResult Reader::stream(const types::source::Blob& src,
+                                  StreamOutput& out)
+{
+    return data_reader->stream(src, out);
 }
 
 bool Reader::read_all(metadata_dest_func dest)
 {
-    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+    auto reader = m_segment->reader(lock);
     return m_index->scan([&](auto md) {
         md->sourceBlob().lock(reader);
         return dest(md);
@@ -61,7 +73,7 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
     // TODO: if using smallfiles there is no need to lock the source
     if (q.with_data)
     {
-        auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+        auto reader = m_segment->reader(lock);
         for (auto& md : mdbuf)
             md->sourceBlob().lock(reader);
     }
@@ -211,7 +223,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 }
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segment().data_reader(lock);
+                auto reader = segment().reader(lock);
                 old->lock(reader);
                 int old_usn;
                 if (!arki::scan::Scanner::update_sequence_number(*old, old_usn))
@@ -313,7 +325,7 @@ CIndex& Checker::index()
 
 arki::metadata::Collection Checker::scan()
 {
-    auto reader = segment().session().segment_data_reader(m_segment, lock);
+    auto reader = segment().reader(lock);
 
     arki::metadata::Collection res;
     index().scan(

@@ -181,12 +181,12 @@ public:
     void list_files();
 
     /// Scan the data found in on_disk sending results to dest
-    bool scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
+    bool scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 
     /// Scan the data found in on_disk sending results to dest, reporting
     /// scanning errors to the reporter
     bool scan(std::function<void(const std::string&)> reporter,
-              std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
+              std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 };
 
 } // namespace segment::data::dir

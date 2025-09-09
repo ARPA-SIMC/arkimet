@@ -12,20 +12,35 @@ using namespace arki::utils;
 
 namespace arki::segment::scan {
 
+Reader::Reader(std::shared_ptr<const Segment> segment,
+               std::shared_ptr<const core::ReadLock> lock)
+    : segment::Reader(segment, lock), data_reader(segment->data()->reader(lock))
+{
+}
+
 Reader::~Reader() {}
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    return data_reader->read(src);
+}
+
+stream::SendResult Reader::stream(const types::source::Blob& src,
+                                  StreamOutput& out)
+{
+    return data_reader->stream(src, out);
+}
 
 bool Reader::read_all(metadata_dest_func dest)
 {
-    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
-    return reader->scan_data(dest);
+    return data_reader->scan_data(dest);
 }
 
 bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 {
     arki::metadata::Collection mdbuf;
 
-    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
-    reader->scan_data([&](auto md) {
+    data_reader->scan_data([&](auto md) {
         if (q.matcher(*md))
             mdbuf.acquire(md);
         if (not q.with_data)
@@ -43,8 +58,7 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 
 void Reader::query_summary(const Matcher& matcher, Summary& summary)
 {
-    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
-    reader->scan_data([&](auto md) {
+    data_reader->scan_data([&](auto md) {
         if (matcher(*md))
             summary.add(*md);
         return true;

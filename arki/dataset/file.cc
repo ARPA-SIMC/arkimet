@@ -9,7 +9,7 @@
 #include "arki/query.h"
 #include "arki/query/progress.h"
 #include "arki/scan.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
@@ -261,7 +261,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                     auto segment =
                         segment_session->segment_from_relpath_and_format(
                             blob.filename, blob.format);
-                    auto reader = segment->data_reader(
+                    auto reader = segment->reader(
                         std::make_shared<core::lock::NullReadLock>());
                     md->sourceBlob().lock(reader);
                 }

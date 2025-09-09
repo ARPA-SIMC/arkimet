@@ -1,5 +1,4 @@
 #include "zip.h"
-#include "arki/segment/data.h"
 #include "arki/utils/sys.h"
 #include <cctype>
 

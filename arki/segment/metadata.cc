@@ -103,7 +103,7 @@ Index::Index(const Segment& segment)
 {
 }
 
-bool Index::read_all(std::shared_ptr<arki::segment::data::Reader> reader,
+bool Index::read_all(std::shared_ptr<arki::segment::Reader> reader,
                      metadata_dest_func dest)
 {
     core::File in(md_path, O_RDONLY);
@@ -134,7 +134,7 @@ bool Index::read_all(std::shared_ptr<arki::segment::data::Reader> reader,
 
 arki::metadata::Collection
 Index::query_data(const Matcher& matcher,
-                  std::shared_ptr<arki::segment::data::Reader> reader)
+                  std::shared_ptr<arki::segment::Reader> reader)
 {
     arki::metadata::Collection res;
 
@@ -186,23 +186,34 @@ void Index::query_summary(const Matcher& matcher, Summary& summary)
 
 Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
-    : segment::Reader(segment, lock), index(*segment)
+    : segment::Reader(segment, lock),
+      data_reader(segment->data()->reader(lock)), index(*segment)
 {
 }
 
 Reader::~Reader() {}
 
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    return data_reader->read(src);
+}
+stream::SendResult Reader::stream(const types::source::Blob& src,
+                                  StreamOutput& out)
+{
+    return data_reader->stream(src, out);
+}
+
 bool Reader::read_all(metadata_dest_func dest)
 {
-    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+    auto reader = m_segment->reader(lock);
     return index.read_all(reader, dest);
 }
 
 bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
 {
-    std::shared_ptr<arki::segment::data::Reader> reader;
+    std::shared_ptr<arki::segment::Reader> reader;
     if (q.with_data)
-        reader = m_segment->session().segment_data_reader(m_segment, lock);
+        reader = m_segment->reader(lock);
 
     auto mdbuf = index.query_data(q.matcher, reader);
 
@@ -339,7 +350,7 @@ arki::metadata::Collection Checker::scan()
         if (auto data_ts = m_data->timestamp())
         {
             // Metadata exists and it looks new enough: use it
-            auto data_reader = m_data->reader(lock);
+            auto reader = m_segment->reader(lock);
             std::filesystem::path basedir(m_segment->abspath().parent_path());
             sys::File in(md_abspath, O_RDONLY);
             arki::metadata::BinaryReader md_reader(in, basedir);
@@ -347,7 +358,7 @@ arki::metadata::Collection Checker::scan()
                 const auto& source = md->sourceBlob();
                 md->set_source(types::Source::createBlob(
                     segment().format(), segment().root(), segment().relpath(),
-                    source.offset, source.size, data_reader));
+                    source.offset, source.size, reader));
                 res.acquire(md);
                 return true;
             });

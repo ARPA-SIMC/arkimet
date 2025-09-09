@@ -19,12 +19,6 @@ class Fixer;
 class Data;
 struct RepackConfig;
 
-namespace data {
-class Reader;
-class Writer;
-class Checker;
-} // namespace data
-
 namespace metadata {
 class Reader;
 }

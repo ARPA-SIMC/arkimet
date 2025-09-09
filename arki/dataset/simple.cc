@@ -13,9 +13,9 @@ namespace arki {
 namespace dataset {
 namespace simple {
 
-std::shared_ptr<segment::Reader>
-SegmentSession::segment_reader(std::shared_ptr<const Segment> segment,
-                               std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::Reader> SegmentSession::create_segment_reader(
+    std::shared_ptr<const Segment> segment,
+    std::shared_ptr<const core::ReadLock> lock) const
 {
     auto md_abspath = sys::with_suffix(segment->abspath(), ".metadata");
     if (auto st_md = sys::stat(md_abspath))

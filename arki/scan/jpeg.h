@@ -16,8 +16,7 @@ const Validator& validator();
 
 class JPEGScanner : public Scanner
 {
-    void set_blob_source(Metadata& md,
-                         std::shared_ptr<segment::data::Reader> reader);
+    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
 protected:
     virtual std::shared_ptr<Metadata>
@@ -32,7 +31,7 @@ public:
     scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in,
                    metadata_dest_func dest) override;
-    bool scan_segment(std::shared_ptr<segment::data::Reader> reader,
+    bool scan_segment(std::shared_ptr<segment::Reader> reader,
                       metadata_dest_func dest) override;
     std::shared_ptr<Metadata>
     scan_singleton(const std::filesystem::path& abspath) override;

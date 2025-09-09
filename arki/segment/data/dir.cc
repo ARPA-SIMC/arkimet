@@ -390,8 +390,7 @@ bool Reader::scan_data(metadata_dest_func dest)
 {
     Scanner scanner(segment());
     scanner.list_files();
-    return scanner.scan(
-        static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
+    return scanner.scan(segment().reader(lock), dest);
 }
 
 sys::File Reader::open_src(const types::source::Blob& src)
@@ -583,9 +582,8 @@ bool BaseChecker<Data>::rescan_data(
         }
     }
 
-    auto reader = this->data().reader(lock);
-    return scanner.scan(reporter, static_pointer_cast<data::Reader>(reader),
-                        dest);
+    auto reader = this->segment().reader(lock);
+    return scanner.scan(reporter, reader, dest);
 }
 
 template <typename Data>
@@ -888,7 +886,7 @@ void Scanner::list_files()
     }
 }
 
-bool Scanner::scan(std::shared_ptr<data::Reader> reader,
+bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
                    metadata_dest_func dest)
 {
     // Scan them one by one
@@ -905,7 +903,7 @@ bool Scanner::scan(std::shared_ptr<data::Reader> reader,
 }
 
 bool Scanner::scan(std::function<void(const std::string&)> reporter,
-                   std::shared_ptr<data::Reader> reader,
+                   std::shared_ptr<segment::Reader> reader,
                    metadata_dest_func dest)
 {
     // Scan them one by one

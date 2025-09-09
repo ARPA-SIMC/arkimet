@@ -16,9 +16,12 @@ protected:
     /// Map segment absolute paths to possibly reusable reader instances
     // TODO: this is needed for rocky8 and ubuntu jammy. Use
     // std::filesystem::path when we can rely on newer GCC
-    mutable std::unordered_map<std::string,
-                               std::weak_ptr<segment::data::Reader>>
+    mutable std::unordered_map<std::string, std::weak_ptr<segment::Reader>>
         reader_pool;
+
+    virtual std::shared_ptr<segment::Reader>
+    create_segment_reader(std::shared_ptr<const Segment> segment,
+                          std::shared_ptr<const core::ReadLock> lock) const;
 
 public:
     DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
@@ -66,7 +69,7 @@ public:
 
     virtual std::shared_ptr<segment::Reader>
     segment_reader(std::shared_ptr<const Segment> segment,
-                   std::shared_ptr<const core::ReadLock> lock) const;
+                   std::shared_ptr<const core::ReadLock> lock) const final;
     virtual std::shared_ptr<segment::Writer>
     segment_writer(std::shared_ptr<const Segment> segment,
                    std::shared_ptr<core::AppendLock> lock) const;
@@ -74,9 +77,6 @@ public:
     segment_checker(std::shared_ptr<const Segment> segment,
                     std::shared_ptr<core::CheckLock> lock) const;
 
-    virtual std::shared_ptr<segment::data::Reader>
-    segment_data_reader(std::shared_ptr<const Segment> segment,
-                        std::shared_ptr<const core::ReadLock> lock) const;
     virtual std::shared_ptr<segment::data::Writer>
     segment_data_writer(std::shared_ptr<const Segment> segment,
                         const segment::WriterConfig& config) const;
@@ -96,12 +96,14 @@ public:
  */
 class ScanSession : public Session
 {
+protected:
+    std::shared_ptr<segment::Reader> create_segment_reader(
+        std::shared_ptr<const Segment> segment,
+        std::shared_ptr<const core::ReadLock> lock) const override;
+
 public:
     using Session::Session;
 
-    std::shared_ptr<segment::Reader>
-    segment_reader(std::shared_ptr<const Segment> segment,
-                   std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::Checker>
     segment_checker(std::shared_ptr<const Segment> segment,
                     std::shared_ptr<core::CheckLock> lock) const override;
@@ -112,12 +114,14 @@ public:
  */
 class MetadataSession : public Session
 {
+protected:
+    std::shared_ptr<segment::Reader> create_segment_reader(
+        std::shared_ptr<const Segment> segment,
+        std::shared_ptr<const core::ReadLock> lock) const override;
+
 public:
     using Session::Session;
 
-    std::shared_ptr<segment::Reader>
-    segment_reader(std::shared_ptr<const Segment> segment,
-                   std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::Checker>
     segment_checker(std::shared_ptr<const Segment> segment,
                     std::shared_ptr<core::CheckLock> lock) const override;

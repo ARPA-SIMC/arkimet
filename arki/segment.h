@@ -46,11 +46,6 @@ public:
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> data() const;
 
-    /// Instantiate the right Reader implementation for a segment that already
-    /// exists
-    std::shared_ptr<segment::data::Reader>
-    data_reader(std::shared_ptr<const core::ReadLock> lock) const;
-
     /// Instantiate the right Writer implementation for a segment that already
     /// exists
     std::shared_ptr<segment::data::Writer>
@@ -108,6 +103,13 @@ public:
      * given query.
      */
     virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
+
+    /// Read the data identified by a Blob source
+    virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
+
+    /// Stream the data identified by a Blob source
+    virtual stream::SendResult stream(const types::source::Blob& src,
+                                      StreamOutput& out) = 0;
 
 #if 0
     /**
@@ -401,6 +403,9 @@ class EmptyReader : public Reader
 public:
     using Reader::Reader;
 
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    stream::SendResult stream(const types::source::Blob& src,
+                              StreamOutput& out) override;
     bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;

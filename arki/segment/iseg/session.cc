@@ -26,8 +26,8 @@ Session::segment_from_relpath_and_format(const std::filesystem::path& relpath,
 }
 
 std::shared_ptr<segment::Reader>
-Session::segment_reader(std::shared_ptr<const arki::Segment> segment,
-                        std::shared_ptr<const core::ReadLock> lock) const
+Session::create_segment_reader(std::shared_ptr<const arki::Segment> segment,
+                               std::shared_ptr<const core::ReadLock> lock) const
 {
     auto data = segment->data();
     if (!data->timestamp())

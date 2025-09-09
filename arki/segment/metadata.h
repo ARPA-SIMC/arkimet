@@ -16,16 +16,17 @@ class Index
 public:
     explicit Index(const Segment& segment);
 
-    bool read_all(std::shared_ptr<arki::segment::data::Reader> reader,
+    bool read_all(std::shared_ptr<arki::segment::Reader> reader,
                   metadata_dest_func dest);
     arki::metadata::Collection
     query_data(const Matcher& matcher,
-               std::shared_ptr<arki::segment::data::Reader> reader);
+               std::shared_ptr<arki::segment::Reader> reader);
     void query_summary(const Matcher& matcher, Summary& summary);
 };
 
 class Reader : public segment::Reader
 {
+    std::shared_ptr<segment::data::Reader> data_reader;
     Index index;
 
 public:
@@ -33,6 +34,9 @@ public:
            std::shared_ptr<const core::ReadLock> lock);
     ~Reader();
 
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    stream::SendResult stream(const types::source::Blob& src,
+                              StreamOutput& out) override;
     bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;

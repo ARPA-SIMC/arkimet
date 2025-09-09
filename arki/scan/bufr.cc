@@ -3,7 +3,7 @@
 #include "arki/metadata/data.h"
 #include "arki/scan/mock.h"
 #include "arki/scan/validator.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"
@@ -293,7 +293,7 @@ BufrScanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool BufrScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader,
+bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
                                metadata_dest_func dest)
 {
     auto file = dballe::File::create(dballe::Encoding::BUFR,

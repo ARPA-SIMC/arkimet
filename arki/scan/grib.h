@@ -24,8 +24,8 @@ protected:
     grib_context* context = nullptr;
 
     void set_source_blob(grib_handle* gh,
-                         std::shared_ptr<segment::data::Reader> reader,
-                         FILE* in, Metadata& md);
+                         std::shared_ptr<segment::Reader> reader, FILE* in,
+                         Metadata& md);
     void set_source_inline(grib_handle* gh, Metadata& md);
 
     // Read from gh and add metadata to md
@@ -37,7 +37,7 @@ public:
     DataFormat name() const override { return DataFormat::GRIB; }
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_segment(std::shared_ptr<segment::data::Reader> reader,
+    bool scan_segment(std::shared_ptr<segment::Reader> reader,
                       metadata_dest_func dest) override;
     bool scan_pipe(core::NamedFileDescriptor& in,
                    metadata_dest_func dest) override;

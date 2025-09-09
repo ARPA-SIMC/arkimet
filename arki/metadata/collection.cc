@@ -8,7 +8,7 @@
 #include "arki/metadata/reader.h"
 #include "arki/metadata/sort.h"
 #include "arki/scan.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"

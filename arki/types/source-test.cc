@@ -1,6 +1,6 @@
 #include "arki/core/binary.h"
 #include "arki/core/lock.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/stream.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
@@ -160,9 +160,9 @@ void Tests::register_tests()
         auto segment = session->segment_from_relpath_and_format(
             "test.grib1", DataFormat::GRIB);
         auto reader =
-            segment->data_reader(std::make_shared<core::lock::NullReadLock>());
-        unique_ptr<source::Blob> o = source::Blob::create(
-            DataFormat::GRIB, "inbound", "test.grib1", 7218, 34960, reader);
+            segment->reader(std::make_shared<core::lock::NullReadLock>());
+        auto o = source::Blob::create(DataFormat::GRIB, "inbound", "test.grib1",
+                                      7218, 34960, reader);
         std::filesystem::remove("test.grib");
         {
             auto stream = StreamOutput::create(std::make_shared<File>(

@@ -11,6 +11,11 @@ namespace arki::segment::iseg {
 
 class Session : public segment::Session
 {
+protected:
+    std::shared_ptr<segment::Reader> create_segment_reader(
+        std::shared_ptr<const arki::Segment> segment,
+        std::shared_ptr<const core::ReadLock> lock) const override;
+
 public:
     using segment::Session::Session;
 
@@ -25,9 +30,6 @@ public:
     segment_from_relpath_and_format(const std::filesystem::path& relpath,
                                     DataFormat format) const override;
 
-    std::shared_ptr<segment::Reader>
-    segment_reader(std::shared_ptr<const arki::Segment> segment,
-                   std::shared_ptr<const core::ReadLock> lock) const override;
     std::shared_ptr<segment::Writer>
     segment_writer(std::shared_ptr<const arki::Segment> segment,
                    std::shared_ptr<core::AppendLock> lock) const override;

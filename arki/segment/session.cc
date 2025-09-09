@@ -106,8 +106,8 @@ Session::segment_from_relpath_and_format(const std::filesystem::path& relpath,
 }
 
 std::shared_ptr<segment::Reader>
-Session::segment_reader(std::shared_ptr<const Segment> segment,
-                        std::shared_ptr<const core::ReadLock> lock) const
+Session::create_segment_reader(std::shared_ptr<const Segment> segment,
+                               std::shared_ptr<const core::ReadLock> lock) const
 {
     // stat the metadata file, if it exists
     auto md_abspath = segment->abspath_metadata();
@@ -134,6 +134,20 @@ Session::segment_reader(std::shared_ptr<const Segment> segment,
 
     // Else scan the file as usual
     return std::make_shared<segment::scan::Reader>(segment, lock);
+}
+
+std::shared_ptr<segment::Reader>
+Session::segment_reader(std::shared_ptr<const Segment> segment,
+                        std::shared_ptr<const core::ReadLock> lock) const
+{
+    auto res = reader_pool.find(segment->abspath());
+    if (res == reader_pool.end() || res->second.expired())
+    {
+        auto reader                     = create_segment_reader(segment, lock);
+        reader_pool[segment->abspath()] = reader;
+        return reader;
+    }
+    return res->second.lock();
 }
 
 std::shared_ptr<segment::Writer>
@@ -178,20 +192,6 @@ Session::segment_checker(std::shared_ptr<const Segment> segment,
             "for segments that do not yet exist");
 }
 
-std::shared_ptr<segment::data::Reader>
-Session::segment_data_reader(std::shared_ptr<const Segment> segment,
-                             std::shared_ptr<const core::ReadLock> lock) const
-{
-    auto res = reader_pool.find(segment->abspath());
-    if (res == reader_pool.end() || res->second.expired())
-    {
-        auto reader                     = segment->data()->reader(lock);
-        reader_pool[segment->abspath()] = reader;
-        return reader;
-    }
-    return res->second.lock();
-}
-
 std::shared_ptr<segment::data::Writer>
 Session::segment_data_writer(std::shared_ptr<const Segment> segment,
                              const segment::WriterConfig& config) const
@@ -233,9 +233,9 @@ void Session::create_iseg(std::shared_ptr<Segment> segment,
     throw std::runtime_error("normal sessions cannot create iseg segments");
 }
 
-std::shared_ptr<segment::Reader>
-ScanSession::segment_reader(std::shared_ptr<const Segment> segment,
-                            std::shared_ptr<const core::ReadLock> lock) const
+std::shared_ptr<segment::Reader> ScanSession::create_segment_reader(
+    std::shared_ptr<const Segment> segment,
+    std::shared_ptr<const core::ReadLock> lock) const
 {
     return std::make_shared<segment::scan::Reader>(segment, lock);
 }
@@ -247,7 +247,7 @@ ScanSession::segment_checker(std::shared_ptr<const Segment> segment,
     return std::make_shared<segment::scan::Checker>(segment, lock);
 }
 
-std::shared_ptr<segment::Reader> MetadataSession::segment_reader(
+std::shared_ptr<segment::Reader> MetadataSession::create_segment_reader(
     std::shared_ptr<const Segment> segment,
     std::shared_ptr<const core::ReadLock> lock) const
 {

@@ -3,7 +3,7 @@
 #include "arki/metadata/data.h"
 #include "arki/scan/mock.h"
 #include "arki/scan/validator.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -75,7 +75,7 @@ const Validator& validator() { return odimh5_validator; }
  */
 
 void OdimScanner::set_blob_source(Metadata& md,
-                                  std::shared_ptr<segment::data::Reader> reader)
+                                  std::shared_ptr<segment::Reader> reader)
 {
     struct stat st;
     sys::stat(reader->segment().abspath(), st);
@@ -107,7 +107,7 @@ OdimScanner::scan_singleton(const std::filesystem::path& abspath)
     return scan_h5_file(abspath);
 }
 
-bool OdimScanner::scan_segment(std::shared_ptr<segment::data::Reader> reader,
+bool OdimScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
                                metadata_dest_func dest)
 {
     // If the file is empty, skip it

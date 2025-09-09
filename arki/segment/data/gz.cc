@@ -174,7 +174,7 @@ template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     auto scanner = arki::scan::Scanner::get_scanner(this->segment().format());
     compress::TempUnzip uncompressed(this->segment().abspath());
-    return scanner->scan_segment(this->shared_from_this(), dest);
+    return scanner->scan_segment(this->segment().reader(this->lock), dest);
 }
 
 template <typename Data>

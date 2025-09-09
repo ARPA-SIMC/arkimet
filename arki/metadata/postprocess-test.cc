@@ -4,7 +4,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/reader.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/stream.h"
 #include "arki/stream/filter.h"
 #include "arki/tests/tests.h"

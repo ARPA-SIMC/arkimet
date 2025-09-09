@@ -3,6 +3,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
 #include "arki/query.h"
+#include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -201,12 +202,6 @@ std::shared_ptr<segment::Data> Segment::data() const
     }
 }
 
-std::shared_ptr<segment::data::Reader>
-Segment::data_reader(std::shared_ptr<const core::ReadLock> lock) const
-{
-    return m_session->segment_data_reader(shared_from_this(), lock);
-}
-
 std::shared_ptr<segment::data::Writer>
 Segment::data_writer(const segment::WriterConfig& config) const
 {
@@ -254,6 +249,16 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 /*
  * EmptyReader
  */
+
+std::vector<uint8_t> EmptyReader::read(const types::source::Blob& src)
+{
+    throw std::runtime_error("Cannot read Blob data from an empty reader");
+}
+stream::SendResult EmptyReader::stream(const types::source::Blob& src,
+                                       StreamOutput& out)
+{
+    throw std::runtime_error("Cannot stream Blob data from an empty reader");
+}
 
 bool EmptyReader::read_all(metadata_dest_func dest) { return true; }
 

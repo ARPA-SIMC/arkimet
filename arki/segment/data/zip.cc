@@ -314,7 +314,7 @@ bool Reader::scan_data(metadata_dest_func dest)
         std::vector<uint8_t> data = zip.get(span);
         auto md                   = scanner->scan_data(data);
         md->set_source(
-            Source::createBlob(shared_from_this(), span.offset, span.size));
+            Source::createBlob(segment().reader(lock), span.offset, span.size));
         if (!dest(move(md)))
             return false;
     }
