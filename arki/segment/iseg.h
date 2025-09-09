@@ -83,9 +83,8 @@ public:
     Checker& checker() { return *static_cast<Checker*>(m_checker.get()); }
 
     MarkRemovedResult mark_removed(const std::set<uint64_t>& offsets) override;
-    ReorderResult
-    reorder(arki::metadata::Collection& mds,
-            const segment::data::RepackConfig& repack_config) override;
+    ReorderResult reorder(arki::metadata::Collection& mds,
+                          const segment::RepackConfig& repack_config) override;
     size_t remove(bool with_data) override;
     ConvertResult tar() override;
     ConvertResult zip() override;

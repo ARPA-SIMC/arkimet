@@ -425,9 +425,8 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
     return res;
 }
 
-Fixer::ReorderResult
-Fixer::reorder(arki::metadata::Collection& mds,
-               const segment::data::RepackConfig& repack_config)
+Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
+                                    const segment::RepackConfig& repack_config)
 {
     ReorderResult res;
     auto& index        = checker().index();

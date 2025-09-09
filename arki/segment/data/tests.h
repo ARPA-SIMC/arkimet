@@ -13,7 +13,7 @@ namespace tests {
 template <class Data, class FixtureData> struct SegmentFixture : public Fixture
 {
     FixtureData td;
-    segment::data::RepackConfig repack_config;
+    segment::RepackConfig repack_config;
     metadata::Collection seg_mds;
     std::shared_ptr<segment::Session> session;
     std::shared_ptr<Segment> segment;
@@ -21,10 +21,9 @@ template <class Data, class FixtureData> struct SegmentFixture : public Fixture
     std::shared_ptr<segment::data::Checker> create();
     std::shared_ptr<segment::data::Checker> create(metadata::Collection mds);
     std::shared_ptr<segment::data::Checker>
-    create(const segment::data::RepackConfig& cfg);
+    create(const segment::RepackConfig& cfg);
 
-    SegmentFixture(
-        const segment::data::RepackConfig& cfg = segment::data::RepackConfig())
+    SegmentFixture(const segment::RepackConfig& cfg = segment::RepackConfig())
         : repack_config(cfg)
     {
     }

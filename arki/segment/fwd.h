@@ -17,12 +17,12 @@ class Writer;
 class Checker;
 class Fixer;
 class Data;
+struct RepackConfig;
 
 namespace data {
 class Reader;
 class Writer;
 class Checker;
-struct RepackConfig;
 } // namespace data
 
 namespace metadata {

@@ -66,12 +66,6 @@ void Writer::PendingMetadata::set_source()
         md.drop_cached_data();
 }
 
-RepackConfig::RepackConfig() {}
-RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
-    : gz_group_size(gz_group_size), test_flags(test_flags)
-{
-}
-
 std::shared_ptr<segment::data::Checker> Checker::tar(Collection& mds)
 {
     auto checker = segment::data::tar::Data::create(segment(), mds);

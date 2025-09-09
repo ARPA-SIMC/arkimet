@@ -21,7 +21,7 @@ int main(int argc, const char* argv[])
         auto mds = checker->scan();
         std::reverse(mds.begin(), mds.end());
         auto fixer = checker->fixer();
-        fixer->reorder(mds, arki::segment::data::RepackConfig());
+        fixer->reorder(mds, arki::segment::RepackConfig());
     }
     return 0;
 }

@@ -232,6 +232,10 @@ std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 
 namespace segment {
 
+/*
+ * Reader
+ */
+
 Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
     : m_segment(segment), lock(lock)
@@ -247,6 +251,10 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 }
 #endif
 
+/*
+ * EmptyReader
+ */
+
 bool EmptyReader::read_all(metadata_dest_func dest) { return true; }
 
 bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
@@ -255,6 +263,10 @@ bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
 }
 
 void EmptyReader::query_summary(const Matcher& matcher, Summary& summary) {}
+
+/*
+ * Writer
+ */
 
 Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
@@ -273,6 +285,20 @@ Checker::Checker(std::shared_ptr<const Segment> segment,
 Checker::~Checker() {}
 
 void Checker::update_data() { m_data = m_segment->data(); }
+
+/*
+ * RepackConfig
+ */
+
+RepackConfig::RepackConfig() {}
+RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
+    : gz_group_size(gz_group_size), test_flags(test_flags)
+{
+}
+
+/*
+ * Fixer
+ */
 
 Fixer::Fixer(std::shared_ptr<Checker> checker,
              std::shared_ptr<core::CheckWriteLock> lock)

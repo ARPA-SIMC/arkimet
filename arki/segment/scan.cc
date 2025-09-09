@@ -125,7 +125,7 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
     auto mds  = checker().scan();
     // Remove matching offsets
     mds       = mds.without_data(offsets);
-    auto rres = reorder(mds, segment::data::RepackConfig());
+    auto rres = reorder(mds, segment::RepackConfig());
 
     res.segment_mtime = rres.segment_mtime;
     // TODO: add a Collection method to compute data timespan without building
@@ -136,9 +136,8 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
     return res;
 }
 
-Fixer::ReorderResult
-Fixer::reorder(arki::metadata::Collection& mds,
-               const segment::data::RepackConfig& repack_config)
+Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
+                                    const segment::RepackConfig& repack_config)
 {
     ReorderResult res;
     res.size_pre      = data().size();

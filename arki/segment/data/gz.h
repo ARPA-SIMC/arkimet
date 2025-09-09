@@ -87,9 +87,8 @@ public:
     std::shared_ptr<segment::data::Writer>
     writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(
-        arki::metadata::Collection& mds,
-        const data::RepackConfig& cfg = data::RepackConfig()) override
+    void create_segment(arki::metadata::Collection& mds,
+                        const RepackConfig& cfg = RepackConfig()) override
     {
         create(*m_segment, mds, cfg);
     }
@@ -131,9 +130,8 @@ struct Data : public gz::Data
     std::shared_ptr<segment::data::Writer>
     writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(
-        arki::metadata::Collection& mds,
-        const data::RepackConfig& cfg = data::RepackConfig()) override
+    void create_segment(arki::metadata::Collection& mds,
+                        const RepackConfig& cfg = RepackConfig()) override
     {
         create(*m_segment, mds, cfg);
     }

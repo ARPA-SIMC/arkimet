@@ -185,7 +185,7 @@ template <typename Base> void Tests<Base>::register_tests()
 
         {
             auto fixer = checker->fixer();
-            auto res = fixer->reorder(reversed, segment::data::RepackConfig());
+            auto res   = fixer->reorder(reversed, segment::RepackConfig());
             wassert(actual(res.segment_mtime) > f.initial_mtime);
             // TODO: test size changes (requires holes)
             // TODO: res.size_pre = 0;

@@ -217,6 +217,26 @@ public:
     virtual std::shared_ptr<Fixer> fixer() = 0;
 };
 
+struct RepackConfig
+{
+    /**
+     * When repacking gzidx segments, how many data items are compressed
+     * together.
+     */
+    unsigned gz_group_size = 512;
+
+    /**
+     * Turn on perturbating repack behaviour during tests
+     */
+    unsigned test_flags = 0;
+
+    /// During repack, move all data to a different location than it was before
+    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
+
+    RepackConfig();
+    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags = 0);
+};
+
 class Fixer : public std::enable_shared_from_this<Fixer>
 {
 protected:
@@ -291,7 +311,7 @@ public:
      */
     virtual ReorderResult
     reorder(arki::metadata::Collection& mds,
-            const segment::data::RepackConfig& repack_config) = 0;
+            const segment::RepackConfig& repack_config) = 0;
 
     /**
      * Convert the segment to use tar for the data.

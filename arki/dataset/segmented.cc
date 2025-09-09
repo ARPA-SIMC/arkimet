@@ -245,7 +245,7 @@ segment::Fixer::ReorderResult CheckerSegment::repack(unsigned test_flags)
     metadata::Collection mds = segment_checker->scan();
     mds.sort_segment();
 
-    segment::data::RepackConfig repack_config;
+    segment::RepackConfig repack_config;
     repack_config.gz_group_size = dataset().gz_group_size;
     repack_config.test_flags    = test_flags;
 
@@ -683,7 +683,7 @@ void Checker::test_swap_data(const std::filesystem::path& relpath,
 
     auto pft = segment->data()->preserve_mtime();
 
-    segment::data::RepackConfig repack_config;
+    segment::RepackConfig repack_config;
     repack_config.gz_group_size = dataset().gz_group_size;
 
     auto fixer = csegment->segment_checker->fixer();

@@ -23,28 +23,6 @@
 
 namespace arki::segment {
 
-namespace data {
-struct RepackConfig
-{
-    /**
-     * When repacking gzidx segments, how many data items are compressed
-     * together.
-     */
-    unsigned gz_group_size = 512;
-
-    /**
-     * Turn on perturbating repack behaviour during tests
-     */
-    unsigned test_flags = 0;
-
-    /// During repack, move all data to a different location than it was before
-    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
-
-    RepackConfig();
-    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags = 0);
-};
-} // namespace data
-
 /**
  * Interface for managing a segment.
  *
@@ -145,9 +123,8 @@ public:
      * Replace metadata sources with pointers to the data in the newly created
      * segment
      */
-    virtual void
-    create_segment(arki::metadata::Collection& mds,
-                   const data::RepackConfig& cfg = data::RepackConfig()) = 0;
+    virtual void create_segment(arki::metadata::Collection& mds,
+                                const RepackConfig& cfg = RepackConfig()) = 0;
 
     /**
      * Preserve segment mtime
