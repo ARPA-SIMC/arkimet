@@ -3,7 +3,7 @@
 
 #include <arki/core/time.h>
 #include <arki/dataset/local.h>
-#include <arki/segment/data.h>
+#include <arki/segment.h>
 
 namespace arki::dataset::segmented {
 struct TestHooks;

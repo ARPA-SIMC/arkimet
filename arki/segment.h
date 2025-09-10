@@ -44,9 +44,6 @@ public:
     std::shared_ptr<segment::Checker>
     checker(std::shared_ptr<core::CheckLock> lock) const;
 
-    /// Instantiate the right Data for this segment
-    std::shared_ptr<segment::Data> data() const;
-
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip
      * extensions
@@ -164,7 +161,6 @@ class Checker : public std::enable_shared_from_this<Checker>
 protected:
     std::shared_ptr<core::CheckLock> lock;
     std::shared_ptr<const Segment> m_segment;
-    std::shared_ptr<segment::Data> m_data;
 
 public:
     struct FsckResult
@@ -184,8 +180,6 @@ public:
     virtual ~Checker();
 
     const Segment& segment() const { return *m_segment; }
-    const segment::Data& data() const { return *m_data; }
-    segment::Data& data() { return *m_data; }
 
     /// Returns true if the segment actually contains data
     virtual bool has_data() const = 0;
@@ -206,14 +200,6 @@ public:
 
     /// Returns true if the segment can be compressed
     virtual bool allows_compress() const = 0;
-
-    /**
-     * Redo detection of the data accessor.
-     *
-     * Call this, for example, after converting the segment to a different
-     * format.
-     */
-    void update_data();
 
     /**
      * Return the metadata for the contents of the whole segment
@@ -309,8 +295,6 @@ public:
     const Segment& segment() const { return m_checker->segment(); }
     const Checker& checker() const { return *m_checker; }
     Checker& checker() { return *m_checker; }
-    const segment::Data& data() const { return m_checker->data(); }
-    segment::Data& data() { return m_checker->data(); }
 
     /**
      * Mark the data at the given offsets as removed.
@@ -373,7 +357,7 @@ public:
      *
      * No locking is performed on the destination.
      */
-    virtual void move(std::shared_ptr<arki::Segment> dest);
+    virtual void move(std::shared_ptr<arki::Segment> dest) = 0;
 
     /**
      * Move the segment data to a new location, discarding the segment metadata.
@@ -382,7 +366,7 @@ public:
      *
      * No locking is performed on the destination.
      */
-    virtual void move_data(std::shared_ptr<arki::Segment> dest);
+    virtual void move_data(std::shared_ptr<arki::Segment> dest) = 0;
 
     /**
      * Replace the segment index with the metadata in the given collection.
@@ -399,13 +383,21 @@ public:
      */
     virtual void test_mark_all_removed() = 0;
 
-    virtual void test_corrupt_data(unsigned data_idx);
-    virtual void test_truncate_data(unsigned data_idx);
+    /**
+     * Corrupt the data at the given index, so that it shows up as corrupted in
+     * an accurate scan.
+     */
+    virtual void test_corrupt_data(unsigned data_idx) = 0;
+
+    /**
+     * Truncte the segment right before the strt of the data at the given index
+     */
+    virtual void test_truncate_data(unsigned data_idx) = 0;
 
     /**
      * Set the modification time of everything in the segment
      */
-    virtual void test_touch_contents(time_t timestamp);
+    virtual void test_touch_contents(time_t timestamp) = 0;
 
     /**
      * All data in the segment except the `data_idx`-one are shifted backwards
@@ -435,7 +427,8 @@ public:
      * This is used to simulate anomalies in the dataset during tests.
      */
     virtual arki::metadata::Collection
-    test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx = 0);
+    test_change_metadata(std::shared_ptr<Metadata> md,
+                         unsigned data_idx = 0) = 0;
 };
 
 /**

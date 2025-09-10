@@ -26,6 +26,7 @@ public:
 
 class Reader : public segment::Reader
 {
+    std::shared_ptr<segment::Data> data;
     std::shared_ptr<segment::data::Reader> data_reader;
     Index index;
 
@@ -45,6 +46,8 @@ public:
 class Writer : public segment::Writer
 {
 protected:
+    std::shared_ptr<segment::Data> data;
+
     arki::metadata::Collection mds;
     Summary sum;
 
@@ -65,8 +68,19 @@ public:
 
 class Checker : public segment::Checker
 {
+    std::shared_ptr<segment::Data> data;
+
+    /**
+     * Redo detection of the data accessor.
+     *
+     * Call this, for example, after converting the segment to a different
+     * format.
+     */
+    void update_data();
+
 public:
-    using segment::Checker::Checker;
+    Checker(std::shared_ptr<const Segment> segment,
+            std::shared_ptr<core::CheckLock> lock);
 
     bool has_data() const override;
     std::optional<time_t> timestamp() const override;
@@ -78,12 +92,24 @@ public:
     bool scan_data(segment::Reporter& reporter,
                    metadata_dest_func dest) override;
     std::shared_ptr<segment::Fixer> fixer() override;
+
+    friend class Fixer;
 };
 
 class Fixer : public segment::Fixer
 {
 public:
-    using segment::Fixer::Fixer;
+    Fixer(std::shared_ptr<Checker> checker,
+          std::shared_ptr<core::CheckWriteLock> lock);
+
+    const metadata::Checker& checker() const
+    {
+        return *std::static_pointer_cast<const metadata::Checker>(m_checker);
+    }
+    metadata::Checker& checker()
+    {
+        return *std::static_pointer_cast<metadata::Checker>(m_checker);
+    }
 
     MarkRemovedResult mark_removed(const std::set<uint64_t>& offsets) override;
     ReorderResult reorder(arki::metadata::Collection& mds,
@@ -96,11 +122,16 @@ public:
     void reindex(arki::metadata::Collection& mds) override;
     void move(std::shared_ptr<arki::Segment> dest) override;
     void move_data(std::shared_ptr<arki::Segment> dest) override;
-    void test_touch_contents(time_t timestamp) override;
     void test_mark_all_removed() override;
+    void test_corrupt_data(unsigned data_idx) override;
+    void test_truncate_data(unsigned data_idx) override;
+    void test_touch_contents(time_t timestamp) override;
     void test_make_overlap(unsigned overlap_size,
                            unsigned data_idx = 1) override;
     void test_make_hole(unsigned hole_size, unsigned data_idx = 0) override;
+    arki::metadata::Collection
+    test_change_metadata(std::shared_ptr<Metadata> md,
+                         unsigned data_idx = 0) override;
 };
 
 } // namespace arki::segment::metadata

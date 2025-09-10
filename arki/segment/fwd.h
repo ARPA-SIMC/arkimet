@@ -16,7 +16,6 @@ struct WriterConfig;
 class Writer;
 class Checker;
 class Fixer;
-class Data;
 struct RepackConfig;
 
 namespace metadata {

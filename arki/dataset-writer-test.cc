@@ -6,7 +6,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/query.h"
-#include "arki/segment/data/dir.h"
 #include "arki/stream.h"
 #include "arki/types/note.h"
 #include "arki/types/reftime.h"

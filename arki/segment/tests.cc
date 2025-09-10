@@ -37,12 +37,16 @@ void fill_metadata_segment(std::shared_ptr<const Segment> segment,
 
 void ActualSegment::has_data()
 {
-    wassert_true((bool)_actual->data()->timestamp());
+    wassert_true(
+        (bool)_actual->checker(std::make_shared<core::lock::NullCheckLock>())
+            ->timestamp());
 }
 
 void ActualSegment::not_has_data()
 {
-    wassert_false((bool)_actual->data()->timestamp());
+    wassert_false(
+        (bool)_actual->checker(std::make_shared<core::lock::NullCheckLock>())
+            ->timestamp());
 }
 
 void ActualSegment::has_metadata()
@@ -67,7 +71,8 @@ void ActualSegment::not_has_summary()
 
 void ActualSegment::data_mtime_equal(time_t value)
 {
-    auto ts = _actual->data()->timestamp();
+    auto ts = _actual->checker(std::make_shared<core::lock::NullCheckLock>())
+                  ->timestamp();
     if (!ts)
     {
         std::stringstream buf;
@@ -87,7 +92,8 @@ void ActualSegment::data_mtime_equal(time_t value)
 
 void ActualSegment::data_mtime_newer_than(time_t value)
 {
-    auto ts = _actual->data()->timestamp();
+    auto ts = _actual->checker(std::make_shared<core::lock::NullCheckLock>())
+                  ->timestamp();
     if (!ts)
     {
         std::stringstream ss;

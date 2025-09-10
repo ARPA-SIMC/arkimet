@@ -12,9 +12,6 @@
 #include "arki/libconfig.h"
 #include "arki/nag.h"
 #include "arki/scan.h"
-#include "arki/segment/data.h"
-#include "arki/segment/data/dir.h"
-#include "arki/segment/data/fd.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <memory>

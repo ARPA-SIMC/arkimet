@@ -29,7 +29,7 @@ std::shared_ptr<segment::Reader>
 Session::create_segment_reader(std::shared_ptr<const arki::Segment> segment,
                                std::shared_ptr<const core::ReadLock> lock) const
 {
-    auto data = segment->data();
+    auto data = segment::Data::create(segment);
     if (!data->timestamp())
     {
         nag::warning("%s: segment data is not available",
@@ -59,7 +59,7 @@ Session::segment_checker(std::shared_ptr<const arki::Segment> segment,
 void Session::create_iseg(std::shared_ptr<arki::Segment> segment,
                           arki::metadata::Collection& mds) const
 {
-    auto data = segment->data();
+    auto data = segment::Data::create(segment);
     data->create_segment(mds);
     // TODO: implement data->read_lock() and data->check_lock()
     auto lock    = std::make_shared<core::lock::NullCheckLock>();

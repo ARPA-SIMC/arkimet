@@ -74,11 +74,6 @@ Segment::checker(std::shared_ptr<core::CheckLock> lock) const
     return session().segment_checker(shared_from_this(), lock);
 }
 
-std::shared_ptr<segment::Data> Segment::data() const
-{
-    return segment::Data::create(shared_from_this());
-}
-
 std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 {
     const auto& native = pathname.native();
@@ -149,13 +144,11 @@ Writer::~Writer() {}
 
 Checker::Checker(std::shared_ptr<const Segment> segment,
                  std::shared_ptr<core::CheckLock> lock)
-    : lock(lock), m_segment(segment), m_data(segment->data())
+    : lock(lock), m_segment(segment)
 {
 }
 
 Checker::~Checker() {}
-
-void Checker::update_data() { m_data = m_segment->data(); }
 
 /*
  * RepackConfig
@@ -181,7 +174,7 @@ Fixer::~Fixer() {}
 
 time_t Fixer::get_data_mtime_after_fix(const char* operation_desc)
 {
-    auto ts = data().timestamp();
+    auto ts = checker().timestamp();
     if (!ts)
     {
         std::stringstream buf;
@@ -201,51 +194,6 @@ size_t Fixer::remove_ifexists(const std::filesystem::path& path)
         sys::unlink(path);
     }
     return res;
-}
-
-void Fixer::move(std::shared_ptr<arki::Segment> dest)
-{
-    auto data_checker = data().checker();
-    data_checker->move(dest->session().shared_from_this(), dest->relpath());
-}
-
-void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
-{
-    auto data_checker = data().checker();
-    data_checker->move(dest->session().shared_from_this(), dest->relpath());
-}
-
-void Fixer::test_corrupt_data(unsigned data_idx)
-{
-    arki::metadata::Collection mds = m_checker->scan();
-    data().checker()->test_corrupt(mds, data_idx);
-}
-
-void Fixer::test_truncate_data(unsigned data_idx)
-{
-    arki::metadata::Collection mds = m_checker->scan();
-    const auto& s                  = mds[data_idx].sourceBlob();
-    data().checker()->test_truncate(s.offset);
-}
-
-void Fixer::test_touch_contents(time_t timestamp)
-{
-    data().checker()->test_touch_contents(timestamp);
-}
-
-arki::metadata::Collection
-Fixer::test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx)
-{
-    auto pmt = data().preserve_mtime();
-
-    arki::metadata::Collection mds = m_checker->scan();
-    md->set_source(
-        std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    md->sourceBlob().unlock();
-    mds.replace(data_idx, md);
-
-    reindex(mds);
-    return mds;
 }
 
 } // namespace segment

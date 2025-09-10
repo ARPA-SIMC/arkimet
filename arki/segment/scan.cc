@@ -15,7 +15,8 @@ namespace arki::segment::scan {
 
 Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
-    : segment::Reader(segment, lock), data_reader(segment->data()->reader(lock))
+    : segment::Reader(segment, lock), data(segment::Data::create(segment)),
+      data_reader(data->reader(lock))
 {
 }
 
@@ -66,13 +67,21 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     });
 }
 
+/*
+ * Writer
+ */
+
+Writer::Writer(std::shared_ptr<const Segment> segment,
+               std::shared_ptr<core::AppendLock> lock)
+    : segment::Writer(segment, lock), data(Data::create(segment))
+{
+}
 Writer::~Writer() {}
 
 std::shared_ptr<segment::data::Writer>
 Writer::get_data_writer(const segment::WriterConfig& config) const
 {
     std::filesystem::create_directories(m_segment->abspath().parent_path());
-    auto data = m_segment->data();
     return data->writer(config);
 }
 
@@ -98,14 +107,14 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
         AcquireResult res;
         res.count_ok      = 0;
         res.count_failed  = batch.size();
-        res.segment_mtime = segment().data()->timestamp().value_or(0);
+        res.segment_mtime = data->timestamp().value_or(0);
         res.data_timespan = core::Interval();
         return res;
     }
 
     data_writer->commit();
 
-    auto ts = segment().data()->timestamp();
+    auto ts = data->timestamp();
     if (!ts)
         throw std::runtime_error(segment().abspath().native() +
                                  ": segment not found after importing");
@@ -122,16 +131,24 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
  * Checker
  */
 
-bool Checker::has_data() const { return data().exists_on_disk(); }
-std::optional<time_t> Checker::timestamp() const { return data().timestamp(); }
-bool Checker::allows_tar() const { return !data().single_file(); }
-bool Checker::allows_zip() const { return !data().single_file(); }
-bool Checker::allows_compress() const { return data().single_file(); }
+Checker::Checker(std::shared_ptr<const Segment> segment,
+                 std::shared_ptr<core::CheckLock> lock)
+    : segment::Checker(segment, lock), data(Data::create(segment))
+{
+}
+
+void Checker::update_data() { data = Data::create(m_segment); }
+
+bool Checker::has_data() const { return data->exists_on_disk(); }
+std::optional<time_t> Checker::timestamp() const { return data->timestamp(); }
+bool Checker::allows_tar() const { return !data->single_file(); }
+bool Checker::allows_zip() const { return !data->single_file(); }
+bool Checker::allows_compress() const { return data->single_file(); }
 
 arki::metadata::Collection Checker::scan()
 {
     // Rescan the file
-    auto data_reader = m_data->reader(lock);
+    auto data_reader = data->reader(lock);
     arki::metadata::Collection res;
     data_reader->scan_data(res.inserter_func());
     return res;
@@ -141,8 +158,8 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = m_data->checker();
-    auto ts_data      = m_data->timestamp();
+    auto data_checker = data->checker();
+    auto ts_data      = data->timestamp();
     if (!ts_data)
     {
         reporter.info(segment(), "segment data not found on disk");
@@ -150,7 +167,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
-    res.size  = data().size();
+    res.size  = data->size();
 
     auto mds = scan();
 
@@ -183,7 +200,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 
 bool Checker::scan_data(segment::Reporter& reporter, metadata_dest_func dest)
 {
-    auto data_checker = m_data->checker();
+    auto data_checker = data->checker();
     return data_checker->rescan_data(
         [&](const std::string& message) { reporter.info(segment(), message); },
         lock, dest);
@@ -191,7 +208,19 @@ bool Checker::scan_data(segment::Reporter& reporter, metadata_dest_func dest)
 
 std::shared_ptr<segment::Fixer> Checker::fixer()
 {
-    return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
+    return std::make_shared<Fixer>(
+        std::static_pointer_cast<scan::Checker>(shared_from_this()),
+        lock->write_lock());
+}
+
+/*
+ * Fixer
+ */
+
+Fixer::Fixer(std::shared_ptr<scan::Checker> checker,
+             std::shared_ptr<core::CheckWriteLock> lock)
+    : segment::Fixer(checker, lock)
+{
 }
 
 Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
@@ -216,12 +245,12 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
                                     const segment::RepackConfig& repack_config)
 {
     ReorderResult res;
-    res.size_pre      = data().size();
+    res.size_pre      = checker().data->size();
     // Write out the data with the new order
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
     auto p_repack     = data_checker->repack(mds, repack_config);
     p_repack.commit();
-    res.size_post     = data().size();
+    res.size_post     = checker().data->size();
     res.segment_mtime = get_data_mtime_after_fix("reorder");
     return res;
 }
@@ -236,7 +265,7 @@ size_t Fixer::remove(bool with_data)
 
 size_t Fixer::remove_data()
 {
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
     return data_checker->remove();
 }
 
@@ -245,7 +274,7 @@ Fixer::ConvertResult Fixer::tar()
     ConvertResult res;
     if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".tar")))
     {
-        auto ts = data().timestamp();
+        auto ts = checker().data->timestamp();
         if (!ts)
         {
             std::stringstream buf;
@@ -256,9 +285,9 @@ Fixer::ConvertResult Fixer::tar()
         res.segment_mtime = ts.value();
         return res;
     }
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -279,7 +308,7 @@ Fixer::ConvertResult Fixer::zip()
     ConvertResult res;
     if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".zip")))
     {
-        auto ts = data().timestamp();
+        auto ts = checker().data->timestamp();
         if (!ts)
         {
             std::stringstream buf;
@@ -290,9 +319,9 @@ Fixer::ConvertResult Fixer::zip()
         res.segment_mtime = ts.value();
         return res;
     }
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -315,7 +344,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         std::filesystem::exists(
             sys::with_suffix(segment().abspath(), ".gz.idx")))
     {
-        auto ts = data().timestamp();
+        auto ts = checker().data->timestamp();
         if (!ts)
         {
             std::stringstream buf;
@@ -326,9 +355,9 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         res.segment_mtime = ts.value();
         return res;
     }
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
 
     // Rescan file and sort for repacking
     auto mds = checker().scan();
@@ -349,23 +378,69 @@ void Fixer::reindex(arki::metadata::Collection&)
     // Nothing to do, since we do not have an index
 }
 
+void Fixer::move(std::shared_ptr<arki::Segment> dest)
+{
+    auto data_checker = checker().data->checker();
+    data_checker->move(dest->session().shared_from_this(), dest->relpath());
+}
+
+void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
+{
+    auto data_checker = checker().data->checker();
+    data_checker->move(dest->session().shared_from_this(), dest->relpath());
+}
+
 void Fixer::test_mark_all_removed()
 {
     // Nothing to do, since we do not have an index
 }
 
+void Fixer::test_corrupt_data(unsigned data_idx)
+{
+    arki::metadata::Collection mds = checker().scan();
+    checker().data->checker()->test_corrupt(mds, data_idx);
+}
+
+void Fixer::test_truncate_data(unsigned data_idx)
+{
+    arki::metadata::Collection mds = checker().scan();
+    const auto& s                  = mds[data_idx].sourceBlob();
+    auto pft                       = checker().data->preserve_mtime();
+    checker().data->checker()->test_truncate(s.offset);
+}
+
+void Fixer::test_touch_contents(time_t timestamp)
+{
+    checker().data->checker()->test_touch_contents(timestamp);
+}
+
 void Fixer::test_make_overlap(unsigned overlap_size, unsigned data_idx)
 {
     auto mds          = checker().scan();
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
     data_checker->test_make_overlap(mds, overlap_size, data_idx);
 }
 
 void Fixer::test_make_hole(unsigned hole_size, unsigned data_idx)
 {
     auto mds          = checker().scan();
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
     data_checker->test_make_hole(mds, hole_size, data_idx);
+}
+
+arki::metadata::Collection
+Fixer::test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx)
+{
+    auto pmt = checker().data->preserve_mtime();
+
+    arki::metadata::Collection mds = m_checker->scan();
+    md->set_source(
+        std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md->sourceBlob().unlock();
+    mds.replace(data_idx, md);
+
+    reindex(mds);
+    return mds;
 }
 
 } // namespace arki::segment::scan

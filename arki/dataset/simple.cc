@@ -1,6 +1,7 @@
 #include "simple.h"
 #include "arki/dataset/lock.h"
 #include "arki/nag.h"
+#include "arki/segment/data.h"
 #include "arki/segment/metadata.h"
 #include "simple/checker.h"
 #include "simple/reader.h"
@@ -20,7 +21,7 @@ std::shared_ptr<segment::Reader> SegmentSession::create_segment_reader(
     auto md_abspath = sys::with_suffix(segment->abspath(), ".metadata");
     if (auto st_md = sys::stat(md_abspath))
     {
-        auto data = segment->data();
+        auto data = segment::Data::create(segment);
         if (auto ts = data->timestamp())
         {
             if (st_md->st_mtime < ts.value())

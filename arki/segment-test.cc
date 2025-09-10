@@ -202,7 +202,7 @@ template <typename Base> void Tests<Base>::register_tests()
             auto res   = fixer->tar();
             wassert(actual(res.segment_mtime) > f.initial_mtime);
         }
-        auto data = segment->data();
+        auto data = segment::Data::create(segment);
         wassert_true(dynamic_pointer_cast<segment::data::tar::Data>(data));
     });
 
@@ -215,7 +215,7 @@ template <typename Base> void Tests<Base>::register_tests()
             auto res   = fixer->zip();
             wassert(actual(res.segment_mtime) > f.initial_mtime);
         }
-        auto data = segment->data();
+        auto data = segment::Data::create(segment);
         wassert_true(dynamic_pointer_cast<segment::data::zip::Data>(data));
     });
 
@@ -229,7 +229,7 @@ template <typename Base> void Tests<Base>::register_tests()
             wassert(actual(res.segment_mtime) > f.initial_mtime);
             wassert(actual(res.size_pre) > res.size_post);
         }
-        auto data = segment->data();
+        auto data = segment::Data::create(segment);
         wassert_true(dynamic_pointer_cast<segment::data::gz::Data>(data));
     });
 
@@ -239,7 +239,7 @@ template <typename Base> void Tests<Base>::register_tests()
             segment->checker(std::make_shared<core::lock::NullCheckLock>());
         {
             auto fixer = checker->fixer();
-            auto res   = fixer->remove(false);
+            /*auto res   =*/fixer->remove(false);
             // TODO: check that res is the previous size of the indices
         }
         wassert(actual(segment).data_mtime_equal(f.initial_mtime));
@@ -252,7 +252,7 @@ template <typename Base> void Tests<Base>::register_tests()
             segment->checker(std::make_shared<core::lock::NullCheckLock>());
         {
             auto fixer = checker->fixer();
-            auto res   = fixer->remove(true);
+            /*auto res   =*/fixer->remove(true);
             // TODO: check that res is the previous size of the indices plus
             // size of data
         }
@@ -364,7 +364,8 @@ template <typename Base> void Tests<Base>::register_tests()
     add_method("test_mark_all_removed", [](Fixture& f) {
         f.skip_unless_has_index();
         auto segment   = f.create(f.td.mds);
-        auto data_size = segment->data()->size();
+        auto data      = segment::Data::create(segment);
+        auto data_size = data->size();
         auto checker =
             segment->checker(std::make_shared<core::lock::NullCheckLock>());
         auto fixer = checker->fixer();
@@ -405,8 +406,9 @@ template <typename Base> void Tests<Base>::register_tests()
         auto mds          = checker->scan();
         const auto& blob0 = mds[0].sourceBlob();
         const auto& blob1 = mds[1].sourceBlob();
+        auto data         = segment::Data::create(segment);
         wassert(actual(blob1.offset) ==
-                checker->data().next_offset(blob0.offset, blob0.size) + 10);
+                data->next_offset(blob0.offset, blob0.size) + 10);
     });
 }
 
