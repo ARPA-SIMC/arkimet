@@ -339,6 +339,11 @@ public:
     virtual size_t remove(bool with_data) = 0;
 
     /**
+     * Remove the data in the segment, if possible, leaving only the metadata
+     */
+    virtual size_t remove_data() = 0;
+
+    /**
      * Move the segment and all its associated files to a new location.
      *
      * Existing files in the destination are overwritten.

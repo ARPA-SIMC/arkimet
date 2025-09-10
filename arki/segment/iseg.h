@@ -93,6 +93,7 @@ public:
     ReorderResult reorder(arki::metadata::Collection& mds,
                           const segment::RepackConfig& repack_config) override;
     size_t remove(bool with_data) override;
+    size_t remove_data() override;
     ConvertResult tar() override;
     ConvertResult zip() override;
     ConvertResult compress(unsigned groupsize) override;

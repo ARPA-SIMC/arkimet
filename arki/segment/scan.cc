@@ -213,8 +213,13 @@ size_t Fixer::remove(bool with_data)
     size_t res = 0;
     if (!with_data)
         return res;
+    return res + remove_data();
+}
+
+size_t Fixer::remove_data()
+{
     auto data_checker = data().checker();
-    return res + data_checker->remove();
+    return data_checker->remove();
 }
 
 Fixer::ConvertResult Fixer::tar()
