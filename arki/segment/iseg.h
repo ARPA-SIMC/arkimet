@@ -74,7 +74,8 @@ public:
     CIndex& index();
     arki::metadata::Collection scan() override;
     FsckResult fsck(segment::Reporter& reporter, bool quick = true) override;
-
+    bool scan_data(segment::Reporter& reporter,
+                   metadata_dest_func dest) override;
     std::shared_ptr<segment::Fixer> fixer() override;
 };
 

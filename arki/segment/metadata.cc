@@ -480,6 +480,14 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
     return res;
 }
 
+bool Checker::scan_data(segment::Reporter& reporter, metadata_dest_func dest)
+{
+    auto data_checker = m_data->checker();
+    return data_checker->rescan_data(
+        [&](const std::string& message) { reporter.info(segment(), message); },
+        lock, dest);
+}
+
 std::shared_ptr<segment::Fixer> Checker::fixer()
 {
     return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());

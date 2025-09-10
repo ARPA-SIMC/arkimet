@@ -204,6 +204,12 @@ public:
     virtual arki::metadata::Collection scan() = 0;
 
     /**
+     * Rescan the data part of the segment, ignoring indexes
+     */
+    virtual bool scan_data(segment::Reporter& reporter,
+                           metadata_dest_func dest) = 0;
+
+    /**
      * Run consistency checks on the segment
      */
     virtual FsckResult fsck(segment::Reporter& reporter, bool quick = true) = 0;

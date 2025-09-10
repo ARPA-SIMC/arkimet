@@ -191,15 +191,12 @@ public:
 
     void rescan(dataset::Reporter& reporter) override
     {
+        auto segment_reporter =
+            reporter.segment_reporter(dataset_checker.name());
         auto path_metadata = segment->abspath_metadata();
 
         metadata::Collection mds;
-        segment_data_checker->rescan_data(
-            [&](const std::string& msg) {
-                reporter.segment_info(dataset_checker.name(),
-                                      segment->relpath(), msg);
-            },
-            lock, mds.inserter_func());
+        segment_checker->scan_data(*segment_reporter, mds.inserter_func());
 
         time_t mtime = segment_data->timestamp().value();
         core::Interval interval;
