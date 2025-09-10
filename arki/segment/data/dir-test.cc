@@ -102,7 +102,8 @@ void TestInternals::register_tests()
                 std::filesystem::current_path());
             auto segment = session->segment_from_relpath_and_format(
                 relpath, DataFormat::GRIB);
-            auto checker = segment->data_checker();
+            auto data    = std::make_shared<segment::data::dir::Data>(segment);
+            auto checker = data->checker();
             wassert(actual(checker->data().size()) == 0u);
             wassert_false(checker->data().exists_on_disk());
             wassert_false(checker->data().is_empty());

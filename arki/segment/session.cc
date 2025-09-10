@@ -192,13 +192,6 @@ Session::segment_checker(std::shared_ptr<const Segment> segment,
             "for segments that do not yet exist");
 }
 
-std::shared_ptr<segment::data::Checker>
-Session::segment_data_checker(std::shared_ptr<const Segment> segment) const
-{
-    auto data = segment->data();
-    return data->checker();
-}
-
 void Session::create_scan(std::shared_ptr<Segment> segment,
                           arki::metadata::Collection& mds) const
 {

@@ -77,9 +77,6 @@ public:
     segment_checker(std::shared_ptr<const Segment> segment,
                     std::shared_ptr<core::CheckLock> lock) const;
 
-    virtual std::shared_ptr<segment::data::Checker>
-    segment_data_checker(std::shared_ptr<const Segment> segment) const;
-
     virtual void create_scan(std::shared_ptr<Segment> segment,
                              arki::metadata::Collection& mds) const;
     virtual void create_metadata(std::shared_ptr<Segment> segment,

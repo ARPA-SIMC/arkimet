@@ -79,11 +79,6 @@ std::shared_ptr<segment::Data> Segment::data() const
     return segment::Data::create(shared_from_this());
 }
 
-std::shared_ptr<segment::data::Checker> Segment::data_checker() const
-{
-    return session().segment_data_checker(shared_from_this());
-}
-
 std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 {
     const auto& native = pathname.native();

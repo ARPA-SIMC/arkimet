@@ -46,10 +46,6 @@ public:
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> data() const;
 
-    /// Instantiate the right Checker implementation for a segment that already
-    /// exists
-    std::shared_ptr<segment::data::Checker> data_checker() const;
-
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip
      * extensions

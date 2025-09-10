@@ -67,7 +67,8 @@ void Tests::register_tests()
         auto get_checker = [&](const char* format, const char* name) {
             auto segment = session->segment_from_relpath_and_format(
                 name, format_from_string(format));
-            return segment->data_checker();
+            auto data = segment::Data::create(segment);
+            return data->checker();
         };
 
         wassert(actual(get_writer("grib", "testfile.grib")->data().type()) ==
