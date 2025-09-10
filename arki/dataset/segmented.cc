@@ -215,27 +215,24 @@ CheckerSegment::~CheckerSegment() {}
 
 segment::Fixer::ConvertResult CheckerSegment::tar()
 {
-    auto fixer           = segment_checker->fixer();
-    auto res             = fixer->tar();
-    segment_data_checker = fixer->segment().data_checker();
+    auto fixer = segment_checker->fixer();
+    auto res   = fixer->tar();
     post_convert(fixer, res);
     return res;
 }
 
 segment::Fixer::ConvertResult CheckerSegment::zip()
 {
-    auto fixer           = segment_checker->fixer();
-    auto res             = fixer->zip();
-    segment_data_checker = fixer->segment().data_checker();
+    auto fixer = segment_checker->fixer();
+    auto res   = fixer->zip();
     post_convert(fixer, res);
     return res;
 }
 
 segment::Fixer::ConvertResult CheckerSegment::compress(unsigned groupsize)
 {
-    auto fixer           = segment_checker->fixer();
-    auto res             = fixer->compress(groupsize);
-    segment_data_checker = fixer->segment().data_checker();
+    auto fixer = segment_checker->fixer();
+    auto res   = fixer->compress(groupsize);
     post_convert(fixer, res);
     return res;
 }
@@ -277,16 +274,13 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    auto format = scan::Scanner::format_from_filename(
-        segment_data_checker->segment().relpath());
+    auto format = scan::Scanner::format_from_filename(segment->relpath());
 
     // Get the time range for this relpath
     core::Interval interval;
-    if (!dataset().relpath_timespan(segment_data_checker->segment().relpath(),
-                                    interval))
+    if (!dataset().relpath_timespan(segment->relpath(), interval))
         throw std::runtime_error(
-            "cannot archive segment "s +
-            segment_data_checker->segment().abspath().native() +
+            "cannot archive segment "s + segment->abspath().native() +
             " because its name does not match the dataset step");
 
     // Get the contents of this segment
@@ -304,10 +298,9 @@ void CheckerSegment::archive()
 
 void CheckerSegment::unarchive()
 {
-    auto arcrelpath = "last" / segment_data_checker->segment().relpath();
-    metadata::Collection mdc =
-        archives()->release_segment(arcrelpath, dataset().segment_session,
-                                    segment_data_checker->segment().relpath());
+    auto arcrelpath          = "last" / segment->relpath();
+    metadata::Collection mdc = archives()->release_segment(
+        arcrelpath, dataset().segment_session, segment->relpath());
     index(std::move(mdc));
 }
 
@@ -452,7 +445,7 @@ void Checker::remove(const metadata::Collection& mds)
 void Checker::tar(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = segment.segment_data_checker->data();
+        const auto& data = *segment.segment_data;
         if (data.single_file())
             return;
         if (opts.readonly)
@@ -472,7 +465,7 @@ void Checker::tar(CheckerConfig& opts)
 void Checker::zip(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = segment.segment_data_checker->data();
+        const auto& data = *segment.segment_data;
         if (data.single_file())
             return;
         if (opts.readonly)
@@ -492,7 +485,7 @@ void Checker::zip(CheckerConfig& opts)
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = segment.segment_data_checker->data();
+        const auto& data = *segment.segment_data;
         if (!data.single_file())
             return;
         if (opts.readonly)

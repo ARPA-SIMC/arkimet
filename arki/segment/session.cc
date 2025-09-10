@@ -218,8 +218,8 @@ void Session::create_metadata(std::shared_ptr<Segment> segment,
     fixer->reindex(mds);
 }
 
-void Session::create_iseg(std::shared_ptr<Segment> segment,
-                          arki::metadata::Collection& mds) const
+void Session::create_iseg(std::shared_ptr<Segment>,
+                          arki::metadata::Collection&) const
 {
     throw std::runtime_error("normal sessions cannot create iseg segments");
 }

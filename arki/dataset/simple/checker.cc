@@ -46,7 +46,7 @@ public:
 
     std::filesystem::path path_relative() const override
     {
-        return segment_data_checker->segment().relpath();
+        return segment->relpath();
     }
     const simple::Dataset& dataset() const override
     {
@@ -74,8 +74,7 @@ public:
         if (!dataset().step().path_timespan(segment->relpath(), res.interval))
         {
             reporter.segment_info(
-                dataset_checker.name(),
-                segment_data_checker->segment().relpath(),
+                dataset_checker.name(), segment->relpath(),
                 "segment name does not fit the step of this dataset");
             res.state += segment::SEGMENT_CORRUPTED;
             return res;
@@ -134,8 +133,7 @@ public:
             return res;
         }
 
-        res.check_age(segment_data_checker->segment().relpath(), dataset(),
-                      reporter);
+        res.check_age(segment->relpath(), dataset(), reporter);
 
         return res;
     }
@@ -169,8 +167,8 @@ public:
                       segment::Fixer::ConvertResult& res) override
     {
         // Reindex with the new file information
-        dataset_checker.manifest.set_mtime(
-            segment_data_checker->segment().relpath(), res.segment_mtime);
+        dataset_checker.manifest.set_mtime(segment->relpath(),
+                                           res.segment_mtime);
         dataset_checker.manifest.flush();
     }
 
@@ -199,8 +197,7 @@ public:
         segment_data_checker->rescan_data(
             [&](const std::string& msg) {
                 reporter.segment_info(dataset_checker.name(),
-                                      segment_data_checker->segment().relpath(),
-                                      msg);
+                                      segment->relpath(), msg);
             },
             lock, mds.inserter_func());
 
@@ -224,8 +221,7 @@ public:
         // TODO: get a fixer lock
         metadata::Collection mds = segment_checker->scan();
         segment_data_checker->move(new_segment_session, new_relpath);
-        dataset_checker.manifest.remove(
-            segment_data_checker->segment().relpath());
+        dataset_checker.manifest.remove(segment->relpath());
         dataset_checker.manifest.flush();
         invalidate_dataset_summary();
         return mds;

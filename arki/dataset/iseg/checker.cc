@@ -52,7 +52,7 @@ public:
     }
     std::filesystem::path path_relative() const override
     {
-        return segment_data_checker->segment().relpath();
+        return segment->relpath();
     }
     const iseg::Dataset& dataset() const override
     {
@@ -74,8 +74,7 @@ public:
         if (!dataset().step().path_timespan(segment->relpath(), res.interval))
         {
             reporter.segment_info(
-                dataset_checker.name(),
-                segment_data_checker->segment().relpath(),
+                dataset_checker.name(), segment->relpath(),
                 "segment name does not fit the step of this dataset");
             res.state += segment::SEGMENT_CORRUPTED;
             return res;
@@ -102,8 +101,7 @@ public:
             return res;
         }
 
-        res.check_age(segment_data_checker->segment().relpath(), dataset(),
-                      reporter);
+        res.check_age(segment->relpath(), dataset(), reporter);
 
         return res;
     }
@@ -126,8 +124,7 @@ public:
         segment_data_checker->rescan_data(
             [&](const std::string& msg) {
                 reporter.segment_info(dataset_checker.name(),
-                                      segment_data_checker->segment().relpath(),
-                                      msg);
+                                      segment->relpath(), msg);
             },
             lock, mds.inserter_func());
 
@@ -236,7 +233,7 @@ void Checker::segments_untracked_filtered(
             CheckerSegment csegment(*this, segment, lock);
             // See #279: directory segments that are empty directories are found
             // by a filesystem scan, but are not considered segments
-            if (!csegment.segment_data_checker->data().exists_on_disk())
+            if (!csegment.segment_data->exists_on_disk())
                 return;
             dest(csegment);
         });
