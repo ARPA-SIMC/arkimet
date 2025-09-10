@@ -227,8 +227,7 @@ public:
     virtual size_t remove()                                         = 0;
 
     /**
-     * Rescan the segment, possibly fixing fixable issues found during the
-     * rescan
+     * Rescan the segment
      */
     virtual bool rescan_data(std::function<void(const std::string&)> reporter,
                              std::shared_ptr<const core::ReadLock> lock,

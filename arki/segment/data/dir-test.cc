@@ -2,6 +2,7 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata/tests.h"
 #include "arki/segment.h"
+#include "arki/segment/defs.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -16,7 +17,7 @@ using namespace arki;
 using namespace arki::tests;
 using namespace arki::utils;
 
-const char* relpath = "testfile.grib";
+std::filesystem::path relpath("testfile.grib");
 
 class TestInternals : public TestCase
 {
@@ -57,7 +58,6 @@ std::shared_ptr<segment::data::dir::Writer> make_w()
 
 void TestInternals::register_tests()
 {
-
     // Scan a well-known sample
     add_method("scanner", [] {
         auto session =
@@ -107,6 +107,85 @@ void TestInternals::register_tests()
             wassert_false(checker->data().exists_on_disk());
             wassert_false(checker->data().is_empty());
         }
+    });
+
+    // Test handling of a sequence file out of sync
+    add_method("sequence_out_of_sync", [] {
+        metadata::TestCollection mdc("inbound/test.grib1");
+
+        if (std::filesystem::is_directory(relpath))
+            sys::rmtree_ifexists(relpath);
+        else
+            std::filesystem::remove(relpath);
+
+        // Create a dir segment
+        auto session =
+            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto segment = session->segment_from_relpath(relpath);
+        auto data    = std::make_shared<segment::data::dir::Data>(segment);
+        data->create_segment(mdc);
+
+        // Set its sequence file to 0
+        {
+            segment::SequenceFile seq(relpath);
+            seq.open();
+            seq.write_sequence(0u);
+        }
+
+        // Scanner still finds all files
+        {
+            segment::data::dir::Scanner scanner(*segment);
+            scanner.list_files();
+            wassert(actual(scanner.on_disk.size()) == 3u);
+            wassert(actual(scanner.max_sequence) == 2u);
+        }
+
+        // Checker reports the segment as dirty
+        auto data_checker = data->checker();
+        std::vector<std::string> reporter_output;
+        auto check_result = wcallchecked(data_checker->check(
+            [&](const std::string& s) { reporter_output.emplace_back(s); },
+            mdc));
+        wassert(
+            actual(reporter_output) ==
+            std::vector<std::string>{
+                "sequence file has value 0 but found files until sequence 2"});
+        wassert(actual(check_result) ==
+                segment::State(segment::SEGMENT_UNALIGNED));
+
+        // Repack the segment
+        auto pending = data_checker->repack(mdc);
+        pending.commit();
+
+        // Check is now clean
+        reporter_output.clear();
+        check_result = wcallchecked(data_checker->check(
+            [&](const std::string& s) { reporter_output.emplace_back(s); },
+            mdc));
+        wassert(actual(reporter_output) == std::vector<std::string>{});
+        wassert(actual(check_result) == segment::State());
+
+        // The sequence file has been fixed
+        {
+            segment::SequenceFile seq(relpath);
+            seq.open();
+            wassert(actual(seq.read_sequence()) == 2u);
+        }
+
+        // Scanner still finds all files
+        {
+            segment::data::dir::Scanner scanner(*segment);
+            scanner.list_files();
+            wassert(actual(scanner.on_disk.size()) == 3u);
+            wassert(actual(scanner.max_sequence) == 2u);
+        }
+#if 0
+        auto data_reader =
+            data->reader(make_shared<core::lock::NullReadLock>());
+        metadata::TestCollection scanned;
+        data_reader->scan_data(scanned.inserter_func());
+        wassert(actual(scanned.size()) == mdc.size());
+#endif
     });
 }
 

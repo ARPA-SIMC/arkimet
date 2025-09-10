@@ -571,6 +571,8 @@ bool BaseChecker<Data>::rescan_data(
 
         scanner.list_files();
 
+        // FIXME: this is a write done while holding a read lock, and needs to
+        // be moved to a fix method
         if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
@@ -882,8 +884,9 @@ void Scanner::list_files()
         i.path->fstatat(i->d_name, st);
         size_t seq = (size_t)strtoul(i->d_name, 0, 10);
         on_disk.insert(make_pair(seq, ScannerData(i->d_name, st.st_size)));
-        max_sequence = max(max_sequence, seq);
     }
+    if (!on_disk.empty())
+        max_sequence = on_disk.rbegin()->first;
 }
 
 bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
