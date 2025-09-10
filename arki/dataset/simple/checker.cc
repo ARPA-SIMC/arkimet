@@ -215,9 +215,10 @@ public:
     release(std::shared_ptr<const segment::Session> new_segment_session,
             const std::filesystem::path& new_relpath) override
     {
-        // TODO: get a fixer lock
         metadata::Collection mds = segment_checker->scan();
-        segment_data_checker->move(new_segment_session, new_relpath);
+        auto fixer               = segment_checker->fixer();
+        fixer->move_data(
+            new_segment_session->segment_from_relpath(new_relpath));
         dataset_checker.manifest.remove(segment->relpath());
         dataset_checker.manifest.flush();
         invalidate_dataset_summary();

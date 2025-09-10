@@ -137,9 +137,9 @@ public:
             const std::filesystem::path& new_relpath) override
     {
         metadata::Collection mds = segment_checker->scan();
-        // TODO: get a fixer lock
-        segment_data_checker->move(new_segment_session, new_relpath);
-        std::filesystem::remove(segment->abspath_iseg_index());
+        auto fixer               = segment_checker->fixer();
+        fixer->move_data(
+            new_segment_session->segment_from_relpath(new_relpath));
         return mds;
     }
 };

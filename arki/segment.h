@@ -359,6 +359,15 @@ public:
     virtual void move(std::shared_ptr<arki::Segment> dest);
 
     /**
+     * Move the segment data to a new location, discarding the segment metadata.
+     *
+     * Existing files in the destination are overwritten.
+     *
+     * No locking is performed on the destination.
+     */
+    virtual void move_data(std::shared_ptr<arki::Segment> dest);
+
+    /**
      * Replace the segment index with the metadata in the given collection.
      *
      * Sources in mds are assumed to already point inside the segment.

@@ -652,6 +652,12 @@ void Fixer::move(std::shared_ptr<arki::Segment> dest)
                          dest->abspath_iseg_index());
 }
 
+void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
+{
+    segment::Fixer::move_data(dest);
+    remove(false);
+}
+
 void Fixer::test_touch_contents(time_t timestamp)
 {
     segment::Fixer::test_touch_contents(timestamp);
