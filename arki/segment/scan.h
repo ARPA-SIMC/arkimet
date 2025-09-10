@@ -25,6 +25,10 @@ public:
 
 class Writer : public segment::Writer
 {
+protected:
+    std::shared_ptr<segment::data::Writer>
+    get_data_writer(const segment::WriterConfig& config) const;
+
 public:
     using segment::Writer::Writer;
     ~Writer();

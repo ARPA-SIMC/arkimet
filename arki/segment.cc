@@ -79,12 +79,6 @@ std::shared_ptr<segment::Data> Segment::data() const
     return segment::Data::create(shared_from_this());
 }
 
-std::shared_ptr<segment::data::Writer>
-Segment::data_writer(const segment::WriterConfig& config) const
-{
-    return m_session->segment_data_writer(shared_from_this(), config);
-}
-
 std::shared_ptr<segment::data::Checker> Segment::data_checker() const
 {
     return session().segment_data_checker(shared_from_this());

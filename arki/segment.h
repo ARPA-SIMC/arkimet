@@ -46,11 +46,6 @@ public:
     /// Instantiate the right Data for this segment
     std::shared_ptr<segment::Data> data() const;
 
-    /// Instantiate the right Writer implementation for a segment that already
-    /// exists
-    std::shared_ptr<segment::data::Writer>
-    data_writer(const segment::WriterConfig& config) const;
-
     /// Instantiate the right Checker implementation for a segment that already
     /// exists
     std::shared_ptr<segment::data::Checker> data_checker() const;

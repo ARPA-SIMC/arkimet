@@ -41,6 +41,9 @@ class Writer : public segment::Writer
 {
     std::shared_ptr<AIndex> index;
 
+    std::shared_ptr<segment::data::Writer>
+    get_data_writer(const segment::WriterConfig& config) const;
+
     AcquireResult
     acquire_batch_replace_never(arki::metadata::InboundBatch& batch,
                                 const WriterConfig& config);

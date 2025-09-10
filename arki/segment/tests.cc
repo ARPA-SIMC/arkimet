@@ -15,7 +15,8 @@ void fill_scan_segment(std::shared_ptr<const Segment> segment,
 {
     segment::WriterConfig wconf{"test"};
     wconf.drop_cached_data_on_commit = true;
-    auto data_writer                 = segment->data_writer(wconf);
+    auto data                        = segment::Data::create(segment);
+    auto data_writer                 = data->writer(wconf);
     for (auto i : mds)
         data_writer->append(*i);
     data_writer->commit();
@@ -26,7 +27,8 @@ void fill_metadata_segment(std::shared_ptr<const Segment> segment,
 {
     segment::WriterConfig wconf{"test"};
     wconf.drop_cached_data_on_commit = true;
-    auto data_writer                 = segment->data_writer(wconf);
+    auto data                        = segment::Data::create(segment);
+    auto data_writer                 = data->writer(wconf);
     for (auto i : mds)
         data_writer->append(*i);
     data_writer->commit();

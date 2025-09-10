@@ -33,9 +33,10 @@ void Tests<Data, FixtureData>::register_tests()
             "testfile." + format_name(f.td.format), f.td.format);
         delete_if_exists(segment->abspath());
         wassert(actual_file(segment->abspath()).not_exists());
+        auto data = f.data(segment);
         {
             segment::WriterConfig writer_config;
-            auto w = segment->data_writer(writer_config);
+            auto w = data->writer(writer_config);
 
             // It should exist but be empty
             // wassert(actual(fname).fileexists());
@@ -72,6 +73,7 @@ void Tests<Data, FixtureData>::register_tests()
         auto segment = session->segment_from_relpath_and_format(
             "testfile." + format_name(f.td.format), f.td.format);
         delete_if_exists(segment->abspath());
+        auto data = f.data(segment);
         {
             // Make a file that looks HUGE, so that appending will make its size
             // not fit in a 32bit off_t
@@ -81,7 +83,7 @@ void Tests<Data, FixtureData>::register_tests()
 
         {
             segment::WriterConfig writer_config;
-            auto dw = segment->data_writer(writer_config);
+            auto dw = data->writer(writer_config);
 
             // Try a successful transaction
             wassert(test_append_transaction_ok(dw.get(), f.td.mds[0],

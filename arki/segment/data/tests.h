@@ -18,6 +18,8 @@ template <class Data, class FixtureData> struct SegmentFixture : public Fixture
     std::shared_ptr<segment::Session> session;
     std::shared_ptr<Segment> segment;
 
+    std::shared_ptr<Data> data();
+    std::shared_ptr<Data> data(std::shared_ptr<const Segment> segment);
     std::shared_ptr<segment::data::Checker> create();
     std::shared_ptr<segment::data::Checker> create(metadata::Collection mds);
     std::shared_ptr<segment::data::Checker>

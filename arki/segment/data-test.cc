@@ -61,7 +61,8 @@ void Tests::register_tests()
             segment::WriterConfig writer_config;
             auto segment = session->segment_from_relpath_and_format(
                 name, format_from_string(format));
-            return segment->data_writer(writer_config);
+            auto data = segment::Data::create(segment);
+            return data->writer(writer_config);
         };
         auto get_checker = [&](const char* format, const char* name) {
             auto segment = session->segment_from_relpath_and_format(

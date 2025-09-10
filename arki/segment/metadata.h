@@ -48,6 +48,9 @@ protected:
     arki::metadata::Collection mds;
     Summary sum;
 
+    std::shared_ptr<segment::data::Writer>
+    get_data_writer(const segment::WriterConfig& config) const;
+
     void add(const Metadata& md, const types::source::Blob& source);
     void write_metadata();
 

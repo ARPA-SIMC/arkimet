@@ -241,6 +241,10 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     }
 }
 
+/*
+ * Writer
+ */
+
 Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
     : segment::Writer(segment, lock)
@@ -255,6 +259,14 @@ Writer::Writer(std::shared_ptr<const Segment> segment,
 }
 
 Writer::~Writer() {}
+
+std::shared_ptr<segment::data::Writer>
+Writer::get_data_writer(const segment::WriterConfig& config) const
+{
+    std::filesystem::create_directories(m_segment->abspath().parent_path());
+    auto data = m_segment->data();
+    return data->writer(config);
+}
 
 void Writer::add(const Metadata& md, const types::source::Blob& source)
 {
@@ -284,8 +296,7 @@ void Writer::write_metadata()
 Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
                                       const WriterConfig& config)
 {
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer = get_data_writer(config);
     try
     {
         for (auto& e : batch)
@@ -339,6 +350,10 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
     res.data_timespan = sum.get_reference_time();
     return res;
 }
+
+/*
+ * Checker
+ */
 
 arki::metadata::Collection Checker::scan()
 {

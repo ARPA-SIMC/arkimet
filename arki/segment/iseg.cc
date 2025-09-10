@@ -91,6 +91,9 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     m_index->query_summary_from_db(matcher, summary);
 }
 
+/*
+ * Writer
+ */
 Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
     : segment::Writer(segment, lock), index(segment->append_index(lock))
@@ -99,13 +102,20 @@ Writer::Writer(std::shared_ptr<const Segment> segment,
 
 Writer::~Writer() {}
 
+std::shared_ptr<segment::data::Writer>
+Writer::get_data_writer(const segment::WriterConfig& config) const
+{
+    std::filesystem::create_directories(m_segment->abspath().parent_path());
+    auto data = m_segment->data();
+    return data->writer(config);
+}
+
 Writer::AcquireResult
 Writer::acquire_batch_replace_never(arki::metadata::InboundBatch& batch,
                                     const WriterConfig& config)
 {
     AcquireResult res;
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer    = get_data_writer(config);
     core::Pending p_idx = index->begin_transaction();
 
     try
@@ -154,8 +164,7 @@ Writer::acquire_batch_replace_always(arki::metadata::InboundBatch& batch,
                                      const WriterConfig& config)
 {
     AcquireResult res;
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer    = get_data_writer(config);
     core::Pending p_idx = index->begin_transaction();
 
     try
@@ -190,8 +199,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                                          const WriterConfig& config)
 {
     AcquireResult res;
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer    = get_data_writer(config);
     core::Pending p_idx = index->begin_transaction();
 
     try
@@ -307,6 +315,10 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
     res.data_timespan = index->query_data_timespan();
     return res;
 }
+
+/*
+ * Checker
+ */
 
 Checker::Checker(std::shared_ptr<const Segment> segment,
                  std::shared_ptr<core::CheckLock> lock)

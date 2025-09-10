@@ -27,6 +27,19 @@ void SegmentFixture<Data, FixtureData>::test_setup()
 }
 
 template <class Data, class FixtureData>
+std::shared_ptr<Data> SegmentFixture<Data, FixtureData>::data()
+{
+    return std::make_shared<Data>(segment);
+}
+
+template <class Data, class FixtureData>
+std::shared_ptr<Data>
+SegmentFixture<Data, FixtureData>::data(std::shared_ptr<const Segment> segment)
+{
+    return std::make_shared<Data>(segment);
+}
+
+template <class Data, class FixtureData>
 std::shared_ptr<segment::data::Checker>
 SegmentFixture<Data, FixtureData>::create()
 {
