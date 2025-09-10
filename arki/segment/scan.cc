@@ -2,6 +2,7 @@
 #include "arki/core/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/inbound.h"
 #include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
@@ -70,8 +71,44 @@ Writer::~Writer() {}
 Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
                                       const WriterConfig& config)
 {
-    throw std::runtime_error(
-        "acquiring in scan segments is not yet implemented");
+    auto data_writer =
+        segment().session().segment_data_writer(m_segment, config);
+    try
+    {
+        for (auto& e : batch)
+        {
+            e->destination.clear();
+            data_writer->append(*e->md);
+            e->result      = arki::metadata::Inbound::Result::OK;
+            e->destination = config.destination_name;
+        }
+    }
+    catch (std::exception& e)
+    {
+        // returning here before commit means no action is taken
+        batch.set_all_error("Failed to store in '" + config.destination_name +
+                            "': " + e.what());
+        AcquireResult res;
+        res.count_ok      = 0;
+        res.count_failed  = batch.size();
+        res.segment_mtime = segment().data()->timestamp().value_or(0);
+        res.data_timespan = core::Interval();
+        return res;
+    }
+
+    data_writer->commit();
+
+    auto ts = segment().data()->timestamp();
+    if (!ts)
+        throw std::runtime_error(segment().abspath().native() +
+                                 ": segment not found after importing");
+
+    AcquireResult res;
+    res.count_ok      = batch.size();
+    res.count_failed  = 0;
+    res.segment_mtime = ts.value();
+    res.data_timespan = core::Interval();
+    return res;
 }
 
 arki::metadata::Collection Checker::scan()
