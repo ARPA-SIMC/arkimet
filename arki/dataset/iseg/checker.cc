@@ -230,7 +230,7 @@ void Checker::segments_untracked_filtered(
             CheckerSegment csegment(*this, segment, lock);
             // See #279: directory segments that are empty directories are found
             // by a filesystem scan, but are not considered segments
-            if (!csegment.segment_data->exists_on_disk())
+            if (!csegment.segment_checker->has_data())
                 return;
             dest(csegment);
         });

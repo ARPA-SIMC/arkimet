@@ -9,6 +9,7 @@
 #include <arki/summary.h>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace arki {
@@ -185,6 +186,26 @@ public:
     const Segment& segment() const { return *m_segment; }
     const segment::Data& data() const { return *m_data; }
     segment::Data& data() { return *m_data; }
+
+    /// Returns true if the segment actually contains data
+    virtual bool has_data() const = 0;
+
+    /**
+     * Return the modification time of the segment.
+     *
+     * On most segments this is the modification time of the data, regardless
+     * of the timestamp of possible associated metadata.
+     */
+    virtual std::optional<time_t> timestamp() const = 0;
+
+    /// Returns true if the segment can be tarred
+    virtual bool allows_tar() const = 0;
+
+    /// Returns true if the segment can be zipped
+    virtual bool allows_zip() const = 0;
+
+    /// Returns true if the segment can be compressed
+    virtual bool allows_compress() const = 0;
 
     /**
      * Redo detection of the data accessor.
@@ -404,6 +425,17 @@ public:
      * This is used to simulate anomalies in the dataset during tests.
      */
     virtual void test_make_hole(unsigned hole_size, unsigned data_idx = 0) = 0;
+
+    /**
+     * Replace the metadata for the data in the segment at position `data_idx`.
+     *
+     * The source of the metadata will be preserved. md will be updated to
+     * point to the final metadata.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual arki::metadata::Collection
+    test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx = 0);
 };
 
 /**

@@ -71,6 +71,11 @@ public:
     Checker(std::shared_ptr<const Segment> segment,
             std::shared_ptr<core::CheckLock> lock);
 
+    bool has_data() const override;
+    std::optional<time_t> timestamp() const override;
+    bool allows_tar() const override;
+    bool allows_zip() const override;
+    bool allows_compress() const override;
     CIndex& index();
     arki::metadata::Collection scan() override;
     FsckResult fsck(segment::Reporter& reporter, bool quick = true) override;

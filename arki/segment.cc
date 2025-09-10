@@ -233,6 +233,21 @@ void Fixer::test_touch_contents(time_t timestamp)
     data().checker()->test_touch_contents(timestamp);
 }
 
+arki::metadata::Collection
+Fixer::test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx)
+{
+    auto pmt = data().preserve_mtime();
+
+    arki::metadata::Collection mds = m_checker->scan();
+    md->set_source(
+        std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md->sourceBlob().unlock();
+    mds.replace(data_idx, md);
+
+    reindex(mds);
+    return mds;
+}
+
 } // namespace segment
 
 } // namespace arki

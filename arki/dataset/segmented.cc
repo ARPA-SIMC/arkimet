@@ -205,8 +205,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session,
 
 CheckerSegment::CheckerSegment(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<core::CheckLock> lock)
-    : lock(lock), segment(segment), segment_checker(segment->checker(lock)),
-      segment_data(segment->data())
+    : lock(lock), segment(segment), segment_checker(segment->checker(lock))
 {
 }
 
@@ -444,8 +443,7 @@ void Checker::remove(const metadata::Collection& mds)
 void Checker::tar(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = *segment.segment_data;
-        if (data.single_file())
+        if (!segment.segment_checker->allows_tar())
             return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(),
@@ -464,8 +462,7 @@ void Checker::tar(CheckerConfig& opts)
 void Checker::zip(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = *segment.segment_data;
-        if (data.single_file())
+        if (!segment.segment_checker->allows_zip())
             return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(),
@@ -484,8 +481,7 @@ void Checker::zip(CheckerConfig& opts)
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = *segment.segment_data;
-        if (!data.single_file())
+        if (!segment.segment_checker->allows_compress())
             return;
         if (opts.readonly)
             opts.reporter->segment_compress(name(), segment.path_relative(),
@@ -696,17 +692,8 @@ Checker::test_change_metadata(const std::filesystem::path& relpath,
                               std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto csegment = segment_from_relpath(relpath);
-    auto pmt      = csegment->segment_data->preserve_mtime();
-
-    metadata::Collection mds = csegment->segment_checker->scan();
-    md->set_source(
-        std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    md->sourceBlob().unlock();
-    mds.replace(data_idx, md);
-
-    auto fixer = csegment->segment_checker->fixer();
-    fixer->reindex(mds);
-    return mds;
+    auto fixer    = csegment->segment_checker->fixer();
+    return fixer->test_change_metadata(md, data_idx);
 }
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)

@@ -355,6 +355,12 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
  * Checker
  */
 
+bool Checker::has_data() const { return data().exists_on_disk(); }
+std::optional<time_t> Checker::timestamp() const { return data().timestamp(); }
+bool Checker::allows_tar() const { return !data().single_file(); }
+bool Checker::allows_zip() const { return !data().single_file(); }
+bool Checker::allows_compress() const { return data().single_file(); }
+
 arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;
@@ -492,6 +498,10 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
 {
     return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
 }
+
+/*
+ * Fixer
+ */
 
 Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 {

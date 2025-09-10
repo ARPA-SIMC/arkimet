@@ -177,7 +177,7 @@ public:
         auto fixer = segment_checker->fixer();
         fixer->reindex(mds);
 
-        time_t mtime = segment_data->timestamp().value();
+        time_t mtime = segment_checker->timestamp().value();
         core::Interval interval;
         mds.expand_date_range(interval);
 
@@ -198,7 +198,7 @@ public:
         metadata::Collection mds;
         segment_checker->scan_data(*segment_reporter, mds.inserter_func());
 
-        time_t mtime = segment_data->timestamp().value();
+        time_t mtime = segment_checker->timestamp().value();
         core::Interval interval;
         mds.expand_date_range(interval);
 

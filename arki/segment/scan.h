@@ -42,6 +42,11 @@ class Checker : public segment::Checker
 public:
     using segment::Checker::Checker;
 
+    bool has_data() const override;
+    std::optional<time_t> timestamp() const override;
+    bool allows_tar() const override;
+    bool allows_zip() const override;
+    bool allows_compress() const override;
     arki::metadata::Collection scan() override;
     FsckResult fsck(segment::Reporter& reporter, bool quick = true) override;
     bool scan_data(segment::Reporter& reporter,

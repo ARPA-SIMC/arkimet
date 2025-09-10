@@ -118,6 +118,16 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
     return res;
 }
 
+/*
+ * Checker
+ */
+
+bool Checker::has_data() const { return data().exists_on_disk(); }
+std::optional<time_t> Checker::timestamp() const { return data().timestamp(); }
+bool Checker::allows_tar() const { return !data().single_file(); }
+bool Checker::allows_zip() const { return !data().single_file(); }
+bool Checker::allows_compress() const { return data().single_file(); }
+
 arki::metadata::Collection Checker::scan()
 {
     // Rescan the file
