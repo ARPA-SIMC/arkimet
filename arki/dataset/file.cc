@@ -10,6 +10,8 @@
 #include "arki/query/progress.h"
 #include "arki/scan.h"
 #include "arki/segment.h"
+#include "arki/segment/metadata.h"
+#include "arki/segment/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
@@ -21,9 +23,31 @@ using namespace std;
 using namespace arki::core;
 using namespace arki::utils;
 
-namespace arki {
-namespace dataset {
-namespace file {
+namespace arki::dataset::file {
+
+std::shared_ptr<segment::Reader> SegmentSession::create_segment_reader(
+    std::shared_ptr<const Segment> segment,
+    std::shared_ptr<const core::ReadLock> lock) const
+{
+    if (segment::metadata::has_valid_metadata(segment))
+        return std::make_shared<segment::metadata::Reader>(segment, lock);
+    else
+        return std::make_shared<segment::scan::Reader>(segment, lock);
+}
+
+std::shared_ptr<segment::Writer>
+SegmentSession::segment_writer(std::shared_ptr<const Segment>,
+                               std::shared_ptr<core::AppendLock>) const
+{
+    throw std::runtime_error("file dataset does not support writing");
+}
+
+std::shared_ptr<segment::Checker>
+SegmentSession::segment_checker(std::shared_ptr<const Segment>,
+                                std::shared_ptr<core::CheckLock>) const
+{
+    throw std::runtime_error("file dataset does not support checking");
+}
 
 Dataset::Dataset(std::shared_ptr<Session> session,
                  const core::cfg::Section& cfg)
@@ -231,7 +255,7 @@ SegmentDataset::SegmentDataset(std::shared_ptr<Session> session,
     utils::files::resolve_path(cfg.value("path"), basedir, relpath);
     if (basedir.empty())
         basedir = relpath.parent_path();
-    segment_session = std::make_shared<segment::Session>(basedir);
+    segment_session = std::make_shared<SegmentSession>(basedir);
     segment         = segment_session->segment_from_relpath_and_format(
         relpath, format_from_string(cfg.value("format")));
 }
@@ -274,7 +298,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
                 {
                     const auto& blob = md->sourceBlob();
                     auto segment_session =
-                        std::make_shared<segment::Session>(blob.basedir);
+                        std::make_shared<SegmentSession>(blob.basedir);
                     auto segment =
                         segment_session->segment_from_relpath_and_format(
                             blob.filename, blob.format);
@@ -320,6 +344,4 @@ bool YamlFile::scan(const query::Data& q, metadata_dest_func dest)
     return true;
 }
 
-} // namespace file
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::file

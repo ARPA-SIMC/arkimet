@@ -8,6 +8,11 @@
 
 namespace arki::segment::metadata {
 
+/**
+ * Check if the segment has a valid associated metadata
+ */
+bool has_valid_metadata(std::shared_ptr<const Segment> segment);
+
 class Index
 {
     const Segment& segment;

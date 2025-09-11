@@ -13,6 +13,21 @@ using namespace arki::utils;
 
 namespace arki::segment::metadata {
 
+bool has_valid_metadata(std::shared_ptr<const Segment> segment)
+{
+    // stat the metadata file, if it exists
+    auto st_md = sys::stat(segment->abspath_metadata());
+    if (!st_md.get())
+        return false;
+
+    auto data = Data::create(segment);
+    auto ts   = data->timestamp();
+    if (!ts)
+        return false;
+
+    return st_md->st_mtime >= ts.value();
+}
+
 namespace {
 
 /**
@@ -209,8 +224,7 @@ stream::SendResult Reader::stream(const types::source::Blob& src,
 
 bool Reader::read_all(metadata_dest_func dest)
 {
-    auto reader = m_segment->reader(lock);
-    return index.read_all(reader, dest);
+    return index.read_all(shared_from_this(), dest);
 }
 
 bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
