@@ -35,10 +35,37 @@ Tests<ODIMData> test_odim("arki_segment_metadata_odim");
 Tests<NCData> test_netcdf("arki_segment_metadata_netcdf");
 Tests<JPEGData> test_jpeg("arki_segment_metadata_jpeg");
 
+struct Session : public segment::Session
+{
+protected:
+    std::shared_ptr<segment::Reader> create_segment_reader(
+        std::shared_ptr<const Segment> segment,
+        std::shared_ptr<const core::ReadLock> lock) const override
+    {
+        return std::make_shared<segment::metadata::Reader>(segment, lock);
+    }
+
+public:
+    using segment::Session::Session;
+
+    std::shared_ptr<segment::Writer>
+    segment_writer(std::shared_ptr<const Segment> segment,
+                   std::shared_ptr<core::AppendLock> lock) const override
+    {
+        return std::make_shared<segment::metadata::Writer>(segment, lock);
+    }
+    std::shared_ptr<segment::Checker>
+    segment_checker(std::shared_ptr<const Segment> segment,
+                    std::shared_ptr<core::CheckLock> lock) const override
+    {
+        return std::make_shared<segment::metadata::Checker>(segment, lock);
+    }
+};
+
 std::shared_ptr<segment::metadata::Reader>
 make_reader(TestData& td, const char* name = "test/test")
 {
-    auto session = std::make_shared<segment::Session>(".");
+    auto session = std::make_shared<Session>(".");
     auto segment = session->segment_from_relpath(
         sys::with_suffix(name, "." + format_name(td.format)));
     fill_metadata_segment(segment, td.mds);

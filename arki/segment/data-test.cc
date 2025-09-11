@@ -1,5 +1,6 @@
 #include "arki/core/tests.h"
 #include "arki/metadata.h"
+#include "arki/segment/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -54,7 +55,7 @@ void Tests::register_tests()
 {
 
     add_method("auto_instantiate_existing", [] {
-        auto session = std::make_shared<segment::Session>(".");
+        auto session = std::make_shared<segment::scan::Session>(".");
         make_samples();
 
         auto get_writer = [&](const char* format, const char* name) {

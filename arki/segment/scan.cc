@@ -13,6 +13,27 @@ using namespace arki::utils;
 
 namespace arki::segment::scan {
 
+std::shared_ptr<segment::Reader>
+Session::create_segment_reader(std::shared_ptr<const Segment> segment,
+                               std::shared_ptr<const core::ReadLock> lock) const
+{
+    return std::make_shared<segment::scan::Reader>(segment, lock);
+}
+
+std::shared_ptr<segment::Writer>
+Session::segment_writer(std::shared_ptr<const Segment> segment,
+                        std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<segment::scan::Writer>(segment, lock);
+}
+
+std::shared_ptr<segment::Checker>
+Session::segment_checker(std::shared_ptr<const Segment> segment,
+                         std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::scan::Checker>(segment, lock);
+}
+
 Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
     : segment::Reader(segment, lock), data(segment::Data::create(segment)),

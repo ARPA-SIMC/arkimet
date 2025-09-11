@@ -38,7 +38,7 @@ Tests<JPEGData> test_jpeg("arki_segment_scan_jpeg");
 std::shared_ptr<segment::scan::Reader>
 make_reader(TestData& td, const char* name = "test/test")
 {
-    auto session = std::make_shared<segment::Session>(".");
+    auto session = std::make_shared<segment::scan::Session>(".");
     auto segment = session->segment_from_relpath(
         sys::with_suffix(name, "." + format_name(td.format)));
     fill_scan_segment(segment, td.mds);

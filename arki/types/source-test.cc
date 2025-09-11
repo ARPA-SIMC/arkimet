@@ -1,6 +1,7 @@
 #include "arki/core/binary.h"
 #include "arki/core/lock.h"
 #include "arki/segment.h"
+#include "arki/segment/scan.h"
 #include "arki/stream.h"
 #include "arki/structured/json.h"
 #include "arki/structured/keys.h"
@@ -156,7 +157,7 @@ void Tests::register_tests()
     });
 
     add_method("blob_stream", [] {
-        auto session = std::make_shared<segment::Session>("inbound");
+        auto session = std::make_shared<segment::scan::Session>("inbound");
         auto segment = session->segment_from_relpath_and_format(
             "test.grib1", DataFormat::GRIB);
         auto reader =
