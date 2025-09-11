@@ -27,7 +27,10 @@ std::shared_ptr<segment::Reader>
 Session::create_segment_reader(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<const core::ReadLock> lock) const
 {
-    return std::make_shared<segment::scan::Reader>(segment, lock);
+    if (has_data(segment))
+        return std::make_shared<segment::scan::Reader>(segment, lock);
+    else
+        return std::make_shared<segment::EmptyReader>(segment, lock);
 }
 
 std::shared_ptr<segment::Writer>
@@ -154,6 +157,8 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
         throw std::runtime_error(segment().abspath().native() +
                                  ": segment not found after importing");
 
+    segment().invalidate_reader_cache();
+
     AcquireResult res;
     res.count_ok      = batch.size();
     res.count_failed  = 0;
@@ -273,6 +278,7 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
     Summary summary;
     mds.add_to_summary(summary);
     res.data_timespan = summary.get_reference_time();
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -287,12 +293,14 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
     p_repack.commit();
     res.size_post     = checker().data->size();
     res.segment_mtime = get_data_mtime_after_fix("reorder");
+    segment().invalidate_reader_cache();
     return res;
 }
 
 size_t Fixer::remove(bool with_data)
 {
     size_t res = 0;
+    segment().invalidate_reader_cache();
     if (!with_data)
         return res;
     return res + remove_data();
@@ -301,6 +309,7 @@ size_t Fixer::remove(bool with_data)
 size_t Fixer::remove_data()
 {
     auto data_checker = checker().data->checker();
+    segment().invalidate_reader_cache();
     return data_checker->remove();
 }
 
@@ -333,6 +342,7 @@ Fixer::ConvertResult Fixer::tar()
     res.size_post         = new_data_checker->data().size();
 
     checker().update_data();
+    segment().invalidate_reader_cache();
     res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
 
     return res;
@@ -367,6 +377,7 @@ Fixer::ConvertResult Fixer::zip()
     res.size_post         = new_data_checker->data().size();
 
     checker().update_data();
+    segment().invalidate_reader_cache();
     res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
 
     return res;
@@ -403,6 +414,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     res.size_post         = new_data_checker->data().size();
 
     checker().update_data();
+    segment().invalidate_reader_cache();
     res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
 
     return res;
@@ -417,12 +429,14 @@ void Fixer::move(std::shared_ptr<arki::Segment> dest)
 {
     auto data_checker = checker().data->checker();
     data_checker->move(dest->session().shared_from_this(), dest->relpath());
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
 {
     auto data_checker = checker().data->checker();
     data_checker->move(dest->session().shared_from_this(), dest->relpath());
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::test_mark_all_removed()
