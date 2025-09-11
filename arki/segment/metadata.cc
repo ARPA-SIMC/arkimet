@@ -837,4 +837,14 @@ Fixer::test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx)
     return mds;
 }
 
+void Fixer::test_swap_data(unsigned d1_idx, unsigned d2_idx,
+                           const segment::RepackConfig& repack_config)
+{
+    arki::metadata::Collection mds = m_checker->scan();
+    mds.swap(d1_idx, d2_idx);
+
+    auto pmt = checker().data->preserve_mtime();
+    reorder(mds, repack_config);
+}
+
 } // namespace arki::segment::metadata

@@ -133,6 +133,8 @@ public:
     arki::metadata::Collection
     test_change_metadata(std::shared_ptr<Metadata> md,
                          unsigned data_idx = 0) override;
+    void test_swap_data(unsigned d1_idx, unsigned d2_idx,
+                        const segment::RepackConfig& repack_config) override;
 };
 
 } // namespace arki::segment::iseg

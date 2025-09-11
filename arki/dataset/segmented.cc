@@ -6,7 +6,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
 #include "arki/scan.h"
-#include "arki/segment/data.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -666,16 +665,11 @@ void Checker::test_swap_data(const std::filesystem::path& relpath,
 {
     auto segment  = dataset().segment_session->segment_from_relpath(relpath);
     auto csegment = this->segment(segment);
-    arki::metadata::Collection mds = csegment->segment_checker->scan();
-    mds.swap(d1_idx, d2_idx);
+    auto fixer    = csegment->segment_checker->fixer();
 
     segment::RepackConfig repack_config;
     repack_config.gz_group_size = dataset().gz_group_size;
-
-    auto data  = segment::Data::create(segment);
-    auto pft   = data->preserve_mtime();
-    auto fixer = csegment->segment_checker->fixer();
-    fixer->reorder(mds, repack_config);
+    fixer->test_swap_data(d1_idx, d2_idx, repack_config);
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath,

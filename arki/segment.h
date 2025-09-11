@@ -429,6 +429,15 @@ public:
     virtual arki::metadata::Collection
     test_change_metadata(std::shared_ptr<Metadata> md,
                          unsigned data_idx = 0) = 0;
+
+    /**
+     * Swap the data in the segment at position `d1_idx` with the one at
+     * position `d2_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_swap_data(unsigned d1_idx, unsigned d2_idx,
+                                const segment::RepackConfig& repack_config) = 0;
 };
 
 /**
