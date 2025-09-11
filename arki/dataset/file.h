@@ -10,12 +10,12 @@
 #include <arki/segment.h>
 #include <string>
 
-namespace arki {
-namespace dataset {
-namespace file {
+namespace arki::dataset::file {
 
 std::shared_ptr<core::cfg::Section>
 read_config(const std::filesystem::path& path);
+std::shared_ptr<core::cfg::Section>
+read_config(const std::filesystem::path& path, DataFormat format);
 std::shared_ptr<core::cfg::Sections>
 read_configs(const std::filesystem::path& path);
 std::shared_ptr<core::cfg::Section>
@@ -99,7 +99,5 @@ public:
     bool scan(const query::Data& q, metadata_dest_func consumer) override;
 };
 
-} // namespace file
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::file
 #endif

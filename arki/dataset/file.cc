@@ -138,6 +138,23 @@ read_config(const std::string& prefix, const std::filesystem::path& path)
 }
 
 std::shared_ptr<core::cfg::Section>
+read_config(const std::filesystem::path& path, DataFormat format)
+{
+    if (!std::filesystem::exists(path))
+    {
+        std::stringstream ss;
+        ss << path << " does not exist";
+        throw runtime_error(ss.str());
+    }
+    auto section = std::make_shared<core::cfg::Section>();
+    section->set("type", "file");
+    section->set("format", format_name(format));
+    section->set("path", std::filesystem::canonical(path));
+    section->set("name", path);
+    return section;
+}
+
+std::shared_ptr<core::cfg::Section>
 read_config(const std::filesystem::path& path)
 {
     if (!std::filesystem::exists(path))

@@ -51,7 +51,6 @@ Tests<IsegSegmentFixture<ODIMData>> testi3("arki_segment_iseg_odim");
 
 template <typename Base> void Tests<Base>::register_tests()
 {
-
     add_method("reader", [](Fixture& f) {
         matcher::Parser parser;
         auto segment = f.create(f.td.mds);

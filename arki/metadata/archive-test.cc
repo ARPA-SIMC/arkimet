@@ -53,7 +53,6 @@ class TestStremOutput : public BaseTests
 
 void BaseTests::register_tests()
 {
-
     add_method("tar", [&] {
         metadata::TestCollection mds("inbound/test.grib1");
         auto arc_out = create_archive("tar", "test.tar");
@@ -116,9 +115,9 @@ void BaseTests::register_tests()
      7218  (2007-07-08|07-08-2007) [0-9]+:00   data/000001.grib
     34960  (2007-07-07|07-07-2007) [0-9]+:00   data/000002.grib
      2234  (2007-10-09|10-09-2007) [0-9]+:00   data/000003.grib
-      588  [0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+   data/metadata.md
+      564  [0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+   data/metadata.md
 ---------                     -------
-    45000                     4 files
+    44976                     4 files
 )"));
     });
 }
