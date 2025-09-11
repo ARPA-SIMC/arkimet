@@ -340,22 +340,28 @@ Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 std::shared_ptr<data::Writer>
 Data::writer(const segment::WriterConfig& config) const
 {
-    if (session().mock_data)
-        return make_shared<HoleWriter>(
-            config, static_pointer_cast<const Data>(shared_from_this()));
-    else
-        return make_shared<Writer>(
-            config, static_pointer_cast<const Data>(shared_from_this()));
+    return make_shared<Writer>(
+        config, static_pointer_cast<const Data>(shared_from_this()));
 }
 std::shared_ptr<data::Checker> Data::checker() const
 {
-    if (session().mock_data)
-        return make_shared<HoleChecker>(
-            static_pointer_cast<const Data>(shared_from_this()));
-    else
-        return make_shared<Checker>(
-            static_pointer_cast<const Data>(shared_from_this()));
+    return make_shared<Checker>(
+        static_pointer_cast<const Data>(shared_from_this()));
 }
+
+std::shared_ptr<segment::data::Writer>
+HoleData::writer(const segment::WriterConfig& config) const
+{
+    return make_shared<HoleWriter>(
+        config, static_pointer_cast<const Data>(shared_from_this()));
+}
+
+std::shared_ptr<segment::data::Checker> HoleData::checker() const
+{
+    return make_shared<HoleChecker>(
+        static_pointer_cast<const Data>(shared_from_this()));
+}
+
 std::shared_ptr<data::Checker>
 Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {

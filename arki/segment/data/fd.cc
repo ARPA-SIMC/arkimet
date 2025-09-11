@@ -106,13 +106,17 @@ template <typename Data> struct CheckBackend : public AppendCheckBackend
 } // namespace
 
 std::shared_ptr<segment::Data>
-Data::detect_data(std::shared_ptr<const Segment> segment)
+Data::detect_data(std::shared_ptr<const Segment> segment, bool mock_data)
 {
     switch (segment->format())
     {
         case DataFormat::GRIB:
         case DataFormat::BUFR:
-            return std::make_shared<segment::data::concat::Data>(segment);
+            if (mock_data)
+                return std::make_shared<segment::data::concat::HoleData>(
+                    segment);
+            else
+                return std::make_shared<segment::data::concat::Data>(segment);
         case DataFormat::VM2:
             return std::make_shared<segment::data::lines::Data>(segment);
         // These would normally fit in a directory, but we allow a
@@ -554,21 +558,25 @@ Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 std::shared_ptr<data::Writer>
 Data::writer(const segment::WriterConfig& config) const
 {
-    if (session().mock_data)
-        return make_shared<HoleWriter>(
-            config, static_pointer_cast<const Data>(shared_from_this()));
-    else
-        return make_shared<Writer>(
-            config, static_pointer_cast<const Data>(shared_from_this()));
+    return make_shared<Writer>(
+        config, static_pointer_cast<const Data>(shared_from_this()));
 }
 std::shared_ptr<data::Checker> Data::checker() const
 {
-    if (session().mock_data)
-        return make_shared<HoleChecker>(
-            static_pointer_cast<const Data>(shared_from_this()));
-    else
-        return make_shared<Checker>(
-            static_pointer_cast<const Data>(shared_from_this()));
+    return make_shared<Checker>(
+        static_pointer_cast<const Data>(shared_from_this()));
+}
+
+std::shared_ptr<data::Writer>
+HoleData::writer(const segment::WriterConfig& config) const
+{
+    return make_shared<HoleWriter>(
+        config, static_pointer_cast<const Data>(shared_from_this()));
+}
+std::shared_ptr<data::Checker> HoleData::checker() const
+{
+    return make_shared<HoleChecker>(
+        static_pointer_cast<const Data>(shared_from_this()));
 }
 
 std::shared_ptr<data::Checker>

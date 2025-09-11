@@ -44,8 +44,6 @@ public:
 
     /// Access the underlying segment
     const Segment& segment() const { return *m_segment; }
-    /// Access the underlying segment session
-    const segment::Session& session() const { return m_segment->session(); }
 
     /**
      * Return a name identifying the type of segment backend

@@ -37,7 +37,7 @@ public:
     static bool can_store(DataFormat format);
 
     static std::shared_ptr<segment::Data>
-    detect_data(std::shared_ptr<const Segment> segment);
+    detect_data(std::shared_ptr<const Segment> segment, bool mock_data);
 };
 
 /// Base class for unix fd based read/write functions
@@ -189,6 +189,16 @@ public:
            const RepackConfig& cfg = RepackConfig());
 
     static const unsigned padding = 0;
+};
+
+class HoleData : public Data
+{
+public:
+    using Data::Data;
+
+    std::shared_ptr<segment::data::Writer>
+    writer(const segment::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
 };
 
 class Reader : public fd::Reader<Data>

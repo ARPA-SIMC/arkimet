@@ -32,9 +32,17 @@ Data::create(std::shared_ptr<const Segment> segment)
     if (st.get())
     {
         if (S_ISDIR(st->st_mode))
-            return std::make_shared<segment::data::dir::Data>(segment);
+        {
+            if (segment->session().mock_data)
+                return std::make_shared<segment::data::dir::HoleData>(segment);
+            else
+                return std::make_shared<segment::data::dir::Data>(segment);
+        }
         else
-            return segment::data::fd::Data::detect_data(segment);
+        {
+            return segment::data::fd::Data::detect_data(
+                segment, segment->session().mock_data);
+        }
     }
 
     st = sys::stat(sys::with_suffix(segment->abspath(), ".gz"));

@@ -49,6 +49,16 @@ public:
     static bool can_store(DataFormat format);
 };
 
+class HoleData : public Data
+{
+public:
+    using Data::Data;
+
+    std::shared_ptr<segment::data::Writer>
+    writer(const segment::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
+};
+
 class Reader : public data::BaseReader<Data>
 {
 public:
