@@ -438,7 +438,7 @@ arki::metadata::Collection Checker::scan()
     }
 
     // Rescan the file
-    if (!data->is_empty())
+    if (data->exists_on_disk())
     {
         auto data_reader = data->reader(lock);
         data_reader->scan_data([&](std::shared_ptr<Metadata> md) {

@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "arki/core/lock.h"
 #include "arki/segment/iseg.h"
+#include "arki/segment/iseg/index.h"
 #include "arki/segment/metadata.h"
 #include "arki/segment/scan.h"
 #include "arki/utils/sys.h"
@@ -34,6 +35,22 @@ void fill_metadata_segment(std::shared_ptr<const Segment> segment,
         data_writer->append(*i);
     data_writer->commit();
     mds.writeAtomically(sys::with_suffix(segment->abspath(), ".metadata"));
+}
+
+void fill_iseg_segment(std::shared_ptr<const Segment> segment,
+                       arki::metadata::Collection& mds)
+{
+    segment::WriterConfig wconf{"test"};
+    wconf.drop_cached_data_on_commit = true;
+    auto data                        = segment::Data::create(segment);
+    auto data_writer                 = data->writer(wconf);
+    for (auto i : mds)
+        data_writer->append(*i);
+    data_writer->commit();
+    segment::iseg::CIndex index(segment,
+                                std::make_shared<core::lock::NullCheckLock>());
+    index.reindex(mds);
+    index.flush();
 }
 
 void ActualSegment::has_data()

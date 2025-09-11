@@ -23,6 +23,14 @@ void fill_scan_segment(std::shared_ptr<const Segment> segment,
 void fill_metadata_segment(std::shared_ptr<const Segment> segment,
                            arki::metadata::Collection& mds);
 
+/**
+ * Create a segment with attached iseg index.
+ *
+ * mds metadata sources are updated to point inside the segment
+ */
+void fill_iseg_segment(std::shared_ptr<const Segment> segment,
+                       arki::metadata::Collection& mds);
+
 struct ActualSegment
     : public arki::utils::tests::Actual<std::shared_ptr<const Segment>>
 {

@@ -16,7 +16,7 @@ namespace arki::segment::scan {
 bool has_data(std::shared_ptr<const Segment> segment)
 {
     auto data = Data::create(segment);
-    return !data->is_empty();
+    return data->exists_on_disk();
 }
 
 /*

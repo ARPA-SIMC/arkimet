@@ -6,6 +6,11 @@
 
 namespace arki::segment::iseg {
 
+/**
+ * Check if the segment has a valid associated iseg index
+ */
+bool has_valid_iseg_index(std::shared_ptr<const Segment> segment);
+
 class Session : public segment::Session
 {
 protected:
