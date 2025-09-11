@@ -9,6 +9,7 @@
 #include <arki/summary.h>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace arki {
@@ -43,22 +44,8 @@ public:
     std::shared_ptr<segment::Checker>
     checker(std::shared_ptr<core::CheckLock> lock) const;
 
-    /// Instantiate the right Data for this segment
-    std::shared_ptr<segment::Data> data() const;
-
-    /// Instantiate the right Reader implementation for a segment that already
-    /// exists
-    std::shared_ptr<segment::data::Reader>
-    data_reader(std::shared_ptr<const core::ReadLock> lock) const;
-
-    /// Instantiate the right Writer implementation for a segment that already
-    /// exists
-    std::shared_ptr<segment::data::Writer>
-    data_writer(const segment::WriterConfig& config) const;
-
-    /// Instantiate the right Checker implementation for a segment that already
-    /// exists
-    std::shared_ptr<segment::data::Checker> data_checker() const;
+    /// Shortcut for calling Session::invalidate_reader_cache
+    void invalidate_reader_cache() const;
 
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip
@@ -108,6 +95,13 @@ public:
      * given query.
      */
     virtual void query_summary(const Matcher& matcher, Summary& summary) = 0;
+
+    /// Read the data identified by a Blob source
+    virtual std::vector<uint8_t> read(const types::source::Blob& src) = 0;
+
+    /// Stream the data identified by a Blob source
+    virtual stream::SendResult stream(const types::source::Blob& src,
+                                      StreamOutput& out) = 0;
 
 #if 0
     /**
@@ -170,7 +164,6 @@ class Checker : public std::enable_shared_from_this<Checker>
 protected:
     std::shared_ptr<core::CheckLock> lock;
     std::shared_ptr<const Segment> m_segment;
-    std::shared_ptr<segment::Data> m_data;
 
 public:
     struct FsckResult
@@ -190,21 +183,37 @@ public:
     virtual ~Checker();
 
     const Segment& segment() const { return *m_segment; }
-    const segment::Data& data() const { return *m_data; }
-    segment::Data& data() { return *m_data; }
+
+    /// Returns true if the segment actually contains data
+    virtual bool has_data() const = 0;
 
     /**
-     * Redo detection of the data accessor.
+     * Return the modification time of the segment.
      *
-     * Call this, for example, after converting the segment to a different
-     * format.
+     * On most segments this is the modification time of the data, regardless
+     * of the timestamp of possible associated metadata.
      */
-    void update_data();
+    virtual std::optional<time_t> timestamp() const = 0;
+
+    /// Returns true if the segment can be tarred
+    virtual bool allows_tar() const = 0;
+
+    /// Returns true if the segment can be zipped
+    virtual bool allows_zip() const = 0;
+
+    /// Returns true if the segment can be compressed
+    virtual bool allows_compress() const = 0;
 
     /**
      * Return the metadata for the contents of the whole segment
      */
     virtual arki::metadata::Collection scan() = 0;
+
+    /**
+     * Rescan the data part of the segment, ignoring indexes
+     */
+    virtual bool scan_data(segment::Reporter& reporter,
+                           metadata_dest_func dest) = 0;
 
     /**
      * Run consistency checks on the segment
@@ -215,6 +224,26 @@ public:
      * Lock for writing and return a Fixer for this segment
      */
     virtual std::shared_ptr<Fixer> fixer() = 0;
+};
+
+struct RepackConfig
+{
+    /**
+     * When repacking gzidx segments, how many data items are compressed
+     * together.
+     */
+    unsigned gz_group_size = 512;
+
+    /**
+     * Turn on perturbating repack behaviour during tests
+     */
+    unsigned test_flags = 0;
+
+    /// During repack, move all data to a different location than it was before
+    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
+
+    RepackConfig();
+    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags = 0);
 };
 
 class Fixer : public std::enable_shared_from_this<Fixer>
@@ -269,8 +298,6 @@ public:
     const Segment& segment() const { return m_checker->segment(); }
     const Checker& checker() const { return *m_checker; }
     Checker& checker() { return *m_checker; }
-    const segment::Data& data() const { return m_checker->data(); }
-    segment::Data& data() { return m_checker->data(); }
 
     /**
      * Mark the data at the given offsets as removed.
@@ -291,7 +318,7 @@ public:
      */
     virtual ReorderResult
     reorder(arki::metadata::Collection& mds,
-            const segment::data::RepackConfig& repack_config) = 0;
+            const segment::RepackConfig& repack_config) = 0;
 
     /**
      * Convert the segment to use tar for the data.
@@ -322,13 +349,27 @@ public:
     virtual size_t remove(bool with_data) = 0;
 
     /**
+     * Remove the data in the segment, if possible, leaving only the metadata
+     */
+    virtual size_t remove_data() = 0;
+
+    /**
      * Move the segment and all its associated files to a new location.
      *
      * Existing files in the destination are overwritten.
      *
      * No locking is performed on the destination.
      */
-    virtual void move(std::shared_ptr<arki::Segment> dest);
+    virtual void move(std::shared_ptr<arki::Segment> dest) = 0;
+
+    /**
+     * Move the segment data to a new location, discarding the segment metadata.
+     *
+     * Existing files in the destination are overwritten.
+     *
+     * No locking is performed on the destination.
+     */
+    virtual void move_data(std::shared_ptr<arki::Segment> dest) = 0;
 
     /**
      * Replace the segment index with the metadata in the given collection.
@@ -345,13 +386,21 @@ public:
      */
     virtual void test_mark_all_removed() = 0;
 
-    virtual void test_corrupt_data(unsigned data_idx);
-    virtual void test_truncate_data(unsigned data_idx);
+    /**
+     * Corrupt the data at the given index, so that it shows up as corrupted in
+     * an accurate scan.
+     */
+    virtual void test_corrupt_data(unsigned data_idx) = 0;
+
+    /**
+     * Truncte the segment right before the strt of the data at the given index
+     */
+    virtual void test_truncate_data(unsigned data_idx) = 0;
 
     /**
      * Set the modification time of everything in the segment
      */
-    virtual void test_touch_contents(time_t timestamp);
+    virtual void test_touch_contents(time_t timestamp) = 0;
 
     /**
      * All data in the segment except the `data_idx`-one are shifted backwards
@@ -371,6 +420,27 @@ public:
      * This is used to simulate anomalies in the dataset during tests.
      */
     virtual void test_make_hole(unsigned hole_size, unsigned data_idx = 0) = 0;
+
+    /**
+     * Replace the metadata for the data in the segment at position `data_idx`.
+     *
+     * The source of the metadata will be preserved. md will be updated to
+     * point to the final metadata.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual arki::metadata::Collection
+    test_change_metadata(std::shared_ptr<Metadata> md,
+                         unsigned data_idx = 0) = 0;
+
+    /**
+     * Swap the data in the segment at position `d1_idx` with the one at
+     * position `d2_idx`.
+     *
+     * This is used to simulate anomalies in the dataset during tests.
+     */
+    virtual void test_swap_data(unsigned d1_idx, unsigned d2_idx,
+                                const segment::RepackConfig& repack_config) = 0;
 };
 
 /**
@@ -381,6 +451,9 @@ class EmptyReader : public Reader
 public:
     using Reader::Reader;
 
+    std::vector<uint8_t> read(const types::source::Blob& src) override;
+    stream::SendResult stream(const types::source::Blob& src,
+                              StreamOutput& out) override;
     bool read_all(metadata_dest_func dest) override;
     bool query_data(const query::Data& q, metadata_dest_func dest) override;
     void query_summary(const Matcher& matcher, Summary& summary) override;

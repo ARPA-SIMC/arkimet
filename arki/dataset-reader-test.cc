@@ -1,4 +1,5 @@
 #include "arki/core/file.h"
+#include "arki/core/lock.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/tests.h"
@@ -352,7 +353,10 @@ template <class Data> void TestsReader<Data>::register_tests()
         // Delete a segment, leaving it in the index
         auto segment = f.segment_session()->segment_from_relpath_and_format(
             f.import_results[0].sourceBlob().filename, f.td.format);
-        f.segment_session()->segment_data_checker(segment)->remove();
+        auto checker =
+            segment->checker(std::make_shared<core::lock::NullCheckLock>());
+        auto fixer = checker->fixer();
+        fixer->remove_data();
 
         unsigned count_ok = 0;
         auto reader       = f.dataset_config()->create_reader();

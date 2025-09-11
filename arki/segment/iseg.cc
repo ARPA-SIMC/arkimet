@@ -1,53 +1,122 @@
 #include "iseg.h"
+#include "arki/core/cfg.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/inbound.h"
 #include "arki/nag.h"
 #include "arki/scan.h"
+#include "arki/segment/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "data.h"
 #include "iseg/index.h"
-#include "iseg/session.h"
 #include "reporter.h"
+#include "scan.h"
 
 using namespace arki::utils;
 
 namespace arki::segment::iseg {
 
-std::shared_ptr<RIndex>
-Segment::read_index(std::shared_ptr<const core::ReadLock> lock) const
+bool has_valid_iseg_index(std::shared_ptr<const Segment> segment)
 {
-    return std::make_shared<RIndex>(
-        std::static_pointer_cast<const iseg::Segment>(shared_from_this()),
-        lock);
+    // stat the index file, if it exists
+    auto st_md = sys::stat(segment->abspath_iseg_index());
+    if (!st_md.get())
+        return false;
+
+    auto data = Data::create(segment);
+    auto ts   = data->timestamp();
+    if (!ts)
+        return false;
+
+    return st_md->st_mtime >= ts.value();
 }
 
-std::shared_ptr<AIndex>
-Segment::append_index(std::shared_ptr<core::AppendLock> lock) const
+/*
+ * Session
+ */
+
+Session::Session(const core::cfg::Section& cfg)
+    : segment::Session(cfg), format(format_from_string(cfg.value("format"))),
+      index(types::parse_code_names(cfg.value("index"))),
+      unique(types::parse_code_names(cfg.value("unique"))),
+      trace_sql(cfg.value_bool("trace_sql"))
 {
-    return std::make_shared<AIndex>(
-        std::static_pointer_cast<const iseg::Segment>(shared_from_this()),
-        lock);
+    unique.erase(TYPE_REFTIME);
 }
 
-std::shared_ptr<CIndex>
-Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
+std::shared_ptr<segment::Reader>
+Session::create_segment_reader(std::shared_ptr<const arki::Segment> segment,
+                               std::shared_ptr<const core::ReadLock> lock) const
 {
-    return std::make_shared<CIndex>(
-        std::static_pointer_cast<const iseg::Segment>(shared_from_this()),
-        lock);
+    if (has_valid_iseg_index(segment))
+        return std::make_shared<segment::iseg::Reader>(segment, lock);
+    else if (scan::has_data(segment))
+    {
+        nag::warning("%s: outdated iseg index: falling back to data scan",
+                     segment->abspath().c_str());
+        return std::make_shared<segment::scan::Reader>(segment, lock);
+    }
+    else
+    {
+        nag::warning("%s: segment data is not available",
+                     segment->abspath().c_str());
+        return std::make_shared<segment::EmptyReader>(segment, lock);
+    }
 }
 
-Reader::Reader(std::shared_ptr<const iseg::Segment> segment,
+std::shared_ptr<segment::Writer>
+Session::segment_writer(std::shared_ptr<const arki::Segment> segment,
+                        std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<segment::iseg::Writer>(segment, lock);
+}
+
+std::shared_ptr<segment::Checker>
+Session::segment_checker(std::shared_ptr<const arki::Segment> segment,
+                         std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::iseg::Checker>(segment, lock);
+}
+
+void Session::create_iseg(std::shared_ptr<arki::Segment> segment,
+                          arki::metadata::Collection& mds) const
+{
+    auto data = segment::Data::create(segment);
+    data->create_segment(mds);
+    // TODO: implement data->read_lock() and data->check_lock()
+    auto lock = std::make_shared<core::lock::NullCheckLock>();
+    auto checker =
+        std::make_shared<arki::segment::iseg::Checker>(segment, lock);
+    auto fixer = checker->fixer();
+    fixer->reindex(mds);
+}
+
+/*
+ * Reader
+ */
+
+Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
-    : segment::Reader(segment, lock), m_index(segment->read_index(lock))
+    : segment::Reader(segment, lock), data(Data::create(segment)),
+      data_reader(data->reader(lock)),
+      m_index(std::make_shared<RIndex>(segment, lock))
 {
+}
+
+std::vector<uint8_t> Reader::read(const types::source::Blob& src)
+{
+    return data_reader->read(src);
+}
+stream::SendResult Reader::stream(const types::source::Blob& src,
+                                  StreamOutput& out)
+{
+    return data_reader->stream(src, out);
 }
 
 bool Reader::read_all(metadata_dest_func dest)
 {
-    auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+    auto reader = m_segment->reader(lock);
     return m_index->scan([&](auto md) {
         md->sourceBlob().lock(reader);
         return dest(md);
@@ -61,7 +130,7 @@ bool Reader::query_data(const query::Data& q, metadata_dest_func dest)
     // TODO: if using smallfiles there is no need to lock the source
     if (q.with_data)
     {
-        auto reader = m_segment->session().segment_data_reader(m_segment, lock);
+        auto reader = m_segment->reader(lock);
         for (auto& md : mdbuf)
             md->sourceBlob().lock(reader);
     }
@@ -79,21 +148,32 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
     m_index->query_summary_from_db(matcher, summary);
 }
 
+/*
+ * Writer
+ */
+
 Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
-    : segment::Writer(segment, lock), index(segment->append_index(lock))
+    : segment::Writer(segment, lock), data(segment::Data::create(segment)),
+      index(std::make_shared<AIndex>(segment, lock))
 {
 }
 
 Writer::~Writer() {}
+
+std::shared_ptr<segment::data::Writer>
+Writer::get_data_writer(const segment::WriterConfig& config) const
+{
+    std::filesystem::create_directories(m_segment->abspath().parent_path());
+    return data->writer(config);
+}
 
 Writer::AcquireResult
 Writer::acquire_batch_replace_never(arki::metadata::InboundBatch& batch,
                                     const WriterConfig& config)
 {
     AcquireResult res;
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer    = get_data_writer(config);
     core::Pending p_idx = index->begin_transaction();
 
     try
@@ -142,8 +222,7 @@ Writer::acquire_batch_replace_always(arki::metadata::InboundBatch& batch,
                                      const WriterConfig& config)
 {
     AcquireResult res;
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer    = get_data_writer(config);
     core::Pending p_idx = index->begin_transaction();
 
     try
@@ -178,8 +257,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                                          const WriterConfig& config)
 {
     AcquireResult res;
-    auto data_writer =
-        segment().session().segment_data_writer(m_segment, config);
+    auto data_writer    = get_data_writer(config);
     core::Pending p_idx = index->begin_transaction();
 
     try
@@ -211,7 +289,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 }
 
                 // Read the update sequence number of the old BUFR
-                auto reader = segment().data_reader(lock);
+                auto reader = segment().reader(lock);
                 old->lock(reader);
                 int old_usn;
                 if (!arki::scan::Scanner::update_sequence_number(*old, old_usn))
@@ -291,47 +369,79 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
         }
     }
 
-    res.segment_mtime = segment().data()->timestamp().value_or(0);
+    res.segment_mtime = data->timestamp().value_or(0);
     res.data_timespan = index->query_data_timespan();
+    segment().invalidate_reader_cache();
     return res;
 }
 
+/*
+ * Checker
+ */
+
 Checker::Checker(std::shared_ptr<const Segment> segment,
                  std::shared_ptr<core::CheckLock> lock)
-    : segment::Checker(segment, lock)
+    : segment::Checker(segment, lock), data(Data::create(segment))
 {
 }
+
+void Checker::update_data() { data = Data::create(m_segment); }
 
 CIndex& Checker::index()
 {
     if (!m_index)
-        m_index =
-            std::static_pointer_cast<const Segment>(m_segment)->check_index(
-                lock);
+        m_index = std::make_shared<CIndex>(
+            std::static_pointer_cast<const Segment>(m_segment), lock);
     return *m_index;
 }
 
+bool Checker::has_data() const { return data->exists_on_disk(); }
+std::optional<time_t> Checker::timestamp() const { return data->timestamp(); }
+bool Checker::allows_tar() const { return !data->single_file(); }
+bool Checker::allows_zip() const { return !data->single_file(); }
+bool Checker::allows_compress() const { return data->single_file(); }
+
 arki::metadata::Collection Checker::scan()
 {
-    auto reader = segment().session().segment_data_reader(m_segment, lock);
-
     arki::metadata::Collection res;
-    index().scan(
-        [&](auto md) {
-            md->sourceBlob().lock(reader);
+
+    if (has_valid_iseg_index(m_segment))
+    {
+        auto reader = segment().reader(lock);
+
+        index().scan(
+            [&](auto md) {
+                md->sourceBlob().lock(reader);
+                res.acquire(md);
+                return true;
+            },
+            "offset");
+        return res;
+    }
+
+    // Rescan the file
+    if (data->exists_on_disk())
+    {
+        auto data_reader = data->reader(lock);
+        data_reader->scan_data([&](std::shared_ptr<Metadata> md) {
             res.acquire(md);
             return true;
-        },
-        "offset");
-    return res;
+        });
+        return res;
+    }
+
+    std::stringstream buf;
+    buf << m_segment->abspath()
+        << ": cannot scan segment since its data is missing";
+    throw std::runtime_error(buf.str());
 }
 
 Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = m_data->checker();
-    auto ts_data      = m_data->timestamp();
+    auto data_checker = data->checker();
+    auto ts_data      = data->timestamp();
     if (!ts_data)
     {
         reporter.info(segment(), "segment data not found on disk");
@@ -339,11 +449,11 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
     res.mtime = ts_data.value();
-    res.size  = data().size();
+    res.size  = data->size();
 
     if (!std::filesystem::exists(segment().abspath_iseg_index()))
     {
-        if (data().is_empty())
+        if (data->is_empty())
         {
             reporter.info(
                 segment(),
@@ -403,9 +513,29 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
     return res;
 }
 
+bool Checker::scan_data(segment::Reporter& reporter, metadata_dest_func dest)
+{
+    auto data_checker = data->checker();
+    return data_checker->rescan_data(
+        [&](const std::string& message) { reporter.info(segment(), message); },
+        lock, dest);
+}
+
 std::shared_ptr<segment::Fixer> Checker::fixer()
 {
-    return std::make_shared<Fixer>(shared_from_this(), lock->write_lock());
+    return std::make_shared<Fixer>(
+        std::static_pointer_cast<iseg::Checker>(shared_from_this()),
+        lock->write_lock());
+}
+
+/*
+ * Fixer
+ */
+
+Fixer::Fixer(std::shared_ptr<iseg::Checker> checker,
+             std::shared_ptr<core::CheckWriteLock> lock)
+    : segment::Fixer(checker, lock)
+{
 }
 
 Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
@@ -422,12 +552,12 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 
     res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
     res.data_timespan = index.query_data_timespan();
+    segment().invalidate_reader_cache();
     return res;
 }
 
-Fixer::ReorderResult
-Fixer::reorder(arki::metadata::Collection& mds,
-               const segment::data::RepackConfig& repack_config)
+Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
+                                    const segment::RepackConfig& repack_config)
 {
     ReorderResult res;
     auto& index        = checker().index();
@@ -435,7 +565,7 @@ Fixer::reorder(arki::metadata::Collection& mds,
 
     // Make a copy of the file with the data in it ordered as mds is ordered,
     // and update the offsets in the index
-    auto data_checker   = data().checker();
+    auto data_checker   = checker().data->checker();
     auto pending_repack = data_checker->repack(mds, repack_config);
 
     // Reindex mds
@@ -447,7 +577,7 @@ Fixer::reorder(arki::metadata::Collection& mds,
             throw std::runtime_error(
                 "duplicate detected while reordering segment");
     }
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
     // Commit the changes in the file system
     pending_repack.commit();
@@ -458,7 +588,8 @@ Fixer::reorder(arki::metadata::Collection& mds,
     index.vacuum();
 
     res.segment_mtime = get_data_mtime_after_fix("reorder");
-    res.size_post     = data().size();
+    res.size_post     = checker().data->size();
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -470,8 +601,15 @@ size_t Fixer::remove(bool with_data)
     if (!with_data)
         return res;
 
-    auto data_checker = data().checker();
-    return res + data_checker->remove();
+    segment().invalidate_reader_cache();
+    return res + remove_data();
+}
+
+size_t Fixer::remove_data()
+{
+    auto data_checker = checker().data->checker();
+    segment().invalidate_reader_cache();
+    return data_checker->remove();
 }
 
 Fixer::ConvertResult Fixer::tar()
@@ -479,7 +617,7 @@ Fixer::ConvertResult Fixer::tar()
     ConvertResult res;
     if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".tar")))
     {
-        auto ts = data().timestamp();
+        auto ts = checker().data->timestamp();
         if (!ts)
         {
             std::stringstream buf;
@@ -490,10 +628,10 @@ Fixer::ConvertResult Fixer::tar()
         res.segment_mtime = ts.value();
         return res;
     }
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
     auto& index        = checker().index();
-    auto data_checker  = data().checker();
+    auto data_checker  = checker().data->checker();
     auto pending_index = index.begin_transaction();
 
     // Rescan file and sort for repacking
@@ -511,6 +649,7 @@ Fixer::ConvertResult Fixer::tar()
     pending_index.commit();
 
     checker().update_data();
+    segment().invalidate_reader_cache();
     res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
     return res;
 }
@@ -520,7 +659,7 @@ Fixer::ConvertResult Fixer::zip()
     ConvertResult res;
     if (std::filesystem::exists(sys::with_suffix(segment().abspath(), ".zip")))
     {
-        auto ts = data().timestamp();
+        auto ts = checker().data->timestamp();
         if (!ts)
         {
             std::stringstream buf;
@@ -531,10 +670,10 @@ Fixer::ConvertResult Fixer::zip()
         res.segment_mtime = ts.value();
         return res;
     }
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
     auto& index        = checker().index();
-    auto data_checker  = data().checker();
+    auto data_checker  = checker().data->checker();
     auto pending_index = index.begin_transaction();
 
     // Rescan file and sort for repacking
@@ -552,6 +691,7 @@ Fixer::ConvertResult Fixer::zip()
     pending_index.commit();
 
     checker().update_data();
+    segment().invalidate_reader_cache();
     res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
     return res;
 }
@@ -563,7 +703,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         std::filesystem::exists(
             sys::with_suffix(segment().abspath(), ".gz.idx")))
     {
-        auto ts = data().timestamp();
+        auto ts = checker().data->timestamp();
         if (!ts)
         {
             std::stringstream buf;
@@ -575,10 +715,10 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
         return res;
     }
 
-    res.size_pre = data().size();
+    res.size_pre = checker().data->size();
 
     auto& index        = checker().index();
-    auto data_checker  = data().checker();
+    auto data_checker  = checker().data->checker();
     auto pending_index = index.begin_transaction();
 
     // Rescan file and sort for repacking
@@ -596,6 +736,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     pending_index.commit();
 
     checker().update_data();
+    segment().invalidate_reader_cache();
     res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
     return res;
 }
@@ -607,19 +748,24 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     index.reindex(mds);
     pending_index.commit();
     index.vacuum();
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::move(std::shared_ptr<arki::Segment> dest)
 {
-    segment::Fixer::move(dest);
+    auto data_checker = checker().data->checker();
+    data_checker->move(dest->session().shared_from_this(), dest->relpath());
     sys::rename_ifexists(segment().abspath_iseg_index(),
                          dest->abspath_iseg_index());
+    segment().invalidate_reader_cache();
 }
 
-void Fixer::test_touch_contents(time_t timestamp)
+void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
 {
-    segment::Fixer::test_touch_contents(timestamp);
-    sys::touch_ifexists(segment().abspath_iseg_index(), timestamp);
+    auto data_checker = checker().data->checker();
+    data_checker->move(dest->session().shared_from_this(), dest->relpath());
+    remove(false);
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::test_mark_all_removed()
@@ -628,10 +774,29 @@ void Fixer::test_mark_all_removed()
     index.reset();
 }
 
+void Fixer::test_corrupt_data(unsigned data_idx)
+{
+    arki::metadata::Collection mds = m_checker->scan();
+    checker().data->checker()->test_corrupt(mds, data_idx);
+}
+
+void Fixer::test_truncate_data(unsigned data_idx)
+{
+    arki::metadata::Collection mds = m_checker->scan();
+    const auto& s                  = mds[data_idx].sourceBlob();
+    checker().data->checker()->test_truncate(s.offset);
+}
+
+void Fixer::test_touch_contents(time_t timestamp)
+{
+    checker().data->checker()->test_touch_contents(timestamp);
+    sys::touch_ifexists(segment().abspath_iseg_index(), timestamp);
+}
+
 void Fixer::test_make_overlap(unsigned overlap_size, unsigned data_idx)
 {
     auto mds          = checker().scan();
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
     data_checker->test_make_overlap(mds, overlap_size, data_idx);
     checker().index().test_make_overlap(overlap_size, data_idx);
 }
@@ -639,9 +804,34 @@ void Fixer::test_make_overlap(unsigned overlap_size, unsigned data_idx)
 void Fixer::test_make_hole(unsigned hole_size, unsigned data_idx)
 {
     auto mds          = checker().scan();
-    auto data_checker = data().checker();
+    auto data_checker = checker().data->checker();
     data_checker->test_make_hole(mds, hole_size, data_idx);
     checker().index().test_make_hole(hole_size, data_idx);
+}
+
+arki::metadata::Collection
+Fixer::test_change_metadata(std::shared_ptr<Metadata> md, unsigned data_idx)
+{
+    auto pmt = checker().data->preserve_mtime();
+
+    arki::metadata::Collection mds = m_checker->scan();
+    md->set_source(
+        std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
+    md->sourceBlob().unlock();
+    mds.replace(data_idx, md);
+
+    reindex(mds);
+    return mds;
+}
+
+void Fixer::test_swap_data(unsigned d1_idx, unsigned d2_idx,
+                           const segment::RepackConfig& repack_config)
+{
+    arki::metadata::Collection mds = m_checker->scan();
+    mds.swap(d1_idx, d2_idx);
+
+    auto pmt = checker().data->preserve_mtime();
+    reorder(mds, repack_config);
 }
 
 } // namespace arki::segment::iseg

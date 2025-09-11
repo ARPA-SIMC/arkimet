@@ -77,6 +77,12 @@ public:
     using ReadLock::ReadLock;
 };
 
+class NullAppendLock : public AppendLock
+{
+public:
+    using AppendLock::AppendLock;
+};
+
 class NullCheckLock : public CheckLock
 {
 public:

@@ -29,31 +29,29 @@ void Tests::register_tests()
         metadata::TestCollection fixture("inbound/test.grib1");
         auto session = make_shared<dataset::Session>();
         auto ds      = std::make_shared<dataset::memory::Dataset>(session);
+        auto basedir = std::filesystem::current_path() / "inbound";
         fixture.move_to(ds->inserter_func());
 
         metadata::Collection mdc(*ds, "origin:GRIB1,200");
         wassert(actual(mdc.size()) == 1u);
         wassert(actual(mdc[0].source().cloneType())
-                    .is_source_blob(DataFormat::GRIB,
-                                    std::filesystem::current_path(),
-                                    "inbound/test.grib1", 0, 7218));
+                    .is_source_blob(DataFormat::GRIB, basedir, "test.grib1", 0,
+                                    7218));
 
         mdc.clear();
 
         mdc.add(*ds, "origin:GRIB1,80");
         wassert(actual(mdc.size()) == 1u);
         wassert(actual(mdc[0].source().cloneType())
-                    .is_source_blob(DataFormat::GRIB,
-                                    std::filesystem::current_path(),
-                                    "inbound/test.grib1", 7218, 34960u));
+                    .is_source_blob(DataFormat::GRIB, basedir, "test.grib1",
+                                    7218, 34960u));
 
         mdc.clear();
         mdc.add(*ds, "origin:GRIB1,98");
         wassert(actual(mdc.size()) == 1u);
         wassert(actual(mdc[0].source().cloneType())
-                    .is_source_blob(DataFormat::GRIB,
-                                    std::filesystem::current_path(),
-                                    "inbound/test.grib1", 42178, 2234));
+                    .is_source_blob(DataFormat::GRIB, basedir, "test.grib1",
+                                    42178, 2234));
     });
 
     // Test querying the summary

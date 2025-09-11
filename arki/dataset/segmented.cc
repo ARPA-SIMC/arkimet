@@ -205,9 +205,7 @@ void Writer::test_acquire(std::shared_ptr<Session> session,
 
 CheckerSegment::CheckerSegment(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<core::CheckLock> lock)
-    : lock(lock), segment(segment), segment_checker(segment->checker(lock)),
-      segment_data(segment->data()),
-      segment_data_checker(segment_data->checker())
+    : lock(lock), segment(segment), segment_checker(segment->checker(lock))
 {
 }
 
@@ -215,27 +213,24 @@ CheckerSegment::~CheckerSegment() {}
 
 segment::Fixer::ConvertResult CheckerSegment::tar()
 {
-    auto fixer           = segment_checker->fixer();
-    auto res             = fixer->tar();
-    segment_data_checker = fixer->segment().data_checker();
+    auto fixer = segment_checker->fixer();
+    auto res   = fixer->tar();
     post_convert(fixer, res);
     return res;
 }
 
 segment::Fixer::ConvertResult CheckerSegment::zip()
 {
-    auto fixer           = segment_checker->fixer();
-    auto res             = fixer->zip();
-    segment_data_checker = fixer->segment().data_checker();
+    auto fixer = segment_checker->fixer();
+    auto res   = fixer->zip();
     post_convert(fixer, res);
     return res;
 }
 
 segment::Fixer::ConvertResult CheckerSegment::compress(unsigned groupsize)
 {
-    auto fixer           = segment_checker->fixer();
-    auto res             = fixer->compress(groupsize);
-    segment_data_checker = fixer->segment().data_checker();
+    auto fixer = segment_checker->fixer();
+    auto res   = fixer->compress(groupsize);
     post_convert(fixer, res);
     return res;
 }
@@ -245,7 +240,7 @@ segment::Fixer::ReorderResult CheckerSegment::repack(unsigned test_flags)
     metadata::Collection mds = segment_checker->scan();
     mds.sort_segment();
 
-    segment::data::RepackConfig repack_config;
+    segment::RepackConfig repack_config;
     repack_config.gz_group_size = dataset().gz_group_size;
     repack_config.test_flags    = test_flags;
 
@@ -277,16 +272,13 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    auto format = scan::Scanner::format_from_filename(
-        segment_data_checker->segment().relpath());
+    auto format = scan::Scanner::format_from_filename(segment->relpath());
 
     // Get the time range for this relpath
     core::Interval interval;
-    if (!dataset().relpath_timespan(segment_data_checker->segment().relpath(),
-                                    interval))
+    if (!dataset().relpath_timespan(segment->relpath(), interval))
         throw std::runtime_error(
-            "cannot archive segment "s +
-            segment_data_checker->segment().abspath().native() +
+            "cannot archive segment "s + segment->abspath().native() +
             " because its name does not match the dataset step");
 
     // Get the contents of this segment
@@ -304,10 +296,9 @@ void CheckerSegment::archive()
 
 void CheckerSegment::unarchive()
 {
-    auto arcrelpath = "last" / segment_data_checker->segment().relpath();
-    metadata::Collection mdc =
-        archives()->release_segment(arcrelpath, dataset().segment_session,
-                                    segment_data_checker->segment().relpath());
+    auto arcrelpath          = "last" / segment->relpath();
+    metadata::Collection mdc = archives()->release_segment(
+        arcrelpath, dataset().segment_session, segment->relpath());
     index(std::move(mdc));
 }
 
@@ -433,7 +424,7 @@ void Checker::remove(const metadata::Collection& mds)
         auto relpath    = sys::with_suffix(dataset().step()(time),
                                            "."s + format_name(source->format));
 
-        if (!dataset().segment_session->is_data_segment(relpath))
+        if (!dataset().segment_session->is_segment(relpath))
             continue;
 
         by_segment[relpath].emplace(source->offset);
@@ -452,8 +443,7 @@ void Checker::remove(const metadata::Collection& mds)
 void Checker::tar(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = segment.segment_data_checker->data();
-        if (data.single_file())
+        if (!segment.segment_checker->allows_tar())
             return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(),
@@ -472,8 +462,7 @@ void Checker::tar(CheckerConfig& opts)
 void Checker::zip(CheckerConfig& opts)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = segment.segment_data_checker->data();
-        if (data.single_file())
+        if (!segment.segment_checker->allows_zip())
             return;
         if (opts.readonly)
             opts.reporter->segment_tar(name(), segment.path_relative(),
@@ -492,8 +481,7 @@ void Checker::zip(CheckerConfig& opts)
 void Checker::compress(CheckerConfig& opts, unsigned groupsize)
 {
     segments(opts, [&](CheckerSegment& segment) {
-        const auto& data = segment.segment_data_checker->data();
-        if (!data.single_file())
+        if (!segment.segment_checker->allows_compress())
             return;
         if (opts.readonly)
             opts.reporter->segment_compress(name(), segment.path_relative(),
@@ -615,7 +603,7 @@ void Checker::scan_dir(
             return false;
 
         string name = entry->d_name;
-        if (dataset().segment_session->is_data_segment(relpath / name))
+        if (dataset().segment_session->is_segment(relpath / name))
         {
             auto basename = Segment::basename(name);
             auto segment  = dataset().segment_session->segment_from_relpath(
@@ -669,7 +657,6 @@ void Checker::test_truncate_data(const std::filesystem::path& relpath,
     auto segment  = dataset().segment_session->segment_from_relpath(relpath);
     auto csegment = this->segment(segment);
     auto fixer    = csegment->segment_checker->fixer();
-    auto pft      = segment->data()->preserve_mtime();
     fixer->test_truncate_data(data_idx);
 }
 
@@ -678,16 +665,11 @@ void Checker::test_swap_data(const std::filesystem::path& relpath,
 {
     auto segment  = dataset().segment_session->segment_from_relpath(relpath);
     auto csegment = this->segment(segment);
-    arki::metadata::Collection mds = csegment->segment_checker->scan();
-    mds.swap(d1_idx, d2_idx);
+    auto fixer    = csegment->segment_checker->fixer();
 
-    auto pft = segment->data()->preserve_mtime();
-
-    segment::data::RepackConfig repack_config;
+    segment::RepackConfig repack_config;
     repack_config.gz_group_size = dataset().gz_group_size;
-
-    auto fixer = csegment->segment_checker->fixer();
-    fixer->reorder(mds, repack_config);
+    fixer->test_swap_data(d1_idx, d2_idx, repack_config);
 }
 
 void Checker::test_rename(const std::filesystem::path& relpath,
@@ -704,17 +686,8 @@ Checker::test_change_metadata(const std::filesystem::path& relpath,
                               std::shared_ptr<Metadata> md, unsigned data_idx)
 {
     auto csegment = segment_from_relpath(relpath);
-    auto pmt      = csegment->segment_data->preserve_mtime();
-
-    metadata::Collection mds = csegment->segment_checker->scan();
-    md->set_source(
-        std::unique_ptr<arki::types::Source>(mds[data_idx].source().clone()));
-    md->sourceBlob().unlock();
-    mds.replace(data_idx, md);
-
-    auto fixer = csegment->segment_checker->fixer();
-    fixer->reindex(mds);
-    return mds;
+    auto fixer    = csegment->segment_checker->fixer();
+    return fixer->test_change_metadata(md, data_idx);
 }
 
 void Checker::test_delete_from_index(const std::filesystem::path& relpath)

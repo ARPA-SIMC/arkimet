@@ -13,11 +13,41 @@ using namespace arki::tests;
 
 namespace {
 
+struct TestSession : public segment::Session
+{
+protected:
+    std::shared_ptr<segment::Reader>
+    create_segment_reader(std::shared_ptr<const Segment>,
+                          std::shared_ptr<const core::ReadLock>) const override
+    {
+        throw std::runtime_error(
+            "cannot create a segment reader on this test session");
+    }
+
+public:
+    using segment::Session::Session;
+
+    std::shared_ptr<segment::Writer>
+    segment_writer(std::shared_ptr<const Segment>,
+                   std::shared_ptr<core::AppendLock>) const override
+    {
+        throw std::runtime_error(
+            "cannot create a segment writer on this test session");
+    }
+    std::shared_ptr<segment::Checker>
+    segment_checker(std::shared_ptr<const Segment>,
+                    std::shared_ptr<core::CheckLock>) const override
+    {
+        throw std::runtime_error(
+            "cannot create a segment checker on this test session");
+    }
+};
+
 class Tests : public TestCase
 {
     using TestCase::TestCase;
 
-    std::shared_ptr<segment::Session> session;
+    std::shared_ptr<TestSession> session;
 
     void register_tests() override;
 
@@ -25,7 +55,7 @@ class Tests : public TestCase
     {
         sys::rmtree_ifexists("test");
         std::filesystem::create_directories("test");
-        session = std::make_shared<segment::Session>("test");
+        session = std::make_shared<TestSession>("test");
     }
 } test("arki_segment_session");
 
@@ -54,6 +84,8 @@ void Tests::register_tests()
         wassert(actual(e.what()) == "relative segment path is empty");
     });
 
+    // TODO: move where needed
+#if 0
     add_method("detect_metadata", [&] {
         GRIBData td;
         auto segment = session->segment_from_relpath_and_format(
@@ -111,6 +143,7 @@ void Tests::register_tests()
             segment->checker(std::make_shared<core::lock::NullCheckLock>()));
         wassert(actual(e.what()).contains("misses a policy"));
     });
+#endif
 }
 
 } // namespace

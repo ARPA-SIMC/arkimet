@@ -4,7 +4,7 @@
 /// dataset/maintenance - Dataset maintenance utilities
 
 #include <arki/dataset/fwd.h>
-#include <arki/segment/data.h>
+#include <arki/segment.h>
 #include <string>
 #include <sys/types.h>
 #include <vector>

@@ -180,7 +180,7 @@ void MockFixer::end()
 void RealRepacker::operator()(segmented::CheckerSegment& segment,
                               segment::State state)
 {
-    if (test_flags & segment::data::RepackConfig::TEST_MISCHIEF_MOVE_DATA)
+    if (test_flags & segment::RepackConfig::TEST_MISCHIEF_MOVE_DATA)
         state += segment::SEGMENT_DIRTY;
 
     if (state.has(segment::SEGMENT_DIRTY) &&

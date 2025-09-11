@@ -208,11 +208,13 @@ public:
 
 struct TestCollection : public Collection
 {
+protected:
+    std::shared_ptr<dataset::Session> m_session;
+
+    std::shared_ptr<dataset::Session> session();
+
+public:
     using Collection::Collection;
-
-    std::shared_ptr<segment::Session> session;
-
-    TestCollection() = default;
 
     /// Construct a collection filled with the data scanned from the given file
     /// using scan::any

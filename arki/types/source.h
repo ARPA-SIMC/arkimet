@@ -84,12 +84,12 @@ public:
     static void init();
 
     static std::unique_ptr<Source>
-    createBlob(std::shared_ptr<segment::data::Reader> reader, uint64_t offset,
+    createBlob(std::shared_ptr<segment::Reader> reader, uint64_t offset,
                uint64_t size);
     static std::unique_ptr<Source>
     createBlob(DataFormat format, const std::filesystem::path& basedir,
                const std::filesystem::path& filename, uint64_t offset,
-               uint64_t size, std::shared_ptr<segment::data::Reader> reader);
+               uint64_t size, std::shared_ptr<segment::Reader> reader);
     static std::unique_ptr<Source>
     createBlobUnlocked(DataFormat format, const std::filesystem::path& basedir,
                        const std::filesystem::path& filename, uint64_t offset,

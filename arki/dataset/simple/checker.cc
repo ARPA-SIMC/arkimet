@@ -46,7 +46,7 @@ public:
 
     std::filesystem::path path_relative() const override
     {
-        return segment_data_checker->segment().relpath();
+        return segment->relpath();
     }
     const simple::Dataset& dataset() const override
     {
@@ -74,8 +74,7 @@ public:
         if (!dataset().step().path_timespan(segment->relpath(), res.interval))
         {
             reporter.segment_info(
-                dataset_checker.name(),
-                segment_data_checker->segment().relpath(),
+                dataset_checker.name(), segment->relpath(),
                 "segment name does not fit the step of this dataset");
             res.state += segment::SEGMENT_CORRUPTED;
             return res;
@@ -134,8 +133,7 @@ public:
             return res;
         }
 
-        res.check_age(segment_data_checker->segment().relpath(), dataset(),
-                      reporter);
+        res.check_age(segment->relpath(), dataset(), reporter);
 
         return res;
     }
@@ -169,8 +167,8 @@ public:
                       segment::Fixer::ConvertResult& res) override
     {
         // Reindex with the new file information
-        dataset_checker.manifest.set_mtime(
-            segment_data_checker->segment().relpath(), res.segment_mtime);
+        dataset_checker.manifest.set_mtime(segment->relpath(),
+                                           res.segment_mtime);
         dataset_checker.manifest.flush();
     }
 
@@ -179,7 +177,7 @@ public:
         auto fixer = segment_checker->fixer();
         fixer->reindex(mds);
 
-        time_t mtime = segment_data->timestamp().value();
+        time_t mtime = segment_checker->timestamp().value();
         core::Interval interval;
         mds.expand_date_range(interval);
 
@@ -193,18 +191,14 @@ public:
 
     void rescan(dataset::Reporter& reporter) override
     {
+        auto segment_reporter =
+            reporter.segment_reporter(dataset_checker.name());
         auto path_metadata = segment->abspath_metadata();
 
         metadata::Collection mds;
-        segment_data_checker->rescan_data(
-            [&](const std::string& msg) {
-                reporter.segment_info(dataset_checker.name(),
-                                      segment_data_checker->segment().relpath(),
-                                      msg);
-            },
-            lock, mds.inserter_func());
+        segment_checker->scan_data(*segment_reporter, mds.inserter_func());
 
-        time_t mtime = segment_data->timestamp().value();
+        time_t mtime = segment_checker->timestamp().value();
         core::Interval interval;
         mds.expand_date_range(interval);
 
@@ -221,11 +215,11 @@ public:
     release(std::shared_ptr<const segment::Session> new_segment_session,
             const std::filesystem::path& new_relpath) override
     {
-        // TODO: get a fixer lock
         metadata::Collection mds = segment_checker->scan();
-        segment_data_checker->move(new_segment_session, new_relpath);
-        dataset_checker.manifest.remove(
-            segment_data_checker->segment().relpath());
+        auto fixer               = segment_checker->fixer();
+        fixer->move_data(
+            new_segment_session->segment_from_relpath(new_relpath));
+        dataset_checker.manifest.remove(segment->relpath());
         dataset_checker.manifest.flush();
         invalidate_dataset_summary();
         return mds;

@@ -79,10 +79,10 @@ void Tests::register_tests()
         for (const auto& i : *cfg)
             pool->add_dataset(*i.second);
 
-        plain_data_read_count.reset();
         metadata::TrackedData tracked_data(metadata::DataManager::get());
-
         metadata::TestCollection mdc("inbound/test.grib1", true);
+        plain_data_read_count.reset();
+
         RealDispatcher dispatcher(pool);
         auto batch = mdc.make_batch();
         wassert(dispatcher.dispatch(batch, false));
@@ -108,10 +108,10 @@ void Tests::register_tests()
         for (const auto& i : *cfg)
             pool->add_dataset(*i.second);
 
-        plain_data_read_count.reset();
         metadata::TrackedData tracked_data(metadata::DataManager::get());
-
         metadata::TestCollection mdc("inbound/test.grib1", true);
+        plain_data_read_count.reset();
+
         RealDispatcher dispatcher(pool);
         auto batch = mdc.make_batch();
         wassert(dispatcher.dispatch(batch, true));

@@ -23,28 +23,6 @@
 
 namespace arki::segment {
 
-namespace data {
-struct RepackConfig
-{
-    /**
-     * When repacking gzidx segments, how many data items are compressed
-     * together.
-     */
-    unsigned gz_group_size = 512;
-
-    /**
-     * Turn on perturbating repack behaviour during tests
-     */
-    unsigned test_flags = 0;
-
-    /// During repack, move all data to a different location than it was before
-    static const unsigned TEST_MISCHIEF_MOVE_DATA = 1;
-
-    RepackConfig();
-    explicit RepackConfig(unsigned gz_group_size, unsigned test_flags = 0);
-};
-} // namespace data
-
 /**
  * Interface for managing a segment.
  *
@@ -66,8 +44,6 @@ public:
 
     /// Access the underlying segment
     const Segment& segment() const { return *m_segment; }
-    /// Access the underlying segment session
-    const segment::Session& session() const { return m_segment->session(); }
 
     /**
      * Return a name identifying the type of segment backend
@@ -145,14 +121,16 @@ public:
      * Replace metadata sources with pointers to the data in the newly created
      * segment
      */
-    virtual void
-    create_segment(arki::metadata::Collection& mds,
-                   const data::RepackConfig& cfg = data::RepackConfig()) = 0;
+    virtual void create_segment(arki::metadata::Collection& mds,
+                                const RepackConfig& cfg = RepackConfig()) = 0;
 
     /**
      * Preserve segment mtime
      */
     virtual utils::files::PreserveFileTimes preserve_mtime() = 0;
+
+    static std::shared_ptr<segment::Data>
+    create(std::shared_ptr<const Segment> segment);
 };
 
 namespace data {
@@ -247,8 +225,7 @@ public:
     virtual size_t remove()                                         = 0;
 
     /**
-     * Rescan the segment, possibly fixing fixable issues found during the
-     * rescan
+     * Rescan the segment
      */
     virtual bool rescan_data(std::function<void(const std::string&)> reporter,
                              std::shared_ptr<const core::ReadLock> lock,

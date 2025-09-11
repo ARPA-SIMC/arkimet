@@ -3,14 +3,18 @@
 
 #include <arki/defs.h>
 
-namespace arki::segment::data {
+namespace arki::segment {
+class Data;
+
+namespace data {
 class Reader;
 class Writer;
 struct WriterConfig;
 class Checker;
 class CheckerSegment;
-struct RepackConfig;
 class Manager;
-} // namespace arki::segment::data
+} // namespace data
+
+} // namespace arki::segment
 
 #endif

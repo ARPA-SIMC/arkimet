@@ -18,10 +18,37 @@ using namespace arki::core;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace dataset {
+namespace arki::dataset::archive {
 
-namespace archive {
+struct SegmentSession : public segment::Session
+{
+protected:
+    std::shared_ptr<segment::Reader>
+    create_segment_reader(std::shared_ptr<const Segment>,
+                          std::shared_ptr<const core::ReadLock>) const override
+    {
+        throw std::runtime_error("archive tried to create a segment reader "
+                                 "instead of delegating to subdatasets");
+    }
+
+public:
+    using segment::Session::Session;
+
+    std::shared_ptr<segment::Writer>
+    segment_writer(std::shared_ptr<const Segment>,
+                   std::shared_ptr<core::AppendLock>) const override
+    {
+        throw std::runtime_error("archive tried to create a segment writer "
+                                 "instead of delegating to subdatasets");
+    }
+    std::shared_ptr<segment::Checker>
+    segment_checker(std::shared_ptr<const Segment>,
+                    std::shared_ptr<core::CheckLock>) const override
+    {
+        throw std::runtime_error("archive tried to create a segment checker "
+                                 "instead of delegating to subdatasets");
+    }
+};
 
 bool is_archive(const std::filesystem::path& dir)
 {
@@ -200,16 +227,17 @@ public:
     {
         ArchivesRoot<dataset::Checker>::rescan(true);
 
-        // Instantiate the 'last' archive even if the directory does not exist
+        // Instantiate the 'last' archive even if the directory does not
+        // exist
         if (!last)
         {
             last = instantiate("last");
 
             // FIXME: this fails if a file has already been placed there.
-            // Use a new Checker::create function instead, that just makes sure
-            // a dataset is there without needs-check-do-not-pack (but then it
-            // should fail if the directory already exists).
-            // Ok, instead, when archiving a file, ensure that 'last' exists
+            // Use a new Checker::create function instead, that just makes
+            // sure a dataset is there without needs-check-do-not-pack (but
+            // then it should fail if the directory already exists). Ok,
+            // instead, when archiving a file, ensure that 'last' exists
             // before starting moving files into it.
 
             // Run a check to remove needs-check-do-not-pack files
@@ -237,7 +265,7 @@ Dataset::Dataset(std::shared_ptr<Session> session,
                  const std::filesystem::path& root,
                  const std::string& step_name)
     : dataset::Dataset(session, "archives"), root(root),
-      segment_session(std::make_shared<segment::Session>(root)),
+      segment_session(std::make_shared<SegmentSession>(root)),
       step_name(step_name)
 {
 }
@@ -533,6 +561,4 @@ unsigned Checker::test_count_archives() const
     return archives->archives.size();
 }
 
-} // namespace archive
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::archive

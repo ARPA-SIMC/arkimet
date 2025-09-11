@@ -274,7 +274,10 @@ bool Data::exists_on_disk() const
 
 bool Data::is_empty() const
 {
-    if (!std::filesystem::is_directory(segment().abspath()))
+    auto st = sys::stat(segment().abspath());
+    if (!st)
+        return true;
+    if (!S_ISDIR(st->st_mode))
         return false;
     sys::Path dir(segment().abspath());
 
@@ -340,22 +343,28 @@ Data::reader(std::shared_ptr<const core::ReadLock> lock) const
 std::shared_ptr<data::Writer>
 Data::writer(const segment::WriterConfig& config) const
 {
-    if (session().mock_data)
-        return make_shared<HoleWriter>(
-            config, static_pointer_cast<const Data>(shared_from_this()));
-    else
-        return make_shared<Writer>(
-            config, static_pointer_cast<const Data>(shared_from_this()));
+    return make_shared<Writer>(
+        config, static_pointer_cast<const Data>(shared_from_this()));
 }
 std::shared_ptr<data::Checker> Data::checker() const
 {
-    if (session().mock_data)
-        return make_shared<HoleChecker>(
-            static_pointer_cast<const Data>(shared_from_this()));
-    else
-        return make_shared<Checker>(
-            static_pointer_cast<const Data>(shared_from_this()));
+    return make_shared<Checker>(
+        static_pointer_cast<const Data>(shared_from_this()));
 }
+
+std::shared_ptr<segment::data::Writer>
+HoleData::writer(const segment::WriterConfig& config) const
+{
+    return make_shared<HoleWriter>(
+        config, static_pointer_cast<const Data>(shared_from_this()));
+}
+
+std::shared_ptr<segment::data::Checker> HoleData::checker() const
+{
+    return make_shared<HoleChecker>(
+        static_pointer_cast<const Data>(shared_from_this()));
+}
+
 std::shared_ptr<data::Checker>
 Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
@@ -390,8 +399,7 @@ bool Reader::scan_data(metadata_dest_func dest)
 {
     Scanner scanner(segment());
     scanner.list_files();
-    return scanner.scan(
-        static_pointer_cast<data::Reader>(this->shared_from_this()), dest);
+    return scanner.scan(segment().reader(lock), dest);
 }
 
 sys::File Reader::open_src(const types::source::Blob& src)
@@ -572,6 +580,8 @@ bool BaseChecker<Data>::rescan_data(
 
         scanner.list_files();
 
+        // FIXME: this is a write done while holding a read lock, and needs to
+        // be moved to a fix method
         if (cur_sequence < scanner.max_sequence)
         {
             stringstream out;
@@ -583,9 +593,8 @@ bool BaseChecker<Data>::rescan_data(
         }
     }
 
-    auto reader = this->data().reader(lock);
-    return scanner.scan(reporter, static_pointer_cast<data::Reader>(reader),
-                        dest);
+    auto reader = this->segment().reader(lock);
+    return scanner.scan(reporter, reader, dest);
 }
 
 template <typename Data>
@@ -884,11 +893,12 @@ void Scanner::list_files()
         i.path->fstatat(i->d_name, st);
         size_t seq = (size_t)strtoul(i->d_name, 0, 10);
         on_disk.insert(make_pair(seq, ScannerData(i->d_name, st.st_size)));
-        max_sequence = max(max_sequence, seq);
     }
+    if (!on_disk.empty())
+        max_sequence = on_disk.rbegin()->first;
 }
 
-bool Scanner::scan(std::shared_ptr<data::Reader> reader,
+bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
                    metadata_dest_func dest)
 {
     // Scan them one by one
@@ -905,7 +915,7 @@ bool Scanner::scan(std::shared_ptr<data::Reader> reader,
 }
 
 bool Scanner::scan(std::function<void(const std::string&)> reporter,
-                   std::shared_ptr<data::Reader> reader,
+                   std::shared_ptr<segment::Reader> reader,
                    metadata_dest_func dest)
 {
     // Scan them one by one

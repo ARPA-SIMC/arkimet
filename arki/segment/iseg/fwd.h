@@ -8,6 +8,7 @@ class RIndex;
 class AIndex;
 class CIndex;
 
+class Session;
 class Reader;
 class Checker;
 class Fixer;

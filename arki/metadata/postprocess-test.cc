@@ -2,9 +2,10 @@
 #include "arki/core/cfg.h"
 #include "arki/core/lock.h"
 #include "arki/metadata.h"
+#include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/reader.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/stream.h"
 #include "arki/stream/filter.h"
 #include "arki/tests/tests.h"
@@ -111,23 +112,18 @@ void Tests::register_tests()
     });
 
     add_method("cat", [] {
-        auto session = std::make_shared<segment::Session>("inbound");
-        auto segment = session->segment_from_relpath_and_format(
-            "test.grib1", DataFormat::GRIB);
-        auto reader =
-            segment->reader(std::make_shared<core::lock::NullReadLock>());
+        TestCollection data("inbound/test.grib1", true);
 
         // Get the normal data
-        vector<uint8_t> plain;
+        std::vector<uint8_t> plain;
         {
             core::BinaryEncoder enc(plain);
-            reader->read_all([&](std::shared_ptr<Metadata> md) {
+            for (auto md : data)
+            {
                 md->makeInline();
                 md->encodeBinary(enc);
-                const auto& data = md->get_data().read();
-                enc.add_raw(data);
-                return true;
-            });
+                enc.add_raw(md->get_data().read());
+            }
         }
 
         // Get the postprocessed data

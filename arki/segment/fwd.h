@@ -16,29 +16,7 @@ struct WriterConfig;
 class Writer;
 class Checker;
 class Fixer;
-class Data;
-
-namespace data {
-class Reader;
-class Writer;
-class Checker;
 struct RepackConfig;
-} // namespace data
-
-namespace metadata {
-class Reader;
-}
-
-namespace scan {
-class Reader;
-}
-
-namespace iseg {
-class Segment;
-class Session;
-class Reader;
-} // namespace iseg
-
 } // namespace segment
 
 } // namespace arki

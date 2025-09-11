@@ -8,9 +8,26 @@
 #include <arki/metadata/fwd.h>
 #include <string>
 
-namespace arki {
-namespace dataset {
-namespace outbound {
+namespace arki::dataset::outbound {
+
+struct SegmentSession : public segment::Session
+{
+protected:
+    std::shared_ptr<segment::Reader> create_segment_reader(
+        std::shared_ptr<const Segment> segment,
+        std::shared_ptr<const core::ReadLock> lock) const override;
+
+public:
+    using segment::Session::Session;
+
+    std::shared_ptr<segment::Writer>
+    segment_writer(std::shared_ptr<const Segment> segment,
+                   std::shared_ptr<core::AppendLock> lock) const override;
+
+    std::shared_ptr<segment::Checker>
+    segment_checker(std::shared_ptr<const Segment> segment,
+                    std::shared_ptr<core::CheckLock> lock) const override;
+};
 
 struct Dataset : public segmented::Dataset
 {
@@ -18,6 +35,8 @@ struct Dataset : public segmented::Dataset
 
     std::shared_ptr<dataset::Reader> create_reader() override;
     std::shared_ptr<dataset::Writer> create_writer() override;
+
+    std::shared_ptr<core::AppendLock> append_lock_dataset() const;
 };
 
 /**
@@ -28,13 +47,10 @@ struct Dataset : public segmented::Dataset
  */
 class Writer : public DatasetAccess<Dataset, segmented::Writer>
 {
-    metadata::Inbound::Result
-    acquire(Metadata& md, const AcquireConfig& cfg = AcquireConfig());
-
 public:
     // Initialise the dataset with the information from the configurationa in
     // 'cfg'
-    Writer(std::shared_ptr<Dataset> config);
+    explicit Writer(std::shared_ptr<Dataset> config);
     virtual ~Writer();
 
     std::string type() const override;
@@ -54,7 +70,5 @@ public:
                              metadata::InboundBatch& batch);
 };
 
-} // namespace outbound
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::outbound
 #endif

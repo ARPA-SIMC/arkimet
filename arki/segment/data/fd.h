@@ -37,7 +37,7 @@ public:
     static bool can_store(DataFormat format);
 
     static std::shared_ptr<segment::Data>
-    detect_data(std::shared_ptr<const Segment> segment);
+    detect_data(std::shared_ptr<const Segment> segment, bool mock_data);
 };
 
 /// Base class for unix fd based read/write functions
@@ -92,9 +92,8 @@ public:
     State check(std::function<void(const std::string&)> reporter,
                 const arki::metadata::Collection& mds,
                 bool quick = true) override;
-    core::Pending
-    repack(arki::metadata::Collection& mds,
-           const data::RepackConfig& cfg = data::RepackConfig()) override;
+    core::Pending repack(arki::metadata::Collection& mds,
+                         const RepackConfig& cfg = RepackConfig()) override;
     size_t remove() override;
 
     void test_truncate(size_t offset) override;
@@ -123,9 +122,8 @@ public:
     std::shared_ptr<segment::data::Writer>
     writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(
-        arki::metadata::Collection& mds,
-        const data::RepackConfig& cfg = data::RepackConfig()) override
+    void create_segment(arki::metadata::Collection& mds,
+                        const RepackConfig& cfg = RepackConfig()) override
     {
         throw std::runtime_error(
             "segment::data::single::create_segment not yet implemented");
@@ -180,9 +178,8 @@ public:
     std::shared_ptr<segment::data::Writer>
     writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(
-        arki::metadata::Collection& mds,
-        const data::RepackConfig& cfg = data::RepackConfig()) override
+    void create_segment(arki::metadata::Collection& mds,
+                        const RepackConfig& cfg = RepackConfig()) override
     {
         create(*m_segment, mds, cfg);
     }
@@ -192,6 +189,16 @@ public:
            const RepackConfig& cfg = RepackConfig());
 
     static const unsigned padding = 0;
+};
+
+class HoleData : public Data
+{
+public:
+    using Data::Data;
+
+    std::shared_ptr<segment::data::Writer>
+    writer(const segment::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
 };
 
 class Reader : public fd::Reader<Data>
@@ -210,9 +217,8 @@ class Checker : public fd::Checker<Data, File>
 {
 public:
     using fd::Checker<Data, File>::Checker;
-    core::Pending
-    repack(arki::metadata::Collection& mds,
-           const data::RepackConfig& cfg = data::RepackConfig()) override;
+    core::Pending repack(arki::metadata::Collection& mds,
+                         const RepackConfig& cfg = RepackConfig()) override;
 };
 
 class HoleWriter : public fd::Writer<Data, HoleFile>
@@ -225,9 +231,8 @@ class HoleChecker : public fd::Checker<Data, HoleFile>
 {
 public:
     using fd::Checker<Data, HoleFile>::Checker;
-    core::Pending
-    repack(arki::metadata::Collection& mds,
-           const data::RepackConfig& cfg = data::RepackConfig()) override;
+    core::Pending repack(arki::metadata::Collection& mds,
+                         const RepackConfig& cfg = RepackConfig()) override;
 };
 
 } // namespace concat
@@ -258,9 +263,8 @@ public:
     std::shared_ptr<segment::data::Writer>
     writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(
-        arki::metadata::Collection& mds,
-        const data::RepackConfig& cfg = data::RepackConfig()) override
+    void create_segment(arki::metadata::Collection& mds,
+                        const RepackConfig& cfg = RepackConfig()) override
     {
         create(*m_segment, mds, cfg);
     }

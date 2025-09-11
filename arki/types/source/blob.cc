@@ -1,7 +1,7 @@
 #include "blob.h"
 #include "arki/core/binary.h"
 #include "arki/exceptions.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/structured/emitter.h"
 #include "arki/structured/keys.h"
 #include "arki/structured/reader.h"
@@ -92,9 +92,8 @@ bool Blob::equals(const Type& o) const
 
 Blob* Blob::clone() const { return new Blob(*this); }
 
-std::unique_ptr<Blob>
-Blob::create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset,
-             uint64_t size)
+std::unique_ptr<Blob> Blob::create(std::shared_ptr<segment::Reader> reader,
+                                   uint64_t offset, uint64_t size)
 {
     auto res =
         create_unlocked(reader->segment().format(), reader->segment().root(),
@@ -103,10 +102,11 @@ Blob::create(std::shared_ptr<segment::data::Reader> reader, uint64_t offset,
     return res;
 }
 
-std::unique_ptr<Blob>
-Blob::create(DataFormat format, const std::filesystem::path& basedir,
-             const std::filesystem::path& filename, uint64_t offset,
-             uint64_t size, std::shared_ptr<segment::data::Reader> reader)
+std::unique_ptr<Blob> Blob::create(DataFormat format,
+                                   const std::filesystem::path& basedir,
+                                   const std::filesystem::path& filename,
+                                   uint64_t offset, uint64_t size,
+                                   std::shared_ptr<segment::Reader> reader)
 {
     auto res = create_unlocked(format, basedir, filename, offset, size);
     res->lock(reader);
@@ -172,7 +172,7 @@ std::filesystem::path Blob::absolutePathname() const
     return basedir / filename;
 }
 
-void Blob::lock(std::shared_ptr<segment::data::Reader> reader)
+void Blob::lock(std::shared_ptr<segment::Reader> reader)
 {
     this->reader = reader;
 }

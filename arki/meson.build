@@ -124,7 +124,6 @@ libarkimet_sources = [
     'segment/iseg/index/attr.cc',
     'segment/iseg/index/aggregate.cc',
     'segment/iseg/index.cc',
-    'segment/iseg/session.cc',
     'formatter.cc',
     'scan.cc',
     'scan/validator.cc',
@@ -361,7 +360,6 @@ test_segment_sources = [
     'segment/iseg/index/aggregate-test.cc',
     'segment/iseg/index-test.cc',
     'segment/iseg-test.cc',
-    'segment/iseg/session-test.cc',
     'segment/session-test.cc',
     'segment-test.cc',
 ]

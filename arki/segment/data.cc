@@ -25,6 +25,131 @@ Data::Data(std::shared_ptr<const Segment> segment) : m_segment(segment) {}
 
 Data::~Data() {}
 
+std::shared_ptr<segment::Data>
+Data::create(std::shared_ptr<const Segment> segment)
+{
+    std::unique_ptr<struct stat> st = sys::stat(segment->abspath());
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+        {
+            if (segment->session().mock_data)
+                return std::make_shared<segment::data::dir::HoleData>(segment);
+            else
+                return std::make_shared<segment::data::dir::Data>(segment);
+        }
+        else
+        {
+            return segment::data::fd::Data::detect_data(
+                segment, segment->session().mock_data);
+        }
+    }
+
+    st = sys::stat(sys::with_suffix(segment->abspath(), ".gz"));
+    if (st.get())
+    {
+        if (S_ISDIR(st->st_mode))
+        {
+            std::stringstream buf;
+            buf << "cannot access data for " << segment->format()
+                << " directory " << segment->relpath()
+                << ": cannot handle a directory with a .gz extension";
+            throw std::runtime_error(buf.str());
+        }
+
+        switch (segment->format())
+        {
+            case DataFormat::GRIB:
+            case DataFormat::BUFR:
+                return std::make_shared<segment::data::gzconcat::Data>(segment);
+            case DataFormat::VM2:
+                return std::make_shared<segment::data::gzlines::Data>(segment);
+            case DataFormat::ODIMH5:
+            case DataFormat::NETCDF:
+            case DataFormat::JPEG:
+                return std::make_shared<segment::data::gzconcat::Data>(segment);
+            default: {
+                std::stringstream buf;
+                buf << "cannot access data for " << segment->format()
+                    << " file " << segment->relpath()
+                    << ": format not supported";
+                throw std::runtime_error(buf.str());
+            }
+        }
+    }
+
+    st = sys::stat(sys::with_suffix(segment->abspath(), ".tar"));
+    if (st.get())
+        return std::make_shared<segment::data::tar::Data>(segment);
+
+    st = sys::stat(sys::with_suffix(segment->abspath(), ".zip"));
+    if (st.get())
+        return std::make_shared<segment::data::zip::Data>(segment);
+
+    // Segment not found on disk, create from defaults
+
+    switch (segment->format())
+    {
+        case DataFormat::GRIB:
+        case DataFormat::BUFR:
+            switch (segment->session().default_file_segment)
+            {
+                case segment::DefaultFileSegment::SEGMENT_FILE:
+                    return std::make_shared<segment::data::concat::Data>(
+                        segment);
+                case segment::DefaultFileSegment::SEGMENT_GZ:
+                    return std::make_shared<segment::data::gzconcat::Data>(
+                        segment);
+                case segment::DefaultFileSegment::SEGMENT_DIR:
+                    return std::make_shared<segment::data::dir::Data>(segment);
+                case segment::DefaultFileSegment::SEGMENT_TAR:
+                    return std::make_shared<segment::data::tar::Data>(segment);
+                case segment::DefaultFileSegment::SEGMENT_ZIP:
+                    return std::make_shared<segment::data::zip::Data>(segment);
+                default:
+                    throw std::runtime_error("Unknown default file segment");
+            }
+        case DataFormat::VM2:
+            switch (segment->session().default_file_segment)
+            {
+                case segment::DefaultFileSegment::SEGMENT_FILE:
+                    return std::make_shared<segment::data::lines::Data>(
+                        segment);
+                case segment::DefaultFileSegment::SEGMENT_GZ:
+                    return std::make_shared<segment::data::gzlines::Data>(
+                        segment);
+                case segment::DefaultFileSegment::SEGMENT_DIR:
+                    return std::make_shared<segment::data::dir::Data>(segment);
+                case segment::DefaultFileSegment::SEGMENT_TAR:
+                    return std::make_shared<segment::data::tar::Data>(segment);
+                case segment::DefaultFileSegment::SEGMENT_ZIP:
+                    return std::make_shared<segment::data::zip::Data>(segment);
+                default:
+                    throw std::runtime_error("Unknown default file segment");
+            }
+        case DataFormat::ODIMH5:
+        case DataFormat::NETCDF:
+        case DataFormat::JPEG:
+            switch (segment->session().default_dir_segment)
+            {
+                case segment::DefaultDirSegment::SEGMENT_DIR:
+                    return std::make_shared<segment::data::dir::Data>(segment);
+                case segment::DefaultDirSegment::SEGMENT_TAR:
+                    return std::make_shared<segment::data::tar::Data>(segment);
+                case segment::DefaultDirSegment::SEGMENT_ZIP:
+                    return std::make_shared<segment::data::zip::Data>(segment);
+                default:
+                    throw std::runtime_error("Unknown default dir segment");
+            }
+        default: {
+            std::stringstream buf;
+            buf << "cannot access data for " << segment->format() << " file "
+                << segment->relpath() << ": format not supported";
+            throw std::runtime_error(buf.str());
+        }
+    }
+}
+
 namespace data {
 
 Reader::Reader(std::shared_ptr<const core::ReadLock> lock) : lock(lock) {}
@@ -64,12 +189,6 @@ void Writer::PendingMetadata::set_source()
     md.set_source(std::move(source));
     if (config.drop_cached_data_on_commit)
         md.drop_cached_data();
-}
-
-RepackConfig::RepackConfig() {}
-RepackConfig::RepackConfig(unsigned gz_group_size, unsigned test_flags)
-    : gz_group_size(gz_group_size), test_flags(test_flags)
-{
 }
 
 std::shared_ptr<segment::data::Checker> Checker::tar(Collection& mds)

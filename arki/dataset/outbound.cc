@@ -1,6 +1,8 @@
 #include "outbound.h"
+#include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
+#include "arki/segment/scan.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/accounting.h"
@@ -14,13 +16,36 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace dataset {
-namespace outbound {
+namespace arki::dataset::outbound {
+
+std::shared_ptr<segment::Reader> SegmentSession::create_segment_reader(
+    std::shared_ptr<const Segment> segment,
+    std::shared_ptr<const core::ReadLock> lock) const
+{
+    throw std::runtime_error("outbound dataset does not support reading");
+}
+
+std::shared_ptr<segment::Writer>
+SegmentSession::segment_writer(std::shared_ptr<const Segment> segment,
+                               std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<segment::scan::Writer>(segment, lock);
+}
+
+std::shared_ptr<segment::Checker>
+SegmentSession::segment_checker(std::shared_ptr<const Segment>,
+                                std::shared_ptr<core::CheckLock>) const
+{
+    throw std::runtime_error("outbound dataset does not support checking");
+}
+
+/*
+ * Dataset
+ */
 
 Dataset::Dataset(std::shared_ptr<Session> session,
                  const core::cfg::Section& cfg)
-    : segmented::Dataset(session, std::make_shared<segment::Session>(cfg), cfg)
+    : segmented::Dataset(session, std::make_shared<SegmentSession>(cfg), cfg)
 {
 }
 
@@ -35,6 +60,15 @@ std::shared_ptr<dataset::Writer> Dataset::create_writer()
         static_pointer_cast<Dataset>(shared_from_this()));
 }
 
+std::shared_ptr<core::AppendLock> Dataset::append_lock_dataset() const
+{
+    return std::make_shared<DatasetAppendLock>(*this);
+}
+
+/*
+ * Writer
+ */
+
 Writer::Writer(std::shared_ptr<Dataset> dataset) : DatasetAccess(dataset)
 {
     // Create the directory if it does not exist
@@ -45,51 +79,24 @@ Writer::~Writer() {}
 
 std::string Writer::type() const { return "outbound"; }
 
-metadata::Inbound::Result Writer::acquire(Metadata& md,
-                                          const AcquireConfig& cfg)
-{
-    acct::acquire_single_count.incr();
-    auto age_check = dataset().check_acquire_age(md);
-    if (age_check.first)
-        return age_check.second;
-
-    core::Time time = md.get<types::reftime::Position>()->get_Position();
-    auto segment = dataset().segment_session->segment_from_relpath_and_format(
-        dataset().step()(time), md.source().format);
-    std::filesystem::create_directories(segment->abspath().parent_path());
-
-    segment::WriterConfig writer_config;
-    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
-
-    try
-    {
-        auto w = dataset().segment_session->segment_data_writer(segment,
-                                                                writer_config);
-        w->append(md);
-        return metadata::Inbound::Result::OK;
-    }
-    catch (std::exception& e)
-    {
-        md.add_note("Failed to store in dataset '" + name() + "': " + e.what());
-        return metadata::Inbound::Result::ERROR;
-    }
-
-    // This should never be reached, but we throw an exception to avoid a
-    // warning from the compiler
-    throw std::runtime_error("this code path should never be reached (it is "
-                             "here to appease a compiler warning)");
-}
-
 void Writer::acquire_batch(metadata::InboundBatch& batch,
                            const AcquireConfig& cfg)
 {
     acct::acquire_batch_count.incr();
-    for (auto& e : batch)
+
+    segment::WriterConfig writer_config{dataset().name()};
+    writer_config.drop_cached_data_on_commit = cfg.drop_cached_data_on_commit;
+
+    std::map<std::string, metadata::InboundBatch> by_segment =
+        batch_by_segment(batch);
+
+    // Import data grouped by segment
+    auto lock = dataset().append_lock_dataset();
+    for (auto& s : by_segment)
     {
-        e->destination.clear();
-        e->result = acquire(*e->md, cfg);
-        if (e->result == metadata::Inbound::Result::OK)
-            e->destination = name();
+        auto segment = dataset().segment_session->segment_from_relpath(s.first);
+        auto writer  = segment->writer(lock);
+        writer->acquire(s.second, writer_config);
     }
 }
 
@@ -126,6 +133,4 @@ void Writer::test_acquire(std::shared_ptr<Session> session,
     }
 }
 
-} // namespace outbound
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::outbound

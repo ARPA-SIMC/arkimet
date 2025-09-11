@@ -3,7 +3,7 @@
 
 #include <arki/core/time.h>
 #include <arki/dataset/local.h>
-#include <arki/segment/data.h>
+#include <arki/segment.h>
 
 namespace arki::dataset::segmented {
 struct TestHooks;
@@ -152,8 +152,6 @@ public:
     std::shared_ptr<core::CheckLock> lock;
     std::shared_ptr<const Segment> segment;
     std::shared_ptr<segment::Checker> segment_checker;
-    std::shared_ptr<segment::Data> segment_data;
-    std::shared_ptr<segment::data::Checker> segment_data_checker;
 
     CheckerSegment(std::shared_ptr<const Segment> segment,
                    std::shared_ptr<core::CheckLock> lock);

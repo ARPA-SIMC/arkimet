@@ -1,7 +1,9 @@
 #include "tests.h"
 #include "arki/core/lock.h"
 #include "arki/segment/iseg.h"
-#include "arki/segment/iseg/session.h"
+#include "arki/segment/iseg/index.h"
+#include "arki/segment/metadata.h"
+#include "arki/segment/scan.h"
 #include "arki/utils/sys.h"
 #include "data.h"
 
@@ -15,7 +17,8 @@ void fill_scan_segment(std::shared_ptr<const Segment> segment,
 {
     segment::WriterConfig wconf{"test"};
     wconf.drop_cached_data_on_commit = true;
-    auto data_writer                 = segment->data_writer(wconf);
+    auto data                        = segment::Data::create(segment);
+    auto data_writer                 = data->writer(wconf);
     for (auto i : mds)
         data_writer->append(*i);
     data_writer->commit();
@@ -26,21 +29,42 @@ void fill_metadata_segment(std::shared_ptr<const Segment> segment,
 {
     segment::WriterConfig wconf{"test"};
     wconf.drop_cached_data_on_commit = true;
-    auto data_writer                 = segment->data_writer(wconf);
+    auto data                        = segment::Data::create(segment);
+    auto data_writer                 = data->writer(wconf);
     for (auto i : mds)
         data_writer->append(*i);
     data_writer->commit();
     mds.writeAtomically(sys::with_suffix(segment->abspath(), ".metadata"));
 }
 
+void fill_iseg_segment(std::shared_ptr<const Segment> segment,
+                       arki::metadata::Collection& mds)
+{
+    segment::WriterConfig wconf{"test"};
+    wconf.drop_cached_data_on_commit = true;
+    auto data                        = segment::Data::create(segment);
+    auto data_writer                 = data->writer(wconf);
+    for (auto i : mds)
+        data_writer->append(*i);
+    data_writer->commit();
+    segment::iseg::CIndex index(segment,
+                                std::make_shared<core::lock::NullCheckLock>());
+    index.reindex(mds);
+    index.flush();
+}
+
 void ActualSegment::has_data()
 {
-    wassert_true((bool)_actual->data()->timestamp());
+    wassert_true(
+        (bool)_actual->checker(std::make_shared<core::lock::NullCheckLock>())
+            ->timestamp());
 }
 
 void ActualSegment::not_has_data()
 {
-    wassert_false((bool)_actual->data()->timestamp());
+    wassert_false(
+        (bool)_actual->checker(std::make_shared<core::lock::NullCheckLock>())
+            ->timestamp());
 }
 
 void ActualSegment::has_metadata()
@@ -65,7 +89,8 @@ void ActualSegment::not_has_summary()
 
 void ActualSegment::data_mtime_equal(time_t value)
 {
-    auto ts = _actual->data()->timestamp();
+    auto ts = _actual->checker(std::make_shared<core::lock::NullCheckLock>())
+                  ->timestamp();
     if (!ts)
     {
         std::stringstream buf;
@@ -85,7 +110,8 @@ void ActualSegment::data_mtime_equal(time_t value)
 
 void ActualSegment::data_mtime_newer_than(time_t value)
 {
-    auto ts = _actual->data()->timestamp();
+    auto ts = _actual->checker(std::make_shared<core::lock::NullCheckLock>())
+                  ->timestamp();
     if (!ts)
     {
         std::stringstream ss;
@@ -131,7 +157,7 @@ template <typename Data>
 std::shared_ptr<segment::Session>
 ScanSegmentFixture<Data>::make_session(const std::filesystem::path& root)
 {
-    return std::make_shared<segment::ScanSession>(root);
+    return std::make_shared<segment::scan::Session>(root);
 }
 
 template <typename Data>
@@ -154,7 +180,7 @@ template <typename Data>
 std::shared_ptr<segment::Session>
 MetadataSegmentFixture<Data>::make_session(const std::filesystem::path& root)
 {
-    return std::make_shared<segment::MetadataSession>(root);
+    return std::make_shared<segment::metadata::Session>(root);
 }
 
 template <typename Data>

@@ -1,10 +1,13 @@
 #include "arki/core/lock.h"
 #include "arki/matcher/parser.h"
+#include "arki/metadata/collection.h"
+#include "arki/metadata/inbound.h"
 #include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "data.h"
 #include "metadata.h"
+#include "scan.h"
 #include "tests.h"
 #include <filesystem>
 
@@ -35,12 +38,27 @@ Tests<ODIMData> test_odim("arki_segment_metadata_odim");
 Tests<NCData> test_netcdf("arki_segment_metadata_netcdf");
 Tests<JPEGData> test_jpeg("arki_segment_metadata_jpeg");
 
+void wipe_segment(const Segment& segment)
+{
+    if (std::filesystem::is_directory(segment.abspath()))
+        sys::rmtree_ifexists(segment.abspath());
+    else
+        std::filesystem::remove(segment.abspath());
+}
+
+std::shared_ptr<Segment> make_segment(TestData& td,
+                                      const char* name = "test/test")
+{
+    auto session = std::make_shared<segment::metadata::Session>(".");
+    return session->segment_from_relpath(
+        sys::with_suffix(name, "." + format_name(td.format)));
+}
+
 std::shared_ptr<segment::metadata::Reader>
 make_reader(TestData& td, const char* name = "test/test")
 {
-    auto session = std::make_shared<segment::Session>(".");
-    auto segment = session->segment_from_relpath(
-        sys::with_suffix(name, "." + format_name(td.format)));
+    auto segment = make_segment(td, name);
+    wipe_segment(*segment);
     fill_metadata_segment(segment, td.mds);
     auto lock = std::make_shared<core::lock::NullReadLock>();
     return std::make_shared<segment::metadata::Reader>(segment, lock);
@@ -48,7 +66,6 @@ make_reader(TestData& td, const char* name = "test/test")
 
 template <typename Data> void Tests<Data>::register_tests()
 {
-
     add_method("read_all", [] {
         Data td;
         auto reader = make_reader(td);
@@ -139,10 +156,7 @@ template <typename Data> void Tests<Data>::register_tests()
     add_method("metadata_without_data", [] {
         Data td;
         auto reader = make_reader(td);
-        if (std::filesystem::is_directory(reader->segment().abspath()))
-            sys::rmtree_ifexists(reader->segment().abspath());
-        else
-            std::filesystem::remove(reader->segment().abspath());
+        wipe_segment(reader->segment());
         wassert(actual(reader->segment()).not_has_data());
         wassert(actual(reader->segment()).has_metadata());
         wassert(actual(reader->segment()).not_has_summary());
@@ -174,6 +188,168 @@ template <typename Data> void Tests<Data>::register_tests()
         Summary summary;
         wassert_throws(std::system_error,
                        reader->query_summary(Matcher(), summary));
+    });
+
+    add_method("reader_before_and_after_segment_creation", [] {
+        Data td;
+        auto segment = make_segment(td);
+        wipe_segment(*segment);
+        auto lock = std::make_shared<core::lock::NullReadLock>();
+
+        // Create a reader for a missing segment, and keep it referenced
+        auto reader0 = segment->reader(lock);
+        {
+            auto reader = reader0;
+            wassert(actual(dynamic_cast<segment::EmptyReader*>(reader.get()))
+                        .istrue());
+            size_t count = 0;
+            reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 0u);
+        }
+
+        // Import data in the segment
+        {
+            arki::metadata::InboundBatch batch;
+            batch.add(td.mds.get(0));
+            batch.add(td.mds.get(1));
+            batch.add(td.mds.get(2));
+            auto writer =
+                segment->writer(std::make_shared<core::lock::NullAppendLock>());
+            auto res = writer->acquire(batch, segment::WriterConfig());
+            wassert(actual(res.count_ok) == 3u);
+            wassert(actual(res.count_failed) == 0u);
+            wassert(actual(res.segment_mtime) > 0);
+            wassert(actual(res.data_timespan) ==
+                    core::Interval(core::Time(2007, 7, 7),
+                                   core::Time(2007, 10, 9, 0, 0, 1)));
+        }
+
+        // Create a reader again
+        {
+            auto reader = segment->reader(lock);
+            wassert(
+                actual(dynamic_cast<segment::metadata::Reader*>(reader.get()))
+                    .istrue());
+            size_t count = 0;
+            reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 3u);
+        }
+    });
+
+    add_method("reader_before_and_after_metadata_creation", [] {
+        auto lock = std::make_shared<core::lock::NullReadLock>();
+        Data td;
+        auto segment = make_segment(td);
+        wipe_segment(*segment);
+        fill_scan_segment(segment, td.mds);
+
+        wassert(actual(segment->abspath_metadata()).not_exists());
+
+        // Create a reader for a segment without metadata, and keep it
+        // referenced
+        auto reader0 = segment->reader(lock);
+        {
+            auto reader = reader0;
+            wassert(actual(dynamic_cast<segment::scan::Reader*>(reader.get()))
+                        .istrue());
+            size_t count = 0;
+            reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 3u);
+        }
+
+        // Rescan the segment
+        {
+            auto checker =
+                segment->checker(std::make_shared<core::lock::NullCheckLock>());
+            auto md    = checker->scan();
+            auto fixer = checker->fixer();
+            fixer->reindex(md);
+        }
+
+        wassert(actual(segment->abspath_metadata()).exists());
+
+        // Create a reader again
+        {
+            auto reader = segment->reader(lock);
+            wassert(
+                actual(dynamic_cast<segment::metadata::Reader*>(reader.get()))
+                    .istrue());
+            size_t count = 0;
+            reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 3u);
+        }
+    });
+
+    add_method("reader_before_and_after_metadata_outdated", [] {
+        auto lock = std::make_shared<core::lock::NullReadLock>();
+        Data td;
+        auto segment = make_segment(td);
+        wipe_segment(*segment);
+        fill_scan_segment(segment, td.mds);
+
+        // Create a partial and outdated metadata
+        {
+            auto checker =
+                segment->checker(std::make_shared<core::lock::NullCheckLock>());
+            auto md = checker->scan();
+            md.pop_back();
+            auto fixer = checker->fixer();
+            fixer->reindex(md);
+        }
+        sys::touch(segment->abspath_metadata(), 10);
+
+        // Create a reader for a segment with outdated and partial metadata, and
+        // keep it referenced
+        auto reader0 = segment->reader(lock);
+        {
+            auto reader = reader0;
+            wassert(actual(dynamic_cast<segment::scan::Reader*>(reader.get()))
+                        .istrue());
+            size_t count = 0;
+            reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 3u);
+        }
+
+        // Rescan the segment
+        {
+            auto checker =
+                segment->checker(std::make_shared<core::lock::NullCheckLock>());
+            auto md = checker->scan();
+            wassert(actual(md.size()) == 3u);
+            auto fixer = checker->fixer();
+            fixer->reindex(md);
+        }
+
+        wassert(actual(segment->abspath_metadata()).exists());
+
+        // Create a reader again
+        {
+            auto reader = segment->reader(lock);
+            wassert(
+                actual(dynamic_cast<segment::metadata::Reader*>(reader.get()))
+                    .istrue());
+            size_t count = 0;
+            reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 3u);
+        }
     });
 }
 

@@ -1,3 +1,4 @@
+#include "arki/segment/scan.h"
 #include "fd.h"
 #include "tests.h"
 
@@ -27,15 +28,16 @@ void Tests<Data, FixtureData>::register_tests()
     SegmentTests<Data, FixtureData>::register_tests();
 
     this->add_method("append", [](Fixture& f) {
-        auto session =
-            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto session = std::make_shared<segment::scan::Session>(
+            std::filesystem::current_path());
         auto segment = session->segment_from_relpath_and_format(
             "testfile." + format_name(f.td.format), f.td.format);
         delete_if_exists(segment->abspath());
         wassert(actual_file(segment->abspath()).not_exists());
+        auto data = f.data(segment);
         {
             segment::WriterConfig writer_config;
-            auto w = segment->data_writer(writer_config);
+            auto w = data->writer(writer_config);
 
             // It should exist but be empty
             // wassert(actual(fname).fileexists());
@@ -67,21 +69,22 @@ void Tests<Data, FixtureData>::register_tests()
 
     // Test with large files
     this->add_method("large", [](Fixture& f) {
-        auto session =
-            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto session = std::make_shared<segment::scan::Session>(
+            std::filesystem::current_path());
         auto segment = session->segment_from_relpath_and_format(
             "testfile." + format_name(f.td.format), f.td.format);
         delete_if_exists(segment->abspath());
+        auto data = f.data(segment);
         {
             // Make a file that looks HUGE, so that appending will make its size
             // not fit in a 32bit off_t
-            segment->data_checker()->test_truncate(0x7FFFFFFF);
+            data->checker()->test_truncate(0x7FFFFFFF);
             wassert(actual(sys::size(segment->abspath())) == 0x7FFFFFFFu);
         }
 
         {
             segment::WriterConfig writer_config;
-            auto dw = segment->data_writer(writer_config);
+            auto dw = data->writer(writer_config);
 
             // Try a successful transaction
             wassert(test_append_transaction_ok(dw.get(), f.td.mds[0],

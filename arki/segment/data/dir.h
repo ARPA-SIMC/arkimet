@@ -37,9 +37,8 @@ public:
     std::shared_ptr<segment::data::Writer>
     writer(const segment::WriterConfig& config) const override;
     std::shared_ptr<segment::data::Checker> checker() const override;
-    void create_segment(
-        arki::metadata::Collection& mds,
-        const data::RepackConfig& cfg = data::RepackConfig()) override
+    void create_segment(arki::metadata::Collection& mds,
+                        const RepackConfig& cfg = RepackConfig()) override
     {
         create(*m_segment, mds, cfg);
     }
@@ -48,6 +47,16 @@ public:
     create(const Segment& segment, arki::metadata::Collection& mds,
            const RepackConfig& cfg = RepackConfig());
     static bool can_store(DataFormat format);
+};
+
+class HoleData : public Data
+{
+public:
+    using Data::Data;
+
+    std::shared_ptr<segment::data::Writer>
+    writer(const segment::WriterConfig& config) const override;
+    std::shared_ptr<segment::data::Checker> checker() const override;
 };
 
 class Reader : public data::BaseReader<Data>
@@ -182,12 +191,12 @@ public:
     void list_files();
 
     /// Scan the data found in on_disk sending results to dest
-    bool scan(std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
+    bool scan(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 
     /// Scan the data found in on_disk sending results to dest, reporting
     /// scanning errors to the reporter
     bool scan(std::function<void(const std::string&)> reporter,
-              std::shared_ptr<data::Reader> reader, metadata_dest_func dest);
+              std::shared_ptr<segment::Reader> reader, metadata_dest_func dest);
 };
 
 } // namespace segment::data::dir

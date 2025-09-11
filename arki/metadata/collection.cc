@@ -2,13 +2,16 @@
 #include "arki/core/binary.h"
 #include "arki/core/lock.h"
 #include "arki/dataset.h"
+#include "arki/dataset/file.h"
+#include "arki/dataset/session.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/inbound.h"
 #include "arki/metadata/reader.h"
 #include "arki/metadata/sort.h"
+#include "arki/query.h"
 #include "arki/scan.h"
-#include "arki/segment/data.h"
+#include "arki/segment.h"
 #include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
@@ -219,7 +222,7 @@ InboundBatch Collection::make_batch() const
 
 metadata_dest_func Collection::inserter_func()
 {
-    return [=](std::shared_ptr<Metadata> md) {
+    return [&](std::shared_ptr<Metadata> md) {
         acquire(md);
         return true;
     };
@@ -542,23 +545,30 @@ void Collection::dump(FILE* out, const std::set<types::Code>& extra_items) const
     }
 }
 
+/*
+ * TestCollection
+ */
+
 TestCollection::TestCollection(const std::filesystem::path& path,
                                bool with_data)
 {
     scan_from_file(path, with_data);
 }
 
+std::shared_ptr<dataset::Session> TestCollection::session()
+{
+    if (!m_session)
+        m_session = std::make_shared<dataset::Session>(false);
+    return m_session;
+}
+
 void TestCollection::scan_from_file(const std::filesystem::path& path,
                                     bool with_data)
 {
-    std::filesystem::path basedir;
-    std::filesystem::path relpath;
-    utils::files::resolve_path(path, basedir, relpath);
-    session = std::make_shared<segment::Session>(basedir);
-
-    auto segment = session->segment_from_relpath(relpath);
-    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
-    reader->read_all([&](std::shared_ptr<Metadata> md) {
+    auto cfg = dataset::file::read_config(path);
+    auto ds  = dataset::file::Dataset::from_config(session(), *cfg);
+    query::Data query(Matcher(), with_data);
+    ds->create_reader()->query_data(query, [&](std::shared_ptr<Metadata> md) {
         acquire(md, with_data);
         return true;
     });
@@ -567,14 +577,10 @@ void TestCollection::scan_from_file(const std::filesystem::path& path,
 void TestCollection::scan_from_file(const std::filesystem::path& path,
                                     DataFormat format, bool with_data)
 {
-    std::filesystem::path basedir;
-    std::filesystem::path relpath;
-    utils::files::resolve_path(path, basedir, relpath);
-    session = std::make_shared<segment::Session>(basedir);
-
-    auto segment = session->segment_from_relpath_and_format(relpath, format);
-    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
-    reader->read_all([&](std::shared_ptr<Metadata> md) {
+    auto cfg = dataset::file::read_config(path, format);
+    auto ds  = dataset::file::Dataset::from_config(session(), *cfg);
+    query::Data query(Matcher(), with_data);
+    ds->create_reader()->query_data(query, [&](std::shared_ptr<Metadata> md) {
         acquire(md, with_data);
         return true;
     });
