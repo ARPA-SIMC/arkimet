@@ -44,6 +44,9 @@ public:
     std::shared_ptr<segment::Checker>
     checker(std::shared_ptr<core::CheckLock> lock) const;
 
+    /// Shortcut for calling Session::invalidate_reader_cache
+    void invalidate_reader_cache() const;
+
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip
      * extensions

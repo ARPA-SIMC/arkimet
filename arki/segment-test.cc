@@ -37,17 +37,20 @@ template <class Base> class Tests : public FixtureTestCase<TestFixture<Base>>
     void register_tests() override;
 };
 
-Tests<ScanSegmentFixture<GRIBData>> tests1("arki_segment_scan_grib");
-Tests<ScanSegmentFixture<VM2Data>> tests2("arki_segment_scan_vm2");
-Tests<ScanSegmentFixture<ODIMData>> tests3("arki_segment_scan_odim");
+Tests<ScanSegmentFixture<GRIBData>> tests1("arki_segment_common_scan_grib");
+Tests<ScanSegmentFixture<VM2Data>> tests2("arki_segment_common_scan_vm2");
+Tests<ScanSegmentFixture<ODIMData>> tests3("arki_segment_common_scan_odim");
 
-Tests<MetadataSegmentFixture<GRIBData>> testm1("arki_segment_metadata_grib");
-Tests<MetadataSegmentFixture<VM2Data>> testm2("arki_segment_metadata_vm2");
-Tests<MetadataSegmentFixture<ODIMData>> testm3("arki_segment_metadata_odim");
+Tests<MetadataSegmentFixture<GRIBData>>
+    testm1("arki_segment_common_metadata_grib");
+Tests<MetadataSegmentFixture<VM2Data>>
+    testm2("arki_segment_common_metadata_vm2");
+Tests<MetadataSegmentFixture<ODIMData>>
+    testm3("arki_segment_common_metadata_odim");
 
-Tests<IsegSegmentFixture<GRIBData>> testi1("arki_segment_iseg_grib");
-Tests<IsegSegmentFixture<VM2Data>> testi2("arki_segment_iseg_vm2");
-Tests<IsegSegmentFixture<ODIMData>> testi3("arki_segment_iseg_odim");
+Tests<IsegSegmentFixture<GRIBData>> testi1("arki_segment_common_iseg_grib");
+Tests<IsegSegmentFixture<VM2Data>> testi2("arki_segment_common_iseg_vm2");
+Tests<IsegSegmentFixture<ODIMData>> testi3("arki_segment_common_iseg_odim");
 
 template <typename Base> void Tests<Base>::register_tests()
 {

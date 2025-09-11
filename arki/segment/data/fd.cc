@@ -154,11 +154,12 @@ bool Data::exists_on_disk() const
 
 bool Data::is_empty() const
 {
-    struct stat st;
-    sys::stat(segment().abspath(), st);
-    if (S_ISDIR(st.st_mode))
+    std::unique_ptr<struct stat> st = sys::stat(segment().abspath());
+    if (!st)
+        return true;
+    if (S_ISDIR(st->st_mode))
         return false;
-    return st.st_size == 0;
+    return st->st_size == 0;
 }
 
 size_t Data::size() const

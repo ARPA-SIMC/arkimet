@@ -274,7 +274,10 @@ bool Data::exists_on_disk() const
 
 bool Data::is_empty() const
 {
-    if (!std::filesystem::is_directory(segment().abspath()))
+    auto st = sys::stat(segment().abspath());
+    if (!st)
+        return true;
+    if (!S_ISDIR(st->st_mode))
         return false;
     sys::Path dir(segment().abspath());
 

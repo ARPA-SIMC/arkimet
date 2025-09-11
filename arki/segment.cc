@@ -74,6 +74,11 @@ Segment::checker(std::shared_ptr<core::CheckLock> lock) const
     return session().segment_checker(shared_from_this(), lock);
 }
 
+void Segment::invalidate_reader_cache() const
+{
+    session().invalidate_reader_cache(shared_from_this());
+}
+
 std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 {
     const auto& native = pathname.native();

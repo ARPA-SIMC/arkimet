@@ -9,6 +9,11 @@
 namespace arki::segment::scan {
 
 /**
+ * Check if the segment has any data
+ */
+bool has_data(std::shared_ptr<const Segment> segment);
+
+/**
  * Segment session that only creates scan segments
  */
 struct Session : public segment::Session

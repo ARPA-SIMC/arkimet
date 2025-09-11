@@ -8,6 +8,7 @@
 #include "arki/utils/sys.h"
 #include "data.h"
 #include "reporter.h"
+#include "scan.h"
 
 using namespace arki::utils;
 
@@ -17,7 +18,12 @@ std::shared_ptr<segment::Reader>
 Session::create_segment_reader(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<const core::ReadLock> lock) const
 {
-    return std::make_shared<segment::metadata::Reader>(segment, lock);
+    if (has_valid_metadata(segment))
+        return std::make_shared<segment::metadata::Reader>(segment, lock);
+    else if (scan::has_data(segment))
+        return std::make_shared<segment::scan::Reader>(segment, lock);
+    else
+        return std::make_shared<segment::EmptyReader>(segment, lock);
 }
 
 std::shared_ptr<segment::Writer>
@@ -381,6 +387,8 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
     sys::touch(segment().abspath_metadata(), ts.value());
     sys::touch(segment().abspath_summary(), ts.value());
 
+    segment().invalidate_reader_cache();
+
     AcquireResult res;
     res.count_ok      = batch.size();
     res.count_failed  = 0;
@@ -411,44 +419,39 @@ arki::metadata::Collection Checker::scan()
 {
     arki::metadata::Collection res;
 
-    auto md_abspath = m_segment->abspath_metadata();
-    if (auto st_md = sys::stat(md_abspath))
+    if (has_valid_metadata(m_segment))
     {
-        if (auto data_ts = data->timestamp())
-        {
-            // Metadata exists and it looks new enough: use it
-            auto reader = m_segment->reader(lock);
-            std::filesystem::path basedir(m_segment->abspath().parent_path());
-            sys::File in(md_abspath, O_RDONLY);
-            arki::metadata::BinaryReader md_reader(in, basedir);
-            md_reader.read_all([&](std::shared_ptr<Metadata> md) {
-                const auto& source = md->sourceBlob();
-                md->set_source(types::Source::createBlob(
-                    segment().format(), segment().root(), segment().relpath(),
-                    source.offset, source.size, reader));
-                res.acquire(md);
-                return true;
-            });
-        }
-        else
-        {
-            std::stringstream buf;
-            buf << m_segment->abspath()
-                << ": cannot scan segment since its data is missing";
-            throw std::runtime_error(buf.str());
-        }
+        // Metadata exists and it looks new enough: use it
+        auto reader = m_segment->reader(lock);
+        std::filesystem::path basedir(m_segment->abspath().parent_path());
+        sys::File in(m_segment->abspath_metadata(), O_RDONLY);
+        arki::metadata::BinaryReader md_reader(in, basedir);
+        md_reader.read_all([&](std::shared_ptr<Metadata> md) {
+            const auto& source = md->sourceBlob();
+            md->set_source(types::Source::createBlob(
+                segment().format(), segment().root(), segment().relpath(),
+                source.offset, source.size, reader));
+            res.acquire(md);
+            return true;
+        });
+        return res;
     }
-    else
+
+    // Rescan the file
+    if (!data->is_empty())
     {
-        // Rescan the file
         auto data_reader = data->reader(lock);
         data_reader->scan_data([&](std::shared_ptr<Metadata> md) {
             res.acquire(md);
             return true;
         });
+        return res;
     }
 
-    return res;
+    std::stringstream buf;
+    buf << m_segment->abspath()
+        << ": cannot scan segment since its data is missing";
+    throw std::runtime_error(buf.str());
 }
 
 Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
@@ -584,6 +587,7 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
         res.data_timespan = writer.sum.get_reference_time();
     }
     res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -618,6 +622,7 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
     sys::touch_ifexists(path_metadata, res.segment_mtime);
     sys::touch_ifexists(path_summary, res.segment_mtime);
 
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -626,6 +631,7 @@ size_t Fixer::remove(bool with_data)
     size_t res = 0;
     res += remove_ifexists(segment().abspath_metadata());
     res += remove_ifexists(segment().abspath_summary());
+    segment().invalidate_reader_cache();
     if (!with_data)
         return res;
 
@@ -635,6 +641,7 @@ size_t Fixer::remove(bool with_data)
 size_t Fixer::remove_data()
 {
     auto data_checker = checker().data->checker();
+    segment().invalidate_reader_cache();
     return data_checker->remove();
 }
 
@@ -680,6 +687,7 @@ Fixer::ConvertResult Fixer::tar()
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
 
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -725,6 +733,7 @@ Fixer::ConvertResult Fixer::zip()
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
 
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -772,6 +781,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
 
+    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -780,6 +790,7 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     AtomicWriterWithSummary writer(segment());
     writer.write(mds);
     writer.commit();
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::move(std::shared_ptr<arki::Segment> dest)
@@ -789,6 +800,7 @@ void Fixer::move(std::shared_ptr<arki::Segment> dest)
     sys::rename_ifexists(segment().abspath_metadata(),
                          dest->abspath_metadata());
     sys::rename_ifexists(segment().abspath_summary(), dest->abspath_summary());
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
@@ -796,6 +808,7 @@ void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
     auto data_checker = checker().data->checker();
     data_checker->move(dest->session().shared_from_this(), dest->relpath());
     remove(false);
+    segment().invalidate_reader_cache();
 }
 
 void Fixer::test_mark_all_removed()

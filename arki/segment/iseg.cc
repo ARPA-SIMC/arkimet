@@ -130,6 +130,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 /*
  * Writer
  */
+
 Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
     : segment::Writer(segment, lock), data(segment::Data::create(segment)),

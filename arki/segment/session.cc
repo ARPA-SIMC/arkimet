@@ -181,6 +181,12 @@ Session::segment_checker(std::shared_ptr<const Segment> segment,
 }
 #endif
 
+void Session::invalidate_reader_cache(
+    std::shared_ptr<const Segment> segment) const
+{
+    reader_pool.erase(segment->abspath());
+}
+
 std::shared_ptr<segment::Reader>
 Session::segment_reader(std::shared_ptr<const Segment> segment,
                         std::shared_ptr<const core::ReadLock> lock) const

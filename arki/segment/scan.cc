@@ -13,6 +13,16 @@ using namespace arki::utils;
 
 namespace arki::segment::scan {
 
+bool has_data(std::shared_ptr<const Segment> segment)
+{
+    auto data = Data::create(segment);
+    return !data->is_empty();
+}
+
+/*
+ * Session
+ */
+
 std::shared_ptr<segment::Reader>
 Session::create_segment_reader(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<const core::ReadLock> lock) const
