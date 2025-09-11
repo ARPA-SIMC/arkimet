@@ -18,12 +18,10 @@ void Tests::register_tests()
     add_method("segment_from", [] {
         auto session  = std::make_shared<arki::segment::iseg::Session>(".");
         auto segment1 = session->segment_from_relpath("foo.grib");
-        wassert_true(
-            dynamic_cast<arki::segment::iseg::Segment*>(segment1.get()));
+        wassert_true(segment1.get());
         auto segment2 = session->segment_from_relpath_and_format(
             "foo.grib", DataFormat::GRIB);
-        wassert_true(
-            dynamic_cast<arki::segment::iseg::Segment*>(segment2.get()));
+        wassert_true(segment2.get());
     });
 }
 

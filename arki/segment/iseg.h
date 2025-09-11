@@ -23,10 +23,6 @@ public:
 
     explicit Session(const core::cfg::Section& cfg);
 
-    std::shared_ptr<arki::Segment>
-    segment_from_relpath_and_format(const std::filesystem::path& relpath,
-                                    DataFormat format) const override;
-
     std::shared_ptr<segment::Writer>
     segment_writer(std::shared_ptr<const arki::Segment> segment,
                    std::shared_ptr<core::AppendLock> lock) const override;
@@ -38,19 +34,6 @@ public:
                      arki::metadata::Collection& mds) const override;
 };
 
-class Segment : public arki::Segment
-{
-public:
-    using arki::Segment::Segment;
-
-    std::shared_ptr<RIndex>
-    read_index(std::shared_ptr<const core::ReadLock> lock) const;
-    std::shared_ptr<AIndex>
-    append_index(std::shared_ptr<core::AppendLock> lock) const;
-    std::shared_ptr<CIndex>
-    check_index(std::shared_ptr<core::CheckLock> lock) const;
-};
-
 class Reader : public segment::Reader
 {
     std::shared_ptr<segment::Data> data;
@@ -58,7 +41,7 @@ class Reader : public segment::Reader
     std::shared_ptr<RIndex> m_index;
 
 public:
-    Reader(std::shared_ptr<const iseg::Segment> segment,
+    Reader(std::shared_ptr<const Segment> segment,
            std::shared_ptr<const core::ReadLock> lock);
 
     std::vector<uint8_t> read(const types::source::Blob& src) override;

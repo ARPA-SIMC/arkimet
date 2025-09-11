@@ -16,6 +16,10 @@ using namespace arki::utils;
 
 namespace arki::segment::iseg {
 
+/*
+ * Session
+ */
+
 Session::Session(const core::cfg::Section& cfg)
     : segment::Session(cfg), format(format_from_string(cfg.value("format"))),
       index(types::parse_code_names(cfg.value("index"))),
@@ -23,14 +27,6 @@ Session::Session(const core::cfg::Section& cfg)
       trace_sql(cfg.value_bool("trace_sql"))
 {
     unique.erase(TYPE_REFTIME);
-}
-
-std::shared_ptr<arki::Segment>
-Session::segment_from_relpath_and_format(const std::filesystem::path& relpath,
-                                         DataFormat format) const
-{
-    return std::make_shared<arki::segment::iseg::Segment>(shared_from_this(),
-                                                          format, relpath);
 }
 
 std::shared_ptr<segment::Reader>
@@ -45,23 +41,21 @@ Session::create_segment_reader(std::shared_ptr<const arki::Segment> segment,
         return std::make_shared<segment::EmptyReader>(segment, lock);
     }
     return std::make_shared<Reader>(
-        std::static_pointer_cast<const iseg::Segment>(segment), lock);
+        std::static_pointer_cast<const Segment>(segment), lock);
 }
 
 std::shared_ptr<segment::Writer>
 Session::segment_writer(std::shared_ptr<const arki::Segment> segment,
                         std::shared_ptr<core::AppendLock> lock) const
 {
-    return std::make_shared<segment::iseg::Writer>(
-        std::static_pointer_cast<const iseg::Segment>(segment), lock);
+    return std::make_shared<segment::iseg::Writer>(segment, lock);
 }
 
 std::shared_ptr<segment::Checker>
 Session::segment_checker(std::shared_ptr<const arki::Segment> segment,
                          std::shared_ptr<core::CheckLock> lock) const
 {
-    return std::make_shared<Checker>(
-        std::static_pointer_cast<const iseg::Segment>(segment), lock);
+    return std::make_shared<segment::iseg::Checker>(segment, lock);
 }
 
 void Session::create_iseg(std::shared_ptr<arki::Segment> segment,
@@ -70,45 +64,22 @@ void Session::create_iseg(std::shared_ptr<arki::Segment> segment,
     auto data = segment::Data::create(segment);
     data->create_segment(mds);
     // TODO: implement data->read_lock() and data->check_lock()
-    auto lock    = std::make_shared<core::lock::NullCheckLock>();
-    auto checker = std::make_shared<arki::segment::iseg::Checker>(
-        std::dynamic_pointer_cast<iseg::Segment>(segment), lock);
+    auto lock = std::make_shared<core::lock::NullCheckLock>();
+    auto checker =
+        std::make_shared<arki::segment::iseg::Checker>(segment, lock);
     auto fixer = checker->fixer();
     fixer->reindex(mds);
-}
-
-std::shared_ptr<RIndex>
-Segment::read_index(std::shared_ptr<const core::ReadLock> lock) const
-{
-    return std::make_shared<RIndex>(
-        std::static_pointer_cast<const iseg::Segment>(shared_from_this()),
-        lock);
-}
-
-std::shared_ptr<AIndex>
-Segment::append_index(std::shared_ptr<core::AppendLock> lock) const
-{
-    return std::make_shared<AIndex>(
-        std::static_pointer_cast<const iseg::Segment>(shared_from_this()),
-        lock);
-}
-
-std::shared_ptr<CIndex>
-Segment::check_index(std::shared_ptr<core::CheckLock> lock) const
-{
-    return std::make_shared<CIndex>(
-        std::static_pointer_cast<const iseg::Segment>(shared_from_this()),
-        lock);
 }
 
 /*
  * Reader
  */
 
-Reader::Reader(std::shared_ptr<const iseg::Segment> segment,
+Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
     : segment::Reader(segment, lock), data(Data::create(segment)),
-      data_reader(data->reader(lock)), m_index(segment->read_index(lock))
+      data_reader(data->reader(lock)),
+      m_index(std::make_shared<RIndex>(segment, lock))
 {
 }
 
@@ -162,7 +133,7 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
 Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
     : segment::Writer(segment, lock), data(segment::Data::create(segment)),
-      index(segment->append_index(lock))
+      index(std::make_shared<AIndex>(segment, lock))
 {
 }
 
@@ -396,9 +367,8 @@ void Checker::update_data() { data = Data::create(m_segment); }
 CIndex& Checker::index()
 {
     if (!m_index)
-        m_index =
-            std::static_pointer_cast<const Segment>(m_segment)->check_index(
-                lock);
+        m_index = std::make_shared<CIndex>(
+            std::static_pointer_cast<const Segment>(m_segment), lock);
     return *m_index;
 }
 
