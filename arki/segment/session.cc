@@ -36,7 +36,7 @@ Session::Session(const core::cfg::Section& cfg)
 
 Session::~Session() {}
 
-bool Session::is_data_segment(const std::filesystem::path& relpath) const
+bool Session::is_segment(const std::filesystem::path& relpath) const
 {
     auto abspath                    = root / relpath;
     std::unique_ptr<struct stat> st = sys::stat(abspath);

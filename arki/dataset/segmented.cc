@@ -424,7 +424,7 @@ void Checker::remove(const metadata::Collection& mds)
         auto relpath    = sys::with_suffix(dataset().step()(time),
                                            "."s + format_name(source->format));
 
-        if (!dataset().segment_session->is_data_segment(relpath))
+        if (!dataset().segment_session->is_segment(relpath))
             continue;
 
         by_segment[relpath].emplace(source->offset);
@@ -603,7 +603,7 @@ void Checker::scan_dir(
             return false;
 
         string name = entry->d_name;
-        if (dataset().segment_session->is_data_segment(relpath / name))
+        if (dataset().segment_session->is_segment(relpath / name))
         {
             auto basename = Segment::basename(name);
             auto segment  = dataset().segment_session->segment_from_relpath(

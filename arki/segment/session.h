@@ -59,7 +59,7 @@ public:
     Session& operator=(Session&&)      = delete;
 
     /// Check if the given file or directory is a data segment
-    virtual bool is_data_segment(const std::filesystem::path& relpath) const;
+    virtual bool is_segment(const std::filesystem::path& relpath) const;
 
     virtual std::shared_ptr<Segment>
     segment_from_relpath(const std::filesystem::path& relpath) const;
