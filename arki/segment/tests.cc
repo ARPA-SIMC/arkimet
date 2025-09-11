@@ -1,7 +1,8 @@
 #include "tests.h"
 #include "arki/core/lock.h"
 #include "arki/segment/iseg.h"
-#include "arki/segment/iseg/session.h"
+#include "arki/segment/metadata.h"
+#include "arki/segment/scan.h"
 #include "arki/utils/sys.h"
 #include "data.h"
 
@@ -139,7 +140,7 @@ template <typename Data>
 std::shared_ptr<segment::Session>
 ScanSegmentFixture<Data>::make_session(const std::filesystem::path& root)
 {
-    return std::make_shared<segment::ScanSession>(root);
+    return std::make_shared<segment::scan::Session>(root);
 }
 
 template <typename Data>
@@ -162,7 +163,7 @@ template <typename Data>
 std::shared_ptr<segment::Session>
 MetadataSegmentFixture<Data>::make_session(const std::filesystem::path& root)
 {
-    return std::make_shared<segment::MetadataSession>(root);
+    return std::make_shared<segment::metadata::Session>(root);
 }
 
 template <typename Data>

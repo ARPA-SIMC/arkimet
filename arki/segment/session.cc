@@ -105,6 +105,8 @@ Session::segment_from_relpath_and_format(const std::filesystem::path& relpath,
     return std::make_shared<Segment>(shared_from_this(), format, relpath);
 }
 
+// TODO: autodetect code that can be moved elsewhere
+#if 0
 std::shared_ptr<segment::Reader>
 Session::create_segment_reader(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<const core::ReadLock> lock) const
@@ -134,20 +136,6 @@ Session::create_segment_reader(std::shared_ptr<const Segment> segment,
 
     // Else scan the file as usual
     return std::make_shared<segment::scan::Reader>(segment, lock);
-}
-
-std::shared_ptr<segment::Reader>
-Session::segment_reader(std::shared_ptr<const Segment> segment,
-                        std::shared_ptr<const core::ReadLock> lock) const
-{
-    auto res = reader_pool.find(segment->abspath());
-    if (res == reader_pool.end() || res->second.expired())
-    {
-        auto reader                     = create_segment_reader(segment, lock);
-        reader_pool[segment->abspath()] = reader;
-        return reader;
-    }
-    return res->second.lock();
 }
 
 std::shared_ptr<segment::Writer>
@@ -191,6 +179,21 @@ Session::segment_checker(std::shared_ptr<const Segment> segment,
             "this session misses a policy to determine how to create checkers "
             "for segments that do not yet exist");
 }
+#endif
+
+std::shared_ptr<segment::Reader>
+Session::segment_reader(std::shared_ptr<const Segment> segment,
+                        std::shared_ptr<const core::ReadLock> lock) const
+{
+    auto res = reader_pool.find(segment->abspath());
+    if (res == reader_pool.end() || res->second.expired())
+    {
+        auto reader                     = create_segment_reader(segment, lock);
+        reader_pool[segment->abspath()] = reader;
+        return reader;
+    }
+    return res->second.lock();
+}
 
 void Session::create_scan(std::shared_ptr<Segment> segment,
                           arki::metadata::Collection& mds) const
@@ -215,34 +218,6 @@ void Session::create_iseg(std::shared_ptr<Segment>,
                           arki::metadata::Collection&) const
 {
     throw std::runtime_error("normal sessions cannot create iseg segments");
-}
-
-std::shared_ptr<segment::Reader> ScanSession::create_segment_reader(
-    std::shared_ptr<const Segment> segment,
-    std::shared_ptr<const core::ReadLock> lock) const
-{
-    return std::make_shared<segment::scan::Reader>(segment, lock);
-}
-
-std::shared_ptr<segment::Checker>
-ScanSession::segment_checker(std::shared_ptr<const Segment> segment,
-                             std::shared_ptr<core::CheckLock> lock) const
-{
-    return std::make_shared<segment::scan::Checker>(segment, lock);
-}
-
-std::shared_ptr<segment::Reader> MetadataSession::create_segment_reader(
-    std::shared_ptr<const Segment> segment,
-    std::shared_ptr<const core::ReadLock> lock) const
-{
-    return std::make_shared<segment::metadata::Reader>(segment, lock);
-}
-
-std::shared_ptr<segment::Checker>
-MetadataSession::segment_checker(std::shared_ptr<const Segment> segment,
-                                 std::shared_ptr<core::CheckLock> lock) const
-{
-    return std::make_shared<segment::metadata::Checker>(segment, lock);
 }
 
 } // namespace arki::segment

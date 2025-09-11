@@ -1,7 +1,7 @@
 #include "iseg.h"
 #include "arki/dataset/session.h"
 #include "arki/defs.h"
-#include "arki/segment/iseg/session.h"
+#include "arki/segment/iseg.h"
 #include "arki/types.h"
 #include "arki/utils/string.h"
 #include "iseg/checker.h"

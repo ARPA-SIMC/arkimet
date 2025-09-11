@@ -13,6 +13,27 @@ using namespace arki::utils;
 
 namespace arki::segment::metadata {
 
+std::shared_ptr<segment::Reader>
+Session::create_segment_reader(std::shared_ptr<const Segment> segment,
+                               std::shared_ptr<const core::ReadLock> lock) const
+{
+    return std::make_shared<segment::metadata::Reader>(segment, lock);
+}
+
+std::shared_ptr<segment::Writer>
+Session::segment_writer(std::shared_ptr<const Segment> segment,
+                        std::shared_ptr<core::AppendLock> lock) const
+{
+    return std::make_shared<segment::metadata::Writer>(segment, lock);
+}
+
+std::shared_ptr<segment::Checker>
+Session::segment_checker(std::shared_ptr<const Segment> segment,
+                         std::shared_ptr<core::CheckLock> lock) const
+{
+    return std::make_shared<segment::metadata::Checker>(segment, lock);
+}
+
 bool has_valid_metadata(std::shared_ptr<const Segment> segment)
 {
     // stat the metadata file, if it exists

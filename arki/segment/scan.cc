@@ -34,6 +34,10 @@ Session::segment_checker(std::shared_ptr<const Segment> segment,
     return std::make_shared<segment::scan::Checker>(segment, lock);
 }
 
+/*
+ * Reader
+ */
+
 Reader::Reader(std::shared_ptr<const Segment> segment,
                std::shared_ptr<const core::ReadLock> lock)
     : segment::Reader(segment, lock), data(segment::Data::create(segment)),

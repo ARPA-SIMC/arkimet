@@ -10,7 +10,6 @@
 #include <arki/segment/iseg.h>
 #include <arki/segment/iseg/index/aggregate.h>
 #include <arki/segment/iseg/index/attr.h>
-#include <arki/segment/iseg/session.h>
 #include <arki/summary.h>
 #include <arki/types/fwd.h>
 #include <arki/utils/sqlite.h>

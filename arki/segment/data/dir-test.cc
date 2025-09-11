@@ -3,6 +3,7 @@
 #include "arki/metadata/tests.h"
 #include "arki/segment.h"
 #include "arki/segment/defs.h"
+#include "arki/segment/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -47,8 +48,8 @@ Tests<segment::data::dir::Data, JPEGData> test6("arki_segment_data_dir_jpeg");
  */
 std::shared_ptr<segment::data::dir::Writer> make_w()
 {
-    auto session =
-        std::make_shared<segment::Session>(std::filesystem::current_path());
+    auto session = std::make_shared<segment::scan::Session>(
+        std::filesystem::current_path());
     auto segment =
         session->segment_from_relpath_and_format(relpath, DataFormat::GRIB);
     segment::WriterConfig writer_config;
@@ -60,8 +61,8 @@ void TestInternals::register_tests()
 {
     // Scan a well-known sample
     add_method("scanner", [] {
-        auto session =
-            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto session = std::make_shared<segment::scan::Session>(
+            std::filesystem::current_path());
         auto segment = session->segment_from_relpath("inbound/fixture.odimh5");
         segment::data::dir::Scanner scanner(*segment);
         scanner.list_files();
@@ -98,7 +99,7 @@ void TestInternals::register_tests()
 
         // Verify what are the results of check
         {
-            auto session = std::make_shared<segment::Session>(
+            auto session = std::make_shared<segment::scan::Session>(
                 std::filesystem::current_path());
             auto segment = session->segment_from_relpath_and_format(
                 relpath, DataFormat::GRIB);
@@ -120,8 +121,8 @@ void TestInternals::register_tests()
             std::filesystem::remove(relpath);
 
         // Create a dir segment
-        auto session =
-            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto session = std::make_shared<segment::scan::Session>(
+            std::filesystem::current_path());
         auto segment = session->segment_from_relpath(relpath);
         auto data    = std::make_shared<segment::data::dir::Data>(segment);
         data->create_segment(mdc);

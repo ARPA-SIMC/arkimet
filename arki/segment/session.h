@@ -21,7 +21,7 @@ protected:
 
     virtual std::shared_ptr<segment::Reader>
     create_segment_reader(std::shared_ptr<const Segment> segment,
-                          std::shared_ptr<const core::ReadLock> lock) const;
+                          std::shared_ptr<const core::ReadLock> lock) const = 0;
 
 public:
     DefaultFileSegment default_file_segment = DefaultFileSegment::SEGMENT_FILE;
@@ -72,10 +72,10 @@ public:
                    std::shared_ptr<const core::ReadLock> lock) const final;
     virtual std::shared_ptr<segment::Writer>
     segment_writer(std::shared_ptr<const Segment> segment,
-                   std::shared_ptr<core::AppendLock> lock) const;
+                   std::shared_ptr<core::AppendLock> lock) const = 0;
     virtual std::shared_ptr<segment::Checker>
     segment_checker(std::shared_ptr<const Segment> segment,
-                    std::shared_ptr<core::CheckLock> lock) const;
+                    std::shared_ptr<core::CheckLock> lock) const = 0;
 
     virtual void create_scan(std::shared_ptr<Segment> segment,
                              arki::metadata::Collection& mds) const;
@@ -83,42 +83,6 @@ public:
                                  arki::metadata::Collection& mds) const;
     virtual void create_iseg(std::shared_ptr<Segment> segment,
                              arki::metadata::Collection& mds) const;
-};
-
-/**
- * Session that only uses scan segments
- */
-class ScanSession : public Session
-{
-protected:
-    std::shared_ptr<segment::Reader> create_segment_reader(
-        std::shared_ptr<const Segment> segment,
-        std::shared_ptr<const core::ReadLock> lock) const override;
-
-public:
-    using Session::Session;
-
-    std::shared_ptr<segment::Checker>
-    segment_checker(std::shared_ptr<const Segment> segment,
-                    std::shared_ptr<core::CheckLock> lock) const override;
-};
-
-/**
- * Session that only uses scan segments
- */
-class MetadataSession : public Session
-{
-protected:
-    std::shared_ptr<segment::Reader> create_segment_reader(
-        std::shared_ptr<const Segment> segment,
-        std::shared_ptr<const core::ReadLock> lock) const override;
-
-public:
-    using Session::Session;
-
-    std::shared_ptr<segment::Checker>
-    segment_checker(std::shared_ptr<const Segment> segment,
-                    std::shared_ptr<core::CheckLock> lock) const override;
 };
 
 } // namespace arki::segment

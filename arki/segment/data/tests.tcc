@@ -4,6 +4,7 @@
 #include "arki/core/lock.h"
 #include "arki/metadata/data.h"
 #include "arki/segment/data/tests.h"
+#include "arki/segment/scan.h"
 #include "arki/stream.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
@@ -20,8 +21,8 @@ void SegmentFixture<Data, FixtureData>::test_setup()
     sys::rmtree_ifexists("testseg");
     std::filesystem::create_directory("testseg");
     seg_mds = td.mds.clone();
-    session =
-        std::make_shared<segment::Session>(std::filesystem::current_path());
+    session = std::make_shared<segment::scan::Session>(
+        std::filesystem::current_path());
     segment = session->segment_from_relpath_and_format(
         "testseg/test." + format_name(td.format), td.format);
 }

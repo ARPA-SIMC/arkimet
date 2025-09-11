@@ -9,6 +9,27 @@
 namespace arki::segment::metadata {
 
 /**
+ * Segment session that only creates metadata segments
+ */
+struct Session : public segment::Session
+{
+protected:
+    std::shared_ptr<segment::Reader> create_segment_reader(
+        std::shared_ptr<const Segment> segment,
+        std::shared_ptr<const core::ReadLock> lock) const override;
+
+public:
+    using segment::Session::Session;
+
+    std::shared_ptr<segment::Writer>
+    segment_writer(std::shared_ptr<const Segment> segment,
+                   std::shared_ptr<core::AppendLock> lock) const override;
+    std::shared_ptr<segment::Checker>
+    segment_checker(std::shared_ptr<const Segment> segment,
+                    std::shared_ptr<core::CheckLock> lock) const override;
+};
+
+/**
  * Check if the segment has a valid associated metadata
  */
 bool has_valid_metadata(std::shared_ptr<const Segment> segment);

@@ -13,6 +13,18 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_segment_iseg");
 
-void Tests::register_tests() {}
+void Tests::register_tests()
+{
+    add_method("segment_from", [] {
+        auto session  = std::make_shared<arki::segment::iseg::Session>(".");
+        auto segment1 = session->segment_from_relpath("foo.grib");
+        wassert_true(
+            dynamic_cast<arki::segment::iseg::Segment*>(segment1.get()));
+        auto segment2 = session->segment_from_relpath_and_format(
+            "foo.grib", DataFormat::GRIB);
+        wassert_true(
+            dynamic_cast<arki::segment::iseg::Segment*>(segment2.get()));
+    });
+}
 
 } // namespace

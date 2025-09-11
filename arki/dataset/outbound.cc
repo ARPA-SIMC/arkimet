@@ -18,12 +18,30 @@ using namespace arki::utils;
 
 namespace arki::dataset::outbound {
 
+std::shared_ptr<segment::Reader> SegmentSession::create_segment_reader(
+    std::shared_ptr<const Segment> segment,
+    std::shared_ptr<const core::ReadLock> lock) const
+{
+    throw std::runtime_error("outbound dataset does not support reading");
+}
+
 std::shared_ptr<segment::Writer>
 SegmentSession::segment_writer(std::shared_ptr<const Segment> segment,
                                std::shared_ptr<core::AppendLock> lock) const
 {
     return std::make_shared<segment::scan::Writer>(segment, lock);
 }
+
+std::shared_ptr<segment::Checker>
+SegmentSession::segment_checker(std::shared_ptr<const Segment>,
+                                std::shared_ptr<core::CheckLock>) const
+{
+    throw std::runtime_error("outbound dataset does not support checking");
+}
+
+/*
+ * Dataset
+ */
 
 Dataset::Dataset(std::shared_ptr<Session> session,
                  const core::cfg::Section& cfg)

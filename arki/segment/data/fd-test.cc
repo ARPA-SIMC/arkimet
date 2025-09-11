@@ -1,3 +1,4 @@
+#include "arki/segment/scan.h"
 #include "fd.h"
 #include "tests.h"
 
@@ -27,8 +28,8 @@ void Tests<Data, FixtureData>::register_tests()
     SegmentTests<Data, FixtureData>::register_tests();
 
     this->add_method("append", [](Fixture& f) {
-        auto session =
-            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto session = std::make_shared<segment::scan::Session>(
+            std::filesystem::current_path());
         auto segment = session->segment_from_relpath_and_format(
             "testfile." + format_name(f.td.format), f.td.format);
         delete_if_exists(segment->abspath());
@@ -68,8 +69,8 @@ void Tests<Data, FixtureData>::register_tests()
 
     // Test with large files
     this->add_method("large", [](Fixture& f) {
-        auto session =
-            std::make_shared<segment::Session>(std::filesystem::current_path());
+        auto session = std::make_shared<segment::scan::Session>(
+            std::filesystem::current_path());
         auto segment = session->segment_from_relpath_and_format(
             "testfile." + format_name(f.td.format), f.td.format);
         delete_if_exists(segment->abspath());
