@@ -1,5 +1,6 @@
 #include "tests.h"
 #include "arki/core/lock.h"
+#include "arki/metadata/inbound.h"
 #include "arki/segment/iseg.h"
 #include "arki/segment/iseg/index.h"
 #include "arki/segment/metadata.h"
@@ -128,6 +129,17 @@ void ActualSegment::data_mtime_newer_than(time_t value)
            << " which is not newer than " << value;
         throw TestFailed(ss.str());
     }
+}
+
+arki::segment::Writer::AcquireResult
+ActualSegment::imports(std::shared_ptr<arki::Metadata> md,
+                       const segment::WriterConfig& config,
+                       std::shared_ptr<core::AppendLock> lock)
+{
+    arki::metadata::InboundBatch batch;
+    batch.add(md);
+    auto writer = _actual->writer(lock);
+    return writer->acquire(batch, config);
 }
 
 template <typename Data> void SegmentTestFixture<Data>::test_setup()

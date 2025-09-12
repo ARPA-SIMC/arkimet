@@ -230,7 +230,7 @@ template <class Fixture> struct CheckForever : public TestSubprocess
 {
     Fixture& fixture;
 
-    CheckForever(Fixture& fixture) : fixture(fixture) {}
+    explicit CheckForever(Fixture& fixture) : fixture(fixture) {}
 
     int main() noexcept override
     {
@@ -254,7 +254,7 @@ template <class Fixture> struct RepackForever : public TestSubprocess
 {
     Fixture& fixture;
 
-    RepackForever(Fixture& fixture) : fixture(fixture) {}
+    explicit RepackForever(Fixture& fixture) : fixture(fixture) {}
 
     int main() noexcept override
     {
@@ -262,14 +262,13 @@ template <class Fixture> struct RepackForever : public TestSubprocess
         {
             std::filesystem::path relpath =
                 "2007/07-07." + format_name(fixture.td.format);
+            auto segment =
+                fixture.segment_session()->segment_from_relpath(relpath);
             notify_ready();
 
             while (true)
             {
                 auto ds(fixture.makeSegmentedChecker());
-                auto segment =
-                    ds->dataset().segment_session->segment_from_relpath(
-                        relpath);
                 auto cseg = ds->segment(segment);
                 cseg->repack();
             }

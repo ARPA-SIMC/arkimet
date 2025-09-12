@@ -26,6 +26,13 @@ template <class Base> class TestFixture : public Base
     // not a SegmentTestFixture");
 
 public:
+    std::filesystem::path create_lockfile()
+    {
+        std::filesystem::path path("lockfile");
+        std::filesystem::remove(path);
+        sys::write_file(path, "");
+        return path;
+    }
 };
 
 template <class Base> class Tests : public FixtureTestCase<TestFixture<Base>>
@@ -411,6 +418,53 @@ template <typename Base> void Tests<Base>::register_tests()
         auto data         = segment::Data::create(segment);
         wassert(actual(blob1.offset) ==
                 data->next_offset(blob0.offset, blob0.size) + 10);
+    });
+
+    add_method("locking", [](Fixture& f) {
+        auto lockfile = f.create_lockfile();
+        auto segment  = f.create(f.td.mds);
+
+        core::lock::TestNowait tnw;
+
+        // Keep a reader open
+        auto reader =
+            segment->reader(std::make_shared<core::lock::FileReadLock>(
+                lockfile, core::lock::policy_ofd));
+
+        // Another reader can run
+        {
+            auto reader1 =
+                segment->reader(std::make_shared<core::lock::FileReadLock>(
+                    lockfile, core::lock::policy_ofd));
+            size_t count = 0;
+            reader1->read_all([&](std::shared_ptr<Metadata>) noexcept {
+                ++count;
+                return true;
+            });
+            wassert(actual(count) == 3u);
+        }
+
+        // Append can happen while the reader is open
+        {
+            auto md = f.td.mds[0].clone();
+            md->test_set("reftime", "2025-01-01 00:00:00");
+            wassert(actual(segment).imports(
+                md, segment::WriterConfig(),
+                std::make_shared<core::lock::FileAppendLock>(
+                    lockfile, core::lock::policy_ofd)));
+        }
+
+        // Check can happen while the reader is open
+        {
+            auto checker =
+                segment->checker(std::make_shared<core::lock::FileCheckLock>(
+                    lockfile, core::lock::policy_ofd));
+            auto results = checker->scan();
+            wassert(actual(results.size()) == 4u);
+
+            // Checks cannot escalate to fix, as the reader is open
+            wassert_throws(core::lock::locked_error, checker->fixer());
+        }
     });
 }
 

@@ -7,6 +7,9 @@
 
 namespace arki::core {
 
+/**
+ * Base class for all types of locks
+ */
 class Lock : public std::enable_shared_from_this<Lock>
 {
 protected:
@@ -20,32 +23,52 @@ public:
     virtual ~Lock();
 };
 
+/**
+ * Read lock.
+ *
+ * Conflicts with CheckWrite locks
+ */
 class ReadLock : public Lock
 {
 public:
     using Lock::Lock;
 };
 
+/**
+ * Append lock.
+ *
+ * Conflicts with Write, Check and CheckWrite locks.
+ */
 class AppendLock : public ReadLock
 {
 public:
     using ReadLock::ReadLock;
 };
 
+/**
+ * Check write lock.
+ *
+ * Conflicts with Read, Write, Check and CheckWrite locks.
+ */
 class CheckWriteLock : public Lock
 {
 public:
     using Lock::Lock;
 };
 
+/**
+ * Check lock.
+ *
+ * Conflicts with Write and CheckWrite locks.
+ */
 class CheckLock : public ReadLock
 {
 public:
     using ReadLock::ReadLock;
 
     /**
-     * Escalate a read lock to a write lock as long as the resulting lock is in
-     * use
+     * Escalate a read lock to a write lock for as long as the resulting lock
+     * is in use
      */
     virtual std::shared_ptr<core::CheckWriteLock> write_lock() = 0;
 };

@@ -1,6 +1,7 @@
 #ifndef ARKI_SEGMENT_TESTS_H
 #define ARKI_SEGMENT_TESTS_H
 
+#include <arki/core/lock.h>
 #include <arki/metadata/collection.h>
 #include <arki/metadata/tests.h>
 #include <arki/segment.h>
@@ -62,6 +63,13 @@ struct ActualSegment
 
     /// The segment data mtime is newer than value
     void data_mtime_newer_than(time_t value);
+
+    /// Import a metadata into the segment
+    arki::segment::Writer::AcquireResult
+    imports(std::shared_ptr<arki::Metadata> md,
+            const segment::WriterConfig& config = segment::WriterConfig(),
+            std::shared_ptr<core::AppendLock> lock =
+                std::make_shared<core::lock::NullAppendLock>());
 };
 
 inline arki::tests::ActualSegment actual(std::shared_ptr<Segment> actual)

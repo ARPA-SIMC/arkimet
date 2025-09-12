@@ -592,11 +592,12 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
     // Commit the changes in the database
     pending_index.commit();
 
+    segment().invalidate_reader_cache();
+
     index.vacuum();
 
     res.segment_mtime = get_data_mtime_after_fix("reorder");
     res.size_post     = checker().data->size();
-    segment().invalidate_reader_cache();
     return res;
 }
 
