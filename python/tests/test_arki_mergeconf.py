@@ -1,5 +1,6 @@
 # python 3.7+ from __future__ import annotations
 import os
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -143,6 +144,7 @@ type=discard
         src = os.path.abspath("inbound/test.grib1")
         out = self.call_output_success(src, "--extra")
         dec = r"(?:\.0*)?"
+        src = re.escape(src)
         self.assertRegex(
             out,
             rf"[{src}]\n",
