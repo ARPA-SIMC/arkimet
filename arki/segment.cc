@@ -74,11 +74,6 @@ Segment::checker(std::shared_ptr<core::CheckLock> lock) const
     return session().segment_checker(shared_from_this(), lock);
 }
 
-void Segment::invalidate_reader_cache() const
-{
-    session().invalidate_reader_cache(shared_from_this());
-}
-
 std::filesystem::path Segment::basename(const std::filesystem::path& pathname)
 {
     const auto& native = pathname.native();
@@ -116,24 +111,33 @@ void Reader::query_summary(const Matcher& matcher, Summary& summary)
  * EmptyReader
  */
 
-std::vector<uint8_t> EmptyReader::read(const types::source::Blob& src)
+bool EmptyReader::has_changed() const
+{
+    // Always return true, so that at each reader instantiation in the seession
+    // we recheck if the segment has appeared.
+    // It's ok not to aggressively reuse empty readers, as they hold no
+    // resources
+    return true;
+}
+
+std::vector<uint8_t> EmptyReader::read(const types::source::Blob&)
 {
     throw std::runtime_error("Cannot read Blob data from an empty reader");
 }
-stream::SendResult EmptyReader::stream(const types::source::Blob& src,
-                                       StreamOutput& out)
+stream::SendResult EmptyReader::stream(const types::source::Blob&,
+                                       StreamOutput&)
 {
     throw std::runtime_error("Cannot stream Blob data from an empty reader");
 }
 
-bool EmptyReader::read_all(metadata_dest_func dest) { return true; }
+bool EmptyReader::read_all(metadata_dest_func) { return true; }
 
 bool EmptyReader::query_data(const query::Data&, metadata_dest_func)
 {
     return true;
 }
 
-void EmptyReader::query_summary(const Matcher& matcher, Summary& summary) {}
+void EmptyReader::query_summary(const Matcher&, Summary&) {}
 
 /*
  * Writer

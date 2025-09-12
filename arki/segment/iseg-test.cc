@@ -173,7 +173,7 @@ template <typename Data> void Tests<Data>::register_tests()
             auto checker =
                 segment->checker(std::make_shared<core::lock::NullCheckLock>());
             auto md = checker->scan();
-            wassert(actual(md.size()) == 3);
+            wassert(actual(md.size()) == 3u);
             md.pop_back();
             auto fixer = checker->fixer();
             fixer->reindex(md);

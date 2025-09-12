@@ -49,6 +49,8 @@ public:
     Reader(std::shared_ptr<const Segment> segment,
            std::shared_ptr<const core::ReadLock> lock);
 
+    bool has_changed() const override;
+
     std::vector<uint8_t> read(const types::source::Blob& src) override;
     stream::SendResult stream(const types::source::Blob& src,
                               StreamOutput& out) override;

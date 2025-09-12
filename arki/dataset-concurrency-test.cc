@@ -45,71 +45,6 @@ template <class Data> struct FixtureWriter : public DatasetTest
     }
 };
 
-class TestSubprocess : public subprocess::Child
-{
-public:
-    void start()
-    {
-        set_stdout(subprocess::Redirect::PIPE);
-        fork();
-    }
-
-    void notify_ready()
-    {
-        putchar('H');
-        fflush(stdout);
-        fclose(stdout);
-    }
-
-    char wait_until_ready()
-    {
-        char buf[2];
-        ssize_t res = read(get_stdout(), buf, 1);
-        if (res < 0)
-            throw_system_error("reading 1 byte from child process");
-        if (res == 0)
-            throw runtime_error(
-                "child process closed stdout without producing any output");
-        return buf[0];
-    }
-
-    void during(char expected, std::function<void()> f)
-    {
-        start();
-        wassert(actual(wait_until_ready()) == expected);
-        try
-        {
-            f();
-        }
-        catch (...)
-        {
-            send_signal(9);
-            wait();
-            throw;
-        }
-        send_signal(9);
-        wait();
-    }
-
-    void during(std::function<void()> f)
-    {
-        start();
-        wait_until_ready();
-        try
-        {
-            f();
-        }
-        catch (...)
-        {
-            send_signal(9);
-            wait();
-            throw;
-        }
-        send_signal(9);
-        wait();
-    }
-};
-
 template <class Fixture> struct ConcurrentImporter : public subprocess::Child
 {
     Fixture& fixture;
@@ -320,7 +255,7 @@ template <class Data> void Tests<Data>::register_tests()
         // Query the index and hang
         metadata::Collection mdc;
         ReadHang readHang(f.dataset_config());
-        readHang.during('H', [&] {
+        readHang.during([&] {
             // Query in parallel with the other read
             mdc.add(*f.config().create_reader(), Matcher());
         });
@@ -340,7 +275,7 @@ template <class Data> void Tests<Data>::register_tests()
 
         // Query the index and hang
         ReadHang readHang(f.dataset_config());
-        readHang.during('H', [&] {
+        readHang.during([&] {
             // Import another grib in the dataset
             {
                 auto ds = f.config().create_writer();

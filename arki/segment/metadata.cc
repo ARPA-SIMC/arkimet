@@ -253,6 +253,13 @@ Reader::Reader(std::shared_ptr<const Segment> segment,
 
 Reader::~Reader() {}
 
+bool Reader::has_changed() const
+{
+    // The read lock held by the reader prevent the segment from being changed
+    // in a way that requires reinstantiating a reader
+    return false;
+}
+
 std::vector<uint8_t> Reader::read(const types::source::Blob& src)
 {
     return data_reader->read(src);
@@ -400,8 +407,6 @@ Writer::AcquireResult Writer::acquire(arki::metadata::InboundBatch& batch,
     // timestamp, which then gets flagged by a dataset check
     sys::touch(segment().abspath_metadata(), ts.value());
     sys::touch(segment().abspath_summary(), ts.value());
-
-    segment().invalidate_reader_cache();
 
     AcquireResult res;
     res.count_ok      = batch.size();
@@ -601,7 +606,6 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
         res.data_timespan = writer.sum.get_reference_time();
     }
     res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
-    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -622,6 +626,8 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
 
     p_repack.commit();
 
+    // checker().update_data();
+
     res.size_post = checker().data->size();
 
     // Write out the new metadata
@@ -636,7 +642,6 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
     sys::touch_ifexists(path_metadata, res.segment_mtime);
     sys::touch_ifexists(path_summary, res.segment_mtime);
 
-    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -645,7 +650,6 @@ size_t Fixer::remove(bool with_data)
     size_t res = 0;
     res += remove_ifexists(segment().abspath_metadata());
     res += remove_ifexists(segment().abspath_summary());
-    segment().invalidate_reader_cache();
     if (!with_data)
         return res;
 
@@ -655,7 +659,6 @@ size_t Fixer::remove(bool with_data)
 size_t Fixer::remove_data()
 {
     auto data_checker = checker().data->checker();
-    segment().invalidate_reader_cache();
     return data_checker->remove();
 }
 
@@ -701,7 +704,6 @@ Fixer::ConvertResult Fixer::tar()
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
 
-    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -747,7 +749,6 @@ Fixer::ConvertResult Fixer::zip()
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
 
-    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -795,7 +796,6 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     // The summary is unchanged: touch it to confirm it as still valid
     sys::touch(path_summary, res.segment_mtime);
 
-    segment().invalidate_reader_cache();
     return res;
 }
 
@@ -804,7 +804,6 @@ void Fixer::reindex(arki::metadata::Collection& mds)
     AtomicWriterWithSummary writer(segment());
     writer.write(mds);
     writer.commit();
-    segment().invalidate_reader_cache();
 }
 
 void Fixer::move(std::shared_ptr<arki::Segment> dest)
@@ -814,7 +813,6 @@ void Fixer::move(std::shared_ptr<arki::Segment> dest)
     sys::rename_ifexists(segment().abspath_metadata(),
                          dest->abspath_metadata());
     sys::rename_ifexists(segment().abspath_summary(), dest->abspath_summary());
-    segment().invalidate_reader_cache();
 }
 
 void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
@@ -822,7 +820,6 @@ void Fixer::move_data(std::shared_ptr<arki::Segment> dest)
     auto data_checker = checker().data->checker();
     data_checker->move(dest->session().shared_from_this(), dest->relpath());
     remove(false);
-    segment().invalidate_reader_cache();
 }
 
 void Fixer::test_mark_all_removed()

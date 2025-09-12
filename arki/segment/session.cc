@@ -105,100 +105,26 @@ Session::segment_from_relpath_and_format(const std::filesystem::path& relpath,
     return std::make_shared<Segment>(shared_from_this(), format, relpath);
 }
 
-// TODO: autodetect code that can be moved elsewhere
-#if 0
-std::shared_ptr<segment::Reader>
-Session::create_segment_reader(std::shared_ptr<const Segment> segment,
-                               std::shared_ptr<const core::ReadLock> lock) const
-{
-    // stat the metadata file, if it exists
-    auto md_abspath = segment->abspath_metadata();
-    auto st_md      = sys::stat(md_abspath);
-    // If it exists and it looks new enough, use it
-    if (st_md.get())
-    {
-        auto data = Data::create(segment);
-        auto ts   = data->timestamp();
-        if (!ts)
-        {
-            nag::warning("%s: segment data is not available",
-                         segment->abspath().c_str());
-            return std::make_shared<segment::EmptyReader>(segment, lock);
-        }
-
-        if (st_md->st_mtime >= ts.value())
-            return std::make_shared<segment::metadata::Reader>(segment, lock);
-        else
-            nag::warning(
-                "%s: outdated .metadata file: falling back to data scan",
-                segment->abspath().c_str());
-    }
-
-    // Else scan the file as usual
-    return std::make_shared<segment::scan::Reader>(segment, lock);
-}
-
-std::shared_ptr<segment::Writer>
-Session::segment_writer(std::shared_ptr<const Segment> segment,
-                        std::shared_ptr<core::AppendLock> lock) const
-{
-    // stat the metadata file, if it exists
-    auto md_abspath = segment->abspath_metadata();
-    auto st_md      = sys::stat(md_abspath);
-    // If it exists and it looks new enough, use it
-    if (st_md.get())
-        return std::make_shared<segment::metadata::Writer>(segment, lock);
-
-    auto data = Data::create(segment);
-    auto ts   = data->timestamp();
-    if (ts)
-        return std::make_shared<segment::scan::Writer>(segment, lock);
-    else
-        throw std::runtime_error(
-            "this session misses a policy to determine how to create writers "
-            "for segments that do not yet exist");
-}
-
-std::shared_ptr<segment::Checker>
-Session::segment_checker(std::shared_ptr<const Segment> segment,
-                         std::shared_ptr<core::CheckLock> lock) const
-{
-    // stat the metadata file, if it exists
-    auto md_abspath = segment->abspath_metadata();
-    auto st_md      = sys::stat(md_abspath);
-    // If it exists and it looks new enough, use it
-    if (st_md.get())
-        return std::make_shared<segment::metadata::Checker>(segment, lock);
-
-    auto data = Data::create(segment);
-    auto ts   = data->timestamp();
-    if (ts)
-        return std::make_shared<segment::scan::Checker>(segment, lock);
-    else
-        throw std::runtime_error(
-            "this session misses a policy to determine how to create checkers "
-            "for segments that do not yet exist");
-}
-#endif
-
-void Session::invalidate_reader_cache(
-    std::shared_ptr<const Segment> segment) const
-{
-    reader_pool.erase(segment->abspath());
-}
-
 std::shared_ptr<segment::Reader>
 Session::segment_reader(std::shared_ptr<const Segment> segment,
                         std::shared_ptr<const core::ReadLock> lock) const
 {
-    auto res = reader_pool.find(segment->abspath());
-    if (res == reader_pool.end() || res->second.expired())
+    std::shared_ptr<segment::Reader> reader;
+    auto from_pool = reader_pool.find(segment->abspath());
+    if (from_pool != reader_pool.end() && !from_pool->second.expired())
     {
-        auto reader                     = create_segment_reader(segment, lock);
-        reader_pool[segment->abspath()] = reader;
-        return reader;
+        reader = from_pool->second.lock();
+        if (reader->has_changed())
+            reader.reset();
     }
-    return res->second.lock();
+
+    if (!reader)
+    {
+        reader                          = create_segment_reader(segment, lock);
+        reader_pool[segment->abspath()] = reader;
+    }
+
+    return reader;
 }
 
 void Session::create_scan(std::shared_ptr<Segment> segment,

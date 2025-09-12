@@ -3,9 +3,9 @@
 
 #include <arki/core/time.h>
 #include <arki/tests/tests.h>
+#include <arki/utils/subprocess.h>
 
-namespace arki {
-namespace tests {
+namespace arki::tests {
 
 class ActualTime : public arki::utils::tests::Actual<arki::core::Time>
 {
@@ -57,6 +57,14 @@ void skip_unless_splice();
 
 void delete_if_exists(const std::string& name);
 
-} // namespace tests
-} // namespace arki
+class TestSubprocess : public arki::utils::subprocess::Child
+{
+public:
+    void start();
+    void notify_ready();
+    char wait_until_ready();
+    void during(std::function<void()> f);
+};
+
+} // namespace arki::tests
 #endif

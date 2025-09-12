@@ -6,6 +6,7 @@
 #include "arki/segment/data/tests.h"
 #include "arki/segment/scan.h"
 #include "arki/stream.h"
+#include "arki/stream/discard.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"

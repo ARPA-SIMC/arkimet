@@ -9,9 +9,9 @@
 namespace arki::segment::data {
 
 template <typename Data>
-std::shared_ptr<data::Checker>
-BaseChecker<Data>::move(std::shared_ptr<const segment::Session> segment_session,
-                        const std::filesystem::path& new_relpath)
+void BaseChecker<Data>::move(
+    std::shared_ptr<const segment::Session> segment_session,
+    const std::filesystem::path& new_relpath)
 {
     using namespace arki::utils;
 
@@ -53,10 +53,6 @@ BaseChecker<Data>::move(std::shared_ptr<const segment::Session> segment_session,
     sys::rename_ifexists(
         sys::with_suffix(this->segment().abspath(), ".summary"),
         target_summary);
-
-    auto data = segment::Data::create(new_segment);
-    // TODO: what is really needed as a return value?
-    return data->checker();
 }
 
 } // namespace arki::segment::data

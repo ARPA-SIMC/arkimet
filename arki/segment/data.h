@@ -87,6 +87,9 @@ public:
      */
     virtual size_t next_offset(size_t offset, size_t size) const = 0;
 
+    /// Check if the data has changed on disk
+    virtual bool changed() const { return true; } // TODO: make virtual
+
 #if 0
     /// Get a read lock on this segment
     virtual std::shared_ptr<const core::ReadLock> read_lock() const = 0;
@@ -222,7 +225,14 @@ public:
     virtual segment::State
     check(std::function<void(const std::string&)> reporter,
           const arki::metadata::Collection& mds, bool quick = true) = 0;
-    virtual size_t remove()                                         = 0;
+
+    /**
+     * Remove the data.
+     *
+     * Use of the associated Data and its readers, writers and checkers is
+     * undefined behaviour after this call.
+     */
+    virtual size_t remove() = 0;
 
     /**
      * Rescan the segment
@@ -233,25 +243,37 @@ public:
 
     /**
      * Rewrite this segment so that the data are in the same order as in `mds`.
+     *
+     * Use of the associated Data and its readers, writers and checkers is
+     * undefined behaviour after this call.
      */
     virtual core::Pending repack(arki::metadata::Collection& mds,
                                  const RepackConfig& cfg = RepackConfig()) = 0;
 
     /**
      * Replace this segment with a tar segment, updating the metadata in mds to
-     * point to the right locations inside the tarball
+     * point to the right locations inside the tarball>
+     *
+     * Use of the associated Data and its readers, writers and checkers is
+     * undefined behaviour after this call.
      */
     virtual std::shared_ptr<Checker> tar(arki::metadata::Collection& mds);
 
     /**
      * Replace this segment with a zip segment, updating the metadata in mds to
-     * point to the right locations inside the tarball
+     * point to the right locations inside the zip file.
+     *
+     * Use of the associated Data and its readers, writers and checkers is
+     * undefined behaviour after this call.
      */
     virtual std::shared_ptr<Checker> zip(arki::metadata::Collection& mds);
 
     /**
      * Replace this segment with a compressed segment, updating the metadata in
-     * mds to point to the right locations if needed
+     * mds to point to the right locations if needed.
+     *
+     * Use of the associated Data and its readers, writers and checkers is
+     * undefined behaviour after this call.
      */
     virtual std::shared_ptr<Checker> compress(arki::metadata::Collection& mds,
                                               unsigned groupsize);
@@ -259,13 +281,13 @@ public:
     /**
      * Move this segment to a new location.
      *
-     * Using the segment after moving it can have unpredictable effects.
+     * Use of the associated Data and its readers, writers and checkers is
+     * undefined behaviour after this call.
      *
      * Returns a Checker pointing to the new location
      */
-    virtual std::shared_ptr<Checker>
-    move(std::shared_ptr<const segment::Session> segment_session,
-         const std::filesystem::path& new_relpath) = 0;
+    virtual void move(std::shared_ptr<const segment::Session> segment_session,
+                      const std::filesystem::path& new_relpath) = 0;
 
     /**
      * Truncate the segment at the given offset

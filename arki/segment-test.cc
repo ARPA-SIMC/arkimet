@@ -1,6 +1,7 @@
 #include "arki/core/lock.h"
 #include "arki/matcher/parser.h"
 #include "arki/query.h"
+#include "arki/scan.h"
 #include "arki/segment/data.h"
 #include "arki/segment/data/gz.h"
 #include "arki/segment/data/tar.h"
@@ -58,6 +59,52 @@ Tests<MetadataSegmentFixture<ODIMData>>
 Tests<IsegSegmentFixture<GRIBData>> testi1("arki_segment_common_iseg_grib");
 Tests<IsegSegmentFixture<VM2Data>> testi2("arki_segment_common_iseg_vm2");
 Tests<IsegSegmentFixture<ODIMData>> testi3("arki_segment_common_iseg_odim");
+
+template <class Fixture> struct RepackForever : public TestSubprocess
+{
+    std::shared_ptr<const Segment> segment;
+    std::filesystem::path lockfile;
+
+    explicit RepackForever(std::shared_ptr<const Segment> segment,
+                           const std::filesystem::path& lockfile)
+        : segment(segment), lockfile(lockfile)
+    {
+    }
+
+    int main() noexcept override
+    {
+        try
+        {
+            arki::scan::init();
+            // Read segment contents, to use for repacking later
+            metadata::Collection mds;
+            {
+                auto reader =
+                    segment->reader(std::make_shared<core::lock::FileReadLock>(
+                        lockfile, core::lock::policy_ofd));
+                wassert(reader->read_all(mds.inserter_func()));
+            }
+            notify_ready();
+
+            while (true)
+            {
+                auto check_lock = std::make_shared<core::lock::FileCheckLock>(
+                    lockfile, core::lock::policy_ofd);
+                auto checker = segment->checker(check_lock);
+                auto fixer   = checker->fixer();
+                auto res =
+                    wcallchecked(fixer->reorder(mds, segment::RepackConfig()));
+                wassert(actual(res.size_pre) == res.size_post);
+            }
+            return 0;
+        }
+        catch (std::exception& e)
+        {
+            fprintf(stderr, "RepackForever: %s\n", e.what());
+            return 1;
+        }
+    }
+};
 
 template <typename Base> void Tests<Base>::register_tests()
 {
@@ -196,9 +243,32 @@ template <typename Base> void Tests<Base>::register_tests()
             auto fixer = checker->fixer();
             auto res   = fixer->reorder(reversed, segment::RepackConfig());
             wassert(actual(res.segment_mtime) > f.initial_mtime);
-            // TODO: test size changes (requires holes)
-            // TODO: res.size_pre = 0;
-            // TODO: res.size_post = 0;
+            wassert(actual(res.size_pre) == res.size_post);
+        }
+    });
+
+    add_method("reorder_remove_data", [](Fixture& f) {
+        auto segment = f.create(f.td.mds);
+        auto checker =
+            segment->checker(std::make_shared<core::lock::NullCheckLock>());
+        auto mds = checker->scan();
+
+        metadata::Collection smaller;
+        smaller.acquire(mds.get(0));
+        smaller.acquire(mds.get(2));
+
+        size_t pre_size = mds[0].sourceBlob().size + mds[1].sourceBlob().size +
+                          mds[2].sourceBlob().size;
+        size_t post_size = mds[0].sourceBlob().size + mds[2].sourceBlob().size;
+
+        {
+            auto fixer = checker->fixer();
+            auto res   = fixer->reorder(smaller, segment::RepackConfig());
+            wassert(actual(res.segment_mtime) > f.initial_mtime);
+            // Do not use exact comparisons, as formats like VM2 have padding
+            wassert(actual(res.size_pre) >= pre_size);
+            wassert(actual(res.size_post) < pre_size);
+            wassert(actual(res.size_post) >= post_size);
         }
     });
 
@@ -464,6 +534,73 @@ template <typename Base> void Tests<Base>::register_tests()
 
             // Checks cannot escalate to fix, as the reader is open
             wassert_throws(core::lock::locked_error, checker->fixer());
+        }
+    });
+
+    add_method("concurrent_read_repack", [](Fixture& f) {
+        auto lockfile = f.create_lockfile();
+        auto segment  = f.create(f.td.mds);
+
+        // Configure locks to wait
+        core::lock::TestWait tw;
+
+        metadata::Collection mdc;
+        RepackForever<Fixture> rf(segment, lockfile);
+
+        wassert(rf.during([&] {
+            for (unsigned i = 0; i < 60; ++i)
+            {
+                auto reader =
+                    segment->reader(std::make_shared<core::lock::FileReadLock>(
+                        lockfile, core::lock::policy_ofd));
+                wassert(reader->read_all(mdc.inserter_func()));
+            }
+        }));
+
+        wassert(actual(mdc.size()) == 60u * f.td.mds.size());
+    });
+
+    add_method("cached_readers_see_segment_creation", [](Fixture& f) {
+        auto segment = f.create_segment();
+
+        // Create a separate segment session pointing to the same root
+        auto other_session = f.make_session(segment->root());
+        auto other_segment =
+            other_session->segment_from_relpath(segment->relpath());
+
+        /// The segment does not exist yet, it can be read as empty
+        /// Keep it referenced so is stays alive in the cache
+        auto other_reader0 =
+            other_segment->reader(std::make_shared<core::lock::NullReadLock>());
+        {
+            metadata::Collection mdc;
+            other_reader0->read_all(mdc.inserter_func());
+            wassert(actual(mdc.size()) == 0u);
+        }
+
+        // Create the segment
+        segment = f.create(f.td.mds);
+
+        // The new segment can read it
+        {
+            metadata::Collection mdc;
+            auto reader =
+                segment->reader(std::make_shared<core::lock::NullReadLock>());
+            reader->read_all(mdc.inserter_func());
+            wassert(actual(mdc.size()) == 3u);
+        }
+
+        // The old segment is able to detect that the segment has changed
+        {
+            metadata::Collection mdc;
+            auto other_reader1 = other_segment->reader(
+                std::make_shared<core::lock::NullReadLock>());
+            other_reader1->read_all(mdc.inserter_func());
+            wassert(actual(mdc.size()) == 3u);
+
+            // The segment has changed, so other_session instantiates a new
+            // reader
+            wassert_true(other_reader0.get() != other_reader1.get());
         }
     });
 }

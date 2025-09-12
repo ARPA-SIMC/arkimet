@@ -67,9 +67,8 @@ public:
     // const std::string& new_relpath, const std::string& new_abspath) const
     // override;
 
-    std::shared_ptr<Checker>
-    move(std::shared_ptr<const segment::Session> segment_session,
-         const std::filesystem::path& new_relpath) override;
+    void move(std::shared_ptr<const segment::Session> segment_session,
+              const std::filesystem::path& new_relpath) override;
 };
 
 } // namespace arki::segment::data

@@ -90,9 +90,6 @@ template <class Data> class SegmentTestFixture : public Fixture
 protected:
     std::shared_ptr<segment::Session> m_session;
 
-    virtual std::shared_ptr<segment::Session>
-    make_session(const std::filesystem::path& root) = 0;
-
 public:
     Data td;
     time_t initial_mtime = 1234000;
@@ -101,6 +98,10 @@ public:
     virtual ~SegmentTestFixture() {}
 
     void test_setup();
+
+    /// Create a new segmeng session for the given path
+    virtual std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) = 0;
 
     std::shared_ptr<Segment> create_segment(const char* name = "segment");
     std::shared_ptr<Segment> create(const char* name = "segment");
@@ -132,13 +133,13 @@ template <class Data> class ScanSegmentFixture : public SegmentTestFixture<Data>
 protected:
     using SegmentTestFixture<Data>::m_session;
 
-    std::shared_ptr<segment::Session>
-    make_session(const std::filesystem::path& root) override;
-
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
     using SegmentTestFixture<Data>::initial_mtime;
+
+    std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) override;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds,
                                     const char* name = "segment") override;
@@ -152,13 +153,13 @@ class MetadataSegmentFixture : public SegmentTestFixture<Data>
 protected:
     using SegmentTestFixture<Data>::m_session;
 
-    std::shared_ptr<segment::Session>
-    make_session(const std::filesystem::path& root) override;
-
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
     using SegmentTestFixture<Data>::initial_mtime;
+
+    std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) override;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds,
                                     const char* name = "segment") override;
@@ -173,13 +174,13 @@ template <class Data> class IsegSegmentFixture : public SegmentTestFixture<Data>
 protected:
     using SegmentTestFixture<Data>::m_session;
 
-    std::shared_ptr<segment::Session>
-    make_session(const std::filesystem::path& root) override;
-
 public:
     using SegmentTestFixture<Data>::td;
     using SegmentTestFixture<Data>::create_segment;
     using SegmentTestFixture<Data>::initial_mtime;
+
+    std::shared_ptr<segment::Session>
+    make_session(const std::filesystem::path& root) override;
 
     std::shared_ptr<Segment> create(const metadata::Collection& mds,
                                     const char* name = "segment") override;

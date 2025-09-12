@@ -241,5 +241,18 @@ void ActualMetadata::not_matches(const std::string& expr)
     wassert(actual(not m(_actual)));
 }
 
+std::vector<core::Time> ActualMetadataCollection::reftimes() const
+{
+    std::vector<core::Time> res;
+    for (const auto& md : _actual)
+    {
+        if (const auto* reftime = md->get<types::Reftime>())
+            res.emplace_back(reftime->get_Position());
+        else
+            res.emplace_back();
+    }
+    return res;
+}
+
 } // namespace tests
 } // namespace arki

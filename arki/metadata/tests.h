@@ -103,6 +103,28 @@ actual(std::shared_ptr<arki::Metadata> actual)
     return arki::tests::ActualMetadata(*actual);
 }
 
+struct ActualMetadataCollection
+    : public arki::utils::tests::Actual<const metadata::Collection&>
+{
+    explicit ActualMetadataCollection(const metadata::Collection& c)
+        : Actual<const metadata::Collection&>(c)
+    {
+    }
+
+    std::vector<core::Time> reftimes() const;
+};
+
+inline arki::tests::ActualMetadataCollection
+actual(const arki::metadata::Collection& actual)
+{
+    return arki::tests::ActualMetadataCollection(actual);
+}
+inline arki::tests::ActualMetadataCollection
+actual(const arki::metadata::TestCollection& actual)
+{
+    return arki::tests::ActualMetadataCollection(actual);
+}
+
 } // namespace arki::tests
 
 #endif

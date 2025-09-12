@@ -395,7 +395,7 @@ template <class Data> void TestsReader<Data>::register_tests()
         auto reader = f.dataset_config()->create_reader();
         metadata::Collection coll;
         for (unsigned i = 0; i < 2000; ++i)
-            reader->query_data(dq, coll.inserter_func());
+            wassert(reader->query_data(dq, coll.inserter_func()));
     });
 
     this->add_method("issue213_manyds", [](Fixture& f) {

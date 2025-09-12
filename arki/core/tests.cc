@@ -14,8 +14,7 @@ using namespace arki::tests;
 using namespace arki::utils;
 using arki::core::Time;
 
-namespace arki {
-namespace tests {
+namespace arki::tests {
 
 void ActualTime::operator==(const std::string& expected) const
 {
@@ -152,5 +151,51 @@ void delete_if_exists(const std::string& name)
         sys::unlink(name);
 }
 
-} // namespace tests
-} // namespace arki
+/*
+ * TestSubprocess
+ */
+
+void TestSubprocess::start()
+{
+    set_stdout(subprocess::Redirect::PIPE);
+    fork();
+}
+
+void TestSubprocess::notify_ready()
+{
+    putchar('H');
+    fflush(stdout);
+    fclose(stdout);
+}
+
+char TestSubprocess::wait_until_ready()
+{
+    char buf[2];
+    ssize_t res = read(get_stdout(), buf, 1);
+    if (res < 0)
+        throw_system_error("reading 1 byte from child process");
+    if (res == 0)
+        throw runtime_error(
+            "child process closed stdout without producing any output");
+    return buf[0];
+}
+
+void TestSubprocess::during(std::function<void()> f)
+{
+    start();
+    wassert(actual(wait_until_ready()) == 'H');
+    try
+    {
+        f();
+    }
+    catch (...)
+    {
+        send_signal(9);
+        wait();
+        throw;
+    }
+    send_signal(9);
+    wait();
+}
+
+} // namespace arki::tests

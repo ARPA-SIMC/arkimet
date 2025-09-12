@@ -44,9 +44,6 @@ public:
     std::shared_ptr<segment::Checker>
     checker(std::shared_ptr<core::CheckLock> lock) const;
 
-    /// Shortcut for calling Session::invalidate_reader_cache
-    void invalidate_reader_cache() const;
-
     /**
      * Return the segment path for this pathname, stripping .gz, .tar, and .zip
      * extensions
@@ -74,6 +71,11 @@ public:
 
     /// Access the segment
     const Segment& segment() const { return *m_segment; }
+
+    /**
+     * Check if the segment has changed on disk
+     */
+    virtual bool has_changed() const = 0;
 
     /**
      * Send all data from the segment to dest, in the order in which they are
@@ -451,6 +453,7 @@ class EmptyReader : public Reader
 public:
     using Reader::Reader;
 
+    bool has_changed() const override;
     std::vector<uint8_t> read(const types::source::Blob& src) override;
     stream::SendResult stream(const types::source::Blob& src,
                               StreamOutput& out) override;
