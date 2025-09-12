@@ -377,8 +377,8 @@ size_t Checker::vacuum(dataset::Reporter&) { return 0; }
 
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
-    std::filesystem::remove(dataset().path /
-                            sys::with_suffix(relpath, ".index"));
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    std::filesystem::remove(segment->abspath_iseg_index());
 }
 
 } // namespace iseg

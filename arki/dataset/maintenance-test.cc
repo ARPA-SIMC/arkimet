@@ -184,6 +184,7 @@ void Fixture::reset_seqfile()
     // FIXME: unlink instead?
     segment::SequenceFile sf("testds" / test_relpath);
     sf.open();
+    sys::PreserveFileTimes pft(sf);
     sf.write_sequence(0u);
 }
 
@@ -657,6 +658,7 @@ template <typename Fixture> void FixTest<Fixture>::register_tests_dir()
                 sys::File df("testds" / f.test_relpath /
                                  ("000000."s + f.format),
                              O_RDWR);
+                sys::PreserveFileTimes pft(df);
                 df.ftruncate(f.test_datum_size / 2);
             }
 

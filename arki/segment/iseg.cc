@@ -51,12 +51,17 @@ Session::create_segment_reader(std::shared_ptr<const arki::Segment> segment,
 {
     if (has_valid_iseg_index(segment))
         return std::make_shared<segment::iseg::Reader>(segment, lock);
+#if 0
+    // Do not fall back to a rescan: if metadata is missing, we skip the
+    // segment. This is best fixed by a rescan, rather than introducing a
+    // surprise performance penalty
     else if (scan::has_data(segment))
     {
         nag::warning("%s: outdated iseg index: falling back to data scan",
                      segment->abspath().c_str());
         return std::make_shared<segment::scan::Reader>(segment, lock);
     }
+#endif
     else
     {
         nag::warning("%s: segment data is not available",
@@ -440,8 +445,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
 {
     Checker::FsckResult res;
 
-    auto data_checker = data->checker();
-    auto ts_data      = data->timestamp();
+    auto ts_data = data->timestamp();
     if (!ts_data)
     {
         reporter.info(segment(), "segment data not found on disk");
@@ -451,7 +455,8 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
     res.mtime = ts_data.value();
     res.size  = data->size();
 
-    if (!std::filesystem::exists(segment().abspath_iseg_index()))
+    time_t ts_index = sys::timestamp(segment().abspath_iseg_index(), 0);
+    if (!ts_index)
     {
         if (data->is_empty())
         {
@@ -469,20 +474,21 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         return res;
     }
 
-#if 0
     /**
      * Although iseg could detect if the data of a segment is newer than its
      * index, the timestamp of the index is updated by various kinds of sqlite
      * operations, making the test rather useless, because it's likely that the
      * index timestamp would get updated before the mismatch is detected.
+     *
+     * However, this is still better than nothing: it may not catch all cases,
+     * but it may catch some.
      */
-    string abspath = str::joinpath(dataset().path, relpath);
-    if (sys::timestamp(abspath) > sys::timestamp(abspath + ".index"))
+    if (ts_index < ts_data.value())
     {
-        segments_state.insert(make_pair(relpath, segmented::SegmentState(segment::SEGMENT_UNALIGNED)));
-        return;
+        reporter.info(segment(), "data is newer than index");
+        res.state = segment::SEGMENT_UNALIGNED;
+        return res;
     }
-#endif
 
     auto mds = scan();
 
@@ -504,6 +510,7 @@ Checker::FsckResult Checker::fsck(segment::Reporter& reporter, bool quick)
         }
         else
         {
+            auto data_checker = data->checker();
             res.state += data_checker->check(
                 [&](const std::string& msg) { reporter.info(segment(), msg); },
                 mds, quick);

@@ -3,6 +3,7 @@
 #include "arki/metadata.h"
 #include "arki/metadata/inbound.h"
 #include "arki/metadata/reader.h"
+#include "arki/nag.h"
 #include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
@@ -20,10 +21,23 @@ Session::create_segment_reader(std::shared_ptr<const Segment> segment,
 {
     if (has_valid_metadata(segment))
         return std::make_shared<segment::metadata::Reader>(segment, lock);
+#if 0
+    // Do not fall back to a rescan: if metadata is missing, we skip the
+    // segment. This is best fixed by a rescan, rather than introducing a
+    // surprise performance penalty
     else if (scan::has_data(segment))
+    {
+        nag::warning("%s: outdated iseg index: falling back to data scan",
+                     segment->abspath().c_str());
         return std::make_shared<segment::scan::Reader>(segment, lock);
+    }
+#endif
     else
+    {
+        nag::warning("%s: segment data is not available",
+                     segment->abspath().c_str());
         return std::make_shared<segment::EmptyReader>(segment, lock);
+    }
 }
 
 std::shared_ptr<segment::Writer>

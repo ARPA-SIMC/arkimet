@@ -6,9 +6,7 @@
 #include <arki/types/fwd.h>
 #include <set>
 
-namespace arki {
-namespace dataset {
-namespace iseg {
+namespace arki::dataset::iseg {
 
 struct Dataset : public segmented::Dataset
 {
@@ -33,7 +31,5 @@ struct Dataset : public segmented::Dataset
     check_lock_segment(const std::filesystem::path& relpath) const;
 };
 
-} // namespace iseg
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::iseg
 #endif

@@ -3,29 +3,7 @@
 
 #include <arki/dataset/segmented.h>
 
-namespace arki {
-namespace dataset {
-class Index;
-
-namespace simple {
-
-struct SegmentSession : public segment::Session
-{
-protected:
-    std::shared_ptr<segment::Reader> create_segment_reader(
-        std::shared_ptr<const Segment> segment,
-        std::shared_ptr<const core::ReadLock> lock) const override;
-
-public:
-    using segment::Session::Session;
-
-    std::shared_ptr<segment::Writer>
-    segment_writer(std::shared_ptr<const Segment> segment,
-                   std::shared_ptr<core::AppendLock> lock) const override;
-    std::shared_ptr<segment::Checker>
-    segment_checker(std::shared_ptr<const Segment> segment,
-                    std::shared_ptr<core::CheckLock> lock) const override;
-};
+namespace arki::dataset::simple {
 
 struct Dataset : public dataset::segmented::Dataset
 {
@@ -41,7 +19,5 @@ struct Dataset : public dataset::segmented::Dataset
     std::shared_ptr<core::CheckLock> check_lock_dataset() const;
 };
 
-} // namespace simple
-} // namespace dataset
-} // namespace arki
+} // namespace arki::dataset::simple
 #endif

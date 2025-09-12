@@ -256,14 +256,14 @@ template <typename Data> void Tests<Data>::register_tests()
         auto reader0 = segment->reader(lock);
         {
             auto reader = reader0;
-            wassert(actual(dynamic_cast<segment::scan::Reader*>(reader.get()))
+            wassert(actual(dynamic_cast<segment::EmptyReader*>(reader.get()))
                         .istrue());
             size_t count = 0;
             reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
                 ++count;
                 return true;
             });
-            wassert(actual(count) == 3u);
+            wassert(actual(count) == 0u);
         }
 
         // Rescan the segment
@@ -315,14 +315,14 @@ template <typename Data> void Tests<Data>::register_tests()
         auto reader0 = segment->reader(lock);
         {
             auto reader = reader0;
-            wassert(actual(dynamic_cast<segment::scan::Reader*>(reader.get()))
+            wassert(actual(dynamic_cast<segment::EmptyReader*>(reader.get()))
                         .istrue());
             size_t count = 0;
             reader->read_all([&](std::shared_ptr<arki::Metadata>) noexcept {
                 ++count;
                 return true;
             });
-            wassert(actual(count) == 3u);
+            wassert(actual(count) == 0u);
         }
 
         // Rescan the segment

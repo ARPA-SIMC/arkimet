@@ -1,6 +1,7 @@
 #include "iseg.h"
 #include "arki/dataset/session.h"
 #include "arki/defs.h"
+#include "arki/nag.h"
 #include "arki/segment/iseg.h"
 #include "arki/types.h"
 #include "arki/utils/string.h"
@@ -13,6 +14,10 @@ using namespace std;
 using namespace arki::utils;
 
 namespace arki::dataset::iseg {
+
+/*
+ * Dataset
+ */
 
 Dataset::Dataset(std::shared_ptr<Session> session,
                  const core::cfg::Section& cfg)

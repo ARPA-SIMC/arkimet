@@ -342,6 +342,8 @@ void Checker::test_delete_from_index(const std::filesystem::path& relpath)
 
 void Checker::test_invalidate_in_index(const std::filesystem::path& relpath)
 {
+    auto segment = dataset().segment_session->segment_from_relpath(relpath);
+    std::filesystem::remove(segment->abspath_metadata());
     manifest.remove(relpath);
     manifest.flush();
 }
