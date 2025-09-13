@@ -537,6 +537,50 @@ template <typename Base> void Tests<Base>::register_tests()
         }
     });
 
+    add_method("locking_no_reads_while_fixing", [](Fixture& f) {
+        auto lockfile = f.create_lockfile();
+        auto segment  = f.create(f.td.mds);
+
+        core::lock::TestNowait tnw;
+
+        // Keep a fixer open
+        auto checker =
+            segment->checker(std::make_shared<core::lock::FileCheckLock>(
+                lockfile, core::lock::policy_ofd));
+        auto fixer = checker->fixer();
+
+        // Reads cannot happen while fixing
+        wassert_throws(
+            core::lock::locked_error,
+            segment->reader(std::make_shared<core::lock::FileReadLock>(
+                lockfile, core::lock::policy_ofd)));
+
+        // Writes cannot happen while fixing
+        wassert_throws(
+            core::lock::locked_error,
+            segment->writer(std::make_shared<core::lock::FileAppendLock>(
+                lockfile, core::lock::policy_ofd)));
+
+        // Close the fixer
+        fixer.reset();
+
+        // Reads can now happen
+        segment->reader(std::make_shared<core::lock::FileReadLock>(
+            lockfile, core::lock::policy_ofd));
+
+        // Writes are still denied by the checker lock
+        wassert_throws(
+            core::lock::locked_error,
+            segment->writer(std::make_shared<core::lock::FileAppendLock>(
+                lockfile, core::lock::policy_ofd)));
+
+        // Close the checker
+        checker.reset();
+
+        segment->writer(std::make_shared<core::lock::FileAppendLock>(
+            lockfile, core::lock::policy_ofd));
+    });
+
     add_method("concurrent_read_repack", [](Fixture& f) {
         auto lockfile = f.create_lockfile();
         auto segment  = f.create(f.td.mds);
