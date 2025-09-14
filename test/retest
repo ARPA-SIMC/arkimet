@@ -1,4 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 set -xe
-while true; do meson test -vC t "$@"; done
+index=0
+while true;
+do
+	index=$((index + 1))
+	echo "*** Iteration #$index"
+	meson test -vC t "$@";
+done
 

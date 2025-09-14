@@ -25,11 +25,10 @@ bool has_valid_iseg_index(std::shared_ptr<const Segment> segment)
         return false;
 
     auto data = Data::create(segment);
-    auto ts   = data->timestamp();
-    if (!ts)
+    if (!data->exists_on_disk())
         return false;
 
-    return st_md->st_mtime >= ts.value();
+    return true;
 }
 
 /*
