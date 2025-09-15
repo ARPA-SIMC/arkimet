@@ -544,6 +544,25 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
  * Fixer
  */
 
+/**
+ * Get the data mtime after a fixer operation.
+ *
+ * @param operation_desc Description of the operation for error messages
+ */
+static time_t get_data_mtime_after_fix(std::shared_ptr<const Data> data,
+                                       const char* operation_desc)
+{
+    auto ts = data->timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << data->segment().abspath() << ": segment data missing after "
+            << operation_desc;
+        throw std::runtime_error(buf.str());
+    }
+    return ts.value();
+}
+
 Fixer::Fixer(std::shared_ptr<iseg::Checker> checker,
              std::shared_ptr<core::CheckWriteLock> lock)
     : segment::Fixer(checker, lock)
@@ -562,7 +581,8 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
 
     pending_del.commit();
 
-    res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
+    res.segment_mtime =
+        get_data_mtime_after_fix(checker().data, "removal in metadata");
     res.data_timespan = index.query_data_timespan();
     return res;
 }
@@ -576,7 +596,9 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
 
     // Make a copy of the file with the data in it ordered as mds is ordered,
     // and update the offsets in the index
-    auto data_checker   = checker().data->checker();
+    auto data_checker = checker().data->checker();
+    res.size_pre      = checker().data->size();
+
     auto pending_repack = data_checker->repack(mds, repack_config);
 
     // Reindex mds
@@ -588,7 +610,6 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
             throw std::runtime_error(
                 "duplicate detected while reordering segment");
     }
-    res.size_pre = checker().data->size();
 
     // Commit the changes in the file system
     pending_repack.commit();
@@ -598,8 +619,9 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
 
     index.vacuum();
 
-    res.segment_mtime = get_data_mtime_after_fix("reorder");
-    res.size_post     = checker().data->size();
+    auto new_data     = Data::create(checker().m_segment);
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "reorder");
+    res.size_post     = new_data->size();
     return res;
 }
 
@@ -657,7 +679,7 @@ Fixer::ConvertResult Fixer::tar()
     pending_index.commit();
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to tar");
     return res;
 }
 
@@ -698,7 +720,7 @@ Fixer::ConvertResult Fixer::zip()
     pending_index.commit();
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to zip");
     return res;
 }
 
@@ -742,7 +764,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     pending_index.commit();
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to gz");
     return res;
 }
 

@@ -262,6 +262,25 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
  * Fixer
  */
 
+/**
+ * Get the data mtime after a fixer operation.
+ *
+ * @param operation_desc Description of the operation for error messages
+ */
+static time_t get_data_mtime_after_fix(std::shared_ptr<const Data> data,
+                                       const char* operation_desc)
+{
+    auto ts = data->timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << data->segment().abspath() << ": segment data missing after "
+            << operation_desc;
+        throw std::runtime_error(buf.str());
+    }
+    return ts.value();
+}
+
 Fixer::Fixer(std::shared_ptr<scan::Checker> checker,
              std::shared_ptr<core::CheckWriteLock> lock)
     : segment::Fixer(checker, lock)
@@ -295,8 +314,9 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
     auto data_checker = checker().data->checker();
     auto p_repack     = data_checker->repack(mds, repack_config);
     p_repack.commit();
-    res.size_post     = checker().data->size();
-    res.segment_mtime = get_data_mtime_after_fix("reorder");
+    auto new_data     = Data::create(checker().m_segment);
+    res.size_post     = new_data->size();
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "reorder");
     return res;
 }
 
@@ -343,7 +363,7 @@ Fixer::ConvertResult Fixer::tar()
     res.size_post = new_data->size();
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to tar");
 
     return res;
 }
@@ -377,7 +397,7 @@ Fixer::ConvertResult Fixer::zip()
     res.size_post = new_data->size();
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to zip");
 
     return res;
 }
@@ -413,7 +433,7 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     res.size_post = new_data->size();
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to gz");
 
     return res;
 }

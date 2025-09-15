@@ -261,13 +261,6 @@ protected:
      */
     size_t remove_ifexists(const std::filesystem::path& path);
 
-    /**
-     * Get the data mtime after a fixer operation.
-     *
-     * @param operation_desc Description of the operation for error messages
-     */
-    time_t get_data_mtime_after_fix(const char* operation_desc);
-
 public:
     struct ReorderResult
     {
