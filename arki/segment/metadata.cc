@@ -720,7 +720,8 @@ Fixer::ConvertResult Fixer::tar()
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to tar");
 
-    // The summary is unchanged: touch it to confirm it as still valid
+    // Align metadata timestamps to that of the new segment
+    sys::touch(path_metadata, res.segment_mtime);
     sys::touch(path_summary, res.segment_mtime);
 
     return res;
@@ -765,12 +766,9 @@ Fixer::ConvertResult Fixer::zip()
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to zip");
 
-    // The summary is unchanged: touch it to confirm it as still valid
-    // TODO: also touch the metadata to res.segment_mtime, otherwise the summary
-    // may be older than the metadata
+    // Align metadata timestamps to that of the new segment
+    sys::touch(path_metadata, res.segment_mtime);
     sys::touch(path_summary, res.segment_mtime);
-
-    // TODO: propagate fixes to other segment and compression types
 
     return res;
 }
@@ -816,7 +814,8 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to gz");
 
-    // The summary is unchanged: touch it to confirm it as still valid
+    // Align metadata timestamps to that of the new segment
+    sys::touch(path_metadata, res.segment_mtime);
     sys::touch(path_summary, res.segment_mtime);
 
     return res;
