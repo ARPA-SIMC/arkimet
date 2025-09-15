@@ -573,6 +573,25 @@ std::shared_ptr<segment::Fixer> Checker::fixer()
  * Fixer
  */
 
+/**
+ * Get the data mtime after a fixer operation.
+ *
+ * @param operation_desc Description of the operation for error messages
+ */
+static time_t get_data_mtime_after_fix(std::shared_ptr<const Data> data,
+                                       const char* operation_desc)
+{
+    auto ts = data->timestamp();
+    if (!ts)
+    {
+        std::stringstream buf;
+        buf << data->segment().abspath() << ": segment data missing after "
+            << operation_desc;
+        throw std::runtime_error(buf.str());
+    }
+    return ts.value();
+}
+
 Fixer::Fixer(std::shared_ptr<metadata::Checker> checker,
              std::shared_ptr<core::CheckWriteLock> lock)
     : segment::Fixer(checker, lock)
@@ -605,7 +624,8 @@ Fixer::MarkRemovedResult Fixer::mark_removed(const std::set<uint64_t>& offsets)
         writer.commit();
         res.data_timespan = writer.sum.get_reference_time();
     }
-    res.segment_mtime = get_data_mtime_after_fix("removal in metadata");
+    res.segment_mtime =
+        get_data_mtime_after_fix(checker().data, "removal in metadata");
     return res;
 }
 
@@ -626,15 +646,14 @@ Fixer::ReorderResult Fixer::reorder(arki::metadata::Collection& mds,
 
     p_repack.commit();
 
-    // checker().update_data();
-
-    res.size_post = checker().data->size();
+    auto new_data = Data::create(checker().m_segment);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(path_metadata);
 
-    res.segment_mtime = get_data_mtime_after_fix("reorder");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "reorder");
 
     // Sync timestamps. We need it for the summary since it is now older than
     // the other files, and since we read the segment data timestamp we can
@@ -691,17 +710,18 @@ Fixer::ConvertResult Fixer::tar()
     std::filesystem::remove(path_metadata);
 
     // Create the .tar segment
-    auto new_data_checker = data_checker->tar(mds);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->tar(mds);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to tar");
 
-    // The summary is unchanged: touch it to confirm it as still valid
+    // Align metadata timestamps to that of the new segment
+    sys::touch(path_metadata, res.segment_mtime);
     sys::touch(path_summary, res.segment_mtime);
 
     return res;
@@ -736,17 +756,18 @@ Fixer::ConvertResult Fixer::zip()
     std::filesystem::remove(path_metadata);
 
     // Create the .zip segment
-    auto new_data_checker = data_checker->zip(mds);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->zip(mds);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to zip");
 
-    // The summary is unchanged: touch it to confirm it as still valid
+    // Align metadata timestamps to that of the new segment
+    sys::touch(path_metadata, res.segment_mtime);
     sys::touch(path_summary, res.segment_mtime);
 
     return res;
@@ -783,17 +804,18 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     std::filesystem::remove(path_metadata);
 
     // Create the .zip segment
-    auto new_data_checker = data_checker->compress(mds, groupsize);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->compress(mds, groupsize);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
-    res.segment_mtime = get_data_mtime_after_fix("conversion to gz");
+    res.segment_mtime = get_data_mtime_after_fix(new_data, "conversion to gz");
 
-    // The summary is unchanged: touch it to confirm it as still valid
+    // Align metadata timestamps to that of the new segment
+    sys::touch(path_metadata, res.segment_mtime);
     sys::touch(path_summary, res.segment_mtime);
 
     return res;

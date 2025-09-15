@@ -365,13 +365,12 @@ std::shared_ptr<segment::data::Checker> HoleData::checker() const
         static_pointer_cast<const Data>(shared_from_this()));
 }
 
-std::shared_ptr<data::Checker>
+std::shared_ptr<const Data>
 Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     Creator creator(segment, mds, segment.abspath());
     creator.create();
-    auto data = std::make_shared<const Data>(segment.shared_from_this());
-    return make_shared<Checker>(data);
+    return std::make_shared<const Data>(segment.shared_from_this());
 }
 
 bool Data::can_store(DataFormat format)

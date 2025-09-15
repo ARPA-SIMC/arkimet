@@ -39,7 +39,6 @@ protected:
 
 public:
     size_t idx = 0;
-    char fname[100];
 
     Creator(const Segment& segment, Collection& mds,
             const std::filesystem::path& dest_abspath)
@@ -92,23 +91,19 @@ struct CheckBackend : public AppendCheckBackend
     {
     }
 
-    void validate(Metadata& md, const types::source::Blob& source) override
+    void validate(Metadata&, const types::source::Blob& source) override
     {
         std::vector<uint8_t> buf = reader.get(Span(source.offset, source.size));
         validator->validate_buf(buf.data(), buf.size());
     }
 
-    size_t actual_start(off_t offset, size_t size) const override
+    size_t actual_start(off_t offset, size_t) const override
     {
         return offset - 1;
     }
-    size_t actual_end(off_t offset, size_t size) const override
-    {
-        return offset;
-    }
+    size_t actual_end(off_t offset, size_t) const override { return offset; }
     size_t offset_end() const override { return max_sequence; }
-    size_t compute_unindexed_space(
-        const std::vector<Span>& indexed_spans) const override
+    size_t compute_unindexed_space(const std::vector<Span>&) const override
     {
         // When this is called, all elements found in the index have already
         // been removed from scanner. We can just then add up what's left of
@@ -229,36 +224,35 @@ struct CheckBackend : public AppendCheckBackend
 
 } // namespace
 
+Data::Data(std::shared_ptr<const Segment> segment)
+    : segment::Data(segment),
+      zipabspath(sys::with_suffix(segment->abspath(), ".zip"))
+{
+}
+
 const char* Data::type() const { return "zip"; }
 bool Data::single_file() const { return true; }
 std::optional<time_t> Data::timestamp() const
 {
-    if (auto st = sys::stat(sys::with_suffix(segment().abspath(), ".zip")))
+    if (auto st = sys::stat(zipabspath))
         return std::optional<time_t>(st->st_mtime);
     return std::optional<time_t>();
 }
 bool Data::exists_on_disk() const
 {
-    return std::filesystem::exists(
-        sys::with_suffix(segment().abspath(), ".zip"));
+    return std::filesystem::exists(zipabspath);
 }
 bool Data::is_empty() const
 {
-    utils::ZipReader zip(
-        segment().format(),
-        core::File(sys::with_suffix(segment().abspath(), ".zip"),
-                   O_RDONLY | O_CLOEXEC));
+    utils::ZipReader zip(segment().format(),
+                         core::File(zipabspath, O_RDONLY | O_CLOEXEC));
     return zip.list_data().empty();
 }
-size_t Data::size() const
-{
-    return sys::size(sys::with_suffix(segment().abspath(), ".zip"));
-}
+size_t Data::size() const { return sys::size(zipabspath); }
 
 utils::files::PreserveFileTimes Data::preserve_mtime()
 {
-    return utils::files::PreserveFileTimes(
-        sys::with_suffix(segment().abspath(), ".zip"));
+    return utils::files::PreserveFileTimes(zipabspath);
 }
 
 std::shared_ptr<data::Reader>
@@ -267,8 +261,7 @@ Data::reader(std::shared_ptr<const core::ReadLock> lock) const
     return make_shared<Reader>(
         static_pointer_cast<const Data>(shared_from_this()), lock);
 }
-std::shared_ptr<data::Writer>
-Data::writer(const segment::WriterConfig& config) const
+std::shared_ptr<data::Writer> Data::writer(const segment::WriterConfig&) const
 {
     throw std::runtime_error(std::string(type()) +
                              " writing is not yet implemented");
@@ -280,22 +273,20 @@ std::shared_ptr<data::Checker> Data::checker() const
     return make_shared<Checker>(
         static_pointer_cast<const Data>(shared_from_this()));
 }
-bool Data::can_store(DataFormat format) { return true; }
-std::shared_ptr<data::Checker>
-Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
+bool Data::can_store(DataFormat) { return true; }
+std::shared_ptr<const Data> Data::create(const Segment& segment,
+                                         Collection& mds, const RepackConfig&)
 {
     Creator creator(segment, mds, sys::with_suffix(segment.abspath(), ".zip"));
     creator.create();
-    auto data = std::make_shared<const Data>(segment.shared_from_this());
-    return make_shared<Checker>(data);
+    return std::make_shared<const Data>(segment.shared_from_this());
 }
 
 Reader::Reader(shared_ptr<const Data> data,
                std::shared_ptr<const core::ReadLock> lock)
     : data::BaseReader<Data>(data, lock),
       zip(segment().format(),
-          core::File(sys::with_suffix(segment().abspath(), ".zip"),
-                     O_RDONLY | O_CLOEXEC))
+          core::File(data->zipabspath, O_RDONLY | O_CLOEXEC))
 {
 }
 
@@ -315,7 +306,7 @@ bool Reader::scan_data(metadata_dest_func dest)
         auto md                   = scanner->scan_data(data);
         md->set_source(
             Source::createBlob(segment().reader(lock), span.offset, span.size));
-        if (!dest(move(md)))
+        if (!dest(std::move(md)))
             return false;
     }
 
@@ -334,24 +325,20 @@ std::vector<uint8_t> Reader::read(const types::source::Blob& src)
  * Checker
  */
 
-Checker::Checker(std::shared_ptr<const Data> data)
-    : BaseChecker<Data>(data),
-      zipabspath(sys::with_suffix(segment().abspath(), ".zip"))
-{
-}
+Checker::Checker(std::shared_ptr<const Data> data) : BaseChecker<Data>(data) {}
 
 void Checker::move_data(std::shared_ptr<const Segment> new_segment)
 {
     auto new_zipabspath = sys::with_suffix(new_segment->abspath(), ".zip");
-    if (rename(zipabspath.c_str(), new_zipabspath.c_str()) < 0)
+    if (rename(data().zipabspath.c_str(), new_zipabspath.c_str()) < 0)
     {
         stringstream ss;
-        ss << "cannot rename " << zipabspath << " to " << new_zipabspath;
+        ss << "cannot rename " << data().zipabspath << " to " << new_zipabspath;
         throw std::system_error(errno, std::system_category(), ss.str());
     }
 }
 
-bool Checker::rescan_data(std::function<void(const std::string&)> reporter,
+bool Checker::rescan_data(std::function<void(const std::string&)>,
                           std::shared_ptr<const core::ReadLock> lock,
                           metadata_dest_func dest)
 {
@@ -362,7 +349,7 @@ bool Checker::rescan_data(std::function<void(const std::string&)> reporter,
 State Checker::check(std::function<void(const std::string&)> reporter,
                      const Collection& mds, bool quick)
 {
-    CheckBackend checker(segment(), zipabspath, reporter, mds);
+    CheckBackend checker(segment(), data().zipabspath, reporter, mds);
     checker.accurate = !quick;
     return checker.check();
 }
@@ -375,7 +362,7 @@ void Checker::validate(Metadata& md, const arki::scan::Validator& v)
             throw std::runtime_error(
                 "metadata to validate does not appear to be from this segment");
 
-        sys::File fd(zipabspath, O_RDONLY);
+        sys::File fd(data().zipabspath, O_RDONLY);
         v.validate_file(fd, blob->offset, blob->size);
         return;
     }
@@ -388,16 +375,17 @@ void Checker::validate(Metadata& md, const arki::scan::Validator& v)
 
 size_t Checker::remove()
 {
-    size_t size = sys::size(zipabspath);
-    sys::unlink(zipabspath);
+    size_t size = sys::size(data().zipabspath);
+    sys::unlink(data().zipabspath);
     return size;
 }
 
-core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(Collection& mds, const RepackConfig&)
 {
     auto tmpabspath = sys::with_suffix(segment().abspath(), ".repack");
 
-    core::Pending p(new files::RenameTransaction(tmpabspath, zipabspath));
+    core::Pending p(
+        new files::RenameTransaction(tmpabspath, data().zipabspath));
 
     Creator creator(segment(), mds, tmpabspath);
     creator.validator =
@@ -417,18 +405,18 @@ void Checker::test_truncate(size_t offset)
 {
     // Zip file indices are 1-based, and we are passed an actual index from a
     // metadata
-    utils::files::PreserveFileTimes pft(zipabspath);
+    utils::files::PreserveFileTimes pft(data().zipabspath);
     if (offset == 1)
     {
         static const char empty_zip_data[] =
             "PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             "\x00\x00\x00\x00";
-        sys::File out(zipabspath, O_WRONLY | O_CREAT | O_TRUNC);
+        sys::File out(data().zipabspath, O_WRONLY | O_CREAT | O_TRUNC);
         out.write_all_or_throw(empty_zip_data, sizeof(empty_zip_data));
     }
     else
     {
-        utils::ZipWriter zip(segment().format(), zipabspath);
+        utils::ZipWriter zip(segment().format(), data().zipabspath);
         std::vector<segment::Span> spans = zip.list_data();
         for (const auto& span : spans)
         {
@@ -443,9 +431,9 @@ void Checker::test_truncate(size_t offset)
 void Checker::test_make_hole(Collection& mds, unsigned hole_size,
                              unsigned data_idx)
 {
-    utils::files::PreserveFileTimes pf(zipabspath);
+    utils::files::PreserveFileTimes pf(data().zipabspath);
 
-    utils::ZipWriter zip(segment().format(), zipabspath);
+    utils::ZipWriter zip(segment().format(), data().zipabspath);
 
     if (data_idx >= mds.size())
     {
@@ -470,8 +458,7 @@ void Checker::test_make_hole(Collection& mds, unsigned hole_size,
     zip.close();
 }
 
-void Checker::test_make_overlap(Collection& mds, unsigned overlap_size,
-                                unsigned data_idx)
+void Checker::test_make_overlap(Collection&, unsigned, unsigned)
 {
     throw std::runtime_error("test_make_overlap not implemented");
 }
@@ -481,8 +468,8 @@ void Checker::test_corrupt(const Collection& mds, unsigned data_idx)
     const auto& s = mds[data_idx].sourceBlob();
     Span span(s.offset, s.size);
 
-    utils::files::PreserveFileTimes pt(zipabspath);
-    utils::ZipWriter zip(segment().format(), zipabspath);
+    utils::files::PreserveFileTimes pt(data().zipabspath);
+    utils::ZipWriter zip(segment().format(), data().zipabspath);
     std::vector<uint8_t> data = zip.get(span);
     data[0]                   = 0;
     zip.write(span, data);
@@ -491,7 +478,7 @@ void Checker::test_corrupt(const Collection& mds, unsigned data_idx)
 
 void Checker::test_touch_contents(time_t timestamp)
 {
-    sys::touch_ifexists(zipabspath, timestamp);
+    sys::touch_ifexists(data().zipabspath, timestamp);
 }
 
 } // namespace arki::segment::data::zip

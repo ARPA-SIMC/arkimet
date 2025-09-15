@@ -40,7 +40,7 @@ public:
     }
 
     static bool can_store(DataFormat format);
-    static std::shared_ptr<Checker>
+    static std::shared_ptr<const Data>
     create(const Segment& segment, arki::metadata::Collection& mds,
            const RepackConfig& cfg = RepackConfig());
 };

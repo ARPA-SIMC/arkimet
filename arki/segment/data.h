@@ -257,7 +257,7 @@ public:
      * Use of the associated Data and its readers, writers and checkers is
      * undefined behaviour after this call.
      */
-    virtual std::shared_ptr<Checker> tar(arki::metadata::Collection& mds);
+    virtual std::shared_ptr<const Data> tar(arki::metadata::Collection& mds);
 
     /**
      * Replace this segment with a zip segment, updating the metadata in mds to
@@ -266,7 +266,7 @@ public:
      * Use of the associated Data and its readers, writers and checkers is
      * undefined behaviour after this call.
      */
-    virtual std::shared_ptr<Checker> zip(arki::metadata::Collection& mds);
+    virtual std::shared_ptr<const Data> zip(arki::metadata::Collection& mds);
 
     /**
      * Replace this segment with a compressed segment, updating the metadata in
@@ -275,8 +275,8 @@ public:
      * Use of the associated Data and its readers, writers and checkers is
      * undefined behaviour after this call.
      */
-    virtual std::shared_ptr<Checker> compress(arki::metadata::Collection& mds,
-                                              unsigned groupsize);
+    virtual std::shared_ptr<const Data>
+    compress(arki::metadata::Collection& mds, unsigned groupsize);
 
     /**
      * Move this segment to a new location.

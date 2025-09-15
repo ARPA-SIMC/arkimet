@@ -355,7 +355,7 @@ std::shared_ptr<data::Checker> Data::checker() const
     return make_shared<Checker>(
         static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker>
+std::shared_ptr<const Data>
 Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
@@ -372,8 +372,7 @@ Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
         creator.create();
     }
 
-    auto data = std::make_shared<const Data>(segment.shared_from_this());
-    return make_shared<Checker>(data);
+    return std::make_shared<const Data>(segment.shared_from_this());
 }
 
 } // namespace gzconcat
@@ -399,7 +398,7 @@ std::shared_ptr<data::Checker> Data::checker() const
     return make_shared<Checker>(
         static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker>
+std::shared_ptr<const Data>
 Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
 {
     if (cfg.gz_group_size == 0)
@@ -417,8 +416,7 @@ Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
         creator.padding.push_back('\n');
         creator.create();
     }
-    auto data = std::make_shared<const Data>(segment.shared_from_this());
-    return make_shared<Checker>(data);
+    return std::make_shared<const Data>(segment.shared_from_this());
 }
 
 } // namespace gzlines

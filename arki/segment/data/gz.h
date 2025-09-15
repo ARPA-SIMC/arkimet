@@ -93,9 +93,9 @@ public:
         create(*m_segment, mds, cfg);
     }
 
-    static std::shared_ptr<Checker> create(const Segment& segment,
-                                           arki::metadata::Collection& mds,
-                                           const RepackConfig& cfg);
+    static std::shared_ptr<const Data> create(const Segment& segment,
+                                              arki::metadata::Collection& mds,
+                                              const RepackConfig& cfg);
     static const unsigned padding = 0;
 };
 
@@ -141,9 +141,9 @@ struct Data : public gz::Data
                  const std::filesystem::path& rootdir,
                  const std::filesystem::path& relpath,
                  const std::filesystem::path& abspath);
-    static std::shared_ptr<Checker> create(const Segment& segment,
-                                           arki::metadata::Collection& mds,
-                                           const RepackConfig& cfg);
+    static std::shared_ptr<const Data> create(const Segment& segment,
+                                              arki::metadata::Collection& mds,
+                                              const RepackConfig& cfg);
     static const unsigned padding = 1;
 };
 

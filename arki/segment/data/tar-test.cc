@@ -101,7 +101,8 @@ void Tests<Data, FixtureData>::register_tests()
     SegmentTests<Data, FixtureData>::register_tests();
 
     this->add_method("filenames", [](Fixture& f) {
-        std::shared_ptr<segment::data::Checker> checker = f.create();
+        auto data    = f.create();
+        auto checker = data->checker();
         sys::File tarout("tar.out", O_RDWR | O_CREAT | O_TRUNC);
         Subprocess proc;
         proc.stdout_fd = tarout;

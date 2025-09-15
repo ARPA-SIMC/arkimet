@@ -197,7 +197,8 @@ void Tests<Data, FixtureData>::register_tests()
     SegmentTests<Data, FixtureData>::register_tests();
 
     this->add_method("create_last_sequence", [](Fixture& f) {
-        std::shared_ptr<segment::data::Checker> checker = f.create();
+        auto data    = f.create();
+        auto checker = data->checker();
         segment::SequenceFile seq(checker->segment().abspath());
         seq.open();
         wassert(actual(seq.read_sequence()) == 2u);

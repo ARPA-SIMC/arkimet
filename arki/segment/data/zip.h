@@ -14,9 +14,17 @@ struct Reader;
 
 namespace segment::data::zip {
 
+/**
+ * Data stored in .zip files.
+ *
+ * zip file contain one file per data entry, named `<offset>.<format>` where
+ * offset is the sequential position in the file and format is the data format.
+ */
 struct Data : public arki::segment::Data
 {
-    using arki::segment::Data::Data;
+    std::filesystem::path zipabspath;
+
+    Data(std::shared_ptr<const Segment> segment);
 
     const char* type() const override;
     bool single_file() const override;
@@ -42,7 +50,7 @@ struct Data : public arki::segment::Data
     }
 
     static bool can_store(DataFormat format);
-    static std::shared_ptr<Checker>
+    static std::shared_ptr<const Data>
     create(const Segment& segment, arki::metadata::Collection& mds,
            const RepackConfig& cfg = RepackConfig());
 };
@@ -61,7 +69,6 @@ struct Reader : public data::BaseReader<Data>
 class Checker : public data::BaseChecker<Data>
 {
 protected:
-    std::filesystem::path zipabspath;
     void validate(Metadata& md, const arki::scan::Validator& v);
 
     /**

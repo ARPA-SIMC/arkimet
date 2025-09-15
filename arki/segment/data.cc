@@ -191,24 +191,24 @@ void Writer::PendingMetadata::set_source()
         md.drop_cached_data();
 }
 
-std::shared_ptr<segment::data::Checker> Checker::tar(Collection& mds)
+std::shared_ptr<const segment::Data> Checker::tar(Collection& mds)
 {
-    auto checker = segment::data::tar::Data::create(segment(), mds);
+    auto new_data = segment::data::tar::Data::create(segment(), mds);
     remove();
-    return checker;
+    return new_data;
 }
 
-std::shared_ptr<segment::data::Checker> Checker::zip(Collection& mds)
+std::shared_ptr<const segment::Data> Checker::zip(Collection& mds)
 {
-    auto checker = segment::data::zip::Data::create(segment(), mds);
+    auto new_data = segment::data::zip::Data::create(segment(), mds);
     remove();
-    return checker;
+    return new_data;
 }
 
-std::shared_ptr<segment::data::Checker> Checker::compress(Collection& mds,
-                                                          unsigned groupsize)
+std::shared_ptr<const segment::Data> Checker::compress(Collection& mds,
+                                                       unsigned groupsize)
 {
-    std::shared_ptr<segment::data::Checker> res;
+    std::shared_ptr<const Data> res;
     switch (segment().format())
     {
         case DataFormat::VM2:
