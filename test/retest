@@ -1,10 +1,25 @@
-#!/bin/bash
-set -xe
-index=0
-while true;
-do
-	index=$((index + 1))
-	echo "*** Iteration #$index"
-	meson test -vC t "$@";
-done
+#!/usr/bin/python3
 
+# Run meson test repeatedly
+#
+# This can be useful to reproduce race conditions.
+#
+# It is helpful to run it multiple times in multiple terminal windows, so that
+# the system load increases, adding to latency. This script will set the
+# terminal window title to show progress
+
+import subprocess
+import sys
+import rich
+import rich.console
+
+console = rich.console.Console()
+
+index: int = 0
+while True:
+    index += 1
+    console.set_window_title(f"🟢 iteration #{index}")
+    console.print(f"[bold]*** Iteration #{index}[/]", highlight=False)
+    res = subprocess.run(["meson", "test", "-vC", "t"] + sys.argv[1:])
+    if res.returncode != 0:
+        raise SystemExit(1)
