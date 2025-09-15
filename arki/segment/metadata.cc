@@ -691,8 +691,8 @@ Fixer::ConvertResult Fixer::tar()
     std::filesystem::remove(path_metadata);
 
     // Create the .tar segment
-    auto new_data_checker = data_checker->tar(mds);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->tar(mds);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
@@ -736,18 +736,24 @@ Fixer::ConvertResult Fixer::zip()
     std::filesystem::remove(path_metadata);
 
     // Create the .zip segment
-    auto new_data_checker = data_checker->zip(mds);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->zip(mds);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();
     mds.writeAtomically(path_metadata);
 
     checker().update_data();
+    // TODO: this mat get the mtime of the previous segment, as it calls
+    // checker()->timestamp
     res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
 
     // The summary is unchanged: touch it to confirm it as still valid
+    // TODO: also touch the metadata to res.segment_mtime, otherwise the summary
+    // may be older than the metadata
     sys::touch(path_summary, res.segment_mtime);
+
+    // TODO: propagate fixes to other segment types
 
     return res;
 }
@@ -783,8 +789,8 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     std::filesystem::remove(path_metadata);
 
     // Create the .zip segment
-    auto new_data_checker = data_checker->compress(mds, groupsize);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->compress(mds, groupsize);
+    res.size_post = new_data->size();
 
     // Write out the new metadata
     mds.prepare_for_segment_metadata();

@@ -43,7 +43,8 @@ void Tests<Data, FixtureData>::register_tests()
     SegmentTests<Data, FixtureData>::register_tests();
 
     this->add_method("noidx", [&](Fixture& f) {
-        auto checker = f.create(segment::RepackConfig(0));
+        auto data    = f.create(segment::RepackConfig(0));
+        auto checker = data->checker();
         wassert(actual_file(gz(f.segment->abspath())).exists());
         wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 
@@ -60,7 +61,8 @@ void Tests<Data, FixtureData>::register_tests()
     });
 
     this->add_method("idx", [&](Fixture& f) {
-        auto checker = f.create(segment::RepackConfig(1));
+        auto data    = f.create(segment::RepackConfig(1));
+        auto checker = data->checker();
         wassert(actual_file(gz(f.segment->abspath())).exists());
         wassert(actual_file(gzidx(f.segment->abspath())).exists());
 
@@ -77,7 +79,8 @@ void Tests<Data, FixtureData>::register_tests()
     });
 
     this->add_method("onegroup", [&](Fixture& f) {
-        auto checker = f.create(segment::RepackConfig(1024));
+        auto data    = f.create(segment::RepackConfig(1024));
+        auto checker = data->checker();
         wassert(actual_file(gz(f.segment->abspath())).exists());
         wassert(actual_file(gzidx(f.segment->abspath())).not_exists());
 

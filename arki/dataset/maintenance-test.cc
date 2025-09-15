@@ -79,9 +79,17 @@ void Fixture::state_is(unsigned segment_count,
                        const segment::State& test_relpath_state)
 {
     auto state = scan_state();
-    wassert(actual(state.size()) == segment_count);
-    wassert(actual(state.get("testds:" + test_relpath.native()).state) ==
-            test_relpath_state);
+    try
+    {
+        wassert(actual(state.size()) == segment_count);
+        wassert(actual(state.get("testds:" + test_relpath.native()).state) ==
+                test_relpath_state);
+    }
+    catch (std::exception&)
+    {
+        state.dump(stderr);
+        throw;
+    }
 }
 
 void Fixture::accurate_state_is(unsigned segment_count,
@@ -345,8 +353,9 @@ template <typename TestFixture> void CheckTest<TestFixture>::register_tests()
         default:             throw std::runtime_error("unsupported segment type");
     }
 
-    // TODO: this is not really a check test, and should be moved elsewhere
     this->add_method("clean", [](Fixture& f) {
+        wassert(f.state_is(3, segment::SEGMENT_OK));
+
         wassert(actual(f.makeSegmentedChecker().get()).check_clean());
         wassert(f.all_clean(3));
         wassert(actual(f.makeSegmentedChecker().get()).repack_clean());

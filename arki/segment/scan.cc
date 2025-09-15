@@ -339,8 +339,8 @@ Fixer::ConvertResult Fixer::tar()
     mds.sort_segment();
 
     // Create the .tar segment
-    auto new_data_checker = data_checker->tar(mds);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->tar(mds);
+    res.size_post = new_data->size();
 
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix("conversion to tar");
@@ -373,8 +373,8 @@ Fixer::ConvertResult Fixer::zip()
     mds.sort_segment();
 
     // Create the .zip segment
-    auto new_data_checker = data_checker->zip(mds);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->zip(mds);
+    res.size_post = new_data->size();
 
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix("conversion to zip");
@@ -409,8 +409,8 @@ Fixer::ConvertResult Fixer::compress(unsigned groupsize)
     mds.sort_segment();
 
     // Create the .zip segment
-    auto new_data_checker = data_checker->compress(mds, groupsize);
-    res.size_post         = new_data_checker->data().size();
+    auto new_data = data_checker->compress(mds, groupsize);
+    res.size_post = new_data->size();
 
     checker().update_data();
     res.segment_mtime = get_data_mtime_after_fix("conversion to gz");

@@ -580,16 +580,15 @@ std::shared_ptr<data::Checker> HoleData::checker() const
         static_pointer_cast<const Data>(shared_from_this()));
 }
 
-std::shared_ptr<data::Checker>
-Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<const Data> Data::create(const Segment& segment,
+                                         Collection& mds, const RepackConfig&)
 {
     fd::Creator<File> creator(segment, mds, segment.abspath());
     creator.create();
-    auto data = std::make_shared<const Data>(segment.shared_from_this());
-    return make_shared<Checker>(data);
+    return std::make_shared<const Data>(segment.shared_from_this());
 }
 
-core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
+core::Pending Checker::repack(Collection& mds, const RepackConfig&)
 {
 #if 1
     // Build the rearrange plan
@@ -623,7 +622,7 @@ core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
 #endif
 }
 
-core::Pending HoleChecker::repack(Collection& mds, const RepackConfig& cfg)
+core::Pending HoleChecker::repack(Collection& mds, const RepackConfig&)
 {
     filesystem::path tmpabspath =
         sys::with_suffix(segment().abspath(), ".repack");
@@ -684,13 +683,12 @@ std::shared_ptr<data::Checker> Data::checker() const
     return make_shared<Checker>(
         static_pointer_cast<const Data>(shared_from_this()));
 }
-std::shared_ptr<data::Checker>
-Data::create(const Segment& segment, Collection& mds, const RepackConfig& cfg)
+std::shared_ptr<const Data> Data::create(const Segment& segment,
+                                         Collection& mds, const RepackConfig&)
 {
     fd::Creator<File> creator(segment, mds, segment.abspath());
     creator.create();
-    auto data = std::make_shared<const Data>(segment.shared_from_this());
-    return make_shared<Checker>(data);
+    return std::make_shared<const Data>(segment.shared_from_this());
 }
 
 } // namespace lines

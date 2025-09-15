@@ -20,9 +20,9 @@ template <class Data, class FixtureData> struct SegmentFixture : public Fixture
 
     std::shared_ptr<Data> data();
     std::shared_ptr<Data> data(std::shared_ptr<const Segment> segment);
-    std::shared_ptr<segment::data::Checker> create();
-    std::shared_ptr<segment::data::Checker> create(metadata::Collection mds);
-    std::shared_ptr<segment::data::Checker>
+    std::shared_ptr<const segment::Data> create();
+    std::shared_ptr<const segment::Data> create(metadata::Collection mds);
+    std::shared_ptr<const segment::Data>
     create(const segment::RepackConfig& cfg);
 
     SegmentFixture(const segment::RepackConfig& cfg = segment::RepackConfig())

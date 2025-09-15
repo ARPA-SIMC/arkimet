@@ -42,21 +42,20 @@ SegmentFixture<Data, FixtureData>::data(std::shared_ptr<const Segment> segment)
 }
 
 template <class Data, class FixtureData>
-std::shared_ptr<segment::data::Checker>
-SegmentFixture<Data, FixtureData>::create()
+std::shared_ptr<const segment::Data> SegmentFixture<Data, FixtureData>::create()
 {
     return create(seg_mds);
 }
 
 template <class Data, class FixtureData>
-std::shared_ptr<segment::data::Checker>
+std::shared_ptr<const segment::Data>
 SegmentFixture<Data, FixtureData>::create(metadata::Collection mds)
 {
     return Data::create(*segment, mds, repack_config);
 }
 
 template <class Data, class FixtureData>
-std::shared_ptr<segment::data::Checker>
+std::shared_ptr<const segment::Data>
 SegmentFixture<Data, FixtureData>::create(const segment::RepackConfig& cfg)
 {
     return Data::create(*segment, seg_mds, cfg);
@@ -69,15 +68,15 @@ void SegmentTests<Data, FixtureData>::register_tests()
 
     this->add_method("create", [](Fixture& f) {
         wassert_true(Data::can_store(f.td.format));
-        std::shared_ptr<segment::data::Checker> checker = f.create();
-        wassert_true(checker->data().exists_on_disk());
+        auto data = f.create();
+        wassert_true(data->exists_on_disk());
     });
 
     this->add_method("read", [](Fixture& f) {
         wassert_true(Data::can_store(f.td.format));
-        auto checker = f.create();
-        auto reader  = checker->data().reader(
-            std::make_shared<arki::core::lock::NullReadLock>());
+        auto data = f.create();
+        auto reader =
+            data->reader(std::make_shared<arki::core::lock::NullReadLock>());
         size_t pad_size = f.td.format == DataFormat::VM2 ? 1 : 0;
         for (auto& md : f.seg_mds)
         {
@@ -105,25 +104,27 @@ void SegmentTests<Data, FixtureData>::register_tests()
     });
 
     this->add_method("repack", [](Fixture& f) {
-        auto checker = f.create();
+        auto data    = f.create();
+        auto checker = data->checker();
         auto reader =
             f.segment->reader(std::make_shared<core::lock::NullReadLock>());
         for (auto& md : f.seg_mds)
             md->sourceBlob().lock(reader);
         auto p = wcallchecked(checker->repack(f.seg_mds));
         wassert(p.commit());
-        auto rep = [](const std::string& msg) noexcept {
+        auto rep = [](const std::string&) noexcept {
             // fprintf(stderr, "POST REPACK %s\n", msg.c_str());
         };
         wassert(actual(checker->check(rep, f.seg_mds)) == segment::SEGMENT_OK);
     });
 
     this->add_method("check", [](Fixture& f) {
-        auto checker = f.create();
+        auto data    = f.create();
+        auto checker = data->checker();
 
         segment::State state;
 
-        auto rep = [](const std::string& msg) noexcept {
+        auto rep = [](const std::string&) noexcept {
             // fprintf(stderr, "CHECK %s\n", msg.c_str());
         };
 
@@ -206,19 +207,19 @@ void SegmentTests<Data, FixtureData>::register_tests()
     });
 
     this->add_method("remove", [](Fixture& f) {
-        auto checker = f.create();
-        size_t size  = wcallchecked(checker->data().size());
+        auto data   = f.create();
+        size_t size = wcallchecked(data->size());
 
-        wassert(actual(checker->data().exists_on_disk()).istrue());
-        wassert(actual(checker->remove()) == size);
-        wassert(actual(checker->data().exists_on_disk()).isfalse());
+        wassert(actual(data->exists_on_disk()).istrue());
+        wassert(actual(data->checker()->remove()) == size);
+        wassert(actual(data->exists_on_disk()).isfalse());
     });
 
     this->add_method("is_empty", [](Fixture& f) {
-        auto checker = f.create();
-        wassert(actual(checker->data().is_empty()).isfalse());
-        checker->test_truncate(f.seg_mds[0].sourceBlob().offset);
-        wassert(actual(checker->data().is_empty()).istrue());
+        auto data = f.create();
+        wassert(actual(data->is_empty()).isfalse());
+        data->checker()->test_truncate(f.seg_mds[0].sourceBlob().offset);
+        wassert(actual(data->is_empty()).istrue());
     });
 
     this->add_method("issue244", [](Fixture& f) {
@@ -233,8 +234,8 @@ void SegmentTests<Data, FixtureData>::register_tests()
 
         metadata::Collection mds;
         mds.push_back(md);
-        auto checker = f.create(mds);
-        auto reader  = checker->data().reader(
+        auto segment_data = f.create(mds);
+        auto reader       = segment_data->reader(
             std::make_shared<arki::core::lock::NullReadLock>());
 
         // Writing normally uses sendfile
@@ -262,10 +263,10 @@ void SegmentTests<Data, FixtureData>::register_tests()
     });
 
     this->add_method("test_touch_contents", [](Fixture& f) {
-        auto checker = f.create();
-        checker->test_touch_contents(1234);
+        auto data = f.create();
+        data->checker()->test_touch_contents(1234);
 
-        auto ts = checker->data().timestamp();
+        auto ts = data->timestamp();
         wassert_true((bool)ts);
 
         wassert(actual(ts.value()) == 1234);

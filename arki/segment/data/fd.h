@@ -184,7 +184,7 @@ public:
         create(*m_segment, mds, cfg);
     }
 
-    static std::shared_ptr<Checker>
+    static std::shared_ptr<const Data>
     create(const Segment& segment, arki::metadata::Collection& mds,
            const RepackConfig& cfg = RepackConfig());
 
@@ -269,7 +269,7 @@ public:
         create(*m_segment, mds, cfg);
     }
 
-    static std::shared_ptr<Checker>
+    static std::shared_ptr<const Data>
     create(const Segment& segment, arki::metadata::Collection& mds,
            const RepackConfig& cfg = RepackConfig());
 
