@@ -127,14 +127,11 @@ class TestScanJPEG(unittest.TestCase):
                 self.assertEqual(
                     md.to_python("level"),
                     {
-                        "l1": 1,
-                        "l2": None,
-                        "scale1": 1,
-                        "scale2": 1,
-                        "style": "GRIB2D",
                         "type": "level",
-                        "value1": None,
-                        "value2": None,
+                        "style": "GRIB2S",
+                        "level_type": 1,
+                        "scale": 1,
+                        "value": None,
                     },
                 )
                 self.assertEqual(
@@ -152,45 +149,235 @@ class TestScanJPEG(unittest.TestCase):
 
     def test_rectm(self) -> None:
         basedir = Path("inbound/jpeg/camera/RECTM")
-        md = self.read(basedir / "20250820080000_RECTM_1_20250820_0800.jpg", 36288)
-        md = self.read(basedir / "20250820083000_RECTM_1_20250820_0830.jpg", 36288)
-        md = self.read(basedir / "20250820090000_RECTM_1_20250820_0900.jpg", 36288)
-        md = self.read(basedir / "20250820093000_RECTM_1_20250820_0930.jpg", 36288)
-        md = self.read(basedir / "20250820100000_RECTM_1_20250820_1000.jpg", 36288)
+        for time in (
+            datetime.time(8, 0),
+            datetime.time(8, 30),
+            datetime.time(9, 0),
+            datetime.time(9, 30),
+            datetime.time(10, 0),
+        ):
+            with self.subTest(time=time):
+                hhmm = time.strftime("%H%M")
+                md = self.read(basedir / f"20250820{hhmm}00_RECTM_1_20250820_{hhmm}.jpg", 36288)
+                self.assertEqual(
+                    md.to_python("area"), {"style": "GRIB", "type": "area", "value": {"lat": 439889, "lon": 126839}}
+                )
+                self.assertEqual(
+                    md.to_python("reftime"),
+                    {
+                        "type": "reftime",
+                        "style": "POSITION",
+                        "time": datetime.datetime(2025, 8, 20, time.hour, time.minute),
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("level"),
+                    {
+                        "type": "level",
+                        "style": "GRIB2S",
+                        "level_type": 1,
+                        "scale": 1,
+                        "value": None,
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("timerange"),
+                    {
+                        "stat_len": 900,
+                        "stat_type": 0,
+                        "stat_unit": 13,
+                        "step_len": 0,
+                        "step_unit": 13,
+                        "style": "Timedef",
+                        "type": "timerange",
+                    },
+                )
 
     def test_snapshot(self) -> None:
         basedir = Path("inbound/jpeg/camera/SNAPSHOT")
-        md = self.read(basedir / "20250820080000_SNAPSHOT_1_20250820_0800.jpg", 34658)
-        md = self.read(basedir / "20250820081500_SNAPSHOT_1_20250820_0815.jpg", 34658)
-        md = self.read(basedir / "20250820083000_SNAPSHOT_1_20250820_0830.jpg", 34658)
-        md = self.read(basedir / "20250820084500_SNAPSHOT_1_20250820_0845.jpg", 34658)
-        md = self.read(basedir / "20250820090000_SNAPSHOT_1_20250820_0900.jpg", 34658)
-        md = self.read(basedir / "20250820091500_SNAPSHOT_1_20250820_0915.jpg", 34658)
-        md = self.read(basedir / "20250820093000_SNAPSHOT_1_20250820_0930.jpg", 34658)
-        md = self.read(basedir / "20250820094500_SNAPSHOT_1_20250820_0945.jpg", 34658)
-        md = self.read(basedir / "20250820100000_SNAPSHOT_1_20250820_1000.jpg", 34658)
-        md = self.read(basedir / "20250820101500_SNAPSHOT_1_20250820_1015.jpg", 34658)
+        for time in (
+            datetime.time(8, 0),
+            datetime.time(8, 15),
+            datetime.time(8, 30),
+            datetime.time(8, 45),
+            datetime.time(9, 0),
+            datetime.time(9, 15),
+            datetime.time(9, 30),
+            datetime.time(9, 45),
+            datetime.time(10, 0),
+            datetime.time(10, 15),
+        ):
+            with self.subTest(time=time):
+                hhmm = time.strftime("%H%M")
+                md = self.read(basedir / f"20250820{hhmm}00_SNAPSHOT_1_20250820_{hhmm}.jpg", 34658)
+                self.assertEqual(
+                    md.to_python("area"), {"style": "GRIB", "type": "area", "value": {"lat": 439889, "lon": 126839}}
+                )
+                self.assertEqual(
+                    md.to_python("reftime"),
+                    {
+                        "type": "reftime",
+                        "style": "POSITION",
+                        "time": datetime.datetime(2025, 8, 20, time.hour, time.minute),
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("level"),
+                    {
+                        "type": "level",
+                        "style": "GRIB2S",
+                        "level_type": 1,
+                        "scale": 1,
+                        "value": None,
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("timerange"),
+                    {
+                        "stat_len": 0,
+                        "stat_type": 254,
+                        "stat_unit": 13,
+                        "step_len": 0,
+                        "step_unit": 13,
+                        "style": "Timedef",
+                        "type": "timerange",
+                    },
+                )
 
     def test_t1stk(self) -> None:
         basedir = Path("inbound/jpeg/camera/T1STK")
-        md = self.read(basedir / "20250820080000_T1STK_1_20250820_0800.jpg", 8529)
-        md = self.read(basedir / "20250820083000_T1STK_1_20250820_0830.jpg", 8529)
-        md = self.read(basedir / "20250820090000_T1STK_1_20250820_0900.jpg", 8529)
-        md = self.read(basedir / "20250820093000_T1STK_1_20250820_0930.jpg", 8529)
-        md = self.read(basedir / "20250820100000_T1STK_1_20250820_1000.jpg", 8529)
+        for time in (
+            datetime.time(8, 0),
+            datetime.time(8, 30),
+            datetime.time(9, 0),
+            datetime.time(9, 30),
+            datetime.time(10, 0),
+        ):
+            with self.subTest(time=time):
+                hhmm = time.strftime("%H%M")
+                md = self.read(basedir / f"20250820{hhmm}00_T1STK_1_20250820_{hhmm}.jpg", 8529)
+                self.assertEqual(
+                    md.to_python("area"), {"style": "GRIB", "type": "area", "value": {"lat": 439889, "lon": 126839}}
+                )
+                self.assertEqual(
+                    md.to_python("reftime"),
+                    {
+                        "type": "reftime",
+                        "style": "POSITION",
+                        "time": datetime.datetime(2025, 8, 20, time.hour, time.minute),
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("level"),
+                    {
+                        "type": "level",
+                        "style": "GRIB2S",
+                        "level_type": 1,
+                        "scale": 1,
+                        "value": None,
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("timerange"),
+                    {
+                        "stat_len": 900,
+                        "stat_type": 205,
+                        "stat_unit": 13,
+                        "step_len": 0,
+                        "step_unit": 13,
+                        "style": "Timedef",
+                        "type": "timerange",
+                    },
+                )
 
     def test_timex(self) -> None:
         basedir = Path("inbound/jpeg/camera/TIMEX")
-        md = self.read(basedir / "20250820080000_TIMEX_1_20250820_0800.jpg", 28958)
-        md = self.read(basedir / "20250820083000_TIMEX_1_20250820_0830.jpg", 28958)
-        md = self.read(basedir / "20250820090000_TIMEX_1_20250820_0900.jpg", 28958)
-        md = self.read(basedir / "20250820093000_TIMEX_1_20250820_0930.jpg", 28958)
-        md = self.read(basedir / "20250820100000_TIMEX_1_20250820_1000.jpg", 28958)
+        for time in (
+            datetime.time(8, 0),
+            datetime.time(8, 30),
+            datetime.time(9, 0),
+            datetime.time(9, 30),
+            datetime.time(10, 0),
+        ):
+            with self.subTest(time=time):
+                hhmm = time.strftime("%H%M")
+                md = self.read(basedir / f"20250820{hhmm}00_TIMEX_1_20250820_{hhmm}.jpg", 28958)
+                self.assertEqual(
+                    md.to_python("area"), {"style": "GRIB", "type": "area", "value": {"lat": 439889, "lon": 126839}}
+                )
+                self.assertEqual(
+                    md.to_python("reftime"),
+                    {
+                        "type": "reftime",
+                        "style": "POSITION",
+                        "time": datetime.datetime(2025, 8, 20, time.hour, time.minute),
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("level"),
+                    {
+                        "type": "level",
+                        "style": "GRIB2S",
+                        "level_type": 1,
+                        "scale": 1,
+                        "value": None,
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("timerange"),
+                    {
+                        "stat_len": 900,
+                        "stat_type": 0,
+                        "stat_unit": 13,
+                        "step_len": 0,
+                        "step_unit": 13,
+                        "style": "Timedef",
+                        "type": "timerange",
+                    },
+                )
 
     def test_tmxsh(self) -> None:
         basedir = Path("inbound/jpeg/camera/TMXSH")
-        md = self.read(basedir / "20250820080000_TMXSH_1_20250820_0800.jpg", 29012)
-        md = self.read(basedir / "20250820083000_TMXSH_1_20250820_0830.jpg", 29012)
-        md = self.read(basedir / "20250820090000_TMXSH_1_20250820_0900.jpg", 29012)
-        md = self.read(basedir / "20250820093000_TMXSH_1_20250820_0930.jpg", 29012)
-        md = self.read(basedir / "20250820100000_TMXSH_1_20250820_1000.jpg", 29012)
+        for time in (
+            datetime.time(8, 0),
+            datetime.time(8, 30),
+            datetime.time(9, 0),
+            datetime.time(9, 30),
+            datetime.time(10, 0),
+        ):
+            with self.subTest(time=time):
+                hhmm = time.strftime("%H%M")
+                md = self.read(basedir / f"20250820{hhmm}00_TMXSH_1_20250820_{hhmm}.jpg", 29012)
+                self.assertEqual(
+                    md.to_python("area"), {"style": "GRIB", "type": "area", "value": {"lat": 439889, "lon": 126839}}
+                )
+                self.assertEqual(
+                    md.to_python("reftime"),
+                    {
+                        "type": "reftime",
+                        "style": "POSITION",
+                        "time": datetime.datetime(2025, 8, 20, time.hour, time.minute),
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("level"),
+                    {
+                        "type": "level",
+                        "style": "GRIB2S",
+                        "level_type": 1,
+                        "scale": 1,
+                        "value": None,
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("timerange"),
+                    {
+                        "stat_len": 900,
+                        "stat_type": 205,
+                        "stat_unit": 13,
+                        "step_len": 0,
+                        "step_unit": 13,
+                        "style": "Timedef",
+                        "type": "timerange",
+                    },
+                )

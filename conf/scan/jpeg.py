@@ -88,15 +88,23 @@ def scan_usercomment(sample: ScannedImage, md: "arkimet.Metadata"):
     level = decoded.get("level")
     if level is not None:
         ltype1, l1, ltype2, l2 = level
-        md["level"] = {
-            "style": "GRIB2D",
-            "l1": ltype1,
-            "value1": l1,
-            "scale1": 1,
-            "l2": ltype2,
-            "value2": l2,
-            "scale2": 1,
-        }
+        if ltype2 is None:
+            md["level"] = {
+                "style": "GRIB2S",
+                "level_type": ltype1,
+                "scale": 1,
+                "value": l1,
+            }
+        else:
+            md["level"] = {
+                "style": "GRIB2D",
+                "l1": ltype1,
+                "scale1": 1,
+                "value1": l1,
+                "l2": ltype2,
+                "scale2": 1,
+                "value2": l2,
+            }
     timerange = decoded.get("timerange")
     if timerange is not None:
         pind, p1, p2 = timerange
