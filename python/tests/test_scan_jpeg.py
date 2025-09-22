@@ -103,11 +103,52 @@ class TestScanJPEG(unittest.TestCase):
 
     def test_recsh(self) -> None:
         basedir = Path("inbound/jpeg/camera/RECSH")
-        md = self.read(basedir / "20250820080000_RECSH_1_20250820_0800.jpg", 36312)
-        md = self.read(basedir / "20250820083000_RECSH_1_20250820_0830.jpg", 36312)
-        md = self.read(basedir / "20250820090000_RECSH_1_20250820_0900.jpg", 36312)
-        md = self.read(basedir / "20250820093000_RECSH_1_20250820_0930.jpg", 36312)
-        md = self.read(basedir / "20250820100000_RECSH_1_20250820_1000.jpg", 36312)
+        for time in (
+            datetime.time(8, 0),
+            datetime.time(8, 30),
+            datetime.time(9, 0),
+            datetime.time(9, 30),
+            datetime.time(10, 0),
+        ):
+            with self.subTest(time=time):
+                hhmm = time.strftime("%H%M")
+                md = self.read(basedir / f"20250820{hhmm}00_RECSH_1_20250820_{hhmm}.jpg", 36312)
+                self.assertEqual(
+                    md.to_python("area"), {"style": "GRIB", "type": "area", "value": {"lat": 439889, "lon": 126839}}
+                )
+                self.assertEqual(
+                    md.to_python("reftime"),
+                    {
+                        "type": "reftime",
+                        "style": "POSITION",
+                        "time": datetime.datetime(2025, 8, 20, time.hour, time.minute),
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("level"),
+                    {
+                        "l1": 1,
+                        "l2": None,
+                        "scale1": 1,
+                        "scale2": 1,
+                        "style": "GRIB2D",
+                        "type": "level",
+                        "value1": None,
+                        "value2": None,
+                    },
+                )
+                self.assertEqual(
+                    md.to_python("timerange"),
+                    {
+                        "stat_len": 900,
+                        "stat_type": 205,
+                        "stat_unit": 13,
+                        "step_len": 0,
+                        "step_unit": 13,
+                        "style": "Timedef",
+                        "type": "timerange",
+                    },
+                )
 
     def test_rectm(self) -> None:
         basedir = Path("inbound/jpeg/camera/RECTM")

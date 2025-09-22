@@ -3,6 +3,7 @@ import json
 from typing import TYPE_CHECKING
 
 from arkimet.scan.jpeg import Scanner, ScannedImage
+from arkimet.scan import timedef
 
 if TYPE_CHECKING:
     import arkimet
@@ -84,7 +85,30 @@ def scan_usercomment(sample: ScannedImage, md: "arkimet.Metadata"):
     except ValueError:
         return
     decoded = json.loads(data)
-    print("TODO", decoded)
+    level = decoded.get("level")
+    if level is not None:
+        ltype1, l1, ltype2, l2 = level
+        md["level"] = {
+            "style": "GRIB2D",
+            "l1": ltype1,
+            "value1": l1,
+            "scale1": 1,
+            "l2": ltype2,
+            "value2": l2,
+            "scale2": 1,
+        }
+    timerange = decoded.get("timerange")
+    if timerange is not None:
+        pind, p1, p2 = timerange
+        if pind is not None and p1 is not None and p2 is not None:
+            md["timerange"] = {
+                "style": "Timedef",
+                "step_len": p1,
+                "step_unit": timedef.UNIT_SECOND,
+                "stat_type": pind,
+                "stat_len": p2,
+                "stat_unit": timedef.UNIT_SECOND,
+            }
 
 
 def scan(sample: ScannedImage, md: "arkimet.Metadata"):
