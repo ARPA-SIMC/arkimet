@@ -1,8 +1,10 @@
 from typing import Callable, Any, Dict
+
 # import functools
 import io
 import logging
 import sys
+from typing import Optional
 
 from PIL import Image, ExifTags
 import arkimet
@@ -19,7 +21,7 @@ class ScannedImage:
     Wrapper for PIL.Image with shortcut methods to access known EXIF tags
     """
 
-    def __init__(self, im: Image):
+    def __init__(self, im: Image.Image):
         self.im = im
 
     # TODO: from python 3.8 we can optimize with cached_property
@@ -39,7 +41,7 @@ class ScannedImage:
     #     return {} if gpsinfo is None else gpsinfo
 
     @property
-    def exif(self) -> Dict[int, Any]:
+    def exif(self) -> Image.Exif:
         """
         dict with raw EXIF information
         """
@@ -82,6 +84,32 @@ class ScannedImage:
         if tagid is None:
             raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.GPSTAGS")
         return self.gpsinfo.get(tagid)
+
+    def get_usercomment(self) -> Optional[str]:
+        """
+        Get the EXIF user comment
+        """
+        # Try the easy way
+        user_comment_id = image_tags["UserComment"]
+        value = self.exif.get(user_comment_id)
+        if value is not None:
+            return value
+
+        # If that doesn't work, try harder
+        raw_exif = self.exif.get_ifd(ExifTags.IFD.Exif)
+        raw_field = raw_exif.get(user_comment_id)
+        if raw_field is None:
+            return None
+        if isinstance(raw_field, str):
+            return raw_field
+        if isinstance(raw_field, bytes):
+            if raw_field[:8] == b"UNICODE\x00":
+                return raw_field[8:].decode("utf_16_be")
+            else:
+                log.warning("unknow raw exif encoding of user comment: %r", raw_field[:8])
+                return None
+        log.warning("unknow raw exif user comment type: %r", raw_field)
+        return None
 
     def dump(self, file=None):
         """

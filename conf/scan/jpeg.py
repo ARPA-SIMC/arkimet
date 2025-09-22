@@ -1,4 +1,5 @@
 import datetime
+import json
 from typing import TYPE_CHECKING
 
 from arkimet.scan.jpeg import Scanner, ScannedImage
@@ -22,8 +23,13 @@ def scan_reftime(sample: ScannedImage, md: "arkimet.Metadata"):
     if gps_date is not None and gps_time is not None:
         str_date = str(gps_date)
         dt = datetime.datetime(
-                int(str_date[:4], 10), int(str_date[5:7], 10), int(str_date[8:10], 10),
-                int(from_decimal(gps_time[0])), int(from_decimal(gps_time[1])), int(from_decimal(gps_time[2])))
+            int(str_date[:4], 10),
+            int(str_date[5:7], 10),
+            int(str_date[8:10], 10),
+            int(from_decimal(gps_time[0])),
+            int(from_decimal(gps_time[1])),
+            int(from_decimal(gps_time[2])),
+        )
         md["reftime"] = {
             "style": "POSITION",
             "time": dt,
@@ -54,16 +60,31 @@ def scan_area(sample: ScannedImage, md: "arkimet.Metadata"):
     lat = round((from_decimal(gps_lat[0]) + from_decimal(gps_lat[1]) / 60 + from_decimal(gps_lat[2]) / 3600) * 10000)
     lon = round((from_decimal(gps_lon[0]) + from_decimal(gps_lon[1]) / 60 + from_decimal(gps_lon[2]) / 3600) * 10000)
 
-    if gps_lat_ref == 'S':
+    if gps_lat_ref == "S":
         lat = -lat
-    if gps_lon_ref == 'W':
+    if gps_lon_ref == "W":
         lon = -lon
 
-    md["area"] = {"style": "GRIB", "value": {
+    md["area"] = {
+        "style": "GRIB",
+        "value": {
             "lat": lat,
             "lon": lon,
         },
     }
+
+
+def scan_usercomment(sample: ScannedImage, md: "arkimet.Metadata"):
+    user_comment = sample.get_usercomment()
+    if user_comment is None:
+        return
+    try:
+        _, data = user_comment.split("{%", 1)
+        data, _ = data.rsplit("%}", 1)
+    except ValueError:
+        return
+    decoded = json.loads(data)
+    print("TODO", decoded)
 
 
 def scan(sample: ScannedImage, md: "arkimet.Metadata"):
@@ -72,6 +93,7 @@ def scan(sample: ScannedImage, md: "arkimet.Metadata"):
 
     scan_reftime(sample, md)
     scan_area(sample, md)
+    scan_usercomment(sample, md)
 
 
 Scanner.register(scan)
