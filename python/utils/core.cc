@@ -1,7 +1,5 @@
 #include "core.h"
 
-namespace arki {
-namespace python {
+namespace arki::python {
 
-}
-} // namespace arki
+} // namespace arki::python

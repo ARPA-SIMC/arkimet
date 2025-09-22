@@ -5,8 +5,7 @@
 #include "methods.h"
 #include <array>
 
-namespace arki {
-namespace python {
+namespace arki::python {
 
 template <typename Child, typename IMPL> struct Getter
 {
@@ -264,7 +263,6 @@ template <typename Child, typename IMPL> struct Type
     }
 };
 
-} // namespace python
-} // namespace arki
+} // namespace arki::python
 
 #endif
