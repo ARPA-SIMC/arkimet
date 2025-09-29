@@ -274,7 +274,8 @@ public:
 
     template <typename Container> size_t write(const Container& c)
     {
-        return write(c.data(), c.size() * sizeof(Container::value_type));
+        return write(c.data(),
+                     c.size() * sizeof(typename Container::value_type));
     }
 
     /// Write all the data in buf, retrying partial writes

@@ -17,7 +17,6 @@
 #include "types/value.h"
 #include "utils/compress.h"
 #include "utils/string.h"
-#include "utils/yaml.h"
 #include <cassert>
 #include <cstring>
 #include <fcntl.h>
@@ -27,22 +26,6 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::core;
-
-namespace {
-
-std::filesystem::path canonical_ifexists(const std::filesystem::path path)
-{
-    try
-    {
-        return std::filesystem::canonical(path);
-    }
-    catch (std::filesystem::filesystem_error&)
-    {
-        return path;
-    }
-}
-
-} // namespace
 
 namespace arki {
 namespace metadata {
@@ -449,6 +432,11 @@ void Metadata::add_note(const types::Note& note)
     m_index.append_note(std::unique_ptr<types::Note>(note.clone()));
 }
 
+void Metadata::add_note(std::unique_ptr<types::Note> note)
+{
+    m_index.append_note(std::move(note));
+}
+
 void Metadata::add_note(const std::string& note)
 {
     m_index.append_note(Note::create(note));
@@ -601,37 +589,6 @@ void Metadata::readInlineData(core::BinaryDecoder& dec,
     core::BinaryDecoder data = dec.pop_data(si->size, "inline data");
     m_data                   = metadata::DataManager::get().to_data(
         s.format, std::vector<uint8_t>(data.buf, data.buf + si->size));
-}
-
-std::shared_ptr<Metadata>
-Metadata::read_yaml(LineReader& in, const std::filesystem::path& filename)
-{
-    if (in.eof())
-        return std::shared_ptr<Metadata>();
-
-    std::shared_ptr<Metadata> res;
-
-    YamlStream yamlStream;
-    for (YamlStream::const_iterator i = yamlStream.begin(in);
-         i != yamlStream.end(); ++i)
-    {
-        if (!res)
-            res = std::make_shared<Metadata>();
-        types::Code type = types::parseCodeName(i->first);
-        string val       = str::strip(i->second);
-        switch (type)
-        {
-            case TYPE_NOTE:
-                res->m_index.append_note(types::Note::decodeString(val));
-                break;
-            case TYPE_SOURCE:
-                res->m_index.set_source(types::Source::decodeString(val));
-                break;
-            default: res->m_index.set_value(types::decodeString(type, val));
-        }
-    }
-
-    return res;
 }
 
 void Metadata::write(NamedFileDescriptor& out, bool skip_data) const

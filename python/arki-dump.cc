@@ -34,7 +34,7 @@ namespace {
 #ifdef HAVE_GEOS
 // Add to \a s the info from all data read from \a in
 template <typename T>
-void addToSummary(arki::metadata::reader::BaseReader<T>& reader,
+void addToSummary(arki::metadata::reader::BaseBinaryReader<T>& reader,
                   arki::Summary& s)
 {
     arki::types::Bundle bundle;
@@ -148,19 +148,14 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
 
             ReleaseGIL rg;
 
-            std::unique_ptr<arki::core::LineReader> reader;
-            std::filesystem::path input_name;
+            std::unique_ptr<arki::metadata::YamlReader> reader;
             if (input.fd)
-            {
-                input_name = input.fd->path();
-                reader     = arki::core::LineReader::from_fd(*input.fd);
-            }
+                reader =
+                    std::make_unique<arki::metadata::YamlReader>(*input.fd);
             else
-            {
-                input_name = input.abstract->path();
-                reader = arki::core::LineReader::from_abstract(*input.abstract);
-            }
-            while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                reader = std::make_unique<arki::metadata::YamlReader>(
+                    *input.abstract);
+            while (auto md = reader->read())
                 md->write(*output);
 
             rg.lock();
@@ -228,7 +223,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
     constexpr static const char* doc       = nullptr;
 
     template <typename T>
-    static void dump(arki::metadata::reader::BaseReader<T>& reader,
+    static void dump(arki::metadata::reader::BaseBinaryReader<T>& reader,
                      std::function<void(const arki::Metadata&)> print_md,
                      std::function<void(const arki::Summary&)> print_summary)
     {

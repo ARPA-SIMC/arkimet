@@ -167,6 +167,36 @@ void Tests::register_tests()
     // TODO: check reader offset
     // TODO: test iterating bundles without decoding
     // TODO: test reading or not reading inline data
+
+    add_method("yaml_read_one", [] {
+        core::File in("inbound/test.yaml", O_RDONLY);
+        metadata::YamlReader reader(in);
+        auto md = reader.read();
+        wassert(actual(md).contains("reftime", "2007-07-08T13:00:00Z"));
+        md = reader.read();
+        wassert(actual(md).contains("reftime", "2007-07-07T00:00:00Z"));
+        md = reader.read();
+        wassert(actual(md).contains("reftime", "2007-10-09T00:00:00Z"));
+        wassert_false(reader.read().get());
+    });
+
+    add_method("yaml_read_all", [] {
+        metadata::Collection coll;
+        core::File in("inbound/test.yaml", O_RDONLY);
+        metadata::YamlReader reader(in);
+        wassert_true(reader.read_all(coll.inserter_func()));
+
+        wassert(actual(coll.size()) == 3u);
+        wassert(actual(coll[0]).contains("reftime", "2007-07-08T13:00:00Z"));
+        wassert(actual(coll[1]).contains("reftime", "2007-07-07T00:00:00Z"));
+        wassert(actual(coll[2]).contains("reftime", "2007-10-09T00:00:00Z"));
+    });
+
+    add_method("issue107_yaml", [] {
+        core::File fd("inbound/issue107.yaml", O_RDONLY);
+        metadata::YamlReader reader(fd);
+        wassert(actual(reader.read().get()).istrue());
+    });
 }
 
 } // namespace

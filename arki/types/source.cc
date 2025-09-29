@@ -141,7 +141,14 @@ unique_ptr<Source> Source::decodeRelative(core::BinaryDecoder& dec,
     }
 }
 
-unique_ptr<Source> Source::decodeString(const std::string& val)
+std::unique_ptr<Source> Source::decodeString(const std::string& val)
+{
+    return decodeStringRelative(val, std::filesystem::path());
+}
+
+unique_ptr<Source>
+Source::decodeStringRelative(const std::string& val,
+                             const std::filesystem::path& basedir)
 {
     string inner;
     Source::Style style = outerParse<Source>(val, inner);
@@ -173,8 +180,15 @@ unique_ptr<Source> Source::decodeString(const std::string& val)
                     "source \"" + inner +
                         "\" should contain \"offset+len\" after the filename");
 
+            if (!basedir.empty())
+            {
+                auto relative = std::filesystem::relative(fname, basedir);
+                if (!relative.empty())
+                    fname = relative;
+            }
+
             return createBlobUnlocked(
-                format, std::filesystem::path(), fname,
+                format, basedir, fname,
                 strtoull(inner.substr(pos, end - pos).c_str(), 0, 10),
                 strtoull(inner.substr(end + 1).c_str(), 0, 10));
         }

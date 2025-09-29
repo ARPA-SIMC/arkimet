@@ -566,14 +566,20 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
 
     static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = {"src", nullptr};
+        static const char* kwlist[] = {"src", "basedir", nullptr};
         PyObject* py_src            = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O",
-                                         const_cast<char**>(kwlist), &py_src))
+        PyObject* py_basedir        = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O|O",
+                                         const_cast<char**>(kwlist), &py_src,
+                                         &py_basedir))
             return nullptr;
 
         try
         {
+            std::filesystem::path basedir;
+            if (py_basedir)
+                basedir = from_python<std::filesystem::path>(py_basedir);
+
             std::shared_ptr<Metadata> res;
             if (PyBytes_Check(py_src))
             {
@@ -581,61 +587,74 @@ struct read_yaml : public ClassMethKwargs<read_yaml>
                 Py_ssize_t length;
                 if (PyBytes_AsStringAndSize(py_src, &buffer, &length) == -1)
                     throw PythonException();
+                arki::core::MemoryFile in(buffer, length, "(memory buffer)");
                 ReleaseGIL gil;
-                auto reader =
-                    arki::core::LineReader::from_chars(buffer, length);
-                res = Metadata::read_yaml(*reader, "bytes buffer");
+                metadata::YamlReader reader(in, basedir);
+                res = reader.read();
             }
             else if (PyUnicode_Check(py_src))
             {
                 Py_ssize_t length;
                 const char* buffer =
                     throw_ifnull(PyUnicode_AsUTF8AndSize(py_src, &length));
+                arki::core::MemoryFile in(buffer, length, "(memory buffer)");
                 ReleaseGIL gil;
-                auto reader =
-                    arki::core::LineReader::from_chars(buffer, length);
-                res = Metadata::read_yaml(*reader, "str buffer");
+                metadata::YamlReader reader(in, basedir);
+                res = reader.read();
             }
             else if (PyObject_HasAttrString(py_src, "encoding"))
             {
                 TextInputFile input(py_src);
                 ReleaseGIL gil;
 
-                std::unique_ptr<arki::core::LineReader> reader;
-                std::filesystem::path input_name;
+                std::unique_ptr<metadata::YamlReader> reader;
                 if (input.fd)
                 {
-                    input_name = input.fd->path();
-                    reader     = arki::core::LineReader::from_fd(*input.fd);
+                    if (basedir.empty())
+                        reader =
+                            std::make_unique<metadata::YamlReader>(*input.fd);
+                    else
+                        reader = std::make_unique<metadata::YamlReader>(
+                            *input.fd, basedir);
                 }
                 else
                 {
-                    input_name = input.abstract->path();
-                    reader =
-                        arki::core::LineReader::from_abstract(*input.abstract);
+                    if (basedir.empty())
+                        reader = std::make_unique<metadata::YamlReader>(
+                            *input.abstract);
+                    else
+                        reader = std::make_unique<metadata::YamlReader>(
+                            *input.abstract, basedir);
                 }
 
-                res = Metadata::read_yaml(*reader, input_name);
+                res = reader->read();
             }
             else
             {
                 BinaryInputFile input(py_src);
                 ReleaseGIL gil;
 
-                std::unique_ptr<arki::core::LineReader> reader;
-                std::string input_name;
+                std::unique_ptr<metadata::YamlReader> reader;
                 if (input.fd)
                 {
-                    input_name = input.fd->path();
-                    reader     = arki::core::LineReader::from_fd(*input.fd);
+                    if (basedir.empty())
+                        reader =
+                            std::make_unique<metadata::YamlReader>(*input.fd);
+                    else
+                        reader = std::make_unique<metadata::YamlReader>(
+                            *input.fd, basedir);
                 }
                 else
                 {
-                    input_name = input.abstract->path();
-                    reader =
-                        arki::core::LineReader::from_abstract(*input.abstract);
+                    if (basedir.empty())
+                        reader = std::make_unique<metadata::YamlReader>(
+                            *input.abstract);
+                    else
+                        reader = std::make_unique<metadata::YamlReader>(
+                            *input.abstract, basedir);
                 }
-                res = Metadata::read_yaml(*reader, input_name);
+
+                res = reader->read();
             }
 
             if (res)

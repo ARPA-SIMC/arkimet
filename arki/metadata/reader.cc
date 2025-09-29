@@ -4,8 +4,11 @@
 #include "arki/metadata.h"
 #include "arki/summary.h"
 #include "arki/types/bundle.h"
+#include "arki/types/note.h"
 #include "arki/types/source.h"
 #include "arki/utils/compress.h"
+#include "arki/utils/string.h"
+#include "arki/utils/yaml.h"
 #include "iotrace.h"
 #include <sstream>
 #include <string>
@@ -13,6 +16,13 @@
 using namespace std::string_literals;
 
 namespace arki::metadata {
+
+/*
+ * BaseReader
+ */
+BaseReader::BaseReader(const std::filesystem::path& basedir) : basedir(basedir)
+{
+}
 
 namespace reader {
 
@@ -28,21 +38,25 @@ std::filesystem::path infer_basedir(const std::filesystem::path& path)
     }
 }
 
+/*
+ * BaseBinaryReader
+ */
+
 template <typename FileType>
-BaseReader<FileType>::BaseReader(FileType& in)
-    : in(in), basedir(infer_basedir(in.path()))
+BaseBinaryReader<FileType>::BaseBinaryReader(FileType& in_)
+    : BaseReader(infer_basedir(in_.path())), in(in_)
 {
 }
 
 template <typename FileType>
-BaseReader<FileType>::BaseReader(FileType& in,
-                                 const std::filesystem::path& basedir)
-    : in(in), basedir(basedir)
+BaseBinaryReader<FileType>::BaseBinaryReader(
+    FileType& in, const std::filesystem::path& basedir)
+    : BaseReader(basedir), in(in)
 {
 }
 
 template <typename FileType>
-bool BaseReader<FileType>::read_bundle(types::Bundle& bundle)
+bool BaseBinaryReader<FileType>::read_bundle(types::Bundle& bundle)
 {
     if (size_t header_size = bundle.read_header(in))
         offset += header_size;
@@ -64,8 +78,8 @@ bool BaseReader<FileType>::read_bundle(types::Bundle& bundle)
 }
 
 template <typename FileType>
-bool BaseReader<FileType>::read_group(const types::Bundle& bundle,
-                                      metadata_dest_func dest)
+bool BaseBinaryReader<FileType>::read_group(const types::Bundle& bundle,
+                                            metadata_dest_func dest)
 {
     // Handle metadata group
     if (bundle.version != 0)
@@ -102,7 +116,7 @@ bool BaseReader<FileType>::read_group(const types::Bundle& bundle,
 }
 
 template <typename FileType>
-bool BaseReader<FileType>::read_inline_data(Metadata& md)
+bool BaseBinaryReader<FileType>::read_inline_data(Metadata& md)
 {
     if (size_t inline_data_size = md.read_inline_data(in))
         offset += inline_data_size;
@@ -113,7 +127,7 @@ bool BaseReader<FileType>::read_inline_data(Metadata& md)
 
 template <typename FileType>
 std::shared_ptr<Metadata>
-BaseReader<FileType>::decode_metadata(const types::Bundle& bundle) const
+BaseBinaryReader<FileType>::decode_metadata(const types::Bundle& bundle) const
 {
     core::BinaryDecoder inner(bundle.data);
     return Metadata::read_binary_inner(inner, bundle.version, in.path(),
@@ -121,15 +135,15 @@ BaseReader<FileType>::decode_metadata(const types::Bundle& bundle) const
 }
 
 template <typename FileType>
-void BaseReader<FileType>::decode_summary(const types::Bundle& bundle,
-                                          Summary& summary) const
+void BaseBinaryReader<FileType>::decode_summary(const types::Bundle& bundle,
+                                                Summary& summary) const
 {
     arki::core::BinaryDecoder inner(bundle.data);
     summary.read_inner(inner, bundle.version, in.path());
 }
 
 template <typename FileType>
-std::shared_ptr<Metadata> BaseReader<FileType>::read(bool read_inline)
+std::shared_ptr<Metadata> BaseBinaryReader<FileType>::read(bool read_inline)
 {
     types::Bundle bundle;
     if (!read_bundle(bundle))
@@ -150,7 +164,7 @@ std::shared_ptr<Metadata> BaseReader<FileType>::read(bool read_inline)
 }
 
 template <typename FileType>
-bool BaseReader<FileType>::read_all(metadata_dest_func dest)
+bool BaseBinaryReader<FileType>::read_all(metadata_dest_func dest)
 {
     types::Bundle bundle;
     while (read_bundle(bundle))
@@ -177,9 +191,74 @@ bool BaseReader<FileType>::read_all(metadata_dest_func dest)
     return true;
 }
 
-template class BaseReader<core::NamedFileDescriptor>;
-template class BaseReader<core::AbstractInputFile>;
+template class BaseBinaryReader<core::NamedFileDescriptor>;
+template class BaseBinaryReader<core::AbstractInputFile>;
 
 } // namespace reader
+
+/*
+ * YamlReader
+ */
+YamlReader::YamlReader(core::NamedFileDescriptor& in_)
+    : BaseReader(reader::infer_basedir(in_.path())), m_path(in_.path()),
+      in(core::LineReader::from_fd(in_))
+{
+}
+YamlReader::YamlReader(core::NamedFileDescriptor& in_,
+                       const std::filesystem::path& basedir)
+    : BaseReader(basedir), m_path(in_.path()),
+      in(core::LineReader::from_fd(in_))
+{
+}
+YamlReader::YamlReader(core::AbstractInputFile& in_)
+    : BaseReader(reader::infer_basedir(in_.path())), m_path(in_.path()),
+      in(core::LineReader::from_abstract(in_))
+{
+}
+YamlReader::YamlReader(core::AbstractInputFile& in_,
+                       const std::filesystem::path& basedir)
+    : BaseReader(basedir), m_path(in_.path()),
+      in(core::LineReader::from_abstract(in_))
+{
+}
+
+std::shared_ptr<Metadata> YamlReader::read(bool read_inline)
+{
+    if (in->eof())
+        return std::shared_ptr<Metadata>();
+
+    std::shared_ptr<Metadata> res;
+    utils::YamlStream yamlStream;
+    for (utils::YamlStream::const_iterator i = yamlStream.begin(*in);
+         i != yamlStream.end(); ++i)
+    {
+        if (!res)
+            res = std::make_shared<Metadata>();
+        types::Code type = types::parseCodeName(i->first);
+        std::string val  = utils::str::strip(i->second);
+        switch (type)
+        {
+            case TYPE_NOTE:
+                res->add_note(types::Note::decodeString(val));
+                break;
+            case TYPE_SOURCE:
+                res->set_source(
+                    types::Source::decodeStringRelative(val, basedir));
+                break;
+            default: res->set(types::decodeString(type, val));
+        }
+    }
+    return res;
+}
+
+bool YamlReader::read_all(metadata_dest_func dest)
+{
+    while (auto md = read())
+    {
+        if (!dest(md))
+            return false;
+    }
+    return true;
+}
 
 } // namespace arki::metadata

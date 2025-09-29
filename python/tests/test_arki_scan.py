@@ -409,6 +409,22 @@ class TestArkiScan(CmdlineTestMixin, unittest.TestCase):
             with open("testenv/testds/2020/10-31.vm2", "rt") as fd:
                 self.assertEqual(fd.readlines(), ["202010312300,12865,158,9.409990,,,\n"])
 
+    def test_dispatch_issue309(self):
+        with self.datasets():
+            arki.counters.acquire_single_count.reset()
+            arki.counters.acquire_batch_count.reset()
+
+            out = self.call_output_success("--dispatch=testenv/config", "inbound/test.grib1.arkimet", binary=True)
+            mds = parse_metadata(out)
+            self.assertEqual(len(mds), 3)
+
+            self.assertEqual(mds[0].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-08.grib"))
+            self.assertEqual(mds[1].to_python("source")["file"], os.path.abspath("testenv/testds/2007/07-07.grib"))
+            self.assertEqual(mds[2].to_python("source")["file"], os.path.abspath("testenv/testds/2007/10-09.grib"))
+
+            self.assertEqual(arki.counters.acquire_single_count.value, 0)
+            self.assertEqual(arki.counters.acquire_batch_count.value, 1)
+
     def test_files(self):
         # Reproduce https://github.com/ARPA-SIMC/arkimet/issues/19
         with self.datasets():

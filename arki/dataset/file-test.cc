@@ -1,11 +1,13 @@
 #include "arki/core/cfg.h"
-#include "arki/core/tests.h"
 #include "arki/dataset/file.h"
 #include "arki/dataset/session.h"
 #include "arki/matcher.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/metadata/data.h"
+#include "arki/metadata/tests.h"
 #include "arki/query.h"
+#include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
 #include <memory>
@@ -65,6 +67,45 @@ void Tests::register_tests()
         wassert(actual(mdc.size()) == 1u);
     });
 
+    add_method("metadata_read_data", [] {
+        {
+            std::filesystem::remove("test.grib1");
+            std::filesystem::create_hard_link("inbound/test.grib1",
+                                              "test.grib1");
+            metadata::TestCollection initial("test.grib1");
+            initial.writeAtomically("test.metadata");
+        }
+
+        auto cfg = dataset::file::read_config("test.metadata");
+        wassert(actual(cfg->value("name")) == "test.metadata");
+        wassert(actual(cfg->value("type")) == "file");
+        wassert(actual(cfg->value("format")) == "arkimet");
+
+        // Scan it to be sure it can be read
+        auto session = std::make_shared<dataset::Session>();
+        metadata::Collection mdc(*session->dataset(*cfg),
+                                 query::Data(Matcher(), true));
+        wassert(actual(mdc.size()) == 3u);
+
+        auto cwd = std::filesystem::current_path();
+        wassert(
+            actual_type(mdc[0].sourceBlob())
+                .is_source_blob(DataFormat::GRIB, cwd, "test.grib1", 0, 7218));
+        wassert(actual_type(mdc[1].sourceBlob())
+                    .is_source_blob(DataFormat::GRIB, cwd, "test.grib1", 7218,
+                                    34960));
+        wassert(actual_type(mdc[2].sourceBlob())
+                    .is_source_blob(DataFormat::GRIB, cwd, "test.grib1", 42178,
+                                    2234));
+
+        wassert(actual(mdc[0].get_data().size()) == 7218u);
+        wassert(actual(mdc[1].get_data().size()) == 34960u);
+        wassert(actual(mdc[2].get_data().size()) == 2234u);
+
+        wassert_true(mdc[0].sourceBlob().reader == mdc[1].sourceBlob().reader);
+        wassert_true(mdc[0].sourceBlob().reader == mdc[2].sourceBlob().reader);
+    });
+
     add_method("yaml", [] {
         auto cfg = dataset::file::read_config("inbound/issue107.yaml");
         wassert(actual(cfg->value("name")) == "inbound/issue107.yaml");
@@ -75,6 +116,51 @@ void Tests::register_tests()
         auto session = std::make_shared<dataset::Session>();
         metadata::Collection mdc(*session->dataset(*cfg), Matcher());
         wassert(actual(mdc.size()) == 1u);
+    });
+
+    add_method("yaml_read_data", [] {
+        {
+            std::filesystem::remove("test.grib1");
+            std::filesystem::create_hard_link("inbound/test.grib1",
+                                              "test.grib1");
+            metadata::TestCollection initial("test.grib1");
+            sys::File out("test.yaml", O_WRONLY | O_CREAT);
+            for (const auto& md : initial)
+            {
+                std::string yaml = md->to_yaml();
+                out.write(yaml);
+                out.write("\n"s);
+            }
+        }
+
+        auto cfg = dataset::file::read_config("test.yaml");
+        wassert(actual(cfg->value("name")) == "test.yaml");
+        wassert(actual(cfg->value("type")) == "file");
+        wassert(actual(cfg->value("format")) == "yaml");
+
+        // Scan it to be sure it can be read
+        auto session = std::make_shared<dataset::Session>();
+        metadata::Collection mdc(*session->dataset(*cfg),
+                                 query::Data(Matcher(), true));
+        wassert(actual(mdc.size()) == 3u);
+
+        auto cwd = std::filesystem::current_path();
+        wassert(
+            actual_type(mdc[0].sourceBlob())
+                .is_source_blob(DataFormat::GRIB, cwd, "test.grib1", 0, 7218));
+        wassert(actual_type(mdc[1].sourceBlob())
+                    .is_source_blob(DataFormat::GRIB, cwd, "test.grib1", 7218,
+                                    34960));
+        wassert(actual_type(mdc[2].sourceBlob())
+                    .is_source_blob(DataFormat::GRIB, cwd, "test.grib1", 42178,
+                                    2234));
+
+        wassert(actual(mdc[0].get_data().size()) == 7218u);
+        wassert(actual(mdc[1].get_data().size()) == 34960u);
+        wassert(actual(mdc[2].get_data().size()) == 2234u);
+
+        wassert_true(mdc[0].sourceBlob().reader == mdc[1].sourceBlob().reader);
+        wassert_true(mdc[0].sourceBlob().reader == mdc[2].sourceBlob().reader);
     });
 
     add_method("absolute_path", [] {

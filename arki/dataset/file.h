@@ -7,6 +7,7 @@
 #include <arki/dataset.h>
 #include <arki/dataset/impl.h>
 #include <arki/defs.h>
+#include <arki/metadata/fwd.h>
 #include <arki/segment.h>
 #include <string>
 
@@ -84,7 +85,12 @@ public:
 class FdFile : public Dataset
 {
 protected:
+    std::shared_ptr<segment::Session> segment_session;
     core::File fd;
+
+    void ensure_data_is_accessible(Metadata& md);
+    bool scan_reader(metadata::BaseReader& reader, const query::Data& q,
+                     metadata_dest_func consumer);
 
 public:
     std::filesystem::path path;
