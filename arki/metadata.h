@@ -341,17 +341,6 @@ public:
                         const std::filesystem::path& filename);
 
     /**
-     * Read a metadata document encoded in Yaml from the given file descriptor.
-     *
-     * The filename string is used to generate nicer parse error messages when
-     * throwing exceptions, and can be anything.
-     *
-     * @returns an empty shared_ptr when end-of-file is reached
-     */
-    static std::shared_ptr<Metadata>
-    read_yaml(core::LineReader& in, const std::filesystem::path& filename);
-
-    /**
      * Write the metadata to the given output stream.
      */
     void write(core::NamedFileDescriptor& out, bool skip_data = false) const;

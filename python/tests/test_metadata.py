@@ -217,20 +217,24 @@ class TestMetadata(unittest.TestCase):
 
             # Read from bytes()
             md1 = arki.Metadata.read_yaml(out.getvalue())
+            md1.make_absolute()
             self.assertEqual(md.to_python(), md1.to_python())
 
             # Read from str()
             md1 = arki.Metadata.read_yaml(out.getvalue().decode())
+            md1.make_absolute()
             self.assertEqual(md.to_python(), md1.to_python())
 
             # Read from binary abstract FD
             out.seek(0)
             md1 = arki.Metadata.read_yaml(out)
+            md1.make_absolute()
             self.assertEqual(md.to_python(), md1.to_python())
 
             # Read from string abstract FD
             with io.StringIO(out.getvalue().decode()) as infd:
                 md1 = arki.Metadata.read_yaml(infd)
+                md1.make_absolute()
                 self.assertEqual(md.to_python(), md1.to_python())
 
         with io.BytesIO() as out:
@@ -240,6 +244,7 @@ class TestMetadata(unittest.TestCase):
 
             out.seek(0)
             md1 = arki.Metadata.read_yaml(out)
+            md1.make_absolute()
             self.assertEqual(md.to_python(), md1.to_python())
 
     def test_write_json(self):

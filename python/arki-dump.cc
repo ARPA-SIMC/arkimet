@@ -148,19 +148,14 @@ struct reverse_data : public MethKwargs<reverse_data, arkipy_ArkiDump>
 
             ReleaseGIL rg;
 
-            std::unique_ptr<arki::core::LineReader> reader;
-            std::filesystem::path input_name;
+            std::unique_ptr<arki::metadata::YamlReader> reader;
             if (input.fd)
-            {
-                input_name = input.fd->path();
-                reader     = arki::core::LineReader::from_fd(*input.fd);
-            }
+                reader =
+                    std::make_unique<arki::metadata::YamlReader>(*input.fd);
             else
-            {
-                input_name = input.abstract->path();
-                reader = arki::core::LineReader::from_abstract(*input.abstract);
-            }
-            while (auto md = arki::Metadata::read_yaml(*reader, input_name))
+                reader = std::make_unique<arki::metadata::YamlReader>(
+                    *input.abstract);
+            while (auto md = reader->read())
                 md->write(*output);
 
             rg.lock();

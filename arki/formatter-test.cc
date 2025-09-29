@@ -1,6 +1,7 @@
 #include "arki/core/file.h"
 #include <arki/formatter.h>
 #include <arki/metadata.h>
+#include <arki/metadata/reader.h>
 #include <arki/metadata/tests.h>
 #include <memory>
 
@@ -39,15 +40,17 @@ void Tests::register_tests()
         // Read back the two metadatas
         std::shared_ptr<Metadata> md1;
         {
-            std::string s(str1);
-            auto reader = LineReader::from_chars(s.data(), s.size());
-            md1         = Metadata::read_yaml(*reader, "(test memory buffer)");
+            arki::core::MemoryFile in(str1.data(), str1.size(),
+                                      "(memory buffer)");
+            metadata::YamlReader reader(in);
+            md1 = reader.read();
         }
         std::shared_ptr<Metadata> md2;
         {
-            std::string s(str2);
-            auto reader = LineReader::from_chars(s.data(), s.size());
-            md2         = Metadata::read_yaml(*reader, "(test memory buffer)");
+            arki::core::MemoryFile in(str2.data(), str2.size(),
+                                      "(memory buffer)");
+            metadata::YamlReader reader(in);
+            md2 = reader.read();
         }
 
         // Once reparsed, they should have the same content

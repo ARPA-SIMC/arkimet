@@ -166,24 +166,6 @@ static void dump(const char* name, const std::string& str)
         wassert(f.ensure_md_matches_prefill(*md1));
     });
 
-    // Test Yaml encoding and decoding
-    add_method("yaml", [](Fixture& f) {
-        Metadata md;
-        md.set_source(Source::createBlobUnlocked(DataFormat::GRIB, "",
-                                                 "inbound/test.grib1", 1, 2));
-        f.fill(md);
-
-        string s    = md.to_yaml();
-        auto reader = LineReader::from_chars(s.data(), s.size());
-        auto md1    = Metadata::read_yaml(*reader, "(test memory buffer)");
-        wassert_true(md1.get());
-        wassert(actual(Source::createBlobUnlocked(DataFormat::GRIB, "",
-                                                  "inbound/test.grib1", 1,
-                                                  2)) == md1->source());
-        wassert(actual(md1->source().format) == DataFormat::GRIB);
-        wassert(f.ensure_md_matches_prefill(*md1));
-    });
-
     // Test JSON encoding and decoding
     add_method("json", [](Fixture& f) {
         Metadata md;
@@ -289,16 +271,6 @@ static void dump(const char* name, const std::string& str)
                     stream::SendResult());
         }
         wassert(actual(sys::size("tmpfile")) == odim[0].sourceBlob().size);
-    });
-
-    add_method("issue107_yaml", [](Fixture& f) {
-        Metadata md;
-        File fd("inbound/issue107.yaml", O_RDONLY);
-        auto reader = LineReader::from_fd(fd);
-
-        wassert(
-            actual(Metadata::read_yaml(*reader, "inbound/issue107.yaml").get())
-                .istrue());
     });
 
     add_method("inline_grib",
