@@ -246,6 +246,10 @@ wrap_with_query(const query::Data& q, metadata_dest_func& dest)
     return sorter;
 }
 
+/*
+ * SegmentDataset
+ */
+
 SegmentDataset::SegmentDataset(std::shared_ptr<Session> session,
                                const core::cfg::Section& cfg)
     : Dataset(session, cfg)
@@ -271,13 +275,39 @@ bool SegmentDataset::scan(const query::Data& q, metadata_dest_func dest)
     return true;
 }
 
+/*
+ * FdFile
+ */
+
 FdFile::FdFile(std::shared_ptr<Session> session, const core::cfg::Section& cfg)
     : Dataset(session, cfg), fd(cfg.value("path"), O_RDONLY),
       path(cfg.value("path"))
 {
+    segment_session = std::make_shared<SegmentSession>(path.parent_path());
 }
 
 FdFile::~FdFile() {}
+
+void FdFile::ensure_data_is_accessible(Metadata& md)
+{
+    if (!md.has_source_blob())
+        return;
+    const auto& blob = md.sourceBlob();
+    std::shared_ptr<segment::Session> session;
+    if (blob.basedir == segment_session->root)
+        session = segment_session;
+    else
+        session = std::make_shared<SegmentSession>(blob.basedir);
+
+    auto segment =
+        session->segment_from_relpath_and_format(blob.filename, blob.format);
+    auto reader = segment->reader(std::make_shared<core::lock::NullReadLock>());
+    md.sourceBlob().lock(reader);
+}
+
+/*
+ * ArkimetFile
+ */
 
 ArkimetFile::~ArkimetFile() {}
 
@@ -294,18 +324,7 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
     else
     {
         if (!md_reader.read_all([&](std::shared_ptr<Metadata> md) {
-                if (md->has_source_blob())
-                {
-                    const auto& blob = md->sourceBlob();
-                    auto segment_session =
-                        std::make_shared<SegmentSession>(blob.basedir);
-                    auto segment =
-                        segment_session->segment_from_relpath_and_format(
-                            blob.filename, blob.format);
-                    auto reader = segment->reader(
-                        std::make_shared<core::lock::NullReadLock>());
-                    md->sourceBlob().lock(reader);
-                }
+                ensure_data_is_accessible(*md);
                 return dest(md);
             }))
             return false;

@@ -84,7 +84,10 @@ public:
 class FdFile : public Dataset
 {
 protected:
+    std::shared_ptr<segment::Session> segment_session;
     core::File fd;
+
+    void ensure_data_is_accessible(Metadata& md);
 
 public:
     std::filesystem::path path;
