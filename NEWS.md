@@ -2,6 +2,7 @@
 
 * Show dataset summary in browser GET requests in arki-server (#354)
 * Python: added optional basedir argument to `Metadata.read_yaml`
+* Fixed `arki-scan --dispatch` when importing from prescanned metadata (#309)
 
 # New in version 1.60
 
