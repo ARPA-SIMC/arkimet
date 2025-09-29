@@ -73,6 +73,9 @@ public:
                    const std::filesystem::path& basedir);
     static std::unique_ptr<Source> decodeString(const std::string& val);
     static std::unique_ptr<Source>
+    decodeStringRelative(const std::string& val,
+                         const std::filesystem::path& basedir);
+    static std::unique_ptr<Source>
     decode_structure(const structured::Keys& keys,
                      const structured::Reader& val);
     void serialise_local(structured::Emitter& e, const structured::Keys& keys,

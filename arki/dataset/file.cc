@@ -305,25 +305,18 @@ void FdFile::ensure_data_is_accessible(Metadata& md)
     md.sourceBlob().lock(reader);
 }
 
-/*
- * ArkimetFile
- */
-
-ArkimetFile::~ArkimetFile() {}
-
-bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
+bool FdFile::scan_reader(metadata::BaseReader& reader, const query::Data& q,
+                         metadata_dest_func dest)
 {
-    // TODO: rewrite using Segment's reader query capabilities
     auto sorter = wrap_with_query(q, dest);
-    metadata::BinaryReader md_reader(fd);
     if (!q.with_data)
     {
-        if (!md_reader.read_all(dest))
+        if (!reader.read_all(dest))
             return false;
     }
     else
     {
-        if (!md_reader.read_all([&](std::shared_ptr<Metadata> md) {
+        if (!reader.read_all([&](std::shared_ptr<Metadata> md) {
                 ensure_data_is_accessible(*md);
                 return dest(md);
             }))
@@ -333,6 +326,22 @@ bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
         return sorter->flush();
     return true;
 }
+
+/*
+ * ArkimetFile
+ */
+
+ArkimetFile::~ArkimetFile() {}
+
+bool ArkimetFile::scan(const query::Data& q, metadata_dest_func dest)
+{
+    metadata::BinaryReader md_reader(fd);
+    return scan_reader(md_reader, q, dest);
+}
+
+/*
+ * YamlFile
+ */
 
 YamlFile::YamlFile(std::shared_ptr<Session> session,
                    const core::cfg::Section& cfg)
@@ -344,23 +353,8 @@ YamlFile::~YamlFile() { delete reader; }
 
 bool YamlFile::scan(const query::Data& q, metadata_dest_func dest)
 {
-    auto sorter = wrap_with_query(q, dest);
-
-    while (true)
-    {
-        auto md = Metadata::read_yaml(*reader, fd.path());
-        if (!md)
-            break;
-        if (!q.matcher(*md))
-            continue;
-        if (!dest(std::move(md)))
-            return false;
-    }
-
-    if (sorter)
-        return sorter->flush();
-
-    return true;
+    metadata::YamlReader yaml_reader(fd);
+    return scan_reader(yaml_reader, q, dest);
 }
 
 } // namespace arki::dataset::file

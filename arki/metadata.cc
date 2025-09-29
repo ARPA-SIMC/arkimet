@@ -28,22 +28,6 @@ using namespace arki::types;
 using namespace arki::utils;
 using namespace arki::core;
 
-namespace {
-
-std::filesystem::path canonical_ifexists(const std::filesystem::path path)
-{
-    try
-    {
-        return std::filesystem::canonical(path);
-    }
-    catch (std::filesystem::filesystem_error&)
-    {
-        return path;
-    }
-}
-
-} // namespace
-
 namespace arki {
 namespace metadata {
 
@@ -447,6 +431,11 @@ void Metadata::set_notes_encoded(const uint8_t* data, unsigned size)
 void Metadata::add_note(const types::Note& note)
 {
     m_index.append_note(std::unique_ptr<types::Note>(note.clone()));
+}
+
+void Metadata::add_note(std::unique_ptr<types::Note> note)
+{
+    m_index.append_note(std::move(note));
 }
 
 void Metadata::add_note(const std::string& note)

@@ -17,6 +17,11 @@ class ValidatorRepository;
 
 class Postprocess;
 
+class BaseReader;
+class BinaryReader;
+class AbstractFileBinaryReader;
+class YamlReader;
+
 namespace sort {
 class Compare;
 class Stream;

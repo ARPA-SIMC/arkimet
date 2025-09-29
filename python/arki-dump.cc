@@ -34,7 +34,7 @@ namespace {
 #ifdef HAVE_GEOS
 // Add to \a s the info from all data read from \a in
 template <typename T>
-void addToSummary(arki::metadata::reader::BaseReader<T>& reader,
+void addToSummary(arki::metadata::reader::BaseBinaryReader<T>& reader,
                   arki::Summary& s)
 {
     arki::types::Bundle bundle;
@@ -228,7 +228,7 @@ struct dump_yaml : public MethKwargs<dump_yaml, arkipy_ArkiDump>
     constexpr static const char* doc       = nullptr;
 
     template <typename T>
-    static void dump(arki::metadata::reader::BaseReader<T>& reader,
+    static void dump(arki::metadata::reader::BaseBinaryReader<T>& reader,
                      std::function<void(const arki::Metadata&)> print_md,
                      std::function<void(const arki::Summary&)> print_summary)
     {
