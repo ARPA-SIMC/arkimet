@@ -370,6 +370,19 @@ template <class A> struct Actual
     }
 };
 
+template <typename T> inline Actual<int> actual_int(const T& value)
+{
+    return Actual<int>(value);
+}
+template <typename T> inline Actual<unsigned> actual_unsigned(const T& value)
+{
+    return Actual<unsigned>(value);
+}
+template <typename T> inline Actual<double> actual_double(const T& value)
+{
+    return Actual<double>(value);
+}
+
 struct ActualCString
 {
     const char* _actual;
