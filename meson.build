@@ -1,4 +1,4 @@
-project('arkimet', 'cpp', version: '1.60', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++17'], meson_version: '>= 0.58')
+project('arkimet', 'cpp', version: '1.61', license : 'GPL-2.0-or-later', default_options: ['warning_level=3', 'cpp_std=c++17'], meson_version: '>= 0.58')
 # TODO: use warning_level=everything from meson 1.0
 
 cpp = meson.get_compiler('cpp')

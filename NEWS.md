@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.61
 
 * Show dataset summary in browser GET requests in arki-server (#354)
 * Python: added optional basedir argument to `Metadata.read_yaml`

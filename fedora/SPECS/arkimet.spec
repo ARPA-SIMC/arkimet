@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.60
+Version: 1.61
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,11 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Tue Sep 30 2025 Daniele Branchini <dbranchini@arpae.it> - 1.61-1
+- Show dataset summary in browser GET requests in arki-server (#354)
+- Python: added optional basedir argument to `Metadata.read_yaml`
+- Fixed `arki-scan --dispatch` when importing from prescanned metadata (#309)
+
 * Thu Jul  3 2025 Emanuele Di Giacomo <edigiacomo@arpae.it> - 1.60-1
 - Restore invalidating iseg summaries on import (#352)
 
