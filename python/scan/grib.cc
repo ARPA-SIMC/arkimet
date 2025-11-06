@@ -286,6 +286,16 @@ Access grib message contents
                     buf[len] = 0;
                     return to_python(buf);
                 }
+                case GRIB_TYPE_BYTES: {
+                    const int maxsize = 1000;
+                    unsigned char buf[maxsize];
+                    size_t len = maxsize;
+                    check_grib_lookup_error(
+                        grib_get_bytes(self->gh, key.c_str(), buf, &len),
+                        key.c_str(), "cannot read string value");
+                    return throw_ifnull(
+                        PyBytes_FromStringAndSize((const char*)buf, len));
+                }
                 default: Py_RETURN_NONE;
             }
         }

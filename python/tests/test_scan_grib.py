@@ -1,4 +1,5 @@
 import unittest
+import binascii
 import os
 import arkimet as arki
 from arkimet.test import skip_unless_arpae_tests
@@ -15,7 +16,8 @@ class TestGrib(unittest.TestCase):
         with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
             with next(reader) as grib:
                 self.assertEqual(grib["centre"], "cnmc")
-                print(repr(grib["uuidOfHGrid"]))
+                self.assertEqual(grib["uuidOfHGrid"], binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")))
+
             with self.assertRaises(StopIteration):
                 next(reader)
 
