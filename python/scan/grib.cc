@@ -155,9 +155,52 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
                     Py_RETURN_NONE;
             }
 
-            check_grib_error(res, "cannot read long value from grib");
+            check_grib_lookup_error(res, key, "cannot read long value");
 
             return to_python(val);
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct get_string : public MethKwargs<get_string, arkipy_scan_Grib>
+{
+    constexpr static const char* name      = "get_string";
+    constexpr static const char* signature = "str, int | None";
+    constexpr static const char* returns   = "int";
+    constexpr static const char* summary =
+        "return the long value of a grib key";
+    constexpr static const char* doc = nullptr;
+
+    static PyObject* run(Impl* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"key", "default", NULL};
+        const char* key             = nullptr;
+        PyObject* arg_default       = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O", pass_kwlist(kwlist),
+                                         &key, &arg_default))
+            return nullptr;
+
+        try
+        {
+            const int maxsize = 1000;
+            char buf[maxsize];
+            size_t len = maxsize;
+            int res    = grib_get_string(self->gh, key, buf, &len);
+            if (res == GRIB_NOT_FOUND)
+            {
+                if (arg_default)
+                {
+                    Py_INCREF(arg_default);
+                    return arg_default;
+                }
+                else
+                    Py_RETURN_NONE;
+            }
+            check_grib_lookup_error(res, key, "cannot read string value");
+
+            buf[len] = 0;
+            return to_python(buf);
         }
         ARKI_CATCH_RETURN_PYO
     }
@@ -199,7 +242,7 @@ struct GribDef : public Type<GribDef, arkipy_scan_Grib>
 Access grib message contents
 )";
     GetSetters<edition> getsetters;
-    Methods<grib__enter__, grib__exit__, get_long> methods;
+    Methods<grib__enter__, grib__exit__, get_long, get_string> methods;
 
     static void _dealloc(Impl* self)
     {

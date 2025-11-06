@@ -17,6 +17,16 @@ class TestGrib(unittest.TestCase):
             with next(reader) as grib:
                 self.assertEqual(grib["centre"], "cnmc")
                 self.assertEqual(grib["uuidOfHGrid"], binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")))
+                self.assertEqual(grib.get_string("uuidOfHGrid"), "f5886b95a7a666979e2fd51f0af52b20")
+
+            with self.assertRaises(StopIteration):
+                next(reader)
+
+    def test_get_string(self) -> None:
+        with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
+            with next(reader) as grib:
+                self.assertEqual(grib.get_string("does-not-exist"), None)
+                self.assertEqual(grib.get_string("does-not-exist", "not found"), "not found")
 
             with self.assertRaises(StopIteration):
                 next(reader)
