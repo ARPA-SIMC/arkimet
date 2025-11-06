@@ -16,17 +16,6 @@ struct grib_handle;
 
 typedef struct
 {
-    PyObject_HEAD grib_handle* gh;
-} arkipy_scan_Grib;
-
-extern PyTypeObject* arkipy_scan_Grib_Type;
-
-#define arkipy_scan_Grib_Check(ob)                                             \
-    (Py_TYPE(ob) == arkipy_scan_Grib_Type ||                                   \
-     PyType_IsSubtype(Py_TYPE(ob), arkipy_scan_Grib_Type))
-
-typedef struct
-{
     PyObject_HEAD std::shared_ptr<arki::scan::Scanner> scanner;
 } arkipy_scan_Scanner;
 
@@ -43,6 +32,7 @@ namespace python {
 void register_scan(PyObject* m);
 
 namespace scan {
+void load_scanner_scripts();
 void init();
 arkipy_scan_Scanner*
 scanner_create(std::shared_ptr<arki::scan::Scanner> scanner);

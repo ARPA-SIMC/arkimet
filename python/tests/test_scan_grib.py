@@ -1,8 +1,25 @@
 import unittest
+import binascii
 import os
 import arkimet as arki
 from arkimet.test import skip_unless_arpae_tests
 import datetime
+
+
+class TestGrib(unittest.TestCase):
+    """Test the Grib accessor used by the scanner."""
+
+    def setUp(self):
+        self.session = arki.dataset.Session()
+
+    def test_read_bytes(self) -> None:
+        with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
+            with next(reader) as grib:
+                self.assertEqual(grib["centre"], "cnmc")
+                self.assertEqual(grib["uuidOfHGrid"], binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")))
+
+            with self.assertRaises(StopIteration):
+                next(reader)
 
 
 class TestScanGrib(unittest.TestCase):

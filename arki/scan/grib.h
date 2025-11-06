@@ -16,7 +16,35 @@ class MockEngine;
 
 namespace grib {
 const Validator& validator();
-}
+
+/// RAII wrapper for an eccodes GRIB handle
+struct GribHandle
+{
+    grib_handle* gh = nullptr;
+
+    GribHandle(grib_context* context, FILE* in);
+    explicit GribHandle(grib_handle* gh) : gh(gh) {}
+    GribHandle(const GribHandle&) = delete;
+    GribHandle(GribHandle&& o) : gh(o.gh) { o.gh = nullptr; }
+    GribHandle& operator=(const GribHandle&) = delete;
+    GribHandle&& operator=(GribHandle&&)     = delete;
+    ~GribHandle();
+
+    void close();
+
+    operator grib_handle*() { return gh; }
+
+    operator bool() const { return gh != nullptr; }
+
+    grib_handle* release()
+    {
+        auto res = gh;
+        gh       = nullptr;
+        return res;
+    }
+};
+
+} // namespace grib
 
 class GribScanner : public Scanner
 {

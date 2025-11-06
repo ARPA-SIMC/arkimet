@@ -29,52 +29,7 @@ using namespace arki::utils;
         }                                                                      \
     } while (0)
 
-namespace arki {
-namespace scan {
-
-namespace {
-
-struct GribHandle
-{
-    grib_handle* gh = nullptr;
-
-    GribHandle(grib_context* context, FILE* in)
-    {
-        int griberror;
-        gh = grib_handle_new_from_file(context, in, &griberror);
-        if (!gh && griberror == GRIB_END_OF_FILE)
-            return;
-        check_grib_error(griberror, "reading GRIB from file");
-    }
-    GribHandle(grib_handle* gh) : gh(gh) {}
-    GribHandle(const GribHandle&) = delete;
-    GribHandle(GribHandle&& o) : gh(o.gh) { o.gh = nullptr; }
-    GribHandle& operator=(const GribHandle&) = delete;
-    GribHandle&& operator=(GribHandle&&)     = delete;
-    ~GribHandle()
-    {
-        if (gh)
-        {
-            grib_handle_delete(gh);
-            gh = nullptr;
-        }
-    }
-
-    void close()
-    {
-        if (!gh)
-            return;
-
-        check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
-        gh = nullptr;
-    }
-
-    operator grib_handle*() { return gh; }
-
-    operator bool() const { return gh != nullptr; }
-};
-
-} // namespace
+namespace arki::scan {
 
 GribScanner::GribScanner()
 {
@@ -132,7 +87,7 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
 std::shared_ptr<Metadata>
 GribScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    GribHandle gh(
+    grib::GribHandle gh(
         grib_handle_new_from_message(context, data.data(), data.size()));
     if (!gh)
         throw std::runtime_error("GRIB memory buffer failed to scan");
@@ -153,7 +108,7 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
     files::RAIIFILE in(reader->segment().abspath(), "rb");
     while (true)
     {
-        GribHandle gh(context, in);
+        grib::GribHandle gh(context, in);
         if (!gh)
             break;
         std::shared_ptr<Metadata> md = scan(gh);
@@ -172,7 +127,7 @@ GribScanner::scan_singleton(const std::filesystem::path& abspath)
     std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
     {
-        GribHandle gh(context, in);
+        grib::GribHandle gh(context, in);
         if (!gh)
             throw std::runtime_error(abspath.native() +
                                      " contains no GRIB data");
@@ -182,7 +137,7 @@ GribScanner::scan_singleton(const std::filesystem::path& abspath)
     }
 
     {
-        GribHandle gh(context, in);
+        grib::GribHandle gh(context, in);
         if (gh)
             throw std::runtime_error(abspath.native() +
                                      " contains more than one GRIB data");
@@ -198,7 +153,7 @@ bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd,
     files::RAIIFILE in(infd, "rb");
     while (true)
     {
-        GribHandle gh(context, in);
+        grib::GribHandle gh(context, in);
         if (!gh)
             break;
         std::shared_ptr<Metadata> md = scan(gh);
@@ -277,7 +232,32 @@ static GribValidator grib_validator;
 
 const Validator& validator() { return grib_validator; }
 
+GribHandle::GribHandle(grib_context* context, FILE* in)
+{
+    int griberror;
+    gh = grib_handle_new_from_file(context, in, &griberror);
+    if (!gh && griberror == GRIB_END_OF_FILE)
+        return;
+    check_grib_error(griberror, "reading GRIB from file");
+}
+GribHandle::~GribHandle()
+{
+    if (gh)
+    {
+        grib_handle_delete(gh);
+        gh = nullptr;
+    }
+}
+
+void GribHandle::close()
+{
+    if (!gh)
+        return;
+
+    check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
+    gh = nullptr;
+}
+
 } // namespace grib
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::scan
