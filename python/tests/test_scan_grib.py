@@ -5,6 +5,21 @@ from arkimet.test import skip_unless_arpae_tests
 import datetime
 
 
+class TestGrib(unittest.TestCase):
+    """Test the Grib accessor used by the scanner."""
+
+    def setUp(self):
+        self.session = arki.dataset.Session()
+
+    def test_read_bytes(self) -> None:
+        with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
+            with next(reader) as grib:
+                self.assertEqual(grib["centre"], "cnmc")
+                print(repr(grib["uuidOfHGrid"]))
+            with self.assertRaises(StopIteration):
+                next(reader)
+
+
 class TestScanGrib(unittest.TestCase):
     def setUp(self):
         self.session = arki.dataset.Session()
