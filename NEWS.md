@@ -1,3 +1,7 @@
+# New in version UNRELEASED
+
+* Implemented reading byte values from GRIB files in scanners (#353)
+
 # New in version 1.61
 
 * Show dataset summary in browser GET requests in arki-server (#354)
