@@ -5,6 +5,7 @@ import _arkimet
 import logging
 
 Grib = _arkimet.scan.grib.Grib
+GribReader = _arkimet.scan.grib.GribReader
 
 log = logging.getLogger("arkimet.scan.grib")
 

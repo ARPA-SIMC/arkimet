@@ -35,6 +35,13 @@ struct GribHandle
     operator grib_handle*() { return gh; }
 
     operator bool() const { return gh != nullptr; }
+
+    grib_handle* release()
+    {
+        auto res = gh;
+        gh       = nullptr;
+        return res;
+    }
 };
 
 } // namespace grib

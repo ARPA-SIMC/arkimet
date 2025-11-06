@@ -1,4 +1,5 @@
 #include "grib.h"
+#include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include "common.h"
@@ -12,6 +13,7 @@ using GribHandle = arki::scan::grib::GribHandle;
 
 extern "C" {
 PyTypeObject* arkipy_scan_Grib_Type       = nullptr;
+PyTypeObject* arkipy_scan_GribReader_Type = nullptr;
 }
 
 namespace arki::python::scan {
@@ -36,13 +38,14 @@ inline void check_grib_lookup_error(int res, const char* key, const char* msg)
     }
 }
 
-static arkipy_scan_Grib* grib_create(grib_handle* gh)
+static arkipy_scan_Grib* grib_create(grib_handle* gh, bool owns_handle = false)
 {
     arkipy_scan_Grib* result =
         PyObject_New(arkipy_scan_Grib, arkipy_scan_Grib_Type);
     if (!result)
         throw PythonException();
-    result->gh = gh;
+    result->gh          = gh;
+    result->owns_handle = owns_handle;
     return result;
 }
 
@@ -95,6 +98,10 @@ public:
     PythonGribScanner() {}
     virtual ~PythonGribScanner() {}
 };
+
+/*
+ * Grib python class
+ */
 
 struct edition : public Getter<edition, arkipy_scan_Grib>
 {
@@ -156,6 +163,34 @@ struct get_long : public MethKwargs<get_long, arkipy_scan_Grib>
     }
 };
 
+typedef MethGenericEnter<arkipy_scan_Grib> grib__enter__;
+
+struct grib__exit__ : MethVarargs<grib__exit__, arkipy_scan_Grib>
+{
+    constexpr static const char* name = "__exit__";
+    constexpr static const char* doc  = "Context manager __exit__";
+    static PyObject* run(Impl* self, PyObject* args)
+    {
+        PyObject* exc_type;
+        PyObject* exc_val;
+        PyObject* exc_tb;
+        if (!PyArg_ParseTuple(args, "OOO", &exc_type, &exc_val, &exc_tb))
+            return nullptr;
+
+        try
+        {
+            if (self->owns_handle and self->gh)
+            {
+                grib_handle_delete(self->gh);
+                self->gh = nullptr;
+            }
+        }
+        ARKI_CATCH_RETURN_PYO
+
+        Py_RETURN_NONE;
+    }
+};
+
 struct GribDef : public Type<GribDef, arkipy_scan_Grib>
 {
     constexpr static const char* name      = "Grib";
@@ -164,9 +199,14 @@ struct GribDef : public Type<GribDef, arkipy_scan_Grib>
 Access grib message contents
 )";
     GetSetters<edition> getsetters;
-    Methods<get_long> methods;
+    Methods<grib__enter__, grib__exit__, get_long> methods;
 
-    static void _dealloc(Impl* self) { Py_TYPE(self)->tp_free(self); }
+    static void _dealloc(Impl* self)
+    {
+        if (self->owns_handle and self->gh)
+            grib_handle_delete(self->gh);
+        Py_TYPE(self)->tp_free(self);
+    }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString("Grib"); }
 
@@ -255,6 +295,116 @@ Access grib message contents
 
 GribDef* grib_def = nullptr;
 
+/*
+ * GribReader python class
+ */
+
+typedef MethGenericEnter<arkipy_scan_GribReader> gribreader__enter__;
+
+struct gribreader__exit__
+    : MethVarargs<gribreader__exit__, arkipy_scan_GribReader>
+{
+    constexpr static const char* name = "__exit__";
+    constexpr static const char* doc  = "Context manager __exit__";
+    static PyObject* run(Impl* self, PyObject* args)
+    {
+        PyObject* exc_type;
+        PyObject* exc_val;
+        PyObject* exc_tb;
+        if (!PyArg_ParseTuple(args, "OOO", &exc_type, &exc_val, &exc_tb))
+            return nullptr;
+
+        try
+        {
+            if (self->file)
+            {
+                fclose(self->file);
+                self->file = nullptr;
+            }
+        }
+        ARKI_CATCH_RETURN_PYO
+
+        Py_RETURN_NONE;
+    }
+};
+
+struct GribReaderDef : public Type<GribReaderDef, arkipy_scan_GribReader>
+{
+    constexpr static const char* name      = "GribReader";
+    constexpr static const char* qual_name = "arkimet.scan.grib.GribReader";
+    constexpr static const char* doc       = R"(
+Enumerate all GRIBs in a file.
+
+This is used to test the GRIB scanner: iterates arkimet.scan.grib.Grib objects
+for each GRIB message in a file.
+)";
+
+    GetSetters<> getsetters;
+    Methods<gribreader__enter__, gribreader__exit__> methods;
+
+    static void _dealloc(Impl* self)
+    {
+        if (self->file)
+        {
+            fclose(self->file);
+            self->file = nullptr;
+        }
+        Py_TYPE(self)->tp_free(self);
+    }
+
+    static int _init(arkipy_scan_GribReader* self, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"path", NULL};
+        PyObject* arg_path          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
+                                         &arg_path))
+            return -1;
+
+        try
+        {
+            auto path  = path_from_python(arg_path);
+            self->file = fopen(path.c_str(), "rb");
+            if (!self->file)
+                throw_file_error(path, "cannot open file");
+
+            self->context = grib_context_get_default();
+            if (!self->context)
+                throw std::runtime_error(
+                    "cannot get grib_api default context: default "
+                    "context is not available");
+
+            // Multi support is off unless a child class specifies otherwise
+            grib_multi_support_off(self->context);
+        }
+        ARKI_CATCH_RETURN_INT
+        return 0;
+    }
+
+    static PyObject* _iter(arkipy_scan_GribReader* self)
+    {
+        Py_INCREF(self);
+        return (PyObject*)self;
+    }
+
+    static PyObject* _iternext(arkipy_scan_GribReader* self)
+    {
+        try
+        {
+            GribHandle gh(self->context, self->file);
+            if (!gh)
+            {
+                PyErr_SetNone(PyExc_StopIteration);
+                return nullptr;
+            }
+
+            return (PyObject*)grib_create(gh.release(), true);
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
+GribReaderDef* grib_reader_def = nullptr;
+
 Methods<> grib_methods;
 
 extern "C" {
@@ -275,8 +425,12 @@ static PyModuleDef grib_module = {
 void register_scan_grib(PyObject* scan)
 {
     pyo_unique_ptr grib = throw_ifnull(PyModule_Create(&grib_module));
-    grib_def            = new GribDef;
+
+    grib_def = new GribDef;
     grib_def->define(arkipy_scan_Grib_Type, grib);
+
+    grib_reader_def = new GribReaderDef;
+    grib_reader_def->define(arkipy_scan_GribReader_Type, grib);
 
     if (PyModule_AddObject(scan, "grib", grib.release()) == -1)
         throw PythonException();
