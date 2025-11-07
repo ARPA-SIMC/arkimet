@@ -14,7 +14,7 @@ export PATH="@top_srcdir@/src:$PATH"
 export ARKI_POSTPROC="@top_srcdir@/test/postproc"
 export LD_LIBRARY_PATH="@top_builddir@/arki:$LD_LIBRARY_PATH"
 export METEO_VM2_SOURCE="@top_srcdir@/conf/vm2/source.lua"
-export PYTHONPATH="@top_srcdir@/python:@top_builddir@/python"
+export PYTHONPATH="@top_srcdir@/python:@top_builddir@/python:@top_builddir@/arki/python"
 
 #ulimit -v 1048576
 

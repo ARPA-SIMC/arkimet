@@ -208,7 +208,12 @@ libarkimet = both_libraries('arkimet',
                 sqlite3_dep,
                 libssl_dep,
                 libcrypto_dep,
-        ])
+        ],
+)
+
+if python3.found()
+    subdir('python')
+endif
 
 
 #
