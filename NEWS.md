@@ -1,6 +1,8 @@
-# New in version UNRELEASED
+# New in version 1.62
 
 * Implemented reading byte values from GRIB files in scanners (#353)
+* Added uuidOfHGrid metadatum when scanning grib2 unstructured grids (#353)
+* Added aliases
 
 # New in version 1.61
 
