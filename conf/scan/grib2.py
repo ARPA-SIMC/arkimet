@@ -163,6 +163,8 @@ def scan_grib2(grib, md):
         area["zone"] = grib["zone"]
         area["Ni"] = grib["Ni"]
         area["Nj"] = grib["Nj"]
+    elif area["tn"] == 101:
+        area["uuid"] = grib.get_string("uuidOfHGrid")
     else:
         if grib["latitudeOfFirstGridPointInDegrees"] is not None:
             area["latfirst"] = round(grib["latitudeOfFirstGridPointInDegrees"] * 1000000)
