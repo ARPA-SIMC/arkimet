@@ -516,6 +516,57 @@ inline ActualPath actual_file(const std::string& pathname)
     return ActualPath(pathname);
 }
 
+template <typename T> struct ActualVector : public Actual<std::vector<T>>
+{
+    explicit ActualVector(const std::vector<T>& v) : Actual<std::vector<T>>(v)
+    {
+    }
+
+    void _print_vector(std::ostream& o, const std::vector<T>& value) const
+    {
+        o << "[";
+        bool first = true;
+        for (const auto& el : value)
+        {
+            if (first)
+                first = false;
+            else
+                o << ", ";
+            o << el;
+        }
+        o << "]";
+    }
+
+    void operator==(const std::vector<T>& expected)
+    {
+        if (expected == this->_actual)
+            return;
+        std::stringstream ss;
+        ss << "Vector ";
+        _print_vector(ss, this->_actual);
+        ss << " is not the same as expected ";
+        _print_vector(ss, expected);
+        throw TestFailed(ss.str());
+    }
+
+    void operator!=(const std::vector<T>& expected)
+    {
+        if (expected != this->_actual)
+            return;
+        std::stringstream ss;
+        ss << "Vector ";
+        _print_vector(ss, this->_actual);
+        ss << " unexpectedly matches the value provided";
+        throw TestFailed(ss.str());
+    }
+};
+
+template <typename T>
+inline ActualVector<T> actual(const std::vector<T>& actual)
+{
+    return ActualVector(actual);
+}
+
 /**
  * Run the given command, raising TestFailed with the appropriate backtrace
  * information if it threw an exception.
