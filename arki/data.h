@@ -15,6 +15,18 @@
 
 namespace arki::data {
 
+/**
+ * Guess a file format from its extension.
+ */
+DataFormat format_from_filename(const std::filesystem::path& fname);
+
+/**
+ * Guess a file format from its extension.
+ *
+ * Return no value if the file format was not recognized.
+ */
+std::optional<DataFormat> detect_format(const std::filesystem::path& path);
+
 class Scanner
 {
 public:
@@ -102,19 +114,6 @@ public:
      * Create a scanner for the given format
      */
     static std::shared_ptr<Scanner> get(DataFormat format);
-
-    /**
-     * Guess a file format from its extension.
-     */
-    static DataFormat format_from_filename(const std::filesystem::path& fname);
-
-    /**
-     * Guess a file format from its extension.
-     *
-     * Return no value if the file format was not recognized.
-     */
-    static std::optional<DataFormat>
-    detect_format(const std::filesystem::path& path);
 
     /**
      * Register the scanner factory function for the given format

@@ -52,48 +52,7 @@ void init()
 #endif
 }
 
-/*
- * Scanner
- */
-
-Scanner::~Scanner() {}
-
-void Scanner::register_factory(
-    DataFormat name, std::function<std::shared_ptr<Scanner>()> factory)
-{
-    factories[name] = factory;
-    // Clear scanner cache, since from now on the scanners we should create
-    // might have changed
-    scanner_cache.clear();
-}
-
-void Scanner::normalize_before_dispatch(Metadata&) {}
-
-bool Scanner::update_sequence_number(const types::source::Blob&, int&) const
-{
-    return false;
-}
-
-bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
-
-std::shared_ptr<Scanner> Scanner::get(DataFormat format)
-{
-    // Lookup in cache first, before normalisation
-    auto cached = scanner_cache.find(format);
-    if (cached != scanner_cache.end())
-        return cached->second;
-
-    // Instantiate
-    auto i = factories.find(format);
-    if (i == factories.end())
-        throw std::runtime_error("No scanner available for format '" +
-                                 format_name(format) + "'");
-    auto res              = i->second();
-    scanner_cache[format] = res;
-    return res;
-}
-
-DataFormat Scanner::format_from_filename(const std::filesystem::path& fname)
+DataFormat format_from_filename(const std::filesystem::path& fname)
 {
     // Extract the extension
     auto ext = fname.extension();
@@ -149,8 +108,7 @@ DataFormat Scanner::format_from_filename(const std::filesystem::path& fname)
     }
 }
 
-std::optional<DataFormat>
-Scanner::detect_format(const std::filesystem::path& path)
+std::optional<DataFormat> detect_format(const std::filesystem::path& path)
 {
     // Extract the extension
     auto ext = path.extension();
@@ -197,6 +155,47 @@ Scanner::detect_format(const std::filesystem::path& path)
         return DataFormat::JPEG;
 
     return std::optional<DataFormat>();
+}
+
+/*
+ * Scanner
+ */
+
+Scanner::~Scanner() {}
+
+void Scanner::register_factory(
+    DataFormat name, std::function<std::shared_ptr<Scanner>()> factory)
+{
+    factories[name] = factory;
+    // Clear scanner cache, since from now on the scanners we should create
+    // might have changed
+    scanner_cache.clear();
+}
+
+void Scanner::normalize_before_dispatch(Metadata&) {}
+
+bool Scanner::update_sequence_number(const types::source::Blob&, int&) const
+{
+    return false;
+}
+
+bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
+
+std::shared_ptr<Scanner> Scanner::get(DataFormat format)
+{
+    // Lookup in cache first, before normalisation
+    auto cached = scanner_cache.find(format);
+    if (cached != scanner_cache.end())
+        return cached->second;
+
+    // Instantiate
+    auto i = factories.find(format);
+    if (i == factories.end())
+        throw std::runtime_error("No scanner available for format '" +
+                                 format_name(format) + "'");
+    auto res              = i->second();
+    scanner_cache[format] = res;
+    return res;
 }
 
 std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
@@ -252,7 +251,7 @@ void Validator::throw_check_error(const std::string& msg) const
 
 const Validator& Validator::by_filename(const std::filesystem::path& filename)
 {
-    return get(Scanner::format_from_filename(filename));
+    return get(format_from_filename(filename));
 }
 
 const Validator& Validator::get(DataFormat format)

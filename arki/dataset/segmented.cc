@@ -272,7 +272,7 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    auto format = data::Scanner::format_from_filename(segment->relpath());
+    auto format = data::format_from_filename(segment->relpath());
 
     // Get the time range for this relpath
     core::Interval interval;
