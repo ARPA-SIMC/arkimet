@@ -1,5 +1,5 @@
 #include "common.h"
-#include "arki/data/validator.h"
+#include "arki/data.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"

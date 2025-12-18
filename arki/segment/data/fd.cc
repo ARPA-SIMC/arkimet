@@ -1,6 +1,5 @@
 #include "fd.h"
 #include "arki/data.h"
-#include "arki/data/validator.h"
 #include "arki/exceptions.h"
 #include "arki/iotrace.h"
 #include "arki/metadata.h"

@@ -1,7 +1,6 @@
 #include "arki/core/file.h"
 #include "arki/core/lock.h"
 #include "arki/data.h"
-#include "arki/data/validator.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/tests.h"

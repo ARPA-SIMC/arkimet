@@ -1,6 +1,5 @@
 #include "jpeg.h"
 #include "arki/data/mock.h"
-#include "arki/data/validator.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"

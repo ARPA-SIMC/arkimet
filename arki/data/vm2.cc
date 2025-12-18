@@ -1,6 +1,6 @@
 #include "arki/data/vm2.h"
 #include "arki/core/time.h"
-#include "arki/data/validator.h"
+#include "arki/data.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"

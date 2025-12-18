@@ -127,6 +127,50 @@ public:
                      std::function<std::shared_ptr<Scanner>()> factory);
 };
 
+/**
+ * Validate data
+ */
+class Validator
+{
+public:
+    virtual ~Validator() {}
+
+    /// Return the format checked by this validator
+    virtual DataFormat format() const = 0;
+
+    // Validate data found in a file
+    virtual void validate_file(core::NamedFileDescriptor& fd, off_t offset,
+                               size_t size) const = 0;
+
+    // Validate a memory buffer
+    virtual void validate_buf(const void* buf, size_t size) const = 0;
+
+    // Validate a metadata::Data
+    virtual void validate_data(const metadata::Data& data) const;
+
+    /**
+     * Get the validator for a given file name
+     *
+     * @returns
+     *   a pointer to a static object, which should not be deallocated.
+     */
+    static const Validator& by_filename(const std::filesystem::path& filename);
+
+    /**
+     * Get the validator for a given foramt
+     *
+     * @returns
+     *   a pointer to a static object, which should not be deallocated.
+     */
+    static const Validator& by_format(DataFormat format);
+
+protected:
+    [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd,
+                                        off_t offset,
+                                        const std::string& msg) const;
+    [[noreturn]] void throw_check_error(const std::string& msg) const;
+};
+
 /// Initialize scanner registry
 void init();
 
