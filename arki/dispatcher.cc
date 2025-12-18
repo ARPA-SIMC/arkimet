@@ -77,7 +77,7 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
             // Set today as a dummy reference time, and import into the error
             // dataset
             e->md->set(Reftime::createPosition(Time::create_now()));
-            error_batch.push_back(e);
+            error_batch.emplace_back(e);
             continue;
         }
 
@@ -97,7 +97,7 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
 
             if (!validates_ok)
             {
-                error_batch.push_back(e);
+                error_batch.emplace_back(e);
                 continue;
             }
         }
@@ -105,7 +105,7 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
         // See what outbound datasets match this metadata
         for (auto& d : outbounds)
             if (d.second(*e->md))
-                outbound_by_dataset[d.first].push_back(e);
+                outbound_by_dataset[d.first].emplace_back(e);
 
         // See what regular datasets match this metadata
         vector<string> found;
@@ -118,7 +118,7 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
         if (found.empty())
         {
             e->md->add_note("Message could not be assigned to any dataset");
-            error_batch.push_back(e);
+            error_batch.emplace_back(e);
             continue;
         }
 
@@ -126,11 +126,11 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
         {
             e->md->add_note("Message matched multiple datasets: " +
                             str::join(", ", found));
-            error_batch.push_back(e);
+            error_batch.emplace_back(e);
             continue;
         }
 
-        by_dataset[found[0]].push_back(e);
+        by_dataset[found[0]].emplace_back(e);
     }
 
     // Acquire into outbound datasets
@@ -157,13 +157,13 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
                 case metadata::Inbound::Result::DUPLICATE:
                     // If insertion in the designed dataset failed, insert in
                     // the error dataset
-                    duplicate_batch.push_back(e);
+                    duplicate_batch.emplace_back(e);
                     break;
                 case metadata::Inbound::Result::ERROR:
                 default:
                     // If insertion in the designed dataset failed, insert in
                     // the error dataset
-                    error_batch.push_back(e);
+                    error_batch.emplace_back(e);
                     break;
             }
     }
@@ -174,7 +174,7 @@ void Dispatcher::dispatch(metadata::InboundBatch& batch,
         if (e->result != metadata::Inbound::Result::OK)
             // If insertion in the duplicates dataset failed, insert in the
             // error dataset
-            error_batch.push_back(e);
+            error_batch.emplace_back(e);
 
     raw_dispatch_dataset("error", error_batch, drop_cached_data_on_commit);
 }

@@ -298,6 +298,7 @@ test_core_sources = [
     'metadata/stream-test.cc',
     'metadata/archive-test.cc',
     'metadata/validator-test.cc',
+    'metadata/inbound-test.cc',
     'metadata/test-generator-test.cc',
     'summary-test.cc',
     'summary/intern-test.cc',

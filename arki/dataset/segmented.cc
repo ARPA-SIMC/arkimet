@@ -172,7 +172,7 @@ Writer::batch_by_segment(metadata::InboundBatch& batch)
             e->md->get<types::reftime::Position>()->get_Position();
         auto relpath = sys::with_suffix(dataset().step()(time),
                                         "."s + format_name(format));
-        by_segment[relpath].push_back(e);
+        by_segment[relpath].emplace_back(e);
     }
 
     for (auto& b : by_segment)

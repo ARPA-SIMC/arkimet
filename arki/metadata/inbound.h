@@ -1,6 +1,7 @@
 #ifndef ARKI_METADATA_INBOUND_H
 #define ARKI_METADATA_INBOUND_H
 
+#include <arki/defs.h>
 #include <arki/metadata/fwd.h>
 #include <iosfwd>
 #include <memory>
@@ -52,9 +53,22 @@ public:
 
 std::ostream& operator<<(std::ostream& o, Inbound::Result res);
 
-class InboundBatch : public std::vector<std::shared_ptr<Inbound>>
+/**
+ * Batch of inbound data to import.
+ */
+class InboundBatch : private std::vector<std::shared_ptr<Inbound>>
 {
 public:
+    using std::vector<std::shared_ptr<Inbound>>::vector;
+    using std::vector<std::shared_ptr<Inbound>>::size;
+    using std::vector<std::shared_ptr<Inbound>>::empty;
+    using std::vector<std::shared_ptr<Inbound>>::operator[];
+    using std::vector<std::shared_ptr<Inbound>>::const_iterator;
+    using std::vector<std::shared_ptr<Inbound>>::begin;
+    using std::vector<std::shared_ptr<Inbound>>::end;
+    using std::vector<std::shared_ptr<Inbound>>::emplace_back;
+    using std::vector<std::shared_ptr<Inbound>>::clear;
+
     /**
      * Add a metadata to the batch
      */
