@@ -70,8 +70,6 @@ public:
      */
     static std::shared_ptr<Scanner> get_scanner(DataFormat format);
 
-    static const Validator& get_validator(DataFormat format);
-
     /**
      * Guess a file format from its extension.
      */
@@ -162,7 +160,7 @@ public:
      * @returns
      *   a pointer to a static object, which should not be deallocated.
      */
-    static const Validator& by_format(DataFormat format);
+    static const Validator& get(DataFormat format);
 
 protected:
     [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd,

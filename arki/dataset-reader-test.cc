@@ -278,7 +278,7 @@ template <class Data> void TestsReader<Data>::register_tests()
                                 buf1.size() + buf2.size())) == buf3.size());
         in.close();
 
-        const auto& validator = data::Scanner::get_validator(f.td.format);
+        const auto& validator = data::Validator::get(f.td.format);
         wassert(validator.validate_buf(buf1.data(), buf1.size()));
         wassert(validator.validate_buf(buf2.data(), buf2.size()));
         wassert(validator.validate_buf(buf3.data(), buf3.size()));

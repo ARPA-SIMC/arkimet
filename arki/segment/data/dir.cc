@@ -765,9 +765,8 @@ core::Pending BaseChecker<Data>::repack(Collection& mds,
     core::Pending p(new Rename(tmpabspath, this->segment().abspath()));
 
     Creator creator(this->segment(), mds, tmpabspath);
-    creator.hardlink = true;
-    creator.validator =
-        &arki::data::Validator::by_format(this->segment().format());
+    creator.hardlink  = true;
+    creator.validator = &arki::data::Validator::get(this->segment().format());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it

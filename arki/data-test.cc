@@ -218,6 +218,59 @@ void Tests::register_tests()
         }
     });
 #endif
+
+    add_method("validator_get", [] {
+        {
+            const data::Validator& val = data::Validator::get(DataFormat::GRIB);
+            wassert(actual(val.format()) == DataFormat::GRIB);
+            wassert(actual(typeid(val).name()).matches("GribValidator"));
+        }
+        {
+            const data::Validator& val = data::Validator::get(DataFormat::BUFR);
+            wassert(actual(val.format()) == DataFormat::BUFR);
+            wassert(actual(typeid(val).name()).matches("BufrValidator"));
+        }
+        {
+            const data::Validator& val = data::Validator::get(DataFormat::VM2);
+            wassert(actual(val.format()) == DataFormat::VM2);
+            wassert(actual(typeid(val).name()).matches("VM2Validator"));
+        }
+        {
+            const data::Validator& val =
+                data::Validator::get(DataFormat::ODIMH5);
+            wassert(actual(val.format()) == DataFormat::ODIMH5);
+            wassert(actual(typeid(val).name()).matches("OdimH5Validator"));
+        }
+        {
+            const data::Validator& val =
+                data::Validator::get(DataFormat::NETCDF);
+            wassert(actual(val.format()) == DataFormat::NETCDF);
+            wassert(actual(typeid(val).name()).matches("NetCDFValidator"));
+        }
+        {
+            const data::Validator& val = data::Validator::get(DataFormat::JPEG);
+            wassert(actual(val.format()) == DataFormat::JPEG);
+            wassert(actual(typeid(val).name()).matches("JPEGValidator"));
+        }
+        {
+            const data::Validator& val =
+                data::Validator::get(static_cast<DataFormat>(100));
+            wassert(actual(val.format()) == static_cast<DataFormat>(100));
+            wassert(actual(typeid(val).name()).matches("NullValidator"));
+
+            // Validators are reused
+            const data::Validator& val1 =
+                data::Validator::get(static_cast<DataFormat>(100));
+            wassert(actual(&val1) == &val);
+
+            // Each DataFormat has its validator
+            const data::Validator& val2 =
+                data::Validator::get(static_cast<DataFormat>(101));
+            wassert(actual(val2.format()) == static_cast<DataFormat>(101));
+            wassert(actual(typeid(val2).name()).matches("NullValidator"));
+            wassert(actual(&val2) != &val);
+        }
+    });
 }
 
 } // namespace

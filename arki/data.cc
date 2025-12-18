@@ -86,28 +86,6 @@ std::shared_ptr<Scanner> Scanner::get_scanner(DataFormat format)
     return res;
 }
 
-const Validator& Scanner::get_validator(DataFormat format)
-{
-    switch (format)
-    {
-#ifdef HAVE_GRIBAPI
-        case DataFormat::GRIB: return grib::validator();
-#endif
-#ifdef HAVE_DBALLE
-        case DataFormat::BUFR: return bufr::validator();
-#endif
-#ifdef HAVE_VM2
-        case DataFormat::VM2: return vm2::validator();
-#endif
-        case DataFormat::ODIMH5: return odimh5::validator();
-        case DataFormat::NETCDF: return netcdf::validator();
-        case DataFormat::JPEG:   return jpeg::validator();
-        default:
-            throw std::runtime_error("No validator available for format '" +
-                                     format_name(format) + "'");
-    }
-}
-
 DataFormat Scanner::format_from_filename(const std::filesystem::path& fname)
 {
     // Extract the extension
@@ -262,6 +240,34 @@ std::vector<uint8_t> Scanner::reconstruct(DataFormat format, const Metadata& md,
 }
 
 /*
+ * NullValidator
+ */
+
+/// Validator that considers everything always valid
+class NullValidator : public Validator
+{
+    DataFormat data_format;
+
+public:
+    explicit NullValidator(DataFormat format) : data_format(format) {}
+
+    DataFormat format() const override { return data_format; }
+
+    // Validate data found in a file
+    void validate_file(core::NamedFileDescriptor&, off_t, size_t) const override
+    {
+    }
+
+    // Validate a memory buffer
+    virtual void validate_buf(const void*, size_t) const override {}
+
+    // Validate a metadata::Data
+    virtual void validate_data(const metadata::Data&) const override {}
+};
+
+std::vector<NullValidator*> null_validators;
+
+/*
  * Validator
  */
 
@@ -279,12 +285,34 @@ void Validator::throw_check_error(const std::string& msg) const
 
 const Validator& Validator::by_filename(const std::filesystem::path& filename)
 {
-    return by_format(Scanner::format_from_filename(filename));
+    return get(Scanner::format_from_filename(filename));
 }
 
-const Validator& Validator::by_format(DataFormat format)
+const Validator& Validator::get(DataFormat format)
 {
-    return data::Scanner::get_validator(format);
+    switch (format)
+    {
+#ifdef HAVE_GRIBAPI
+        case DataFormat::GRIB: return grib::validator();
+#endif
+#ifdef HAVE_DBALLE
+        case DataFormat::BUFR: return bufr::validator();
+#endif
+#ifdef HAVE_VM2
+        case DataFormat::VM2: return vm2::validator();
+#endif
+        case DataFormat::ODIMH5: return odimh5::validator();
+        case DataFormat::NETCDF: return netcdf::validator();
+        case DataFormat::JPEG:   return jpeg::validator();
+        default:                 {
+            unsigned idx = (unsigned)format;
+            if (null_validators.size() <= idx + 1)
+                null_validators.resize(idx + 1);
+            if (null_validators[idx] == nullptr)
+                null_validators[idx] = new NullValidator(format);
+            return *null_validators[idx];
+        }
+    }
 }
 
 void Validator::validate_data(const metadata::Data& data) const

@@ -41,7 +41,7 @@ enum TypeCode {
 };
 
 /// Supported data formats
-enum class DataFormat : int {
+enum class DataFormat : unsigned {
     GRIB   = 1,
     BUFR   = 2,
     VM2    = 3,
