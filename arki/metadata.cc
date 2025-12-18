@@ -818,9 +818,11 @@ const metadata::Data& Metadata::get_data()
     // If we don't have it in cache, try reconstructing it from the Value
     // metadata
     if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(
-            s->format,
-            data::Scanner::reconstruct(s->format, *this, value->buffer));
+    {
+        auto scanner = data::Scanner::get(s->format);
+        m_data       = metadata::DataManager::get().to_data(
+            s->format, scanner->reconstruct(*this, value->buffer));
+    }
     if (m_data)
         return *m_data;
 
@@ -869,9 +871,11 @@ stream::SendResult Metadata::stream_data(StreamOutput& out)
     // If we don't have it in cache, try reconstructing it from the Value
     // metadata
     if (const Value* value = get<types::Value>())
-        m_data = metadata::DataManager::get().to_data(
-            s->format,
-            data::Scanner::reconstruct(s->format, *this, value->buffer));
+    {
+        auto scanner = data::Scanner::get(s->format);
+        m_data       = metadata::DataManager::get().to_data(
+            s->format, scanner->reconstruct(*this, value->buffer));
+    }
     if (m_data)
         return m_data->write(out);
 

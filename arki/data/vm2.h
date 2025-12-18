@@ -30,10 +30,8 @@ public:
     std::shared_ptr<Metadata>
     scan_singleton(const std::filesystem::path& abspath) override;
     void normalize_before_dispatch(Metadata& md) override;
-
-    /// Reconstruct a VM2 based on metadata and a string value
-    static std::vector<uint8_t> reconstruct(const Metadata& md,
-                                            const std::string& value);
+    std::vector<uint8_t> reconstruct(const Metadata& md,
+                                     const std::string& value) const override;
 };
 
 } // namespace arki::data

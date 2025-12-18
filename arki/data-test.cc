@@ -191,7 +191,6 @@ void Tests::register_tests()
         });
     }
 
-    // Test reading update sequence numbers
     add_method("usn", [] {
         auto scanner = data::Scanner::get(DataFormat::GRIB);
         {
@@ -202,6 +201,14 @@ void Tests::register_tests()
             wassert_false(scanner->update_sequence_number(mdc[0], usn));
             wassert(actual(usn) == 42);
         }
+    });
+    add_method("reconstruct", [] {
+        auto scanner = data::Scanner::get(DataFormat::GRIB);
+        metadata::TestCollection mdc("inbound/test.grib1");
+        auto e = wassert_throws(std::runtime_error,
+                                scanner->reconstruct(mdc[0], ""));
+        wassert(actual(e.what()) ==
+                "cannot reconstruct grib data: format not supported");
     });
 
     add_method("validator_get", [] {

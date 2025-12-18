@@ -93,6 +93,12 @@ public:
                                         int& usn) const;
 
     /**
+     * Reconstruct raw data based on a metadata and a value
+     */
+    virtual std::vector<uint8_t> reconstruct(const Metadata& md,
+                                             const std::string& value) const;
+
+    /**
      * Create a scanner for the given format
      */
     static std::shared_ptr<Scanner> get(DataFormat format);
@@ -109,13 +115,6 @@ public:
      */
     static std::optional<DataFormat>
     detect_format(const std::filesystem::path& path);
-
-    /**
-     * Reconstruct raw data based on a metadata and a value
-     */
-    static std::vector<uint8_t> reconstruct(DataFormat format,
-                                            const Metadata& md,
-                                            const std::string& value);
 
     /**
      * Register the scanner factory function for the given format

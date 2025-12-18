@@ -199,16 +199,10 @@ Scanner::detect_format(const std::filesystem::path& path)
     return std::optional<DataFormat>();
 }
 
-std::vector<uint8_t> Scanner::reconstruct(DataFormat format, const Metadata& md,
-                                          const std::string& value)
+std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
+                                          const std::string&) const
 {
-#ifdef HAVE_VM2
-    if (format == DataFormat::VM2)
-    {
-        return data::Vm2::reconstruct(md, value);
-    }
-#endif
-    throw runtime_error("cannot reconstruct " + format_name(format) +
+    throw runtime_error("cannot reconstruct " + format_name(name()) +
                         " data: format not supported");
 }
 

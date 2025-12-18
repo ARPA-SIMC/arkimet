@@ -121,18 +121,19 @@ void Tests::register_tests()
 
     // Scan and reconstruct a VM2 sample
     add_method("reconstruct", []() {
+        auto scanner = data::Scanner::get(DataFormat::VM2);
         const types::Value* value;
         vector<uint8_t> buf;
 
         metadata::TestCollection mdc("inbound/test.vm2");
 
         value = mdc[0].get<types::Value>();
-        buf   = data::Vm2::reconstruct(mdc[0], value->buffer);
+        buf   = scanner->reconstruct(mdc[0], value->buffer);
         wassert(actual(string((const char*)buf.data(), buf.size())) ==
                 "198710310000,1,227,1.2,,,000000000");
 
         value = mdc[1].get<types::Value>();
-        buf   = data::Vm2::reconstruct(mdc[1], value->buffer);
+        buf   = scanner->reconstruct(mdc[1], value->buffer);
         wassert(actual(string((const char*)buf.data(), buf.size())) ==
                 "19871031000030,1,228,.5,,,000000000");
     });
@@ -162,6 +163,7 @@ void Tests::register_tests()
     });
 
     add_method("issue237", [] {
+        auto scanner = data::Scanner::get(DataFormat::VM2);
         auto basedir = std::filesystem::current_path() / "inbound";
         metadata::TestCollection mdc("inbound/issue237.vm2", true);
         wassert(actual(mdc.size()) == 1u);
@@ -175,7 +177,7 @@ void Tests::register_tests()
                 "20201031230000,12865,158,9.409990,,,");
 
         auto value = mdc[0].get<types::Value>();
-        auto buf   = data::Vm2::reconstruct(mdc[0], value->buffer);
+        auto buf   = scanner->reconstruct(mdc[0], value->buffer);
         wassert(actual(string((const char*)buf.data(), buf.size())) ==
                 "202010312300,12865,158,9.409990,,,");
     });

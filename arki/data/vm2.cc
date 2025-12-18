@@ -261,7 +261,7 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader,
 }
 
 std::vector<uint8_t> Vm2::reconstruct(const Metadata& md,
-                                      const std::string& value)
+                                      const std::string& value) const
 {
     using namespace std;
     std::stringstream res;
