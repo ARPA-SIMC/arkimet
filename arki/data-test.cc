@@ -165,7 +165,7 @@ void Tests::register_tests()
     for (auto td : test_data)
     {
         add_method("scan_pipe_" + format_name(td.format), [=] {
-            auto scanner = data::Scanner::get_scanner(td.format);
+            auto scanner = data::Scanner::get(td.format);
             metadata::Collection mds;
             sys::File in(td.pathname, O_RDONLY);
             scanner->scan_pipe(in, mds.inserter_func());
@@ -185,7 +185,7 @@ void Tests::register_tests()
           TestData("inbound/single.vm2")})
     {
         add_method("scan_singleton_" + format_name(td.format), [=] {
-            auto scanner = data::Scanner::get_scanner(td.format);
+            auto scanner = data::Scanner::get(td.format);
             auto md      = scanner->scan_singleton(td.pathname);
             wassert_false(md->has_source());
         });
@@ -193,7 +193,7 @@ void Tests::register_tests()
 
     // Test reading update sequence numbers
     add_method("usn", [] {
-        auto scanner = data::Scanner::get_scanner(DataFormat::GRIB);
+        auto scanner = data::Scanner::get(DataFormat::GRIB);
         {
             // Gribs don't have update sequence numbrs, and the usn parameter
             // must be left untouched

@@ -57,7 +57,7 @@ void Tests::register_tests()
 
     // Test reading update sequence numbers
     add_method("usn", [] {
-        auto scanner = data::Scanner::get_scanner(DataFormat::BUFR);
+        auto scanner = data::Scanner::get(DataFormat::BUFR);
 
         {
             metadata::TestCollection mdc("inbound/synop-gts.bufr");

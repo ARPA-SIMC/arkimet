@@ -285,7 +285,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
 
                 // Read the update sequence number of the new BUFR
                 auto new_scanner =
-                    arki::data::Scanner::get_scanner(e->md->source().format);
+                    arki::data::Scanner::get(e->md->source().format);
                 int new_usn;
                 if (!new_scanner->update_sequence_number(*e->md, new_usn))
                 {
@@ -303,8 +303,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 // Read the update sequence number of the old BUFR
                 auto reader = segment().reader(lock);
                 old->lock(reader);
-                auto old_scanner =
-                    arki::data::Scanner::get_scanner(old->format);
+                auto old_scanner = arki::data::Scanner::get(old->format);
                 int old_usn;
                 if (!old_scanner->update_sequence_number(*old, old_usn))
                 {

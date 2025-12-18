@@ -188,7 +188,7 @@ Reader<Data>::Reader(std::shared_ptr<const Data> data,
 template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
-    auto scanner        = arki::data::Scanner::get_scanner(segment.format());
+    auto scanner        = arki::data::Scanner::get(segment.format());
     return scanner->scan_segment(this->segment().reader(this->lock), dest);
 }
 

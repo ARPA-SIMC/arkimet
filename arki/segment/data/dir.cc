@@ -212,7 +212,7 @@ struct CheckBackend : public AppendCheckBackend
         // Check files on disk that were not accounted for
         for (const auto& di : scanner.on_disk)
         {
-            auto scanner = arki::data::Scanner::get_scanner(segment.format());
+            auto scanner = arki::data::Scanner::get(segment.format());
             auto idx     = di.first;
             if (accurate)
             {
@@ -899,7 +899,7 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
                    metadata_dest_func dest)
 {
     // Scan them one by one
-    auto scanner = arki::data::Scanner::get_scanner(segment.format());
+    auto scanner = arki::data::Scanner::get(segment.format());
     for (const auto& fi : on_disk)
     {
         auto md = scanner->scan_singleton(segment.abspath() / fi.second.fname);
@@ -916,7 +916,7 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter,
                    metadata_dest_func dest)
 {
     // Scan them one by one
-    auto scanner = arki::data::Scanner::get_scanner(segment.format());
+    auto scanner = arki::data::Scanner::get(segment.format());
     for (const auto& fi : on_disk)
     {
         std::shared_ptr<Metadata> md;

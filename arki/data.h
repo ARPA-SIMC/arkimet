@@ -95,7 +95,7 @@ public:
     /**
      * Create a scanner for the given format
      */
-    static std::shared_ptr<Scanner> get_scanner(DataFormat format);
+    static std::shared_ptr<Scanner> get(DataFormat format);
 
     /**
      * Guess a file format from its extension.

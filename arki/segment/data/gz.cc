@@ -171,7 +171,7 @@ Reader<Data>::Reader(const std::shared_ptr<const Data> data,
 
 template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = arki::data::Scanner::get_scanner(this->segment().format());
+    auto scanner = arki::data::Scanner::get(this->segment().format());
     compress::TempUnzip uncompressed(this->segment().abspath());
     return scanner->scan_segment(this->segment().reader(this->lock), dest);
 }

@@ -61,8 +61,8 @@ struct get_scanner : public ClassMethKwargs<get_scanner>
 
         try
         {
-            auto scanner = arki::data::Scanner::get_scanner(
-                dataformat_from_python(arg_format));
+            auto scanner =
+                arki::data::Scanner::get(dataformat_from_python(arg_format));
             return (PyObject*)arki::python::scan::scanner_create(scanner);
         }
         ARKI_CATCH_RETURN_PYO

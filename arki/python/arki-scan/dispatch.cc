@@ -61,7 +61,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds,
     {
         ds.query_data(
             query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
-                auto scanner = data::Scanner::get_scanner(md->source().format);
+                auto scanner = data::Scanner::get(md->source().format);
                 scanner->normalize_before_dispatch(*md);
                 // TODO: preprocess here, leave untouched or return inline
                 partial_batch_data_size += md->data_size();

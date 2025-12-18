@@ -76,7 +76,7 @@ bool Scanner::update_sequence_number(const types::source::Blob&, int&) const
 
 bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 
-std::shared_ptr<Scanner> Scanner::get_scanner(DataFormat format)
+std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
     // Lookup in cache first, before normalisation
     auto cached = scanner_cache.find(format);

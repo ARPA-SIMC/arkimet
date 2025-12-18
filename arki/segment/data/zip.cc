@@ -298,7 +298,7 @@ bool Reader::scan_data(metadata_dest_func dest)
     std::sort(spans.begin(), spans.end());
 
     // Scan them one by one
-    auto scanner = arki::data::Scanner::get_scanner(segment().format());
+    auto scanner = arki::data::Scanner::get(segment().format());
     for (const auto& span : spans)
     {
         std::vector<uint8_t> data = zip.get(span);

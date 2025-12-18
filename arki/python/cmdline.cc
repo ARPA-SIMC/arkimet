@@ -100,7 +100,7 @@ bool foreach_file(std::shared_ptr<arki::dataset::Session> session,
                   BinaryInputFile& file, DataFormat format,
                   std::function<void(arki::dataset::Reader&)> dest)
 {
-    auto scanner = data::Scanner::get_scanner(format);
+    auto scanner = data::Scanner::get(format);
 
     core::cfg::Section cfg;
     cfg.set("format", format_name(format));

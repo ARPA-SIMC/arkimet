@@ -283,7 +283,7 @@ template <class Data> void TestsReader<Data>::register_tests()
         wassert(validator.validate_buf(buf2.data(), buf2.size()));
         wassert(validator.validate_buf(buf3.data(), buf3.size()));
 
-        auto scanner = data::Scanner::get_scanner(f.td.format);
+        auto scanner = data::Scanner::get(f.td.format);
         wassert(scanner->scan_data(buf1));
         wassert(scanner->scan_data(buf2));
         wassert(scanner->scan_data(buf3));
