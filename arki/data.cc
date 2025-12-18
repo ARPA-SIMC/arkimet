@@ -67,7 +67,14 @@ void Scanner::register_factory(
     scanner_cache.clear();
 }
 
-void Scanner::normalize_before_dispatch(Metadata& md) {}
+void Scanner::normalize_before_dispatch(Metadata&) {}
+
+bool Scanner::update_sequence_number(const types::source::Blob&, int&) const
+{
+    return false;
+}
+
+bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 
 std::shared_ptr<Scanner> Scanner::get_scanner(DataFormat format)
 {
@@ -190,40 +197,6 @@ Scanner::detect_format(const std::filesystem::path& path)
         return DataFormat::JPEG;
 
     return std::optional<DataFormat>();
-}
-
-bool Scanner::update_sequence_number(const types::source::Blob& source,
-                                     int& usn)
-{
-#ifdef HAVE_DBALLE
-    // Update Sequence Numbers are only supported by BUFR
-    if (source.format != DataFormat::BUFR)
-        return false;
-
-    auto data = source.read_data();
-    string buf((const char*)data.data(), data.size());
-    usn = BufrScanner::update_sequence_number(buf);
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool Scanner::update_sequence_number(Metadata& md, int& usn)
-{
-#ifdef HAVE_DBALLE
-    // Update Sequence Numbers are only supported by BUFR
-    if (md.source().format != DataFormat::BUFR)
-        return false;
-
-    const auto& data = md.get_data();
-    auto buf         = data.read();
-    string strbuf((const char*)buf.data(), buf.size());
-    usn = BufrScanner::update_sequence_number(strbuf);
-    return true;
-#else
-    return false;
-#endif
 }
 
 std::vector<uint8_t> Scanner::reconstruct(DataFormat format, const Metadata& md,

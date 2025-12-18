@@ -54,6 +54,25 @@ void Tests::register_tests()
         wassert_throws(std::runtime_error,
                        v.validate_buf(buf.data(), buf.size() - 1));
     });
+
+    // Test reading update sequence numbers
+    add_method("usn", [] {
+        auto scanner = data::Scanner::get_scanner(DataFormat::BUFR);
+
+        {
+            metadata::TestCollection mdc("inbound/synop-gts.bufr");
+            int usn;
+            wassert_true(scanner->update_sequence_number(mdc[0], usn));
+            wassert(actual(usn) == 0);
+        }
+
+        {
+            metadata::TestCollection mdc("inbound/synop-gts-usn2.bufr");
+            int usn;
+            wassert_true(scanner->update_sequence_number(mdc[0], usn));
+            wassert(actual(usn) == 2);
+        }
+    });
 }
 
 } // namespace

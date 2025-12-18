@@ -66,6 +66,33 @@ public:
     virtual void normalize_before_dispatch(Metadata& md);
 
     /**
+     * Return the update sequence number for this data
+     *
+     * The data associated to the metadata is read and scanned if needed.
+     *
+     * @retval
+     *   The update sequence number found. This is left untouched if the
+     * function returns false.
+     * @returns
+     *   true if the update sequence number could be found, else false
+     *
+     */
+    virtual bool update_sequence_number(Metadata& md, int& usn) const;
+
+    /**
+     * Return the update sequence number for this data
+     *
+     * @retval
+     *   The update sequence number found. This is left untouched if the
+     * function returns false.
+     * @returns
+     *   true if the update sequence number could be found, else false
+     *
+     */
+    virtual bool update_sequence_number(const types::source::Blob& source,
+                                        int& usn) const;
+
+    /**
      * Create a scanner for the given format
      */
     static std::shared_ptr<Scanner> get_scanner(DataFormat format);
@@ -82,33 +109,6 @@ public:
      */
     static std::optional<DataFormat>
     detect_format(const std::filesystem::path& path);
-
-    /**
-     * Return the update sequence number for this data
-     *
-     * The data associated to the metadata is read and scanned if needed.
-     *
-     * @retval
-     *   The update sequence number found. This is left untouched if the
-     * function returns false.
-     * @returns
-     *   true if the update sequence number could be found, else false
-     *
-     */
-    static bool update_sequence_number(Metadata& md, int& usn);
-
-    /**
-     * Return the update sequence number for this data
-     *
-     * @retval
-     *   The update sequence number found. This is left untouched if the
-     * function returns false.
-     * @returns
-     *   true if the update sequence number could be found, else false
-     *
-     */
-    static bool update_sequence_number(const types::source::Blob& source,
-                                       int& usn);
 
     /**
      * Reconstruct raw data based on a metadata and a value

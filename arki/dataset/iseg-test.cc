@@ -130,10 +130,11 @@ void Tests::register_tests()
             metadata::Collection mdc_read =
                 f.query(query::Data(parser.parse("origin:BUFR"), true));
             wassert(actual(mdc_read.size()) == 1u);
+            auto scanner =
+                data::Scanner::get_scanner(mdc_read[0].source().format);
             int usn;
-            wassert(
-                actual(data::Scanner::update_sequence_number(mdc_read[0], usn))
-                    .istrue());
+            wassert(actual(scanner->update_sequence_number(mdc_read[0], usn))
+                        .istrue());
             wassert(actual(usn) == 2);
         }
     });

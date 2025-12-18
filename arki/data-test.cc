@@ -191,33 +191,18 @@ void Tests::register_tests()
         });
     }
 
-#ifdef HAVE_DBALLE
     // Test reading update sequence numbers
     add_method("usn", [] {
+        auto scanner = data::Scanner::get_scanner(DataFormat::GRIB);
         {
             // Gribs don't have update sequence numbrs, and the usn parameter
             // must be left untouched
             metadata::TestCollection mdc("inbound/test.grib1");
             int usn = 42;
-            wassert_false(data::Scanner::update_sequence_number(mdc[0], usn));
+            wassert_false(scanner->update_sequence_number(mdc[0], usn));
             wassert(actual(usn) == 42);
         }
-
-        {
-            metadata::TestCollection mdc("inbound/synop-gts.bufr");
-            int usn;
-            wassert_true(data::Scanner::update_sequence_number(mdc[0], usn));
-            wassert(actual(usn) == 0);
-        }
-
-        {
-            metadata::TestCollection mdc("inbound/synop-gts-usn2.bufr");
-            int usn;
-            wassert_true(data::Scanner::update_sequence_number(mdc[0], usn));
-            wassert(actual(usn) == 2);
-        }
     });
-#endif
 
     add_method("validator_get", [] {
         {

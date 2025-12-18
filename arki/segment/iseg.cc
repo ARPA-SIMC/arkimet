@@ -284,9 +284,10 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 // Duplicate detected
 
                 // Read the update sequence number of the new BUFR
+                auto new_scanner =
+                    arki::data::Scanner::get_scanner(e->md->source().format);
                 int new_usn;
-                if (!arki::data::Scanner::update_sequence_number(*e->md,
-                                                                 new_usn))
+                if (!new_scanner->update_sequence_number(*e->md, new_usn))
                 {
                     e->md->add_note(
                         "Failed to store in '" + config.destination_name +
@@ -302,8 +303,10 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 // Read the update sequence number of the old BUFR
                 auto reader = segment().reader(lock);
                 old->lock(reader);
+                auto old_scanner =
+                    arki::data::Scanner::get_scanner(old->format);
                 int old_usn;
-                if (!arki::data::Scanner::update_sequence_number(*old, old_usn))
+                if (!old_scanner->update_sequence_number(*old, old_usn))
                 {
                     e->md->add_note(
                         "Failed to store in '" + config.destination_name +

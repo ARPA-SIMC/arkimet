@@ -7,6 +7,7 @@
 #include "arki/types/product.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/types/timerange.h"
 #include "arki/types/values.h"
 #include "arki/utils/files.h"
@@ -94,7 +95,7 @@ public:
     std::unique_ptr<Product> product;
     std::shared_ptr<Message> msg;
 
-    Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
+    explicit Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
 
     void refine_reftime(const Message& msg)
     {
@@ -113,7 +114,7 @@ public:
             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second));
     }
 
-    void harvest_from_dballe(const BinaryMessage& rmsg, Metadata& md)
+    void harvest_from_dballe(const BinaryMessage& rmsg, Metadata&)
     {
         msg.reset();
         auto bulletin = BufrBulletin::decode_header(
@@ -183,7 +184,7 @@ public:
             if (bulletin->subsets[0].empty())
                 return;
         }
-        catch (std::exception& e)
+        catch (const std::exception& e)
         {
             return;
         }
@@ -198,7 +199,7 @@ public:
             // We already set the importer to ignore domain errors
             msgs = importer.from_bulletin(*bulletin);
         }
-        catch (std::exception& e)
+        catch (const std::exception& e)
         {
             // If we cannot import it as a Msgs, we are done
             return;
@@ -241,11 +242,11 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
     harvest.harvest_from_dballe(rmsg, *md);
 
     if (harvest.reftime)
-        md->set(move(harvest.reftime));
+        md->set(std::move(harvest.reftime));
     if (harvest.origin)
-        md->set(move(harvest.origin));
+        md->set(std::move(harvest.origin));
     if (harvest.product)
-        md->set(move(harvest.product));
+        md->set(std::move(harvest.product));
 
     if (harvest.msg)
     {
@@ -348,16 +349,41 @@ bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd,
                 DataFormat::BUFR,
                 vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, md);
-        if (!dest(move(md)))
+        if (!dest(std::move(md)))
             return false;
     }
     return true;
 }
 
-int BufrScanner::update_sequence_number(const std::string& buf)
+int BufrScanner::update_sequence_number_raw(const std::string& buf) const
 {
     auto bulletin = BufrBulletin::decode_header(buf);
     return bulletin->update_sequence_number;
+}
+bool BufrScanner::update_sequence_number(const types::source::Blob& source,
+                                         int& usn) const
+{
+    // Update Sequence Numbers are only supported by BUFR
+    if (source.format != DataFormat::BUFR)
+        return false;
+
+    auto data = source.read_data();
+    string buf((const char*)data.data(), data.size());
+    usn = update_sequence_number_raw(buf);
+    return true;
+}
+
+bool BufrScanner::update_sequence_number(Metadata& md, int& usn) const
+{
+    // Update Sequence Numbers are only supported by BUFR
+    if (md.source().format != DataFormat::BUFR)
+        return false;
+
+    const auto& data = md.get_data();
+    auto buf         = data.read();
+    string strbuf((const char*)buf.data(), buf.size());
+    usn = update_sequence_number_raw(strbuf);
+    return true;
 }
 
 /*
@@ -369,7 +395,7 @@ MockBufrScanner::MockBufrScanner() { engine = new MockEngine(); }
 MockBufrScanner::~MockBufrScanner() { delete engine; }
 
 void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg,
-                                 std::shared_ptr<dballe::Message> msg,
+                                 std::shared_ptr<dballe::Message>,
                                  std::shared_ptr<Metadata> md)
 {
     auto new_md = engine->lookup(

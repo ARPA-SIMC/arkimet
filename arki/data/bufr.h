@@ -45,7 +45,11 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 
     /// Return the update sequence number for a BUFR
-    static int update_sequence_number(const std::string& buf);
+    int update_sequence_number_raw(const std::string& buf) const;
+
+    bool update_sequence_number(Metadata& md, int& usn) const override;
+    bool update_sequence_number(const types::source::Blob& source,
+                                int& usn) const override;
 };
 
 class MockBufrScanner : public BufrScanner
