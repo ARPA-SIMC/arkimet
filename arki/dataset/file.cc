@@ -8,7 +8,6 @@
 #include "arki/metadata/sort.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
-#include "arki/scan.h"
 #include "arki/segment.h"
 #include "arki/segment/metadata.h"
 #include "arki/segment/scan.h"

@@ -1,4 +1,4 @@
-#include "scan.h"
+#include "data.h"
 #include "arki/core/file.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
@@ -8,24 +8,23 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #ifdef HAVE_GRIBAPI
-#include "arki/scan/grib.h"
+#include "arki/data/grib.h"
 #endif
 #ifdef HAVE_DBALLE
-#include "arki/scan/bufr.h"
+#include "arki/data/bufr.h"
 #endif
-#include "arki/scan/jpeg.h"
-#include "arki/scan/netcdf.h"
-#include "arki/scan/odimh5.h"
+#include "arki/data/jpeg.h"
+#include "arki/data/netcdf.h"
+#include "arki/data/odimh5.h"
 #ifdef HAVE_VM2
-#include "arki/scan/vm2.h"
+#include "arki/data/vm2.h"
 #endif
 #include <unordered_map>
 
 using namespace std;
 using namespace arki::utils;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 typedef std::function<std::shared_ptr<Scanner>()> factory;
 
@@ -36,11 +35,11 @@ static std::unordered_map<DataFormat, std::shared_ptr<Scanner>> scanner_cache;
 void init()
 {
     factories[DataFormat::GRIB] = [] {
-        return std::make_shared<scan::MockGribScanner>();
+        return std::make_shared<data::MockGribScanner>();
     };
 #ifdef HAVE_DBALLE
     factories[DataFormat::BUFR] = [] {
-        return std::make_shared<scan::MockBufrScanner>();
+        return std::make_shared<data::MockBufrScanner>();
     };
 #endif
 
@@ -49,7 +48,7 @@ void init()
     register_jpeg_scanner();
 
 #ifdef HAVE_VM2
-    factories[DataFormat::VM2] = [] { return std::make_shared<scan::Vm2>(); };
+    factories[DataFormat::VM2] = [] { return std::make_shared<data::Vm2>(); };
 #endif
 }
 
@@ -251,12 +250,11 @@ std::vector<uint8_t> Scanner::reconstruct(DataFormat format, const Metadata& md,
 #ifdef HAVE_VM2
     if (format == DataFormat::VM2)
     {
-        return scan::Vm2::reconstruct(md, value);
+        return data::Vm2::reconstruct(md, value);
     }
 #endif
     throw runtime_error("cannot reconstruct " + format_name(format) +
                         " data: format not supported");
 }
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

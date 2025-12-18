@@ -1,11 +1,11 @@
 #include "metadata.h"
 #include "core/file.h"
+#include "data.h"
 #include "exceptions.h"
 #include "formatter.h"
 #include "iotrace.h"
 #include "metadata/data.h"
 #include "metadata/reader.h"
-#include "scan.h"
 #include "stream.h"
 #include "structured/emitter.h"
 #include "structured/keys.h"
@@ -820,7 +820,7 @@ const metadata::Data& Metadata::get_data()
     if (const Value* value = get<types::Value>())
         m_data = metadata::DataManager::get().to_data(
             s->format,
-            scan::Scanner::reconstruct(s->format, *this, value->buffer));
+            data::Scanner::reconstruct(s->format, *this, value->buffer));
     if (m_data)
         return *m_data;
 
@@ -871,7 +871,7 @@ stream::SendResult Metadata::stream_data(StreamOutput& out)
     if (const Value* value = get<types::Value>())
         m_data = metadata::DataManager::get().to_data(
             s->format,
-            scan::Scanner::reconstruct(s->format, *this, value->buffer));
+            data::Scanner::reconstruct(s->format, *this, value->buffer));
     if (m_data)
         return m_data->write(out);
 

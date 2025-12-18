@@ -125,12 +125,12 @@ libarkimet_sources = [
     'segment/iseg/index/aggregate.cc',
     'segment/iseg/index.cc',
     'formatter.cc',
-    'scan.cc',
-    'scan/validator.cc',
-    'scan/mock.cc',
-    'scan/odimh5.cc',
-    'scan/netcdf.cc',
-    'scan/jpeg.cc',
+    'data.cc',
+    'data/validator.cc',
+    'data/mock.cc',
+    'data/odimh5.cc',
+    'data/netcdf.cc',
+    'data/jpeg.cc',
     'metadata/xargs.cc',
     'query.cc',
     'query/progress.cc',
@@ -173,15 +173,15 @@ libarkimet_sources = [
 subdir('matcher/reftime')
 
 if eccodes_dep.found()
-    libarkimet_sources += ['scan/grib.cc']
+    libarkimet_sources += ['data/grib.cc']
 endif
 
 if dballe_dep.found()
-    libarkimet_sources += ['scan/bufr.cc']
+    libarkimet_sources += ['data/bufr.cc']
 endif
 
 if meteo_vm2_dep.found()
-    libarkimet_sources += ['utils/vm2.cc', 'scan/vm2.cc']
+    libarkimet_sources += ['utils/vm2.cc', 'data/vm2.cc']
 endif
 
 if libcurl_dep.found()
@@ -321,12 +321,12 @@ test_core_sources = [
     'matcher/run-test.cc',
     'matcher/task-test.cc',
     'matcher/quantity-test.cc',
-    'scan-test.cc',
-    'scan/validator-test.cc',
-    'scan/mock-test.cc',
-    'scan/odimh5-test.cc',
-    'scan/netcdf-test.cc',
-    'scan/jpeg-test.cc',
+    'data-test.cc',
+    'data/validator-test.cc',
+    'data/mock-test.cc',
+    'data/odimh5-test.cc',
+    'data/netcdf-test.cc',
+    'data/jpeg-test.cc',
     'metadata/xargs-test.cc',
     'metadata/postprocess-test.cc',
     'query-test.cc',
@@ -336,15 +336,15 @@ test_core_sources = [
 ]
 
 if eccodes_dep.found()
-    test_core_sources += ['scan/grib-test.cc']
+    test_core_sources += ['data/grib-test.cc']
 endif
 
 if dballe_dep.found()
-    test_core_sources += ['scan/bufr-test.cc']
+    test_core_sources += ['data/bufr-test.cc']
 endif
 
 if meteo_vm2_dep.found()
-    test_core_sources += ['utils/vm2-test.cc', 'scan/vm2-test.cc']
+    test_core_sources += ['utils/vm2-test.cc', 'data/vm2-test.cc']
 endif
 
 test_segment_sources = [

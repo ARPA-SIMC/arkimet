@@ -1,4 +1,5 @@
 #include "bufr.h"
+#include "arki/data/bufr.h"
 #include "arki/libconfig.h"
 #include "arki/nag.h"
 #include "arki/python/common.h"
@@ -6,7 +7,6 @@
 #include "arki/python/scan.h"
 #include "arki/python/utils/methods.h"
 #include "arki/python/utils/type.h"
-#include "arki/scan/bufr.h"
 
 #ifdef HAVE_DBALLE
 #include "arki/python/utils/dballe.h"
@@ -45,7 +45,7 @@ static void load_bufrscanner_object()
     bufrscanner_object = obj.release();
 }
 
-class PythonBufrScanner : public arki::scan::BufrScanner
+class PythonBufrScanner : public arki::data::BufrScanner
 {
 protected:
     void scan_extra(dballe::BinaryMessage& rmsg,
@@ -109,7 +109,7 @@ void register_scan_bufr(PyObject* scan)
 void init_scanner_bufr()
 {
 #ifdef HAVE_DBALLE
-    arki::scan::Scanner::register_factory(
+    arki::data::Scanner::register_factory(
         DataFormat::BUFR, [] { return std::make_shared<PythonBufrScanner>(); });
 #endif
 }

@@ -1,17 +1,16 @@
-#ifndef ARKI_SCAN_GRIB_H
-#define ARKI_SCAN_GRIB_H
+#ifndef ARKI_DATA_GRIB_H
+#define ARKI_DATA_GRIB_H
 
 /// scan/grib - Scan a GRIB (version 1 or 2) file for metadata
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <string>
 #include <vector>
 
 struct grib_context;
 struct grib_handle;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 class MockEngine;
 
 namespace grib {
@@ -85,6 +84,5 @@ public:
     virtual ~MockGribScanner();
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 #endif

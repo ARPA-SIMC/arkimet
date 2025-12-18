@@ -1,9 +1,9 @@
-#ifndef ARKI_SCAN_H
-#define ARKI_SCAN_H
+#ifndef ARKI_DATA_H
+#define ARKI_DATA_H
 
 #include <arki/core/fwd.h>
+#include <arki/data/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/types/fwd.h>
 #include <cstdint>
@@ -13,8 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 class Scanner
 {
@@ -131,7 +130,6 @@ public:
 /// Initialize scanner registry
 void init();
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif

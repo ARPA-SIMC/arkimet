@@ -1,12 +1,11 @@
 #include "validator.h"
+#include "arki/data.h"
 #include "arki/exceptions.h"
 #include "arki/metadata/data.h"
-#include "arki/scan.h"
 #include "arki/utils/sys.h"
 #include <sstream>
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 void Validator::throw_check_error(utils::sys::NamedFileDescriptor& fd,
                                   off_t offset, const std::string& msg) const
@@ -27,7 +26,7 @@ const Validator& Validator::by_filename(const std::filesystem::path& filename)
 
 const Validator& Validator::by_format(DataFormat format)
 {
-    return scan::Scanner::get_validator(format);
+    return data::Scanner::get_validator(format);
 }
 
 void Validator::validate_data(const metadata::Data& data) const
@@ -36,5 +35,4 @@ void Validator::validate_data(const metadata::Data& data) const
     validate_buf(buf.data(), buf.size());
 }
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

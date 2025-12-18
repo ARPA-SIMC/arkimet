@@ -69,7 +69,7 @@ struct Reader : public data::BaseReader<Data>
 class Checker : public data::BaseChecker<Data>
 {
 protected:
-    void validate(Metadata& md, const arki::scan::Validator& v);
+    void validate(Metadata& md, const arki::data::Validator& v);
 
     /**
      * If skip_validation is true, repack will skip validating the data that is

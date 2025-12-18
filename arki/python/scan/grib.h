@@ -2,7 +2,7 @@
 #define ARKI_PYTHON_SCAN_GRIB_H
 
 #define PY_SSIZE_T_CLEAN
-#include "arki/scan/grib.h"
+#include "arki/data/grib.h"
 #include <Python.h>
 
 extern "C" {

@@ -1,6 +1,6 @@
+#include "arki/data.h"
 #include "arki/matcher/parser.h"
 #include "arki/query.h"
-#include "arki/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "iseg/checker.h"
@@ -132,7 +132,7 @@ void Tests::register_tests()
             wassert(actual(mdc_read.size()) == 1u);
             int usn;
             wassert(
-                actual(scan::Scanner::update_sequence_number(mdc_read[0], usn))
+                actual(data::Scanner::update_sequence_number(mdc_read[0], usn))
                     .istrue());
             wassert(actual(usn) == 2);
         }

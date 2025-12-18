@@ -1,10 +1,10 @@
-#include "arki/scan/vm2.h"
+#include "arki/data/vm2.h"
 #include "arki/core/time.h"
+#include "arki/data/validator.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/nag.h"
-#include "arki/scan/validator.h"
 #include "arki/segment.h"
 #include "arki/types/area.h"
 #include "arki/types/product.h"
@@ -23,8 +23,7 @@
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 namespace vm2 {
 
@@ -303,5 +302,4 @@ void Vm2::normalize_before_dispatch(Metadata& md)
     }
 }
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

@@ -3,13 +3,12 @@
 
 /// Scan a VM2 file for metadata
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 namespace vm2 {
 const Validator& validator();
@@ -37,6 +36,5 @@ public:
                                             const std::string& value);
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 #endif

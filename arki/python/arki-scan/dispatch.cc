@@ -1,4 +1,5 @@
 #include "dispatch.h"
+#include "arki/data.h"
 #include "arki/dispatcher.h"
 #include "arki/metadata.h"
 #include "arki/metadata/validator.h"
@@ -6,7 +7,6 @@
 #include "arki/python/cmdline/processor.h"
 #include "arki/python/dataset.h"
 #include "arki/query.h"
-#include "arki/scan.h"
 #include "arki/stream.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/string.h"
@@ -61,7 +61,7 @@ DispatchResults MetadataDispatch::process(dataset::Reader& ds,
     {
         ds.query_data(
             query::Data(Matcher(), true), [&](std::shared_ptr<Metadata> md) {
-                auto scanner = scan::Scanner::get_scanner(md->source().format);
+                auto scanner = data::Scanner::get_scanner(md->source().format);
                 scanner->normalize_before_dispatch(*md);
                 // TODO: preprocess here, leave untouched or return inline
                 partial_batch_data_size += md->data_size();

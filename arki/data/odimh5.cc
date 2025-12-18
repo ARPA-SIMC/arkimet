@@ -1,8 +1,8 @@
 #include "odimh5.h"
+#include "arki/data/mock.h"
+#include "arki/data/validator.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/scan/mock.h"
-#include "arki/scan/validator.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
@@ -19,8 +19,7 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 namespace odimh5 {
 
 /* taken from: http://www.hdfgroup.org/HDF5/doc/H5.format.html#Superblock */
@@ -170,9 +169,8 @@ MockOdimScanner::scan_h5_data(const std::vector<uint8_t>& data)
 void register_odimh5_scanner()
 {
     Scanner::register_factory(DataFormat::ODIMH5, [] {
-        return std::make_shared<scan::MockOdimScanner>();
+        return std::make_shared<data::MockOdimScanner>();
     });
 }
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

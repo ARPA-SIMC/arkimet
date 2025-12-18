@@ -1,12 +1,12 @@
 #include "scan.h"
+#include "arki/data/bufr.h"
+#include "arki/data/grib.h"
+#include "arki/data/jpeg.h"
+#include "arki/data/netcdf.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
-#include "arki/scan/bufr.h"
-#include "arki/scan/grib.h"
-#include "arki/scan/jpeg.h"
-#include "arki/scan/netcdf.h"
 #include "arki/types/values.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -61,7 +61,7 @@ struct get_scanner : public ClassMethKwargs<get_scanner>
 
         try
         {
-            auto scanner = arki::scan::Scanner::get_scanner(
+            auto scanner = arki::data::Scanner::get_scanner(
                 dataformat_from_python(arg_format));
             return (PyObject*)arki::python::scan::scanner_create(scanner);
         }
@@ -149,7 +149,7 @@ Scanner for binary data.
 
     //     try {
     //         new(&(self->scanner))
-    //         std::shared_ptr<arki::scan::Scanner>(make_shared<arki:scan::Scanner>());
+    //         std::shared_ptr<arki::data::Scanner>(make_shared<arki:data::Scanner>());
     //     } ARKI_CATCH_RETURN_INT
 
     //     return 0;
@@ -265,13 +265,13 @@ void load_scanner_scripts()
 }
 
 arkipy_scan_Scanner*
-scanner_create(std::shared_ptr<arki::scan::Scanner> scanner)
+scanner_create(std::shared_ptr<arki::data::Scanner> scanner)
 {
     arkipy_scan_Scanner* result =
         PyObject_New(arkipy_scan_Scanner, arkipy_scan_Scanner_Type);
     if (!result)
         throw PythonException();
-    new (&(result->scanner)) std::shared_ptr<arki::scan::Scanner>(scanner);
+    new (&(result->scanner)) std::shared_ptr<arki::data::Scanner>(scanner);
     return result;
 }
 

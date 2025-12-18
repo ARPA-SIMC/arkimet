@@ -1,10 +1,10 @@
 #include "arki/core/file.h"
+#include "arki/data/grib.h"
+#include "arki/data/validator.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/tests.h"
-#include "arki/scan/grib.h"
-#include "arki/scan/validator.h"
 #include "arki/types/area.h"
 #include "arki/types/level.h"
 #include "arki/types/origin.h"
@@ -31,7 +31,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_grib");
+} test("arki_data_grib");
 
 void Tests::register_tests()
 {
@@ -41,7 +41,7 @@ void Tests::register_tests()
         Metadata md;
         vector<uint8_t> buf;
 
-        const scan::Validator& v = scan::grib::validator();
+        const data::Validator& v = data::grib::validator();
 
         sys::File fd("inbound/test.grib1", O_RDONLY);
         v.validate_file(fd, 0, 7218);
@@ -76,7 +76,7 @@ void Tests::register_tests()
 // opening without scanning, and eccodes takes a long time to skip all those
 // null bytes
 add_method("bigfile", [] {
-    scan::Grib scanner;
+    data::Grib scanner;
     int fd = open("bigfile.grib1", O_WRONLY | O_CREAT, 0644);
     ensure(fd != -1);
     ensure(ftruncate(fd, 0xFFFFFFFF) != -1);

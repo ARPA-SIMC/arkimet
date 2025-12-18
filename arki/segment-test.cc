@@ -1,7 +1,7 @@
 #include "arki/core/lock.h"
+#include "arki/data.h"
 #include "arki/matcher/parser.h"
 #include "arki/query.h"
-#include "arki/scan.h"
 #include "arki/segment/data.h"
 #include "arki/segment/data/gz.h"
 #include "arki/segment/data/tar.h"
@@ -75,7 +75,7 @@ template <class Fixture> struct RepackForever : public TestSubprocess
     {
         try
         {
-            arki::scan::init();
+            arki::data::init();
             // Read segment contents, to use for repacking later
             metadata::Collection mds;
             {

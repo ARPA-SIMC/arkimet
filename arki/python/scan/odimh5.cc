@@ -1,4 +1,5 @@
 #include "odimh5.h"
+#include "arki/data/odimh5.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/python/common.h"
@@ -6,7 +7,6 @@
 #include "arki/python/scan.h"
 #include "arki/python/utils/methods.h"
 #include "arki/python/utils/type.h"
-#include "arki/scan/odimh5.h"
 
 namespace arki::python::scan {
 
@@ -26,7 +26,7 @@ static void load_odimh5scanner_object()
     odimh5scanner_object = obj.release();
 }
 
-class PythonOdimh5Scanner : public arki::scan::OdimScanner
+class PythonOdimh5Scanner : public arki::data::OdimScanner
 {
 protected:
     std::shared_ptr<Metadata>
@@ -87,7 +87,7 @@ void register_scan_odimh5(PyObject* scan)
 }
 void init_scanner_odimh5()
 {
-    arki::scan::Scanner::register_factory(DataFormat::ODIMH5, [] {
+    arki::data::Scanner::register_factory(DataFormat::ODIMH5, [] {
         return std::make_shared<PythonOdimh5Scanner>();
     });
 }

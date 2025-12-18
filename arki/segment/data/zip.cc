@@ -1,12 +1,12 @@
 #include "zip.h"
+#include "arki/data.h"
+#include "arki/data/validator.h"
 #include "arki/exceptions.h"
 #include "arki/iotrace.h"
 #include "arki/metadata.h"
 #include "arki/metadata/archive.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
-#include "arki/scan.h"
-#include "arki/scan/validator.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
 #include "arki/utils/files.h"
@@ -180,7 +180,7 @@ struct CheckBackend : public AppendCheckBackend
             if (accurate)
             {
                 string fname = str::joinpath(abspath, ZipReader::data_fname(idx,
-        format)); metadata::Collection mds; try { scan::scan(fname,
+        format)); metadata::Collection mds; try { data::scan(fname,
         std::make_shared<core::lock::Null>(), format, [&](unique_ptr<Metadata>
         md) { mds.acquire(std::move(md)); return true;
                     });
@@ -299,7 +299,7 @@ bool Reader::scan_data(metadata_dest_func dest)
     std::sort(spans.begin(), spans.end());
 
     // Scan them one by one
-    auto scanner = arki::scan::Scanner::get_scanner(segment().format());
+    auto scanner = arki::data::Scanner::get_scanner(segment().format());
     for (const auto& span : spans)
     {
         std::vector<uint8_t> data = zip.get(span);
@@ -354,7 +354,7 @@ State Checker::check(std::function<void(const std::string&)> reporter,
     return checker.check();
 }
 
-void Checker::validate(Metadata& md, const arki::scan::Validator& v)
+void Checker::validate(Metadata& md, const arki::data::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
@@ -389,7 +389,7 @@ core::Pending Checker::repack(Collection& mds, const RepackConfig&)
 
     Creator creator(segment(), mds, tmpabspath);
     creator.validator =
-        &arki::scan::Validator::by_filename(segment().abspath());
+        &arki::data::Validator::by_filename(segment().abspath());
 
     creator.create();
 

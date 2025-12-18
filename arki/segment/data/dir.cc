@@ -1,12 +1,12 @@
 #include "dir.h"
+#include "arki/data.h"
+#include "arki/data/validator.h"
 #include "arki/exceptions.h"
 #include "arki/iotrace.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
-#include "arki/scan/validator.h"
 #include "arki/stream.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
@@ -213,7 +213,7 @@ struct CheckBackend : public AppendCheckBackend
         // Check files on disk that were not accounted for
         for (const auto& di : scanner.on_disk)
         {
-            auto scanner = arki::scan::Scanner::get_scanner(segment.format());
+            auto scanner = arki::data::Scanner::get_scanner(segment.format());
             auto idx     = di.first;
             if (accurate)
             {
@@ -606,7 +606,7 @@ State BaseChecker<Data>::check(std::function<void(const std::string&)> reporter,
 }
 
 template <typename Data>
-void BaseChecker<Data>::validate(Metadata& md, const arki::scan::Validator& v)
+void BaseChecker<Data>::validate(Metadata& md, const arki::data::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
@@ -768,7 +768,7 @@ core::Pending BaseChecker<Data>::repack(Collection& mds,
     Creator creator(this->segment(), mds, tmpabspath);
     creator.hardlink = true;
     creator.validator =
-        &arki::scan::Validator::by_format(this->segment().format());
+        &arki::data::Validator::by_format(this->segment().format());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it
@@ -901,7 +901,7 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
                    metadata_dest_func dest)
 {
     // Scan them one by one
-    auto scanner = arki::scan::Scanner::get_scanner(segment.format());
+    auto scanner = arki::data::Scanner::get_scanner(segment.format());
     for (const auto& fi : on_disk)
     {
         auto md = scanner->scan_singleton(segment.abspath() / fi.second.fname);
@@ -918,7 +918,7 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter,
                    metadata_dest_func dest)
 {
     // Scan them one by one
-    auto scanner = arki::scan::Scanner::get_scanner(segment.format());
+    auto scanner = arki::data::Scanner::get_scanner(segment.format());
     for (const auto& fi : on_disk)
     {
         std::shared_ptr<Metadata> md;

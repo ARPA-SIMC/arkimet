@@ -1,5 +1,5 @@
-#ifndef ARKI_SCAN_VALIDATOR_H
-#define ARKI_SCAN_VALIDATOR_H
+#ifndef ARKI_DATA_VALIDATOR_H
+#define ARKI_DATA_VALIDATOR_H
 
 #include <arki/core/fwd.h>
 #include <arki/defs.h>
@@ -7,8 +7,7 @@
 #include <filesystem>
 #include <string>
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 /**
  * Validate data
@@ -54,7 +53,6 @@ protected:
     [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif

@@ -1,11 +1,11 @@
 #include "gz.h"
+#include "arki/data.h"
+#include "arki/data/validator.h"
 #include "arki/exceptions.h"
 #include "arki/iotrace.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
-#include "arki/scan.h"
-#include "arki/scan/validator.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/compress.h"
 #include "arki/utils/files.h"
@@ -172,7 +172,7 @@ Reader<Data>::Reader(const std::shared_ptr<const Data> data,
 
 template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = arki::scan::Scanner::get_scanner(this->segment().format());
+    auto scanner = arki::data::Scanner::get_scanner(this->segment().format());
     compress::TempUnzip uncompressed(this->segment().abspath());
     return scanner->scan_segment(this->segment().reader(this->lock), dest);
 }
@@ -251,7 +251,7 @@ core::Pending Checker<Data>::repack(Collection& mds, const RepackConfig& cfg)
 
         Creator creator(this->segment(), mds, tmpabspath);
         creator.validator =
-            &arki::scan::Validator::by_filename(this->segment().abspath());
+            &arki::data::Validator::by_filename(this->segment().abspath());
         if (Data::padding == 1)
             creator.padding.push_back('\n');
         creator.create();
@@ -270,7 +270,7 @@ core::Pending Checker<Data>::repack(Collection& mds, const RepackConfig& cfg)
         Creator creator(this->segment(), mds, tmpabspath, tmpidxabspath,
                         cfg.gz_group_size);
         creator.validator =
-            &arki::scan::Validator::by_filename(this->segment().abspath());
+            &arki::data::Validator::by_filename(this->segment().abspath());
         if (Data::padding == 1)
             creator.padding.push_back('\n');
         creator.create();

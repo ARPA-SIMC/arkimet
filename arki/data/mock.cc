@@ -16,8 +16,7 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 MockEngine::MockEngine()
 {
@@ -276,5 +275,4 @@ bool MockScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func 
 }
 #endif
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

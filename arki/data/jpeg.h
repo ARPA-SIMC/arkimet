@@ -1,31 +1,30 @@
-#ifndef ARKI_SCAN_ODIMH5_H
-#define ARKI_SCAN_ODIMH5_H
+#ifndef ARKI_DATA_JPEG_H
+#define ARKI_DATA_JPEG_H
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 class MockEngine;
 
-namespace odimh5 {
+namespace jpeg {
 const Validator& validator();
 }
 
-class OdimScanner : public Scanner
+class JPEGScanner : public Scanner
 {
     void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
 
 protected:
     virtual std::shared_ptr<Metadata>
-    scan_h5_file(const std::filesystem::path& pathname) = 0;
+    scan_jpeg_file(const std::filesystem::path& pathname) = 0;
     virtual std::shared_ptr<Metadata>
-    scan_h5_data(const std::vector<uint8_t>& data);
+    scan_jpeg_data(const std::vector<uint8_t>& data) = 0;
 
 public:
-    DataFormat name() const override { return DataFormat::ODIMH5; }
+    DataFormat name() const override { return DataFormat::JPEG; }
 
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
@@ -37,24 +36,23 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 };
 
-class MockOdimScanner : public OdimScanner
+class MockJPEGScanner : public JPEGScanner
 {
 protected:
     MockEngine* engine;
 
     std::shared_ptr<Metadata>
-    scan_h5_file(const std::filesystem::path& pathname) override;
+    scan_jpeg_file(const std::filesystem::path& pathname) override;
     std::shared_ptr<Metadata>
-    scan_h5_data(const std::vector<uint8_t>& data) override;
+    scan_jpeg_data(const std::vector<uint8_t>& data) override;
 
 public:
-    MockOdimScanner();
-    virtual ~MockOdimScanner();
+    MockJPEGScanner();
+    virtual ~MockJPEGScanner();
 };
 
-void register_odimh5_scanner();
+void register_jpeg_scanner();
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif

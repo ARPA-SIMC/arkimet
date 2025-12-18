@@ -1,8 +1,8 @@
 #include "bufr.h"
+#include "arki/data/mock.h"
+#include "arki/data/validator.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/scan/mock.h"
-#include "arki/scan/validator.h"
 #include "arki/segment.h"
 #include "arki/types/origin.h"
 #include "arki/types/product.h"
@@ -26,8 +26,7 @@ using namespace dballe;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 
 namespace bufr {
 
@@ -379,5 +378,4 @@ void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg,
     md->merge(*new_md);
 }
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

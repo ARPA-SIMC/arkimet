@@ -1,8 +1,8 @@
 #include "grib.h"
+#include "arki/data/mock.h"
+#include "arki/data/validator.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/scan/mock.h"
-#include "arki/scan/validator.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/utils/files.h"
@@ -29,7 +29,7 @@ using namespace arki::utils;
         }                                                                      \
     } while (0)
 
-namespace arki::scan {
+namespace arki::data {
 
 GribScanner::GribScanner()
 {
@@ -260,4 +260,4 @@ void GribHandle::close()
 
 } // namespace grib
 
-} // namespace arki::scan
+} // namespace arki::data

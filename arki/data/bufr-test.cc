@@ -1,9 +1,9 @@
+#include "arki/data/bufr.h"
+#include "arki/data/validator.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/tests.h"
-#include "arki/scan/bufr.h"
-#include "arki/scan/validator.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/sys.h"
@@ -19,7 +19,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_bufr");
+} test("arki_data_bufr");
 
 void Tests::register_tests()
 {
@@ -29,7 +29,7 @@ void Tests::register_tests()
         Metadata md;
         vector<uint8_t> buf;
 
-        const scan::Validator& v = scan::bufr::validator();
+        const data::Validator& v = data::bufr::validator();
 
         sys::File fd("inbound/test.bufr", O_RDONLY);
         v.validate_file(fd, 0, 194);

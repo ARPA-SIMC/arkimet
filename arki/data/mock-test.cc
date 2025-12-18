@@ -11,7 +11,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_mock");
+} test("arki_data_mock");
 
 void Tests::register_tests()
 {

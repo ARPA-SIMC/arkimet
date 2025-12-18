@@ -1,8 +1,8 @@
-#ifndef ARKI_SCAN_BUFR_H
-#define ARKI_SCAN_BUFR_H
+#ifndef ARKI_DATA_BUFR_H
+#define ARKI_DATA_BUFR_H
 
+#include <arki/data.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan.h>
 #include <string>
 
 namespace dballe {
@@ -11,8 +11,7 @@ struct Message;
 struct Importer;
 } // namespace dballe
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 class MockEngine;
 
 namespace bufr {
@@ -63,6 +62,5 @@ public:
     virtual ~MockBufrScanner();
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 #endif

@@ -1,8 +1,8 @@
 #ifndef ARKI_SEGMENT_COMMON_H
 #define ARKI_SEGMENT_COMMON_H
 
+#include <arki/data/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan/fwd.h>
 #include <arki/segment/data.h>
 #include <arki/types/fwd.h>
 #include <functional>
@@ -15,7 +15,7 @@ struct AppendCreator
 {
     const Segment& segment;
     arki::metadata::Collection& mds;
-    const arki::scan::Validator* validator = nullptr;
+    const arki::data::Validator* validator = nullptr;
 
     AppendCreator(const Segment& segment, arki::metadata::Collection& mds);
     virtual ~AppendCreator();
@@ -43,7 +43,7 @@ struct AppendCheckBackend
     const arki::metadata::Collection& mds;
     bool accurate                          = false;
     size_t end_of_known_data               = 0;
-    const arki::scan::Validator* validator = nullptr;
+    const arki::data::Validator* validator = nullptr;
 
     AppendCheckBackend(std::function<void(const std::string&)> reporter,
                        const Segment& segment,

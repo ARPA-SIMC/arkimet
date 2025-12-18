@@ -1,5 +1,5 @@
-#ifndef ARKI_SCAN_MOCK_H
-#define ARKI_SCAN_MOCK_H
+#ifndef ARKI_DATA_MOCK_H
+#define ARKI_DATA_MOCK_H
 
 #include <arki/metadata/fwd.h>
 #include <cstdint>
@@ -8,15 +8,12 @@
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace utils {
-namespace sqlite {
+namespace arki::utils::sqlite {
 class SQLiteDB;
 class Query;
-} // namespace sqlite
-} // namespace utils
+} // namespace arki::utils::sqlite
 
-namespace scan {
+namespace arki::data {
 
 class MockEngine
 {
@@ -40,6 +37,5 @@ public:
     std::shared_ptr<Metadata> by_checksum(const std::string& checksum);
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 #endif
