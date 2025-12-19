@@ -1,5 +1,5 @@
 from arkimet.scan.grib import Scanner
-from arkimet.scan import timedef
+from arkimet.scan.utils import timedef
 import datetime as dt
 
 

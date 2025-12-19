@@ -1,5 +1,5 @@
 from arkimet.scan.bufr import Scanner, read_area_fixed, read_proddef
-from arkimet.scan import timedef
+from arkimet.scan.utils import timedef
 
 
 def read_timerange(msg):
