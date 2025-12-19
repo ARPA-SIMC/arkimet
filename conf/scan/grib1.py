@@ -1,6 +1,6 @@
 from arkimet.scan.grib import Scanner
 from arkimet.scan import timedef
-import datetime
+import datetime as dt
 
 cosmo_centres = {78, 80, 200}
 
@@ -55,7 +55,7 @@ def scan_grib1(grib, md):
     year = (grib["centuryOfReferenceTimeOfData"] - 1) * 100 + grib["yearOfCentury"]
     md["reftime"] = {
         "style": "POSITION",
-        "time": datetime.datetime(year, grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
+        "time": dt.datetime(year, grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
     }
 
     # Run

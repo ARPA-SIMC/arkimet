@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 
 from arkimet.scan.jpeg import Scanner, ScannedImage
@@ -15,29 +15,34 @@ def from_decimal(val):
 
 
 def scan_reftime(sample: ScannedImage, md: "arkimet.Metadata"):
-    dt = None
+    d = None
 
     gps_date = sample.get_gps("GPSDateStamp")
     gps_time = sample.get_gps("GPSTimeStamp")
     if gps_date is not None and gps_time is not None:
         str_date = str(gps_date)
-        dt = datetime.datetime(
-                int(str_date[:4], 10), int(str_date[5:7], 10), int(str_date[8:10], 10),
-                int(from_decimal(gps_time[0])), int(from_decimal(gps_time[1])), int(from_decimal(gps_time[2])))
+        d = dt.datetime(
+            int(str_date[:4], 10),
+            int(str_date[5:7], 10),
+            int(str_date[8:10], 10),
+            int(from_decimal(gps_time[0])),
+            int(from_decimal(gps_time[1])),
+            int(from_decimal(gps_time[2])),
+        )
         md["reftime"] = {
             "style": "POSITION",
-            "time": dt,
+            "time": d,
         }
 
-    if dt is None:
+    if d is None:
         img_dt = sample.get_image("DateTime")
         if img_dt is not None:
-            dt = datetime.datetime.strptime(str(img_dt), "%Y:%m:%d %H:%M:%S")
+            d = dt.datetime.strptime(str(img_dt), "%Y:%m:%d %H:%M:%S")
 
-    if dt is not None:
+    if d is not None:
         md["reftime"] = {
             "style": "POSITION",
-            "time": dt,
+            "time": d,
         }
 
 
@@ -54,12 +59,14 @@ def scan_area(sample: ScannedImage, md: "arkimet.Metadata"):
     lat = round((from_decimal(gps_lat[0]) + from_decimal(gps_lat[1]) / 60 + from_decimal(gps_lat[2]) / 3600) * 10000)
     lon = round((from_decimal(gps_lon[0]) + from_decimal(gps_lon[1]) / 60 + from_decimal(gps_lon[2]) / 3600) * 10000)
 
-    if gps_lat_ref == 'S':
+    if gps_lat_ref == "S":
         lat = -lat
-    if gps_lon_ref == 'W':
+    if gps_lon_ref == "W":
         lon = -lon
 
-    md["area"] = {"style": "GRIB", "value": {
+    md["area"] = {
+        "style": "GRIB",
+        "value": {
             "lat": lat,
             "lon": lon,
         },

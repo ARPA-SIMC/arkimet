@@ -1,6 +1,6 @@
 from arkimet.scan.grib import Scanner
 from arkimet.scan import timedef
-import datetime
+import datetime as dt
 
 
 METEOSAT_NAMES = {
@@ -11,18 +11,18 @@ METEOSAT_NAMES = {
 }
 
 METEOSAT_CHAN_NAMES = {
-    6:   "VIS006",
-    8:   "VIS008",
-    16:  "IR_016",
-    39:  "IR_039",
-    62:  "WV_062",
-    73:  "WV_073",
-    87:  "IR_087",
-    97:  "IR_097",
+    6: "VIS006",
+    8: "VIS008",
+    16: "IR_016",
+    39: "IR_039",
+    62: "WV_062",
+    73: "WV_073",
+    87: "IR_087",
+    97: "IR_097",
     108: "IR_108",
     120: "IR_120",
     134: "IR_134",
-    7:   "HRV",
+    7: "HRV",
 }
 
 
@@ -30,8 +30,7 @@ def scan_grib2(grib, md):
     # Reference time
     md["reftime"] = {
         "style": "POSITION",
-        "time": datetime.datetime(grib["year"], grib["month"], grib["day"],
-                                  grib["hour"], grib["minute"], grib["second"]),
+        "time": dt.datetime(grib["year"], grib["month"], grib["day"], grib["hour"], grib["minute"], grib["second"]),
     }
 
     # Run
@@ -46,7 +45,7 @@ def scan_grib2(grib, md):
         process_id = grib.get_long("observationGeneratingProcessIdentifier")
     background_process_id = grib.get_long("backgroundGeneratingProcessIdentifier")
     if background_process_id is None:
-        background_process_id = 0xff
+        background_process_id = 0xFF
     md["origin"] = {
         "style": "GRIB2",
         "centre": grib.get_long("centre"),
@@ -76,7 +75,9 @@ def scan_grib2(grib, md):
     if "typeOfSecondFixedSurface" in grib and grib["typeOfSecondFixedSurface"] != 255:
         level = {
             "style": "GRIB2D",
-            "l1": ltype1, "scale1": lscale1, "value1": lvalue1,
+            "l1": ltype1,
+            "scale1": lscale1,
+            "value1": lvalue1,
             "l2": grib["typeOfSecondFixedSurface"],
         }
         if grib.get_long("scaleFactorOfSecondFixedSurface") != -1:

@@ -1,12 +1,12 @@
 # python 3.7+ from __future__ import annotations
 import argparse
-import datetime
 import logging
 import re
 import socket
 import subprocess
 import sys
 import threading
+import datetime as dt
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ForkingMixIn
 from urllib.parse import unquote, urlsplit
@@ -142,7 +142,7 @@ class Handler(BaseHTTPRequestHandler):
         logging.info(
             '%s - - [%s] "%s" %s %s',
             self.client_address[0],
-            datetime.datetime.now(datetime.UTC).strftime("%d/%b/%Y:%H:%M:%S +0000"),
+            dt.datetime.now(dt.UTC).strftime("%d/%b/%Y:%H:%M:%S +0000"),
             self.requestline,
             code,
             size,

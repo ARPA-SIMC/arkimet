@@ -1,6 +1,6 @@
 # python 3.7+ from __future__ import annotations
 import arkimet as arki
-import datetime
+import datetime as dt
 import shutil
 import unittest
 import os
@@ -522,7 +522,7 @@ class ArkiCheckTestsBase(CmdlineTestMixin, unittest.TestCase):
                 self.assertCheckClean(env, files=2, items=2)
                 self.assertQueryResults(env, imported, [1, 2])
 
-    def _summary_range(self, env: Env, cfg: Optional[arki.cfg.Section] = None) -> Tuple[datetime.date, datetime.date]:
+    def _summary_range(self, env: Env, cfg: Optional[arki.cfg.Section] = None) -> Tuple[dt.date, dt.date]:
         """Get the reftime range of the dataset according to summary."""
         with env.session.dataset_reader(cfg=cfg) as source:
             summary = source.query_summary()
@@ -538,7 +538,7 @@ class ArkiCheckTestsBase(CmdlineTestMixin, unittest.TestCase):
             [md["reftime"] for md in queried],
             ["2007-07-07T00:00:00Z", "2007-07-08T13:00:00Z", "2007-10-09T00:00:00Z"],
         )
-        self.assertEqual(self._summary_range(env, cfg), (datetime.date(2007, 7, 7), datetime.date(2007, 10, 9)))
+        self.assertEqual(self._summary_range(env, cfg), (dt.date(2007, 7, 7), dt.date(2007, 10, 9)))
 
         to_delete = [queried[0]]
         to_delete[0].make_absolute()
@@ -552,7 +552,7 @@ class ArkiCheckTestsBase(CmdlineTestMixin, unittest.TestCase):
             [md["reftime"] for md in post_delete],
             ["2007-07-08T13:00:00Z", "2007-10-09T00:00:00Z"],
         )
-        self.assertEqual(self._summary_range(env, cfg), (datetime.date(2007, 7, 8), datetime.date(2007, 10, 9)))
+        self.assertEqual(self._summary_range(env, cfg), (dt.date(2007, 7, 8), dt.date(2007, 10, 9)))
 
     def test_delete_from_online(self) -> None:
         with self.datasets() as env:

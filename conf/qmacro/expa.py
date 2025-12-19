@@ -1,6 +1,6 @@
 # python 3.7+ from __future__ import annotations
 import re
-import datetime
+import datetime as dt
 
 
 DATASET_ALIASES = {
@@ -19,7 +19,8 @@ class Row:
 
 
 class Querymacro:
-    re_line = re.compile(r"""
+    re_line = re.compile(
+        r"""
         ^
         ds:(?P<ds>[^.]+)\.\s+  # Dataset
         d:(?P<d>[^.]+)\.\s+    # Date
@@ -27,7 +28,9 @@ class Querymacro:
         s:(?P<s>[^.]+)\.\s+    # Timerange
         l:(?P<l>[^.]+)\.\s+    # Level
         v:(?P<v>[^.]+)\.\s*    # Product
-        $""", re.X)
+        $""",
+        re.X,
+    )
 
     re_date_today = re.compile(r"^[Tt]$")
     re_date_today_relative = re.compile(r"^[Tt]\s*(?:(?P<dir>[+-])\s*(?P<days>\d+))?$")
@@ -41,7 +44,7 @@ class Querymacro:
         # The argument, if provided, is a date used to expand @ in date expressions
         macro_args = macro_args.strip()
         if macro_args:
-            self.date_ref = datetime.datetime.strptime(macro_args, "%Y-%m-%d").date()
+            self.date_ref = dt.datetime.strptime(macro_args, "%Y-%m-%d").date()
         else:
             self.date_ref = None
 
@@ -55,9 +58,7 @@ class Querymacro:
                 raise RuntimeError("query:{}: line not parsed: {}".format(idx, repr(line)))
 
             dsname = mo.group("ds")
-            reftime = datetime.datetime.combine(
-                    self._to_date(mo.group("d")),
-                    self._to_time(mo.group("t")))
+            reftime = dt.datetime.combine(self._to_date(mo.group("d")), self._to_time(mo.group("t")))
 
             matcher = self.session.matcher(
                 "reftime: ={reftime:%Y-%m-%dT%H:%M:%S}Z; "
@@ -65,7 +66,7 @@ class Querymacro:
                     reftime=reftime,
                     trange=self._to_matcher(mo.group("s")),
                     level=self._to_matcher(mo.group("l")),
-                    product=self._to_matcher(mo.group("v"))
+                    product=self._to_matcher(mo.group("v")),
                 )
             )
 
@@ -94,8 +95,9 @@ class Querymacro:
             if not mds:
                 raise RuntimeError("row {}:{} did not produce any results".format(row.lineno, repr(row.line)))
             if len(mds) > 1:
-                raise RuntimeError("row {}:{} produced {} results instead of one".format(
-                    row.lineno, repr(row.line), len(mds)))
+                raise RuntimeError(
+                    "row {}:{} produced {} results instead of one".format(row.lineno, repr(row.line), len(mds))
+                )
             return mds[0]
 
     def query_data(self, matcher=None, with_data=False, on_metadata=None):
@@ -121,35 +123,35 @@ class Querymacro:
         # Today
         mo = self.re_date_today.match(d)
         if mo:
-            return datetime.date.today()
+            return dt.date.today()
 
         # Relative to today
         mo = self.re_date_today_relative.match(d)
         if mo:
             if mo.group("dir") is None:
-                return datetime.date.today()
+                return dt.date.today()
             elif mo.group("dir") == "+":
-                return datetime.date.today() + datetime.timedelta(days=int(mo.group("days")))
+                return dt.date.today() + dt.timedelta(days=int(mo.group("days")))
             else:
-                return datetime.date.today() - datetime.timedelta(days=int(mo.group("days")))
+                return dt.date.today() - dt.timedelta(days=int(mo.group("days")))
 
         # Relative to argument
         mo = self.re_date_relative.match(d)
         if mo:
             if not self.date_ref:
-                raise RuntimeError("if using @, please invoke as --qmacro=\"expa YYYY-MM-DD\"")
+                raise RuntimeError('if using @, please invoke as --qmacro="expa YYYY-MM-DD"')
 
             if mo.group("dir") is None:
                 return self.date_ref
             if mo.group("dir") == "+":
-                return self.date_ref + datetime.timedelta(days=int(mo.group("days")))
+                return self.date_ref + dt.timedelta(days=int(mo.group("days")))
             else:
-                return self.date_ref - datetime.timedelta(days=int(mo.group("days")))
+                return self.date_ref - dt.timedelta(days=int(mo.group("days")))
 
         # YYYY-MM-DD
         mo = self.re_date_iso.match(d)
         if mo:
-            return datetime.datetime.strptime(d, "%Y-%m-%d").date()
+            return dt.datetime.strptime(d, "%Y-%m-%d").date()
 
         raise RuntimeError("date expression {} not recognised".format(repr(d)))
 
@@ -158,4 +160,4 @@ class Querymacro:
         if not mo:
             raise RuntimeError("time {} is not in form HHMM".format(repr(t)))
 
-        return datetime.time(int(mo.group("h")), int(mo.group("m")))
+        return dt.time(int(mo.group("h")), int(mo.group("m")))

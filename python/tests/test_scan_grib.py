@@ -3,7 +3,7 @@ import binascii
 import os
 import arkimet as arki
 from arkimet.test import skip_unless_arpae_tests
-import datetime
+import datetime as dt
 
 
 class TestGrib(unittest.TestCase):
@@ -106,7 +106,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes[0]["type"], "note")
         self.assertEqual(notes[0]["value"], "Scanned from test.grib1:0+7218")
-        self.assertIsInstance(notes[0]["time"], datetime.datetime)
+        self.assertIsInstance(notes[0]["time"], dt.datetime)
 
         self.assertEqual(md["origin"], "GRIB1(200, 000, 101)")
         self.assertEqual(md["product"], "GRIB1(200, 140, 229)")
@@ -171,7 +171,7 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes[0]["type"], "note")
         self.assertEqual(notes[0]["value"], "Scanned from padded.grib1:100+7218")
-        self.assertIsInstance(notes[0]["time"], datetime.datetime)
+        self.assertIsInstance(notes[0]["time"], dt.datetime)
 
         self.assertEqual(md["origin"], "GRIB1(200, 000, 101)")
         self.assertEqual(md["product"], "GRIB1(200, 140, 229)")
