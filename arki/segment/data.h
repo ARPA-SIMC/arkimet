@@ -5,9 +5,9 @@
 
 #include <arki/core/fwd.h>
 #include <arki/core/transaction.h>
+#include <arki/data/fwd.h>
 #include <arki/defs.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan/fwd.h>
 #include <arki/segment.h>
 #include <arki/segment/defs.h>
 #include <arki/segment/fwd.h>

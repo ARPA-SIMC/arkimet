@@ -1,5 +1,5 @@
 #include "arki/metadata/tests.h"
-#include "mock.h"
+#include "inbound.h"
 
 namespace {
 using namespace std;
@@ -11,7 +11,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_mock");
+} test("arki_metadata_inbound");
 
 void Tests::register_tests()
 {

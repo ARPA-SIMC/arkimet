@@ -11,7 +11,6 @@
 #include "arki/dataset/testlarge.h"
 #include "arki/libconfig.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include <memory>

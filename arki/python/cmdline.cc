@@ -1,6 +1,7 @@
 #include "cmdline.h"
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
+#include "arki/data.h"
 #include "arki/dataset/fromfunction.h"
 #include "arki/dataset/pool.h"
 #include "arki/dataset/session.h"
@@ -15,7 +16,6 @@
 #include "arki/python/utils/methods.h"
 #include "arki/python/utils/type.h"
 #include "arki/python/utils/values.h"
-#include "arki/scan.h"
 #include "arki/stream.h"
 
 using namespace arki::python;
@@ -100,7 +100,7 @@ bool foreach_file(std::shared_ptr<arki::dataset::Session> session,
                   BinaryInputFile& file, DataFormat format,
                   std::function<void(arki::dataset::Reader&)> dest)
 {
-    auto scanner = scan::Scanner::get_scanner(format);
+    auto scanner = data::Scanner::get(format);
 
     core::cfg::Section cfg;
     cfg.set("format", format_name(format));

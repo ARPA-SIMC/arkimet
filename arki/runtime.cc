@@ -1,8 +1,8 @@
 #include "runtime.h"
+#include "arki/data.h"
 #include "arki/dataset/querymacro.h"
 #include "arki/iotrace.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/types-init.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -166,7 +166,7 @@ void init()
         return;
     types::init_default_types();
     iotrace::init();
-    scan::init();
+    data::init();
     dataset::qmacro::init();
     initialized = true;
 }

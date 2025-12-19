@@ -1,12 +1,11 @@
 #include "fd.h"
+#include "arki/data.h"
 #include "arki/exceptions.h"
 #include "arki/iotrace.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
-#include "arki/scan/validator.h"
 #include "arki/stream.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
@@ -189,7 +188,7 @@ Reader<Data>::Reader(std::shared_ptr<const Data> data,
 template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
-    auto scanner        = arki::scan::Scanner::get_scanner(segment.format());
+    auto scanner        = arki::data::Scanner::get(segment.format());
     return scanner->scan_segment(this->segment().reader(this->lock), dest);
 }
 
@@ -361,7 +360,7 @@ core::Pending Checker<Data, File>::repack(Collection& mds,
 
     Creator<File> creator(this->segment(), mds, tmpabspath);
     creator.validator =
-        &arki::scan::Validator::by_filename(this->segment().abspath());
+        &arki::data::Validator::by_filename(this->segment().abspath());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it

@@ -3,24 +3,17 @@
 
 /// Scan a VM2 file for metadata
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
-
-namespace vm2 {
+namespace arki::data::vm2 {
 const Validator& validator();
-}
 
-class Vm2 : public Scanner
+class Scanner : public data::Scanner
 {
 public:
-    Vm2();
-    virtual ~Vm2();
-
     DataFormat name() const override { return DataFormat::VM2; }
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
@@ -31,12 +24,9 @@ public:
     std::shared_ptr<Metadata>
     scan_singleton(const std::filesystem::path& abspath) override;
     void normalize_before_dispatch(Metadata& md) override;
-
-    /// Reconstruct a VM2 based on metadata and a string value
-    static std::vector<uint8_t> reconstruct(const Metadata& md,
-                                            const std::string& value);
+    std::vector<uint8_t> reconstruct(const Metadata& md,
+                                     const std::string& value) const override;
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data::vm2
 #endif

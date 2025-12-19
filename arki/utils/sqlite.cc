@@ -69,7 +69,10 @@ SQLiteDB::~SQLiteDB()
 void SQLiteDB::open(const std::filesystem::path& pathname, int timeout_ms)
 {
     int rc;
-    rc = sqlite3_open(pathname.c_str(), &m_db);
+    rc = sqlite3_open_v2(pathname.c_str(), &m_db,
+                         SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE |
+                             SQLITE_OPEN_FULLMUTEX,
+                         nullptr);
     if (rc != SQLITE_OK)
         throw SQLiteError(m_db, "opening database");
 

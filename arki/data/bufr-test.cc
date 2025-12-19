@@ -1,9 +1,8 @@
+#include "arki/data/bufr.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/tests.h"
-#include "arki/scan/bufr.h"
-#include "arki/scan/validator.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/utils/sys.h"
@@ -19,7 +18,7 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_bufr");
+} test("arki_data_bufr");
 
 void Tests::register_tests()
 {
@@ -29,7 +28,7 @@ void Tests::register_tests()
         Metadata md;
         vector<uint8_t> buf;
 
-        const scan::Validator& v = scan::bufr::validator();
+        const data::Validator& v = data::bufr::validator();
 
         sys::File fd("inbound/test.bufr", O_RDONLY);
         v.validate_file(fd, 0, 194);
@@ -54,6 +53,25 @@ void Tests::register_tests()
             v.validate_buf((const char*)buf.data() + 1, buf.size() - 1));
         wassert_throws(std::runtime_error,
                        v.validate_buf(buf.data(), buf.size() - 1));
+    });
+
+    // Test reading update sequence numbers
+    add_method("usn", [] {
+        auto scanner = data::Scanner::get(DataFormat::BUFR);
+
+        {
+            metadata::TestCollection mdc("inbound/synop-gts.bufr");
+            int usn;
+            wassert_true(scanner->update_sequence_number(mdc[0], usn));
+            wassert(actual(usn) == 0);
+        }
+
+        {
+            metadata::TestCollection mdc("inbound/synop-gts-usn2.bufr");
+            int usn;
+            wassert_true(scanner->update_sequence_number(mdc[0], usn));
+            wassert(actual(usn) == 2);
+        }
     });
 }
 

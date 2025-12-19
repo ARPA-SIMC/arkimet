@@ -5,7 +5,6 @@
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/segment/iseg/index.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source/blob.h"

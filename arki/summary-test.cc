@@ -21,10 +21,6 @@
 #include <sstream>
 #include <sys/fcntl.h>
 
-#ifdef HAVE_GRIBAPI
-#include "scan/grib.h"
-#endif
-
 namespace {
 using namespace std;
 using namespace arki;

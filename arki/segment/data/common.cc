@@ -1,8 +1,8 @@
 #include "common.h"
+#include "arki/data.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
-#include "arki/scan/validator.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
 #include <algorithm>
@@ -196,7 +196,7 @@ State AppendCheckBackend::validate_data()
     if (mds.empty())
         return State(SEGMENT_OK);
 
-    validator  = &arki::scan::Validator::by_format(mds[0].source().format);
+    validator  = &arki::data::Validator::get(mds[0].source().format);
     size_t end = offset_end();
 
     for (const auto& md : mds)

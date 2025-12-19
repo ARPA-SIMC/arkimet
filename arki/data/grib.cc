@@ -1,15 +1,17 @@
 #include "grib.h"
+#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/scan/mock.h"
-#include "arki/scan/validator.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
+#include "mock.h"
 #include <cstring>
+#ifdef HAVE_GRIBAPI
 #include <grib_api.h>
+#endif
 #include <unistd.h>
 
 using namespace std;
@@ -29,9 +31,45 @@ using namespace arki::utils;
         }                                                                      \
     } while (0)
 
-namespace arki::scan {
+namespace arki::data::grib {
 
-GribScanner::GribScanner()
+#ifdef HAVE_GRIBAPI
+
+/*
+ * GribHandle
+ */
+
+GribHandle::GribHandle(grib_context* context, FILE* in)
+{
+    int griberror;
+    gh = grib_handle_new_from_file(context, in, &griberror);
+    if (!gh && griberror == GRIB_END_OF_FILE)
+        return;
+    check_grib_error(griberror, "reading GRIB from file");
+}
+GribHandle::~GribHandle()
+{
+    if (gh)
+    {
+        grib_handle_delete(gh);
+        gh = nullptr;
+    }
+}
+
+void GribHandle::close()
+{
+    if (!gh)
+        return;
+
+    check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
+    gh = nullptr;
+}
+
+/*
+ * Scanner
+ */
+
+Scanner::Scanner()
 {
     // Get a grib_api context
     context = grib_context_get_default();
@@ -43,9 +81,9 @@ GribScanner::GribScanner()
     grib_multi_support_off(context);
 }
 
-void GribScanner::set_source_blob(grib_handle* gh,
-                                  std::shared_ptr<segment::Reader> reader,
-                                  FILE* in, Metadata& md)
+void Scanner::set_source_blob(grib_handle* gh,
+                              std::shared_ptr<segment::Reader> reader, FILE* in,
+                              Metadata& md)
 {
     // Get the encoded GRIB buffer from the GRIB handle
     const uint8_t* vbuf;
@@ -71,7 +109,7 @@ void GribScanner::set_source_blob(grib_handle* gh,
     md.add_note(note.str());
 }
 
-void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
+void Scanner::set_source_inline(grib_handle* gh, Metadata& md)
 {
     // Get the encoded GRIB buffer from the GRIB handle
     const uint8_t* vbuf;
@@ -84,8 +122,7 @@ void GribScanner::set_source_inline(grib_handle* gh, Metadata& md)
             DataFormat::GRIB, vector<uint8_t>(vbuf, vbuf + size)));
 }
 
-std::shared_ptr<Metadata>
-GribScanner::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 {
     grib::GribHandle gh(
         grib_handle_new_from_message(context, data.data(), data.size()));
@@ -102,8 +139,8 @@ GribScanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                               metadata_dest_func dest)
+bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                           metadata_dest_func dest)
 {
     files::RAIIFILE in(reader->segment().abspath(), "rb");
     while (true)
@@ -122,7 +159,7 @@ bool GribScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
 }
 
 std::shared_ptr<Metadata>
-GribScanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_singleton(const std::filesystem::path& abspath)
 {
     std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
@@ -147,8 +184,8 @@ GribScanner::scan_singleton(const std::filesystem::path& abspath)
     return md;
 }
 
-bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd,
-                            metadata_dest_func dest)
+bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
+                        metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
     while (true)
@@ -168,11 +205,7 @@ bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd,
     return true;
 }
 
-MockGribScanner::MockGribScanner() { engine = new MockEngine(); }
-
-MockGribScanner::~MockGribScanner() { delete engine; }
-
-std::shared_ptr<Metadata> MockGribScanner::scan(grib_handle* gh)
+std::shared_ptr<Metadata> MockScanner::scan(grib_handle* gh)
 {
     // Get the encoded GRIB buffer from the GRIB handle
     const uint8_t* vbuf;
@@ -180,10 +213,76 @@ std::shared_ptr<Metadata> MockGribScanner::scan(grib_handle* gh)
     check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
                      "cannot access the encoded GRIB data");
 
-    return engine->lookup(vbuf, size);
+    return MockEngine::get().lookup(vbuf, size);
 }
 
-namespace grib {
+#else
+
+/*
+ * GribHandle (fallback)
+ */
+
+GribHandle::GribHandle(grib_context* context, FILE* in)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+GribHandle::~GribHandle() {}
+
+void GribHandle::close()
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+/*
+ * Scanner (fallback)
+ */
+
+Scanner::Scanner()
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+void Scanner::set_source_blob(grib_handle* gh,
+                              std::shared_ptr<segment::Reader> reader, FILE* in,
+                              Metadata& md)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+void Scanner::set_source_inline(grib_handle* gh, Metadata& md)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                           metadata_dest_func dest)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+std::shared_ptr<Metadata>
+Scanner::scan_singleton(const std::filesystem::path& abspath)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
+                        metadata_dest_func dest)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+std::shared_ptr<Metadata> MockScanner::scan(grib_handle* gh)
+{
+    throw std::runtime_error("GRIB support is not available");
+}
+
+#endif
 
 struct GribValidator : public Validator
 {
@@ -232,32 +331,4 @@ static GribValidator grib_validator;
 
 const Validator& validator() { return grib_validator; }
 
-GribHandle::GribHandle(grib_context* context, FILE* in)
-{
-    int griberror;
-    gh = grib_handle_new_from_file(context, in, &griberror);
-    if (!gh && griberror == GRIB_END_OF_FILE)
-        return;
-    check_grib_error(griberror, "reading GRIB from file");
-}
-GribHandle::~GribHandle()
-{
-    if (gh)
-    {
-        grib_handle_delete(gh);
-        gh = nullptr;
-    }
-}
-
-void GribHandle::close()
-{
-    if (!gh)
-        return;
-
-    check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
-    gh = nullptr;
-}
-
-} // namespace grib
-
-} // namespace arki::scan
+} // namespace arki::data::grib

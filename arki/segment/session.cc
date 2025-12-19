@@ -2,8 +2,8 @@
 #include "arki/core/cfg.h"
 #include "arki/core/file.h"
 #include "arki/core/lock.h"
+#include "arki/data.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -58,7 +58,7 @@ bool Session::is_segment(const std::filesystem::path& relpath) const
     {
         if (S_ISDIR(st->st_mode))
             return false;
-        auto format = arki::scan::Scanner::format_from_filename(abspath.stem());
+        auto format = arki::data::format_from_filename(abspath.stem());
         return segment::data::zip::Data::can_store(format);
     }
 
@@ -67,7 +67,7 @@ bool Session::is_segment(const std::filesystem::path& relpath) const
         if (S_ISDIR(st->st_mode))
             return false;
         return segment::data::gz::Data::can_store(
-            arki::scan::Scanner::format_from_filename(abspath.stem()));
+            arki::data::format_from_filename(abspath.stem()));
     }
 
     if (extension == ".tar")
@@ -75,10 +75,10 @@ bool Session::is_segment(const std::filesystem::path& relpath) const
         if (S_ISDIR(st->st_mode))
             return false;
         return segment::data::tar::Data::can_store(
-            arki::scan::Scanner::format_from_filename(abspath.stem()));
+            arki::data::format_from_filename(abspath.stem()));
     }
 
-    auto format = arki::scan::Scanner::detect_format(abspath);
+    auto format = arki::data::detect_format(abspath);
     if (not format)
         return false;
 
@@ -95,7 +95,7 @@ std::shared_ptr<Segment>
 Session::segment_from_relpath(const std::filesystem::path& relpath) const
 {
     return segment_from_relpath_and_format(
-        relpath, arki::scan::Scanner::format_from_filename(relpath));
+        relpath, arki::data::format_from_filename(relpath));
 }
 
 std::shared_ptr<Segment>

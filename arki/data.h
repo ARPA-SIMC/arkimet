@@ -1,9 +1,9 @@
-#ifndef ARKI_SCAN_H
-#define ARKI_SCAN_H
+#ifndef ARKI_DATA_H
+#define ARKI_DATA_H
 
 #include <arki/core/fwd.h>
+#include <arki/data/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan/fwd.h>
 #include <arki/segment/fwd.h>
 #include <arki/types/fwd.h>
 #include <cstdint>
@@ -13,8 +13,19 @@
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
+namespace arki::data {
+
+/**
+ * Guess a file format from its extension.
+ */
+DataFormat format_from_filename(const std::filesystem::path& fname);
+
+/**
+ * Guess a file format from its extension.
+ *
+ * Return no value if the file format was not recognized.
+ */
+std::optional<DataFormat> detect_format(const std::filesystem::path& path);
 
 class Scanner
 {
@@ -67,26 +78,6 @@ public:
     virtual void normalize_before_dispatch(Metadata& md);
 
     /**
-     * Create a scanner for the given format
-     */
-    static std::shared_ptr<Scanner> get_scanner(DataFormat format);
-
-    static const Validator& get_validator(DataFormat format);
-
-    /**
-     * Guess a file format from its extension.
-     */
-    static DataFormat format_from_filename(const std::filesystem::path& fname);
-
-    /**
-     * Guess a file format from its extension.
-     *
-     * Return no value if the file format was not recognized.
-     */
-    static std::optional<DataFormat>
-    detect_format(const std::filesystem::path& path);
-
-    /**
      * Return the update sequence number for this data
      *
      * The data associated to the metadata is read and scanned if needed.
@@ -98,7 +89,7 @@ public:
      *   true if the update sequence number could be found, else false
      *
      */
-    static bool update_sequence_number(Metadata& md, int& usn);
+    virtual bool update_sequence_number(Metadata& md, int& usn) const;
 
     /**
      * Return the update sequence number for this data
@@ -110,15 +101,19 @@ public:
      *   true if the update sequence number could be found, else false
      *
      */
-    static bool update_sequence_number(const types::source::Blob& source,
-                                       int& usn);
+    virtual bool update_sequence_number(const types::source::Blob& source,
+                                        int& usn) const;
 
     /**
      * Reconstruct raw data based on a metadata and a value
      */
-    static std::vector<uint8_t> reconstruct(DataFormat format,
-                                            const Metadata& md,
-                                            const std::string& value);
+    virtual std::vector<uint8_t> reconstruct(const Metadata& md,
+                                             const std::string& value) const;
+
+    /**
+     * Create a scanner for the given format
+     */
+    static std::shared_ptr<Scanner> get(DataFormat format);
 
     /**
      * Register the scanner factory function for the given format
@@ -128,10 +123,53 @@ public:
                      std::function<std::shared_ptr<Scanner>()> factory);
 };
 
+/**
+ * Validate data
+ */
+class Validator
+{
+public:
+    virtual ~Validator() {}
+
+    /// Return the format checked by this validator
+    virtual DataFormat format() const = 0;
+
+    // Validate data found in a file
+    virtual void validate_file(core::NamedFileDescriptor& fd, off_t offset,
+                               size_t size) const = 0;
+
+    // Validate a memory buffer
+    virtual void validate_buf(const void* buf, size_t size) const = 0;
+
+    // Validate a metadata::Data
+    virtual void validate_data(const metadata::Data& data) const;
+
+    /**
+     * Get the validator for a given file name
+     *
+     * @returns
+     *   a pointer to a static object, which should not be deallocated.
+     */
+    static const Validator& by_filename(const std::filesystem::path& filename);
+
+    /**
+     * Get the validator for a given foramt
+     *
+     * @returns
+     *   a pointer to a static object, which should not be deallocated.
+     */
+    static const Validator& get(DataFormat format);
+
+protected:
+    [[noreturn]] void throw_check_error(core::NamedFileDescriptor& fd,
+                                        off_t offset,
+                                        const std::string& msg) const;
+    [[noreturn]] void throw_check_error(const std::string& msg) const;
+};
+
 /// Initialize scanner registry
 void init();
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif

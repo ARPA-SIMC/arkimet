@@ -1,14 +1,12 @@
-#ifndef ARKI_SCAN_ODIMH5_H
-#define ARKI_SCAN_ODIMH5_H
+#ifndef ARKI_DATA_ODIMH5_H
+#define ARKI_DATA_ODIMH5_H
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
-class MockEngine;
+namespace arki::data {
 
 namespace odimh5 {
 const Validator& validator();
@@ -37,24 +35,6 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 };
 
-class MockOdimScanner : public OdimScanner
-{
-protected:
-    MockEngine* engine;
-
-    std::shared_ptr<Metadata>
-    scan_h5_file(const std::filesystem::path& pathname) override;
-    std::shared_ptr<Metadata>
-    scan_h5_data(const std::vector<uint8_t>& data) override;
-
-public:
-    MockOdimScanner();
-    virtual ~MockOdimScanner();
-};
-
-void register_odimh5_scanner();
-
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif

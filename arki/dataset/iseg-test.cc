@@ -1,6 +1,6 @@
+#include "arki/data.h"
 #include "arki/matcher/parser.h"
 #include "arki/query.h"
-#include "arki/scan.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
 #include "iseg/checker.h"
@@ -130,10 +130,10 @@ void Tests::register_tests()
             metadata::Collection mdc_read =
                 f.query(query::Data(parser.parse("origin:BUFR"), true));
             wassert(actual(mdc_read.size()) == 1u);
+            auto scanner = data::Scanner::get(mdc_read[0].source().format);
             int usn;
-            wassert(
-                actual(scan::Scanner::update_sequence_number(mdc_read[0], usn))
-                    .istrue());
+            wassert(actual(scanner->update_sequence_number(mdc_read[0], usn))
+                        .istrue());
             wassert(actual(usn) == 2);
         }
     });

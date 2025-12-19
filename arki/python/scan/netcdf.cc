@@ -1,4 +1,5 @@
 #include "netcdf.h"
+#include "arki/data/netcdf.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
 #include "arki/python/common.h"
@@ -6,7 +7,6 @@
 #include "arki/python/scan.h"
 #include "arki/python/utils/methods.h"
 #include "arki/python/utils/type.h"
-#include "arki/scan/netcdf.h"
 
 namespace arki::python::scan {
 
@@ -26,7 +26,7 @@ static void load_ncscanner_object()
     ncscanner_object = obj.release();
 }
 
-class PythonNetCDFScanner : public arki::scan::NetCDFScanner
+class PythonNetCDFScanner : public arki::data::NetCDFScanner
 {
 protected:
     std::shared_ptr<Metadata>
@@ -87,7 +87,7 @@ void register_scan_netcdf(PyObject* scan)
 }
 void init_scanner_netcdf()
 {
-    arki::scan::Scanner::register_factory(DataFormat::NETCDF, [] {
+    arki::data::Scanner::register_factory(DataFormat::NETCDF, [] {
         return std::make_shared<PythonNetCDFScanner>();
     });
 }

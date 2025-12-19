@@ -1,8 +1,8 @@
-#ifndef ARKI_SCAN_BUFR_H
-#define ARKI_SCAN_BUFR_H
+#ifndef ARKI_DATA_BUFR_H
+#define ARKI_DATA_BUFR_H
 
+#include <arki/data.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan.h>
 #include <string>
 
 namespace dballe {
@@ -11,15 +11,11 @@ struct Message;
 struct Importer;
 } // namespace dballe
 
-namespace arki {
-namespace scan {
-class MockEngine;
+namespace arki::data::bufr {
 
-namespace bufr {
 const Validator& validator();
-}
 
-class BufrScanner : public Scanner
+class Scanner : public data::Scanner
 {
     dballe::Importer* importer = nullptr;
 
@@ -31,8 +27,8 @@ protected:
     void do_scan(dballe::BinaryMessage& rmsg, std::shared_ptr<Metadata> md);
 
 public:
-    BufrScanner();
-    ~BufrScanner();
+    Scanner();
+    ~Scanner();
 
     DataFormat name() const override { return DataFormat::BUFR; }
 
@@ -46,23 +42,20 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 
     /// Return the update sequence number for a BUFR
-    static int update_sequence_number(const std::string& buf);
+    int update_sequence_number_raw(const std::string& buf) const;
+
+    bool update_sequence_number(Metadata& md, int& usn) const override;
+    bool update_sequence_number(const types::source::Blob& source,
+                                int& usn) const override;
 };
 
-class MockBufrScanner : public BufrScanner
+class MockScanner : public Scanner
 {
 protected:
-    MockEngine* engine;
-
     void scan_extra(dballe::BinaryMessage& rmsg,
                     std::shared_ptr<dballe::Message> msg,
                     std::shared_ptr<Metadata> md) override;
-
-public:
-    MockBufrScanner();
-    virtual ~MockBufrScanner();
 };
 
-} // namespace scan
-} // namespace arki
+} // namespace arki::data::bufr
 #endif

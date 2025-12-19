@@ -1,8 +1,8 @@
 #ifndef ARKI_SEGMENT_BASE_H
 #define ARKI_SEGMENT_BASE_H
 
+#include <arki/data/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/scan/fwd.h>
 #include <arki/segment/data.h>
 #include <arki/types/fwd.h>
 #include <functional>

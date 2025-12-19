@@ -1,11 +1,11 @@
 #include "tar.h"
+#include "arki/data.h"
 #include "arki/exceptions.h"
 #include "arki/iotrace.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/nag.h"
-#include "arki/scan/validator.h"
 #include "arki/stream.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/accounting.h"
@@ -248,7 +248,7 @@ State Checker::check(std::function<void(const std::string&)> reporter,
     return checker.check();
 }
 
-void Checker::validate(Metadata& md, const arki::scan::Validator& v)
+void Checker::validate(Metadata& md, const arki::data::Validator& v)
 {
     if (const types::source::Blob* blob = md.has_source_blob())
     {
@@ -282,7 +282,7 @@ core::Pending Checker::repack(Collection& mds, const RepackConfig& cfg)
 
     Creator creator(segment(), mds, tmpabspath);
     creator.validator =
-        &arki::scan::Validator::by_filename(segment().abspath());
+        &arki::data::Validator::by_filename(segment().abspath());
     creator.create();
 
     // Make sure mds are not holding a reader on the file to repack, because it

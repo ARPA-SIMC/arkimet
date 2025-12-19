@@ -1,10 +1,10 @@
 #include "iseg.h"
 #include "arki/core/cfg.h"
+#include "arki/data.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/inbound.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/segment/session.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/sys.h"
@@ -284,9 +284,10 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 // Duplicate detected
 
                 // Read the update sequence number of the new BUFR
+                auto new_scanner =
+                    arki::data::Scanner::get(e->md->source().format);
                 int new_usn;
-                if (!arki::scan::Scanner::update_sequence_number(*e->md,
-                                                                 new_usn))
+                if (!new_scanner->update_sequence_number(*e->md, new_usn))
                 {
                     e->md->add_note(
                         "Failed to store in '" + config.destination_name +
@@ -302,8 +303,9 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                 // Read the update sequence number of the old BUFR
                 auto reader = segment().reader(lock);
                 old->lock(reader);
+                auto old_scanner = arki::data::Scanner::get(old->format);
                 int old_usn;
-                if (!arki::scan::Scanner::update_sequence_number(*old, old_usn))
+                if (!old_scanner->update_sequence_number(*old, old_usn))
                 {
                     e->md->add_note(
                         "Failed to store in '" + config.destination_name +

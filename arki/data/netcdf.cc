@@ -1,8 +1,6 @@
 #include "netcdf.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
-#include "arki/scan/mock.h"
-#include "arki/scan/validator.h"
 #include "arki/segment.h"
 #include "arki/types/source.h"
 #include "arki/utils/string.h"
@@ -19,8 +17,7 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki {
-namespace scan {
+namespace arki::data {
 namespace netcdf {
 
 /* taken from: http://www.hdfgroup.org/HDF5/doc/H5.format.html#Superblock */
@@ -171,34 +168,4 @@ bool NetCDFScanner::scan_pipe(core::NamedFileDescriptor& in,
     return dest(scan_data(buf));
 }
 
-/*
- * MockNetCDFScanner
- */
-
-MockNetCDFScanner::MockNetCDFScanner() { engine = new MockEngine(); }
-
-MockNetCDFScanner::~MockNetCDFScanner() { delete engine; }
-
-std::shared_ptr<Metadata>
-MockNetCDFScanner::scan_nc_file(const std::filesystem::path& pathname)
-{
-    auto buf = sys::read_file(pathname);
-    return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()),
-                          buf.size());
-}
-
-std::shared_ptr<Metadata>
-MockNetCDFScanner::scan_nc_data(const std::vector<uint8_t>& data)
-{
-    return engine->lookup(data.data(), data.size());
-}
-
-void register_netcdf_scanner()
-{
-    Scanner::register_factory(DataFormat::NETCDF, [] {
-        return std::make_shared<scan::MockNetCDFScanner>();
-    });
-}
-
-} // namespace scan
-} // namespace arki
+} // namespace arki::data

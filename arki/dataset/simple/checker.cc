@@ -9,7 +9,6 @@
 #include "arki/metadata/collection.h"
 #include "arki/metadata/sort.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/summary.h"
 #include "arki/types.h"
 #include "arki/types/source/blob.h"

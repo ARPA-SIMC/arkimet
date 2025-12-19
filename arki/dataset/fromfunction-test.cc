@@ -1,6 +1,5 @@
 #include "arki/matcher.h"
 #include "arki/query.h"
-#include "arki/scan.h"
 #include "fromfunction.h"
 #include "tests.h"
 

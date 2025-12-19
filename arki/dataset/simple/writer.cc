@@ -5,7 +5,6 @@
 #include "arki/dataset/step.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
-#include "arki/scan.h"
 #include "arki/summary.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source/blob.h"

@@ -9,7 +9,7 @@
 #include "arki/python/utils/type.h"
 #include <grib_api.h>
 
-using GribHandle = arki::scan::grib::GribHandle;
+using GribHandle = arki::data::grib::GribHandle;
 
 extern "C" {
 PyTypeObject* arkipy_scan_Grib_Type       = nullptr;
@@ -65,7 +65,7 @@ static void load_gribscanner_object()
     gribscanner_object = obj.release();
 }
 
-class PythonGribScanner : public arki::scan::GribScanner
+class PythonGribScanner : public arki::data::grib::Scanner
 {
 protected:
     std::shared_ptr<Metadata> scan(grib_handle* gh) override
@@ -490,7 +490,7 @@ void register_scan_grib(PyObject* scan)
 }
 void init_scanner_grib()
 {
-    arki::scan::Scanner::register_factory(
+    arki::data::Scanner::register_factory(
         DataFormat::GRIB, [] { return std::make_shared<PythonGribScanner>(); });
 }
 } // namespace arki::python::scan

@@ -1,8 +1,7 @@
+#include "arki/data/vm2.h"
 #include "arki/metadata/collection.h"
 #include "arki/metadata/data.h"
 #include "arki/metadata/tests.h"
-#include "arki/scan/validator.h"
-#include "arki/scan/vm2.h"
 #include "arki/types/source.h"
 #include "arki/types/value.h"
 #include "arki/utils/sys.h"
@@ -22,14 +21,14 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_vm2");
+} test("arki_data_vm2");
 
 void Tests::register_tests()
 {
 
     // Scan a well-known vm2 sample
     add_method("scan", []() {
-        scan::Vm2 scanner;
+        data::vm2::Scanner scanner;
         auto basedir = std::filesystem::current_path() / "inbound";
         metadata::TestCollection mds("inbound/test.vm2");
         wassert(actual(mds.size()) == 4u);
@@ -57,7 +56,7 @@ void Tests::register_tests()
 
     // Scan a well-known vm2 sample (with seconds)
     add_method("scan_seconds", []() {
-        scan::Vm2 scanner;
+        data::vm2::Scanner scanner;
         auto basedir = std::filesystem::current_path() / "inbound";
         metadata::TestCollection mds("inbound/test.vm2");
         wassert(actual(mds.size()) == 4u);
@@ -87,7 +86,7 @@ void Tests::register_tests()
         Metadata md;
         vector<uint8_t> buf;
 
-        const scan::Validator& v = scan::vm2::validator();
+        const data::Validator& v = data::vm2::validator();
 
         sys::File fd("inbound/test.vm2", O_RDONLY);
         wassert(v.validate_file(fd, 0, 35));
@@ -122,18 +121,19 @@ void Tests::register_tests()
 
     // Scan and reconstruct a VM2 sample
     add_method("reconstruct", []() {
+        auto scanner = data::Scanner::get(DataFormat::VM2);
         const types::Value* value;
         vector<uint8_t> buf;
 
         metadata::TestCollection mdc("inbound/test.vm2");
 
         value = mdc[0].get<types::Value>();
-        buf   = scan::Vm2::reconstruct(mdc[0], value->buffer);
+        buf   = scanner->reconstruct(mdc[0], value->buffer);
         wassert(actual(string((const char*)buf.data(), buf.size())) ==
                 "198710310000,1,227,1.2,,,000000000");
 
         value = mdc[1].get<types::Value>();
-        buf   = scan::Vm2::reconstruct(mdc[1], value->buffer);
+        buf   = scanner->reconstruct(mdc[1], value->buffer);
         wassert(actual(string((const char*)buf.data(), buf.size())) ==
                 "19871031000030,1,228,.5,,,000000000");
     });
@@ -163,6 +163,7 @@ void Tests::register_tests()
     });
 
     add_method("issue237", [] {
+        auto scanner = data::Scanner::get(DataFormat::VM2);
         auto basedir = std::filesystem::current_path() / "inbound";
         metadata::TestCollection mdc("inbound/issue237.vm2", true);
         wassert(actual(mdc.size()) == 1u);
@@ -176,7 +177,7 @@ void Tests::register_tests()
                 "20201031230000,12865,158,9.409990,,,");
 
         auto value = mdc[0].get<types::Value>();
-        auto buf   = scan::Vm2::reconstruct(mdc[0], value->buffer);
+        auto buf   = scanner->reconstruct(mdc[0], value->buffer);
         wassert(actual(string((const char*)buf.data(), buf.size())) ==
                 "202010312300,12865,158,9.409990,,,");
     });

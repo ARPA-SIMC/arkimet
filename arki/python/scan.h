@@ -3,7 +3,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <arki/scan/fwd.h>
+#include <arki/data/fwd.h>
 #include <memory>
 
 namespace dballe {
@@ -16,7 +16,7 @@ struct grib_handle;
 
 typedef struct
 {
-    PyObject_HEAD std::shared_ptr<arki::scan::Scanner> scanner;
+    PyObject_HEAD std::shared_ptr<arki::data::Scanner> scanner;
 } arkipy_scan_Scanner;
 
 extern PyTypeObject* arkipy_scan_Scanner_Type;
@@ -35,7 +35,7 @@ namespace scan {
 void load_scanner_scripts();
 void init();
 arkipy_scan_Scanner*
-scanner_create(std::shared_ptr<arki::scan::Scanner> scanner);
+scanner_create(std::shared_ptr<arki::data::Scanner> scanner);
 } // namespace scan
 
 } // namespace python

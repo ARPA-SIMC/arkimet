@@ -1,14 +1,12 @@
-#ifndef ARKI_SCAN_JPEG_H
-#define ARKI_SCAN_JPEG_H
+#ifndef ARKI_DATA_JPEG_H
+#define ARKI_DATA_JPEG_H
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
-class MockEngine;
+namespace arki::data {
 
 namespace jpeg {
 const Validator& validator();
@@ -37,24 +35,6 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 };
 
-class MockJPEGScanner : public JPEGScanner
-{
-protected:
-    MockEngine* engine;
-
-    std::shared_ptr<Metadata>
-    scan_jpeg_file(const std::filesystem::path& pathname) override;
-    std::shared_ptr<Metadata>
-    scan_jpeg_data(const std::vector<uint8_t>& data) override;
-
-public:
-    MockJPEGScanner();
-    virtual ~MockJPEGScanner();
-};
-
-void register_jpeg_scanner();
-
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif

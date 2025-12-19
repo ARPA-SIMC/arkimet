@@ -1,6 +1,5 @@
+#include "arki/data/jpeg.h"
 #include "arki/metadata/tests.h"
-#include "arki/scan/jpeg.h"
-#include "arki/scan/validator.h"
 #include "arki/utils/sys.h"
 
 namespace {
@@ -14,14 +13,14 @@ class Tests : public TestCase
 {
     using TestCase::TestCase;
     void register_tests() override;
-} test("arki_scan_jpeg");
+} test("arki_data_jpeg");
 
 void Tests::register_tests()
 {
 
     add_method("validator", [] {
         sys::File in("inbound/jpeg/autumn.jpg", O_RDONLY);
-        const scan::Validator& validator = scan::jpeg::validator();
+        const data::Validator& validator = data::jpeg::validator();
         validator.validate_file(in, 0, 94701);
 
         std::string buf = sys::read_file("inbound/jpeg/autumn.jpg");

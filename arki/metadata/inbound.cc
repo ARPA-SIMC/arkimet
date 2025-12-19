@@ -3,6 +3,10 @@
 
 namespace arki::metadata {
 
+/*
+ * Inbound
+ */
+
 std::ostream& operator<<(std::ostream& o, Inbound::Result res)
 {
     switch (res)
@@ -17,6 +21,10 @@ std::ostream& operator<<(std::ostream& o, Inbound::Result res)
 Inbound::Inbound(std::shared_ptr<Metadata> md) : md(md) {}
 
 Inbound::~Inbound() {}
+
+/*
+ * InboundBatch
+ */
 
 void InboundBatch::add(std::shared_ptr<Metadata> md)
 {

@@ -1,11 +1,11 @@
 #include "segmented.h"
 #include "archive.h"
 #include "arki/core/cfg.h"
+#include "arki/data.h"
 #include "arki/dataset/lock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
 #include "arki/nag.h"
-#include "arki/scan.h"
 #include "arki/types/reftime.h"
 #include "arki/types/source.h"
 #include "arki/types/source/blob.h"
@@ -172,7 +172,7 @@ Writer::batch_by_segment(metadata::InboundBatch& batch)
             e->md->get<types::reftime::Position>()->get_Position();
         auto relpath = sys::with_suffix(dataset().step()(time),
                                         "."s + format_name(format));
-        by_segment[relpath].push_back(e);
+        by_segment[relpath].emplace_back(e);
     }
 
     for (auto& b : by_segment)
@@ -272,7 +272,7 @@ void CheckerSegment::archive()
     auto wlock = lock->write_lock();
 
     // Get the format for this relpath
-    auto format = scan::Scanner::format_from_filename(segment->relpath());
+    auto format = data::format_from_filename(segment->relpath());
 
     // Get the time range for this relpath
     core::Interval interval;

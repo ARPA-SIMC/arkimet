@@ -118,7 +118,7 @@ public:
     /// Call f for each nnnnnn.format file in the directory segment, passing the
     /// file name
     void foreach_datafile(std::function<void(const char*)> f);
-    void validate(Metadata& md, const arki::scan::Validator& v);
+    void validate(Metadata& md, const arki::data::Validator& v);
     void move_data(std::shared_ptr<const Segment> new_segment) override;
 
     bool rescan_data(std::function<void(const std::string&)> reporter,

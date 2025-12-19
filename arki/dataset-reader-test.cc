@@ -1,5 +1,6 @@
 #include "arki/core/file.h"
 #include "arki/core/lock.h"
+#include "arki/data.h"
 #include "arki/dataset.h"
 #include "arki/dataset/session.h"
 #include "arki/dataset/tests.h"
@@ -9,8 +10,6 @@
 #include "arki/nag.h"
 #include "arki/query.h"
 #include "arki/query/progress.h"
-#include "arki/scan.h"
-#include "arki/scan/validator.h"
 #include "arki/stream.h"
 #include "arki/summary.h"
 #include "arki/types/source.h"
@@ -279,12 +278,12 @@ template <class Data> void TestsReader<Data>::register_tests()
                                 buf1.size() + buf2.size())) == buf3.size());
         in.close();
 
-        const auto& validator = scan::Scanner::get_validator(f.td.format);
+        const auto& validator = data::Validator::get(f.td.format);
         wassert(validator.validate_buf(buf1.data(), buf1.size()));
         wassert(validator.validate_buf(buf2.data(), buf2.size()));
         wassert(validator.validate_buf(buf3.data(), buf3.size()));
 
-        auto scanner = scan::Scanner::get_scanner(f.td.format);
+        auto scanner = data::Scanner::get(f.td.format);
         wassert(scanner->scan_data(buf1));
         wassert(scanner->scan_data(buf2));
         wassert(scanner->scan_data(buf3));

@@ -1,14 +1,12 @@
-#ifndef ARKI_SCAN_NETCDF_H
-#define ARKI_SCAN_NETCDF_H
+#ifndef ARKI_DATA_NETCDF_H
+#define ARKI_DATA_NETCDF_H
 
-#include <arki/scan.h>
+#include <arki/data.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace arki {
-namespace scan {
-class MockEngine;
+namespace arki::data {
 
 namespace netcdf {
 const Validator& validator();
@@ -37,24 +35,6 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 };
 
-class MockNetCDFScanner : public NetCDFScanner
-{
-protected:
-    MockEngine* engine;
-
-    std::shared_ptr<Metadata>
-    scan_nc_file(const std::filesystem::path& pathname) override;
-    std::shared_ptr<Metadata>
-    scan_nc_data(const std::vector<uint8_t>& data) override;
-
-public:
-    MockNetCDFScanner();
-    virtual ~MockNetCDFScanner();
-};
-
-void register_netcdf_scanner();
-
-} // namespace scan
-} // namespace arki
+} // namespace arki::data
 
 #endif
