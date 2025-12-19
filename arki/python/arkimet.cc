@@ -289,13 +289,6 @@ struct config : public MethNoargs<config, PyObject>
             set_dict(
                 result, "scan",
                 describe_dirlist(cfg.dir_scan, "Scan scripts", "ARKI_SCAN"));
-            set_dict(result, "scan_odimh5",
-                     describe_dirlist(cfg.dir_scan_odimh5,
-                                      "ODIMH5 scan scripts",
-                                      "ARKI_SCAN_ODIMH5"));
-            set_dict(result, "bufr",
-                     describe_dirlist(cfg.dir_scan_bufr, "BUFR scan scripts",
-                                      "ARKI_SCAN_BUFR"));
             set_dict(result, "aliases",
                      describe_string(cfg.file_aliases, "Alias file",
                                      "ARKI_ALIASES"));

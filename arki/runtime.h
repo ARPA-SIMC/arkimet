@@ -71,12 +71,6 @@ struct Config
     /// Directories where grib scan scripts are found
     Dirlist dir_scan;
 
-    /// Directories where bufr scan scripts are found
-    Dirlist dir_scan_bufr;
-
-    /// Directories where odimh5 scan scripts are found
-    Dirlist dir_scan_odimh5;
-
     /// Alias file
     std::filesystem::path file_aliases;
 
