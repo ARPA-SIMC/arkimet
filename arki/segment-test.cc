@@ -75,7 +75,6 @@ template <class Fixture> struct RepackForever : public TestSubprocess
     {
         try
         {
-            arki::data::init();
             // Read segment contents, to use for repacking later
             metadata::Collection mds;
             {

@@ -55,15 +55,9 @@ public:
 class MockBufrScanner : public BufrScanner
 {
 protected:
-    MockEngine* engine;
-
     void scan_extra(dballe::BinaryMessage& rmsg,
                     std::shared_ptr<dballe::Message> msg,
                     std::shared_ptr<Metadata> md) override;
-
-public:
-    MockBufrScanner();
-    virtual ~MockBufrScanner();
 };
 
 } // namespace arki::data

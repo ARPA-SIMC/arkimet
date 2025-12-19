@@ -22,8 +22,9 @@ protected:
     utils::sqlite::SQLiteDB* db        = nullptr;
     utils::sqlite::Query* by_sha256sum = nullptr;
 
-public:
     MockEngine();
+
+public:
     MockEngine(const MockEngine&) = delete;
     MockEngine(MockEngine&&)      = delete;
     ~MockEngine();
@@ -35,6 +36,8 @@ public:
     std::shared_ptr<Metadata> lookup(const std::string& data);
 
     std::shared_ptr<Metadata> by_checksum(const std::string& checksum);
+
+    static MockEngine& get();
 };
 
 } // namespace arki::data

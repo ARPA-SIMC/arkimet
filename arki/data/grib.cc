@@ -167,10 +167,6 @@ bool GribScanner::scan_pipe(core::NamedFileDescriptor& infd,
     return true;
 }
 
-MockGribScanner::MockGribScanner() { engine = new MockEngine(); }
-
-MockGribScanner::~MockGribScanner() { delete engine; }
-
 std::shared_ptr<Metadata> MockGribScanner::scan(grib_handle* gh)
 {
     // Get the encoded GRIB buffer from the GRIB handle
@@ -179,7 +175,7 @@ std::shared_ptr<Metadata> MockGribScanner::scan(grib_handle* gh)
     check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
                      "cannot access the encoded GRIB data");
 
-    return engine->lookup(vbuf, size);
+    return MockEngine::get().lookup(vbuf, size);
 }
 
 namespace grib {

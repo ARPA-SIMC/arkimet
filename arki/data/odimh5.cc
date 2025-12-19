@@ -147,22 +147,18 @@ bool OdimScanner::scan_pipe(core::NamedFileDescriptor& in,
  * MockOdimScanner
  */
 
-MockOdimScanner::MockOdimScanner() { engine = new MockEngine(); }
-
-MockOdimScanner::~MockOdimScanner() { delete engine; }
-
 std::shared_ptr<Metadata>
 MockOdimScanner::scan_h5_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
-    return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()),
-                          buf.size());
+    return MockEngine::get().lookup(
+        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
 }
 
 std::shared_ptr<Metadata>
 MockOdimScanner::scan_h5_data(const std::vector<uint8_t>& data)
 {
-    return engine->lookup(data.data(), data.size());
+    return MockEngine::get().lookup(data.data(), data.size());
 }
 
 void register_odimh5_scanner()

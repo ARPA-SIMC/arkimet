@@ -48,6 +48,7 @@ enum class DataFormat : unsigned {
     ODIMH5 = 4,
     NETCDF = 5,
     JPEG   = 6,
+    __END__,
 };
 
 /// String version of a format name

@@ -39,16 +39,10 @@ public:
 class MockJPEGScanner : public JPEGScanner
 {
 protected:
-    MockEngine* engine;
-
     std::shared_ptr<Metadata>
     scan_jpeg_file(const std::filesystem::path& pathname) override;
     std::shared_ptr<Metadata>
     scan_jpeg_data(const std::vector<uint8_t>& data) override;
-
-public:
-    MockJPEGScanner();
-    virtual ~MockJPEGScanner();
 };
 
 void register_jpeg_scanner();

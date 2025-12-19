@@ -75,13 +75,7 @@ public:
 class MockGribScanner : public GribScanner
 {
 protected:
-    MockEngine* engine;
-
     std::shared_ptr<Metadata> scan(grib_handle* gh) override;
-
-public:
-    MockGribScanner();
-    virtual ~MockGribScanner();
 };
 
 } // namespace arki::data

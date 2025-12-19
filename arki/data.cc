@@ -28,17 +28,18 @@ namespace arki::data {
 
 typedef std::function<std::shared_ptr<Scanner>()> factory;
 
-static std::unordered_map<DataFormat, factory> factories;
-
-static std::unordered_map<DataFormat, std::shared_ptr<Scanner>> scanner_cache;
+static std::vector<factory>
+    factories(static_cast<unsigned>(DataFormat::__END__));
+static std::vector<std::shared_ptr<Scanner>>
+    scanner_cache(static_cast<unsigned>(DataFormat::__END__));
 
 void init()
 {
-    factories[DataFormat::GRIB] = [] {
+    factories[(unsigned)DataFormat::GRIB] = [] {
         return std::make_shared<data::MockGribScanner>();
     };
 #ifdef HAVE_DBALLE
-    factories[DataFormat::BUFR] = [] {
+    factories[(unsigned)DataFormat::BUFR] = [] {
         return std::make_shared<data::MockBufrScanner>();
     };
 #endif
@@ -48,7 +49,9 @@ void init()
     register_jpeg_scanner();
 
 #ifdef HAVE_VM2
-    factories[DataFormat::VM2] = [] { return std::make_shared<data::Vm2>(); };
+    factories[(unsigned)DataFormat::VM2] = [] {
+        return std::make_shared<data::Vm2>();
+    };
 #endif
 }
 
@@ -166,10 +169,9 @@ Scanner::~Scanner() {}
 void Scanner::register_factory(
     DataFormat name, std::function<std::shared_ptr<Scanner>()> factory)
 {
-    factories[name] = factory;
-    // Clear scanner cache, since from now on the scanners we should create
-    // might have changed
-    scanner_cache.clear();
+    unsigned idx       = static_cast<unsigned>(name);
+    factories[idx]     = factory;
+    scanner_cache[idx] = std::shared_ptr<arki::data::Scanner>();
 }
 
 void Scanner::normalize_before_dispatch(Metadata&) {}
@@ -183,18 +185,20 @@ bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 
 std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
-    // Lookup in cache first, before normalisation
-    auto cached = scanner_cache.find(format);
-    if (cached != scanner_cache.end())
-        return cached->second;
-
-    // Instantiate
-    auto i = factories.find(format);
-    if (i == factories.end())
+    unsigned idx = static_cast<unsigned>(format);
+    if (idx >= static_cast<unsigned>(DataFormat::__END__))
         throw std::runtime_error("No scanner available for format '" +
                                  format_name(format) + "'");
-    auto res              = i->second();
-    scanner_cache[format] = res;
+
+    // Lookup in cache first, before normalisation
+    if (auto cached = scanner_cache[idx])
+        return cached;
+
+    // Instantiate
+    auto res = factories[idx]();
+    if (!res)
+        throw std::runtime_error("arki::data::init() has not been called");
+    scanner_cache[idx] = res;
     return res;
 }
 

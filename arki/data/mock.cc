@@ -18,6 +18,20 @@ using namespace arki::utils;
 
 namespace arki::data {
 
+MockEngine& MockEngine::get()
+{
+    static pid_t owner_pid;
+    static MockEngine* instance = nullptr;
+
+    if (instance == nullptr or owner_pid != getpid())
+    {
+        instance  = new MockEngine();
+        owner_pid = getpid();
+    }
+
+    return *instance;
+}
+
 MockEngine::MockEngine()
 {
     if (const char* mock_db = getenv("ARKI_MOCK_SCAN_DB"))

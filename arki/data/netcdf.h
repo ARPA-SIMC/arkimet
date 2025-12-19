@@ -39,16 +39,10 @@ public:
 class MockNetCDFScanner : public NetCDFScanner
 {
 protected:
-    MockEngine* engine;
-
     std::shared_ptr<Metadata>
     scan_nc_file(const std::filesystem::path& pathname) override;
     std::shared_ptr<Metadata>
     scan_nc_data(const std::vector<uint8_t>& data) override;
-
-public:
-    MockNetCDFScanner();
-    virtual ~MockNetCDFScanner();
 };
 
 void register_netcdf_scanner();

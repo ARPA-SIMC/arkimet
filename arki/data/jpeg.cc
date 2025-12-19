@@ -154,22 +154,18 @@ bool JPEGScanner::scan_pipe(core::NamedFileDescriptor& in,
  * MockJPEGScanner
  */
 
-MockJPEGScanner::MockJPEGScanner() { engine = new MockEngine(); }
-
-MockJPEGScanner::~MockJPEGScanner() { delete engine; }
-
 std::shared_ptr<Metadata>
 MockJPEGScanner::scan_jpeg_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
-    return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()),
-                          buf.size());
+    return MockEngine::get().lookup(
+        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
 }
 
 std::shared_ptr<Metadata>
 MockJPEGScanner::scan_jpeg_data(const std::vector<uint8_t>& data)
 {
-    return engine->lookup(data.data(), data.size());
+    return MockEngine::get().lookup(data.data(), data.size());
 }
 
 void register_jpeg_scanner()

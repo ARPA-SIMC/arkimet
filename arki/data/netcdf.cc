@@ -173,22 +173,18 @@ bool NetCDFScanner::scan_pipe(core::NamedFileDescriptor& in,
  * MockNetCDFScanner
  */
 
-MockNetCDFScanner::MockNetCDFScanner() { engine = new MockEngine(); }
-
-MockNetCDFScanner::~MockNetCDFScanner() { delete engine; }
-
 std::shared_ptr<Metadata>
 MockNetCDFScanner::scan_nc_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
-    return engine->lookup(reinterpret_cast<const uint8_t*>(buf.data()),
-                          buf.size());
+    return MockEngine::get().lookup(
+        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
 }
 
 std::shared_ptr<Metadata>
 MockNetCDFScanner::scan_nc_data(const std::vector<uint8_t>& data)
 {
-    return engine->lookup(data.data(), data.size());
+    return MockEngine::get().lookup(data.data(), data.size());
 }
 
 void register_netcdf_scanner()

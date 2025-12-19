@@ -390,15 +390,11 @@ bool BufrScanner::update_sequence_number(Metadata& md, int& usn) const
  * MockBufrScanner
  */
 
-MockBufrScanner::MockBufrScanner() { engine = new MockEngine(); }
-
-MockBufrScanner::~MockBufrScanner() { delete engine; }
-
 void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg,
                                  std::shared_ptr<dballe::Message>,
                                  std::shared_ptr<Metadata> md)
 {
-    auto new_md = engine->lookup(
+    auto new_md = MockEngine::get().lookup(
         reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
     md->merge(*new_md);
 }
