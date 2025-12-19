@@ -65,7 +65,7 @@ static void load_gribscanner_object()
     gribscanner_object = obj.release();
 }
 
-class PythonGribScanner : public arki::data::GribScanner
+class PythonGribScanner : public arki::data::grib::Scanner
 {
 protected:
     std::shared_ptr<Metadata> scan(grib_handle* gh) override

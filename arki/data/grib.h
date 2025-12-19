@@ -10,10 +10,8 @@
 struct grib_context;
 struct grib_handle;
 
-namespace arki::data {
-class MockEngine;
+namespace arki::data::grib {
 
-namespace grib {
 const Validator& validator();
 
 /// RAII wrapper for an eccodes GRIB handle
@@ -43,9 +41,7 @@ struct GribHandle
     }
 };
 
-} // namespace grib
-
-class GribScanner : public Scanner
+class Scanner : public data::Scanner
 {
 protected:
     grib_context* context = nullptr;
@@ -59,7 +55,7 @@ protected:
     virtual std::shared_ptr<Metadata> scan(grib_handle* gh) = 0;
 
 public:
-    GribScanner();
+    Scanner();
 
     DataFormat name() const override { return DataFormat::GRIB; }
     std::shared_ptr<Metadata>
@@ -72,11 +68,11 @@ public:
     scan_singleton(const std::filesystem::path& abspath) override;
 };
 
-class MockGribScanner : public GribScanner
+class MockScanner : public Scanner
 {
 protected:
     std::shared_ptr<Metadata> scan(grib_handle* gh) override;
 };
 
-} // namespace arki::data
+} // namespace arki::data::grib
 #endif

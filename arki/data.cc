@@ -1,24 +1,18 @@
 #include "data.h"
-#include "arki/core/file.h"
-#include "arki/libconfig.h"
-#include "arki/metadata.h"
-#include "arki/metadata/data.h"
-#include "arki/segment.h"
-#include "arki/types/source/blob.h"
-#include "arki/utils/files.h"
-#include "arki/utils/string.h"
-#ifdef HAVE_GRIBAPI
-#include "arki/data/grib.h"
-#endif
-#ifdef HAVE_DBALLE
-#include "arki/data/bufr.h"
-#endif
-#include "arki/data/jpeg.h"
-#include "arki/data/netcdf.h"
-#include "arki/data/odimh5.h"
-#ifdef HAVE_VM2
-#include "arki/data/vm2.h"
-#endif
+#include "core/file.h"
+#include "data/bufr.h"
+#include "data/grib.h"
+#include "data/jpeg.h"
+#include "data/mock.h"
+#include "data/netcdf.h"
+#include "data/odimh5.h"
+#include "data/vm2.h"
+#include "metadata.h"
+#include "metadata/data.h"
+#include "segment.h"
+#include "types/source/blob.h"
+#include "utils/files.h"
+#include "utils/string.h"
 #include <unordered_map>
 
 using namespace std;
@@ -35,24 +29,24 @@ static std::vector<std::shared_ptr<Scanner>>
 
 void init()
 {
+    // Initialize a mock scanner for all formats
+    for (unsigned format = static_cast<unsigned>(DataFormat::GRIB);
+         format < static_cast<unsigned>(DataFormat::__END__); ++format)
+        factories[format] = [=] {
+            return std::make_shared<data::MockScanner>(
+                static_cast<DataFormat>(format));
+        };
+
+    // Install the scanners for known formats that need special handling
     factories[(unsigned)DataFormat::GRIB] = [] {
-        return std::make_shared<data::MockGribScanner>();
+        return std::make_shared<data::grib::MockScanner>();
     };
-#ifdef HAVE_DBALLE
     factories[(unsigned)DataFormat::BUFR] = [] {
-        return std::make_shared<data::MockBufrScanner>();
+        return std::make_shared<data::bufr::MockScanner>();
     };
-#endif
-
-    register_odimh5_scanner();
-    register_netcdf_scanner();
-    register_jpeg_scanner();
-
-#ifdef HAVE_VM2
     factories[(unsigned)DataFormat::VM2] = [] {
-        return std::make_shared<data::Vm2>();
+        return std::make_shared<data::vm2::Scanner>();
     };
-#endif
 }
 
 DataFormat format_from_filename(const std::filesystem::path& fname)
@@ -262,15 +256,9 @@ const Validator& Validator::get(DataFormat format)
 {
     switch (format)
     {
-#ifdef HAVE_GRIBAPI
-        case DataFormat::GRIB: return grib::validator();
-#endif
-#ifdef HAVE_DBALLE
-        case DataFormat::BUFR: return bufr::validator();
-#endif
-#ifdef HAVE_VM2
-        case DataFormat::VM2: return vm2::validator();
-#endif
+        case DataFormat::GRIB:   return grib::validator();
+        case DataFormat::BUFR:   return bufr::validator();
+        case DataFormat::VM2:    return vm2::validator();
         case DataFormat::ODIMH5: return odimh5::validator();
         case DataFormat::NETCDF: return netcdf::validator();
         case DataFormat::JPEG:   return jpeg::validator();

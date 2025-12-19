@@ -1,5 +1,4 @@
 #include "jpeg.h"
-#include "arki/data/mock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"
@@ -148,31 +147,6 @@ bool JPEGScanner::scan_pipe(core::NamedFileDescriptor& in,
     }
 
     return dest(scan_data(buf));
-}
-
-/*
- * MockJPEGScanner
- */
-
-std::shared_ptr<Metadata>
-MockJPEGScanner::scan_jpeg_file(const std::filesystem::path& pathname)
-{
-    auto buf = sys::read_file(pathname);
-    return MockEngine::get().lookup(
-        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
-}
-
-std::shared_ptr<Metadata>
-MockJPEGScanner::scan_jpeg_data(const std::vector<uint8_t>& data)
-{
-    return MockEngine::get().lookup(data.data(), data.size());
-}
-
-void register_jpeg_scanner()
-{
-    Scanner::register_factory(DataFormat::JPEG, [] {
-        return std::make_shared<data::MockJPEGScanner>();
-    });
 }
 
 } // namespace arki::data

@@ -1,5 +1,4 @@
 #include "netcdf.h"
-#include "arki/data/mock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"
@@ -167,31 +166,6 @@ bool NetCDFScanner::scan_pipe(core::NamedFileDescriptor& in,
     }
 
     return dest(scan_data(buf));
-}
-
-/*
- * MockNetCDFScanner
- */
-
-std::shared_ptr<Metadata>
-MockNetCDFScanner::scan_nc_file(const std::filesystem::path& pathname)
-{
-    auto buf = sys::read_file(pathname);
-    return MockEngine::get().lookup(
-        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
-}
-
-std::shared_ptr<Metadata>
-MockNetCDFScanner::scan_nc_data(const std::vector<uint8_t>& data)
-{
-    return MockEngine::get().lookup(data.data(), data.size());
-}
-
-void register_netcdf_scanner()
-{
-    Scanner::register_factory(DataFormat::NETCDF, [] {
-        return std::make_shared<data::MockNetCDFScanner>();
-    });
 }
 
 } // namespace arki::data

@@ -45,7 +45,7 @@ static void load_bufrscanner_object()
     bufrscanner_object = obj.release();
 }
 
-class PythonBufrScanner : public arki::data::BufrScanner
+class PythonBufrScanner : public arki::data::bufr::Scanner
 {
 protected:
     void scan_extra(dballe::BinaryMessage& rmsg,

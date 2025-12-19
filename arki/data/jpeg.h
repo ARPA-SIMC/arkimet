@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace arki::data {
-class MockEngine;
 
 namespace jpeg {
 const Validator& validator();
@@ -35,17 +34,6 @@ public:
     std::shared_ptr<Metadata>
     scan_singleton(const std::filesystem::path& abspath) override;
 };
-
-class MockJPEGScanner : public JPEGScanner
-{
-protected:
-    std::shared_ptr<Metadata>
-    scan_jpeg_file(const std::filesystem::path& pathname) override;
-    std::shared_ptr<Metadata>
-    scan_jpeg_data(const std::vector<uint8_t>& data) override;
-};
-
-void register_jpeg_scanner();
 
 } // namespace arki::data
 

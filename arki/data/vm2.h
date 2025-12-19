@@ -8,18 +8,12 @@
 #include <string>
 #include <vector>
 
-namespace arki::data {
-
-namespace vm2 {
+namespace arki::data::vm2 {
 const Validator& validator();
-}
 
-class Vm2 : public Scanner
+class Scanner : public data::Scanner
 {
 public:
-    Vm2();
-    virtual ~Vm2();
-
     DataFormat name() const override { return DataFormat::VM2; }
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
@@ -34,5 +28,5 @@ public:
                                      const std::string& value) const override;
 };
 
-} // namespace arki::data
+} // namespace arki::data::vm2
 #endif

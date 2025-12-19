@@ -11,14 +11,11 @@ struct Message;
 struct Importer;
 } // namespace dballe
 
-namespace arki::data {
-class MockEngine;
+namespace arki::data::bufr {
 
-namespace bufr {
 const Validator& validator();
-}
 
-class BufrScanner : public Scanner
+class Scanner : public data::Scanner
 {
     dballe::Importer* importer = nullptr;
 
@@ -30,8 +27,8 @@ protected:
     void do_scan(dballe::BinaryMessage& rmsg, std::shared_ptr<Metadata> md);
 
 public:
-    BufrScanner();
-    ~BufrScanner();
+    Scanner();
+    ~Scanner();
 
     DataFormat name() const override { return DataFormat::BUFR; }
 
@@ -52,7 +49,7 @@ public:
                                 int& usn) const override;
 };
 
-class MockBufrScanner : public BufrScanner
+class MockScanner : public Scanner
 {
 protected:
     void scan_extra(dballe::BinaryMessage& rmsg,
@@ -60,5 +57,5 @@ protected:
                     std::shared_ptr<Metadata> md) override;
 };
 
-} // namespace arki::data
+} // namespace arki::data::bufr
 #endif

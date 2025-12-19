@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace arki::data {
-class MockEngine;
 
 namespace netcdf {
 const Validator& validator();
@@ -35,17 +34,6 @@ public:
     std::shared_ptr<Metadata>
     scan_singleton(const std::filesystem::path& abspath) override;
 };
-
-class MockNetCDFScanner : public NetCDFScanner
-{
-protected:
-    std::shared_ptr<Metadata>
-    scan_nc_file(const std::filesystem::path& pathname) override;
-    std::shared_ptr<Metadata>
-    scan_nc_data(const std::vector<uint8_t>& data) override;
-};
-
-void register_netcdf_scanner();
 
 } // namespace arki::data
 

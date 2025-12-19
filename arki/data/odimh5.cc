@@ -1,5 +1,4 @@
 #include "odimh5.h"
-#include "arki/data/mock.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"
@@ -141,31 +140,6 @@ bool OdimScanner::scan_pipe(core::NamedFileDescriptor& in,
     }
 
     return dest(scan_data(buf));
-}
-
-/*
- * MockOdimScanner
- */
-
-std::shared_ptr<Metadata>
-MockOdimScanner::scan_h5_file(const std::filesystem::path& pathname)
-{
-    auto buf = sys::read_file(pathname);
-    return MockEngine::get().lookup(
-        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
-}
-
-std::shared_ptr<Metadata>
-MockOdimScanner::scan_h5_data(const std::vector<uint8_t>& data)
-{
-    return MockEngine::get().lookup(data.data(), data.size());
-}
-
-void register_odimh5_scanner()
-{
-    Scanner::register_factory(DataFormat::ODIMH5, [] {
-        return std::make_shared<data::MockOdimScanner>();
-    });
 }
 
 } // namespace arki::data

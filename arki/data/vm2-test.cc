@@ -28,7 +28,7 @@ void Tests::register_tests()
 
     // Scan a well-known vm2 sample
     add_method("scan", []() {
-        data::Vm2 scanner;
+        data::vm2::Scanner scanner;
         auto basedir = std::filesystem::current_path() / "inbound";
         metadata::TestCollection mds("inbound/test.vm2");
         wassert(actual(mds.size()) == 4u);
@@ -56,7 +56,7 @@ void Tests::register_tests()
 
     // Scan a well-known vm2 sample (with seconds)
     add_method("scan_seconds", []() {
-        data::Vm2 scanner;
+        data::vm2::Scanner scanner;
         auto basedir = std::filesystem::current_path() / "inbound";
         metadata::TestCollection mds("inbound/test.vm2");
         wassert(actual(mds.size()) == 4u);

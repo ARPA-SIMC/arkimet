@@ -2,7 +2,10 @@
 #include "arki/core/binary.h"
 #include "arki/core/file.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/metadata/reader.h"
+#include "arki/segment.h"
+#include "arki/types/source.h"
 #include "arki/utils/sqlite.h"
 #include <cstdlib>
 #include <openssl/evp.h>
@@ -17,6 +20,10 @@ using namespace arki::types;
 using namespace arki::utils;
 
 namespace arki::data {
+
+/*
+ * MockEngine
+ */
 
 MockEngine& MockEngine::get()
 {
@@ -179,114 +186,81 @@ std::shared_ptr<Metadata> MockEngine::lookup(const std::string& data)
     return by_checksum(compute_hash("SHA256", data.data(), data.size()));
 }
 
-#if 0
-std::shared_ptr<Metadata> MockScanner::scan_data(const std::vector<uint8_t>& data)
+/*
+ * MockScanner
+ */
+
+MockScanner::MockScanner(DataFormat format) : m_format(format) {}
+MockScanner::~MockScanner() {}
+
+std::shared_ptr<Metadata>
+MockScanner::scan_file(const std::filesystem::path& pathname)
 {
-    std::string checksum = compute_hash("SHA256", data);
-    // SELECT file, format, offset, size, md FROM mds WHERE sha256sum=?
-    bool found = false;
-    by_sha256sum->reset();
-    by_sha256sum->bind(1, checksum);
-    std::shared_ptr<Metadata> md;
-    while (by_sha256sum->step())
-    {
-        const uint8_t* buf = static_cast<const uint8_t*>(by_fname->fetchBlob(4));
-        int len = by_fname->fetchBytes(4);
-        BinaryDecoder dec((const uint8_t*)buf, len);
+    auto buf = sys::read_file(pathname);
+    return MockEngine::get().lookup(reinterpret_cast<const uint8_t*>(buf.data()),
+                         buf.size());
+}
 
-        md.reset(new Metadata);
-        md->read(dec, db_pathname, false);
+void MockScanner::set_blob_source(Metadata& md,
+                                  std::shared_ptr<segment::Reader> reader)
+{
+    struct stat st;
+    sys::stat(reader->segment().abspath(), st);
+    md.add_note_scanned_from(reader->segment().relpath());
+    md.set_source(Source::createBlob(reader, 0, st.st_size));
+}
 
-        std::string file = "inbound/" + by_sha256sum->fetchString(0);
-        std::string format = by_sha256sum->fetchString(1);
-        off_t offset = by_sha256sum->fetch<off_t>(2);
-        size_t size = by_sha256sum->fetch<size_t>(3);
-
-        std::vector<uint8_t> data(size);
-
-        sys::File in(file, O_RDONLY);
-        if (in.pread(data.data(), data.size(), offset) != (size_t)offset)
-            throw std::runtime_error("cannot read all of the metadata from " + file + ":" + std::to_string(offset) + "+" + std::to_string(size));
-
-        md->set_source_inline(
-                format,
-                metadata::DataManager::get().to_data("grib", std::move(data)));
-        found = true;
-    }
-    if (!found)
-        throw std::invalid_argument("data " + checksum + " not found in mock scan database");
+std::shared_ptr<Metadata>
+MockScanner::scan_data(const std::vector<uint8_t>& data)
+{
+    std::shared_ptr<Metadata> md = MockEngine::get().lookup(data.data(), data.size());
+    md->set_source_inline(m_format, metadata::DataManager::get().to_data(
+                                        m_format, std::vector<uint8_t>(data)));
     return md;
 }
 
-bool MockScanner::scan_segment(std::shared_ptr<segment::Reader> reader, metadata_dest_func dest)
+std::shared_ptr<Metadata>
+MockScanner::scan_singleton(const std::filesystem::path& abspath)
 {
-    std::string basedir = sys::abspath("inbound");
-    std::string file = reader->segment().abspath;
-    size_t pos = file.find("inbound/");
-    if (pos == std::string::npos)
-        throw std::invalid_argument("mock scanner can only scan files in inbound/");
-    file = file.substr(pos + 8);
+    return scan_file(abspath);
+}
 
-    // SELECT format, offset, size, md FROM mds WHERE file=? ORDER BY offset
-    bool found = false;
-    by_fname->reset();
-    by_fname->bind(1, file);
-    while (by_fname->step())
+bool MockScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                               metadata_dest_func dest)
+{
+    // If the file is empty, skip it
+    auto st = sys::stat(reader->segment().abspath());
+    if (!st)
+        return true;
+    if (S_ISDIR(st->st_mode))
+        throw std::runtime_error(
+            "MockScanner::scan_segment cannot be called on directory segments");
+    if (!st->st_size)
+        return true;
+
+    auto md = scan_file(reader->segment().abspath());
+    set_blob_source(*md, reader);
+    return dest(md);
+}
+
+bool MockScanner::scan_pipe(core::NamedFileDescriptor& in,
+                            metadata_dest_func dest)
+{
+    // Read all in a buffer
+    std::vector<uint8_t> buf;
+    const unsigned blocksize = 4096;
+    while (true)
     {
-        const uint8_t* buf = static_cast<const uint8_t*>(by_fname->fetchBlob(3));
-        int len = by_fname->fetchBytes(3);
-        BinaryDecoder dec((const uint8_t*)buf, len);
-
-        std::shared_ptr<Metadata> md(new Metadata);
-        md->read(dec, file, false);
-
-        md->set_source(types::Source::createBlob(
-            by_fname->fetchString(0),
-            basedir,
-            file, 
-            by_fname->fetch<off_t>(1),
-            by_fname->fetch<size_t>(2),
-            reader
-        ));
-        if (!dest(md)) return false;
-        found = true;
+        buf.resize(buf.size() + blocksize);
+        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
+        if (read < blocksize)
+        {
+            buf.resize(buf.size() - blocksize + read);
+            break;
+        }
     }
-    if (!found)
-        throw std::invalid_argument(file + " not found in mock scan database");
-    return true;
-}
 
-std::shared_ptr<Metadata> MockScanner::scan_singleton(const std::string& abspath)
-{
-    std::string data = sys::read_file(abspath);
-    std::string checksum = compute_hash("SHA256", data);
-    // SELECT file, format, offset, size, md FROM mds WHERE sha256sum=?
-    bool found = false;
-    by_sha256sum->reset();
-    by_sha256sum->bind(1, checksum);
-    std::shared_ptr<Metadata> md;
-    while (by_sha256sum->step())
-    {
-        const uint8_t* buf = static_cast<const uint8_t*>(by_fname->fetchBlob(4));
-        int len = by_fname->fetchBytes(4);
-        BinaryDecoder dec((const uint8_t*)buf, len);
-
-        md.reset(new Metadata);
-        md->read(dec, db_pathname, false);
-        found = true;
-        // no source to be set
-    }
-    if (!found)
-        throw std::invalid_argument("data " + checksum + " for " + abspath + " not found in mock scan database");
-    return md;
+    return dest(scan_data(buf));
 }
-
-bool MockScanner::scan_pipe(core::NamedFileDescriptor& infd, metadata_dest_func dest)
-{
-    // This can be left unimplemented: it is only used from python, where
-    // proper scanners are available
-    throw std::runtime_error("MockScanner::scan_pipe is not implemented");
-}
-#endif
 
 } // namespace arki::data

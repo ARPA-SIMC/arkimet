@@ -2,6 +2,7 @@
 #include "arki/core/time.h"
 #include "arki/data.h"
 #include "arki/exceptions.h"
+#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/nag.h"
@@ -23,9 +24,7 @@
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki::data {
-
-namespace vm2 {
+namespace arki::data::vm2 {
 
 struct VM2Validator : public Validator
 {
@@ -65,6 +64,8 @@ struct VM2Validator : public Validator
 static VM2Validator vm_validator;
 
 const Validator& validator() { return vm_validator; }
+
+#ifdef HAVE_VM2
 
 class Input
 {
@@ -174,13 +175,10 @@ public:
     }
 };
 
-} // namespace vm2
-
-Vm2::Vm2() {}
-
-Vm2::~Vm2() {}
-
-std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
+/*
+ * Scanner
+ */
+std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 {
     std::istringstream str(std::string(data.begin(), data.end()));
     vm2::Input input(str);
@@ -197,7 +195,7 @@ std::shared_ptr<Metadata> Vm2::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-Vm2::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_singleton(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
     vm2::Input input(abspath);
@@ -214,7 +212,7 @@ Vm2::scan_singleton(const std::filesystem::path& abspath)
     return md;
 }
 
-bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 {
     using namespace std;
     // see
@@ -239,8 +237,8 @@ bool Vm2::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     return true;
 }
 
-bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader,
-                       metadata_dest_func dest)
+bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                           metadata_dest_func dest)
 {
     vm2::Input input(reader->segment().abspath());
     while (true)
@@ -260,8 +258,8 @@ bool Vm2::scan_segment(std::shared_ptr<segment::Reader> reader,
     return true;
 }
 
-std::vector<uint8_t> Vm2::reconstruct(const Metadata& md,
-                                      const std::string& value) const
+std::vector<uint8_t> Scanner::reconstruct(const Metadata& md,
+                                          const std::string& value) const
 {
     using namespace std;
     std::stringstream res;
@@ -287,7 +285,43 @@ std::vector<uint8_t> Vm2::reconstruct(const Metadata& md,
     return vector<uint8_t>(reconstructed.begin(), reconstructed.end());
 }
 
-void Vm2::normalize_before_dispatch(Metadata& md)
+#else
+
+/*
+ * Scanner
+ */
+
+std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
+{
+    throw std::runtime_error("VM2 support is not available");
+}
+
+std::shared_ptr<Metadata>
+Scanner::scan_singleton(const std::filesystem::path& abspath)
+{
+    throw std::runtime_error("VM2 support is not available");
+}
+
+bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
+{
+    throw std::runtime_error("VM2 support is not available");
+}
+
+bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                           metadata_dest_func dest)
+{
+    throw std::runtime_error("VM2 support is not available");
+}
+
+std::vector<uint8_t> Scanner::reconstruct(const Metadata& md,
+                                          const std::string& value) const
+{
+    throw std::runtime_error("VM2 support is not available");
+}
+
+#endif
+
+void Scanner::normalize_before_dispatch(Metadata& md)
 {
     if (const Value* value = md.get<types::Value>())
     {
@@ -302,4 +336,4 @@ void Vm2::normalize_before_dispatch(Metadata& md)
     }
 }
 
-} // namespace arki::data
+} // namespace arki::data::vm2

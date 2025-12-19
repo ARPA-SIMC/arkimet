@@ -1,5 +1,5 @@
 #include "bufr.h"
-#include "arki/data/mock.h"
+#include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/metadata/data.h"
 #include "arki/segment.h"
@@ -12,13 +12,16 @@
 #include "arki/types/values.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
+#include "mock.h"
 #include <cstring>
+#ifdef HAVE_DBALLE
 #include <dballe/file.h>
 #include <dballe/importer.h>
 #include <dballe/message.h>
-#include <sstream>
 #include <wreport/bulletin.h>
 #include <wreport/options.h>
+#endif
+#include <sstream>
 
 using namespace std;
 using namespace wreport;
@@ -26,9 +29,7 @@ using namespace dballe;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki::data {
-
-namespace bufr {
+namespace arki::data::bufr {
 
 struct BufrValidator : public Validator
 {
@@ -76,12 +77,11 @@ static BufrValidator bufr_validator;
 
 const Validator& validator() { return bufr_validator; }
 
-} // namespace bufr
-
 /*
- * BufrScanner
+ * Scanner
  */
 
+#ifdef HAVE_DBALLE
 namespace {
 class Harvest
 {
@@ -226,7 +226,7 @@ public:
 };
 } // namespace
 
-BufrScanner::BufrScanner()
+Scanner::Scanner()
 {
     auto opts           = ImporterOptions::create();
     opts->domain_errors = ImporterOptions::DomainErrors::UNSET;
@@ -234,9 +234,9 @@ BufrScanner::BufrScanner()
     importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
 }
 
-BufrScanner::~BufrScanner() { delete importer; }
+Scanner::~Scanner() { delete importer; }
 
-void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
+void Scanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
 {
     Harvest harvest(*importer);
     harvest.harvest_from_dballe(rmsg, *md);
@@ -279,8 +279,7 @@ void BufrScanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
             md->set(timedef->validity_time_to_emission_time(*p));
 }
 
-std::shared_ptr<Metadata>
-BufrScanner::scan_data(const std::vector<uint8_t>& data)
+std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 {
     auto md = std::make_shared<Metadata>();
     md->set_source_inline(DataFormat::BUFR,
@@ -292,8 +291,8 @@ BufrScanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                               metadata_dest_func dest)
+bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                           metadata_dest_func dest)
 {
     auto file = dballe::File::create(dballe::Encoding::BUFR,
                                      reader->segment().abspath().c_str(), "r");
@@ -316,7 +315,7 @@ bool BufrScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
 }
 
 std::shared_ptr<Metadata>
-BufrScanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_singleton(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
     auto file =
@@ -331,8 +330,8 @@ BufrScanner::scan_singleton(const std::filesystem::path& abspath)
     return md;
 }
 
-bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd,
-                            metadata_dest_func dest)
+bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
+                        metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
     auto file =
@@ -355,13 +354,58 @@ bool BufrScanner::scan_pipe(core::NamedFileDescriptor& infd,
     return true;
 }
 
-int BufrScanner::update_sequence_number_raw(const std::string& buf) const
+int Scanner::update_sequence_number_raw(const std::string& buf) const
 {
     auto bulletin = BufrBulletin::decode_header(buf);
     return bulletin->update_sequence_number;
 }
-bool BufrScanner::update_sequence_number(const types::source::Blob& source,
-                                         int& usn) const
+
+#else
+
+Scanner::Scanner()
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+Scanner::~Scanner() {}
+
+void Scanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                           metadata_dest_func dest)
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+std::shared_ptr<Metadata>
+Scanner::scan_singleton(const std::filesystem::path& abspath)
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
+                        metadata_dest_func dest)
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+int Scanner::update_sequence_number_raw(const std::string& buf) const
+{
+    throw std::runtime_error("BUFR support is not available");
+}
+
+#endif
+
+bool Scanner::update_sequence_number(const types::source::Blob& source,
+                                     int& usn) const
 {
     // Update Sequence Numbers are only supported by BUFR
     if (source.format != DataFormat::BUFR)
@@ -373,7 +417,7 @@ bool BufrScanner::update_sequence_number(const types::source::Blob& source,
     return true;
 }
 
-bool BufrScanner::update_sequence_number(Metadata& md, int& usn) const
+bool Scanner::update_sequence_number(Metadata& md, int& usn) const
 {
     // Update Sequence Numbers are only supported by BUFR
     if (md.source().format != DataFormat::BUFR)
@@ -387,16 +431,16 @@ bool BufrScanner::update_sequence_number(Metadata& md, int& usn) const
 }
 
 /*
- * MockBufrScanner
+ * MockScanner
  */
 
-void MockBufrScanner::scan_extra(dballe::BinaryMessage& rmsg,
-                                 std::shared_ptr<dballe::Message>,
-                                 std::shared_ptr<Metadata> md)
+void MockScanner::scan_extra(dballe::BinaryMessage& rmsg,
+                             std::shared_ptr<dballe::Message>,
+                             std::shared_ptr<Metadata> md)
 {
     auto new_md = MockEngine::get().lookup(
         reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
     md->merge(*new_md);
 }
 
-} // namespace arki::data
+} // namespace arki::data::bufr

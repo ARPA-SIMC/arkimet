@@ -1,6 +1,7 @@
 #ifndef ARKI_DATA_MOCK_H
 #define ARKI_DATA_MOCK_H
 
+#include <arki/data.h>
 #include <arki/metadata/fwd.h>
 #include <cstdint>
 #include <filesystem>
@@ -38,6 +39,30 @@ public:
     std::shared_ptr<Metadata> by_checksum(const std::string& checksum);
 
     static MockEngine& get();
+};
+
+class MockScanner : public Scanner
+{
+protected:
+    DataFormat m_format;
+
+    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
+    std::shared_ptr<Metadata> scan_file(const std::filesystem::path& pathname);
+
+public:
+    explicit MockScanner(DataFormat format);
+    ~MockScanner() override;
+
+    DataFormat name() const override { return m_format; }
+
+    std::shared_ptr<Metadata>
+    scan_data(const std::vector<uint8_t>& data) override;
+    bool scan_pipe(core::NamedFileDescriptor& in,
+                   metadata_dest_func dest) override;
+    bool scan_segment(std::shared_ptr<segment::Reader> reader,
+                      metadata_dest_func dest) override;
+    std::shared_ptr<Metadata>
+    scan_singleton(const std::filesystem::path& abspath) override;
 };
 
 } // namespace arki::data
