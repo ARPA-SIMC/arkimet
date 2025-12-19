@@ -3,6 +3,7 @@
 #include "arki/data/grib.h"
 #include "arki/data/jpeg.h"
 #include "arki/data/netcdf.h"
+#include "arki/defs.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
 #include "arki/nag.h"
@@ -189,6 +190,20 @@ static PyModuleDef scanners_module = {
 
 namespace arki::python {
 
+static pyo_unique_ptr data_formats_tuple()
+{
+    /// Build the data_formats tuple
+    pyo_unique_ptr data_formats(throw_ifnull(
+        PyTuple_New(static_cast<unsigned>(DataFormat::__END__) - 1)));
+    for (unsigned i = static_cast<unsigned>(DataFormat::GRIB);
+         i < static_cast<unsigned>(DataFormat::__END__); ++i)
+    {
+        std::string name = format_name(static_cast<DataFormat>(i));
+        PyTuple_SET_ITEM(data_formats, i - 1, to_python(name));
+    }
+    return data_formats;
+}
+
 void register_scan(PyObject* m)
 {
     pyo_unique_ptr scan     = throw_ifnull(PyModule_Create(&scan_module));
@@ -210,9 +225,13 @@ void register_scan(PyObject* m)
     if (PyModule_AddObject(scan, "scanners", scanners.release()) == -1)
         throw PythonException();
 
+    pyo_unique_ptr data_formats(data_formats_tuple());
+    if (PyModule_AddObject(scan, "data_formats", data_formats.release()) == -1)
+        throw PythonException();
+
     if (PyModule_AddObject(m, "scan", scan.release()) == -1)
         throw PythonException();
-}
+};
 
 namespace scan {
 
