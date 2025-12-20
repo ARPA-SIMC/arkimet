@@ -19,19 +19,19 @@ class JPEGScanner(arkimet.scan.DataFormatScannner):
         self.scanners = []
         self.scanners_sorted = True
 
-    def scan_image(self, im: Image, md: arkimet.Metadata):
+    def scan_image(self, im: Image, md: arkimet.Metadata) -> None:
         self.scan_tags(ScannedImage(im), md)
 
-    def scan_file(self, pathname: Path, md: arkimet.Metadata):
+    def scan_file(self, pathname: Path, md: arkimet.Metadata) -> None:
         with Image.open(pathname) as im:
             self.scan_image(im, md)
 
-    def scan_data(self, data: bytes, md: arkimet.Metadata):
+    def scan_data(self, data: bytes, md: arkimet.Metadata) -> None:
         with io.ByteIO(data) as fd:
             with Image.open(fd) as im:
                 self.scan_image(im, md)
 
-    def scan_tags(self, sample: ScannedImage, md: arkimet.Metadata):
+    def scan_tags(self, sample: ScannedImage, md: arkimet.Metadata) -> None:
         if not self.scanners_sorted:
             self.scanners.sort(key=lambda p: p[0])
             self.scanners_sorted = True
@@ -47,7 +47,7 @@ class JPEGScanner(arkimet.scan.DataFormatScannner):
             except Exception:
                 log.warning("scanner function failed", exc_info=True)
 
-    def register(self, scanner: Callable[[ScannedImage, arkimet.Metadata], None], priority=0):
+    def register(self, scanner: Callable[[ScannedImage, arkimet.Metadata], None], priority=0) -> None:
         if scanner not in self.scanners:
             self.scanners.append((priority, scanner))
             self.scanners_sorted = False

@@ -255,7 +255,7 @@ if __name__ == "__main__":
         scan(f, metadata)
         print(json.dumps(metadata, cls=Encoder))
 else:
-    from arkimet.scan.odimh5 import Scanner
+    from arkimet.scan.odimh5 import odimh5_scanner
     from arkimet.scan.utils.timedef import UNIT_SECOND
 
-    Scanner.register(scan)
+    odimh5_scanner.register(scan)

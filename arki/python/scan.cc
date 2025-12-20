@@ -18,7 +18,6 @@
 #include "scan/bufr.h"
 #include "scan/grib.h"
 #include "scan/netcdf.h"
-#include "scan/odimh5.h"
 #include "scan/vm2.h"
 #include "structured.h"
 #include "utils/methods.h"
@@ -328,7 +327,6 @@ void register_scan(PyObject* m)
 
     arki::python::scan::register_scan_grib(scan);
     arki::python::scan::register_scan_bufr(scan);
-    arki::python::scan::register_scan_odimh5(scan);
     arki::python::scan::register_scan_netcdf(scan);
     arki::python::scan::register_scan_vm2(scan);
 
@@ -355,7 +353,6 @@ void load_scanner_scripts()
     init_scanner_grib();
     init_scanner_bufr();
     init_scanner_netcdf();
-    init_scanner_odimh5();
 
     AcquireGIL gil;
     // Import arkimet.scan

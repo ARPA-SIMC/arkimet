@@ -6,12 +6,8 @@
 #include <string>
 #include <vector>
 
-namespace arki::data {
-
-namespace jpeg {
+namespace arki::data::jpeg {
 const Validator& validator();
-}
-
-} // namespace arki::data
+} // namespace arki::data::jpeg
 
 #endif

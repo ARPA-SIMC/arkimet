@@ -17,8 +17,7 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki::data {
-namespace odimh5 {
+namespace arki::data::odimh5 {
 
 /* taken from: http://www.hdfgroup.org/HDF5/doc/H5.format.html#Superblock */
 static const unsigned char hdf5sign[8] = {0x89, 0x48, 0x44, 0x46,
@@ -65,54 +64,4 @@ static OdimH5Validator odimh5_validator;
 
 const Validator& validator() { return odimh5_validator; }
 
-} // namespace odimh5
-
-/*
- * OdimScanner
- */
-
-std::shared_ptr<Metadata>
-OdimScanner::scan_h5_data(const std::vector<uint8_t>& data)
-{
-    sys::Tempfile tmpfd;
-    tmpfd.write_all_or_throw(data.data(), data.size());
-    return scan_h5_file(tmpfd.path());
-}
-
-std::shared_ptr<Metadata>
-OdimScanner::scan_data(const std::vector<uint8_t>& data)
-{
-    std::shared_ptr<Metadata> md = scan_h5_data(data);
-    md->set_source_inline(DataFormat::ODIMH5,
-                          metadata::DataManager::get().to_data(
-                              DataFormat::ODIMH5, std::vector<uint8_t>(data)));
-    return md;
-}
-
-std::shared_ptr<Metadata>
-OdimScanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    return scan_h5_file(abspath);
-}
-
-bool OdimScanner::scan_pipe(core::NamedFileDescriptor& in,
-                            metadata_dest_func dest)
-{
-    // Read all in a buffer
-    std::vector<uint8_t> buf;
-    const unsigned blocksize = 4096;
-    while (true)
-    {
-        buf.resize(buf.size() + blocksize);
-        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
-        if (read < blocksize)
-        {
-            buf.resize(buf.size() - blocksize + read);
-            break;
-        }
-    }
-
-    return dest(scan_data(buf));
-}
-
-} // namespace arki::data
+} // namespace arki::data::odimh5

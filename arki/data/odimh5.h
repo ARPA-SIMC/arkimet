@@ -6,31 +6,8 @@
 #include <string>
 #include <vector>
 
-namespace arki::data {
-
-namespace odimh5 {
+namespace arki::data::odimh5 {
 const Validator& validator();
-}
-
-class OdimScanner : public SingleFileScanner
-{
-protected:
-    virtual std::shared_ptr<Metadata>
-    scan_h5_file(const std::filesystem::path& pathname) = 0;
-    virtual std::shared_ptr<Metadata>
-    scan_h5_data(const std::vector<uint8_t>& data);
-
-public:
-    DataFormat name() const override { return DataFormat::ODIMH5; }
-
-    std::shared_ptr<Metadata>
-    scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_pipe(core::NamedFileDescriptor& in,
-                   metadata_dest_func dest) override;
-    std::shared_ptr<Metadata>
-    scan_file_single(const std::filesystem::path& abspath) override;
-};
-
-} // namespace arki::data
+} // namespace arki::data::odimh5
 
 #endif

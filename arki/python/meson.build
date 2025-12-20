@@ -20,7 +20,6 @@ py_arkimet_sources = files(
     'scan/grib.cc',
     'scan/bufr.cc',
     'scan/netcdf.cc',
-    'scan/odimh5.cc',
     'scan/vm2.cc',
     'dataset.cc',
     'dataset/session.cc',
