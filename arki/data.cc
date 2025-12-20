@@ -229,6 +229,14 @@ bool SingleFileScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
     md->add_note_scanned_from(reader->segment().relpath());
     md->set_source(types::Source::createBlob(reader, 0, st->st_size));
 
+    sys::File fd(reader->segment().abspath(), O_RDONLY);
+    sys::MMap mapped_data = fd.mmap(st->st_size, PROT_READ, MAP_PRIVATE);
+    std::vector<uint8_t> data(static_cast<const uint8_t*>(mapped_data),
+                              static_cast<const uint8_t*>(mapped_data) +
+                                  mapped_data.size());
+    md->set_cached_data(metadata::DataManager::get().to_data(
+        reader->segment().format(), std::move(data)));
+
     return dest(md);
 }
 
