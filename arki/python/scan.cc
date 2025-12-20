@@ -126,13 +126,15 @@ public:
     }
     ~PythonScanner()
     {
-        // TODO: here we leak the object, never decrementing the reference count
-        // that we own. This is because PythonScanner's destructor may get
-        // called after the Python interpreter has shut down. If we can find a
-        // way to check if the interpreter is still running, we can avoid
-        // leaking here. Alternatively, if we refactor Scanner's registry to be
-        // defined only once before the first scanner is instantiated, we can
-        // get away with the leak here
+        // Here we leak the object, never decrementing the reference count that
+        // we own: this is because PythonScanner's destructor may get called
+        // after the Python interpreter has shut down.
+        //
+        // We could find a way to check if the interpreter is still running,
+        // but since scanners are installed once and kept for the whole
+        // duration of the process, we don't really have to, and we can keep
+        // the reference forever.
+        //
         // AcquireGIL gil;
         // Py_XDECREF(scanner);
     }
@@ -242,8 +244,7 @@ struct register_scanner : public ClassMethKwargs<register_scanner>
             auto scanner =
                 std::make_shared<PythonScanner>(data_format, arg_scanner);
 
-            data::Scanner::register_factory(data_format,
-                                            [=]() noexcept { return scanner; });
+            data::Scanner::register_scanner(data_format, scanner);
 
             Py_RETURN_NONE;
         }

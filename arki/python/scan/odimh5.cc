@@ -87,8 +87,7 @@ void register_scan_odimh5(PyObject* scan)
 }
 void init_scanner_odimh5()
 {
-    arki::data::Scanner::register_factory(DataFormat::ODIMH5, [] {
-        return std::make_shared<PythonOdimh5Scanner>();
-    });
+    arki::data::Scanner::register_scanner(
+        DataFormat::ODIMH5, std::make_shared<PythonOdimh5Scanner>());
 }
 } // namespace arki::python::scan

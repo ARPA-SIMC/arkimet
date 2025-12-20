@@ -87,8 +87,7 @@ void register_scan_netcdf(PyObject* scan)
 }
 void init_scanner_netcdf()
 {
-    arki::data::Scanner::register_factory(DataFormat::NETCDF, [] {
-        return std::make_shared<PythonNetCDFScanner>();
-    });
+    arki::data::Scanner::register_scanner(
+        DataFormat::NETCDF, std::make_shared<PythonNetCDFScanner>());
 }
 } // namespace arki::python::scan

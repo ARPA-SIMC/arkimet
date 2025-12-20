@@ -22,33 +22,23 @@ using namespace arki::utils;
 
 namespace arki::data {
 
-typedef std::function<std::shared_ptr<Scanner>()> factory;
-
-static std::vector<factory>
-    factories(static_cast<unsigned>(DataFormat::__END__));
 static std::vector<std::shared_ptr<Scanner>>
-    scanner_cache(static_cast<unsigned>(DataFormat::__END__));
+    scanners(static_cast<unsigned>(DataFormat::__END__));
 
 static void init()
 {
-    // Initialize a mock scanner for all formats
-    for (unsigned format = static_cast<unsigned>(DataFormat::GRIB);
-         format < static_cast<unsigned>(DataFormat::__END__); ++format)
-        factories[format] = [=] {
-            return std::make_shared<data::MockScanner>(
-                static_cast<DataFormat>(format));
-        };
-
     // Install the scanners for known formats that need special handling
-    factories[(unsigned)DataFormat::GRIB] = [] {
-        return std::make_shared<data::grib::MockScanner>();
-    };
-    factories[(unsigned)DataFormat::BUFR] = [] {
-        return std::make_shared<data::bufr::MockScanner>();
-    };
-    factories[(unsigned)DataFormat::VM2] = [] {
-        return std::make_shared<data::vm2::Scanner>();
-    };
+    scanners[(unsigned)DataFormat::GRIB] =
+        std::make_shared<data::grib::MockScanner>();
+    scanners[(unsigned)DataFormat::BUFR] =
+        std::make_shared<data::bufr::MockScanner>();
+    scanners[(unsigned)DataFormat::VM2] =
+        std::make_shared<data::vm2::Scanner>();
+    // Initialize a mock scanner for all formats
+    for (unsigned format = static_cast<unsigned>(DataFormat::VM2) + 1;
+         format < static_cast<unsigned>(DataFormat::__END__); ++format)
+        scanners[format] = std::make_shared<data::MockScanner>(
+            static_cast<DataFormat>(format));
 }
 
 DataFormat format_from_filename(const std::filesystem::path& fname)
@@ -174,12 +164,11 @@ void Scanner::register_init(std::function<void()> func)
     scanner_init_functions.push_back(func);
 }
 
-void Scanner::register_factory(
-    DataFormat name, std::function<std::shared_ptr<Scanner>()> factory)
+void Scanner::register_scanner(DataFormat name,
+                               std::shared_ptr<Scanner> scanner)
 {
-    unsigned idx       = static_cast<unsigned>(name);
-    factories[idx]     = factory;
-    scanner_cache[idx] = std::shared_ptr<arki::data::Scanner>();
+    unsigned idx  = static_cast<unsigned>(name);
+    scanners[idx] = scanner;
 }
 
 void Scanner::normalize_before_dispatch(Metadata&) {}
@@ -205,16 +194,7 @@ std::shared_ptr<Scanner> Scanner::get(DataFormat format)
         throw std::runtime_error("No scanner available for format '" +
                                  format_name(format) + "'");
 
-    // Lookup in cache first, before normalisation
-    if (auto cached = scanner_cache[idx])
-        return cached;
-
-    // Instantiate
-    auto res = factories[idx]();
-    if (!res)
-        throw std::runtime_error("arki::data::init() has not been called");
-    scanner_cache[idx] = res;
-    return res;
+    return scanners[idx];
 }
 
 std::vector<uint8_t> Scanner::reconstruct(const Metadata&,

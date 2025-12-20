@@ -127,9 +127,8 @@ public:
     /**
      * Register the scanner factory function for the given format
      */
-    static void
-    register_factory(DataFormat format,
-                     std::function<std::shared_ptr<Scanner>()> factory);
+    static void register_scanner(DataFormat format,
+                                 std::shared_ptr<Scanner> scanner);
 
     /**
      * Register a function to be called before a scanner has been instantiated

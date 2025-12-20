@@ -490,7 +490,7 @@ void register_scan_grib(PyObject* scan)
 }
 void init_scanner_grib()
 {
-    arki::data::Scanner::register_factory(
-        DataFormat::GRIB, [] { return std::make_shared<PythonGribScanner>(); });
+    arki::data::Scanner::register_scanner(
+        DataFormat::GRIB, std::make_shared<PythonGribScanner>());
 }
 } // namespace arki::python::scan
