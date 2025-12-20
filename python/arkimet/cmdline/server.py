@@ -142,7 +142,7 @@ class Handler(BaseHTTPRequestHandler):
         logging.info(
             '%s - - [%s] "%s" %s %s',
             self.client_address[0],
-            dt.datetime.now(dt.UTC).strftime("%d/%b/%Y:%H:%M:%S +0000"),
+            dt.datetime.now(dt.timezone.utc).strftime("%d/%b/%Y:%H:%M:%S +0000"),
             self.requestline,
             code,
             size,
