@@ -10,9 +10,12 @@
 #include "metadata.h"
 #include "metadata/data.h"
 #include "segment.h"
+#include "types/source.h"
 #include "types/source/blob.h"
 #include "utils/files.h"
 #include "utils/string.h"
+#include "utils/sys.h"
+#include <sys/mman.h>
 #include <unordered_map>
 
 using namespace std;
@@ -201,6 +204,32 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
 {
     throw runtime_error("cannot reconstruct " + format_name(name()) +
                         " data: format not supported");
+}
+
+/*
+ * SingleFileScanner
+ */
+
+bool SingleFileScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
+                                     metadata_dest_func dest)
+{
+    // If the file is empty, skip it
+    auto st = sys::stat(reader->segment().abspath());
+    if (!st)
+        return true;
+    if (S_ISDIR(st->st_mode))
+        throw std::runtime_error(
+            format_name(name()) +
+            ": scan_segment cannot be called on directory segments");
+    if (!st->st_size)
+        return true;
+
+    auto md = scan_file_single(reader->segment().abspath());
+
+    md->add_note_scanned_from(reader->segment().relpath());
+    md->set_source(types::Source::createBlob(reader, 0, st->st_size));
+
+    return dest(md);
 }
 
 /*

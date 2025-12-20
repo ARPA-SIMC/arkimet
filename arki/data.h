@@ -126,6 +126,17 @@ public:
 };
 
 /**
+ * Base class for scanners for data that does not support multiple data items
+ * in the same file
+ */
+class SingleFileScanner : public Scanner
+{
+public:
+    bool scan_segment(std::shared_ptr<segment::Reader> reader,
+                      metadata_dest_func dest) override;
+};
+
+/**
  * Validate data
  */
 class Validator

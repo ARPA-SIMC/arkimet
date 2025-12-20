@@ -130,24 +130,6 @@ NetCDFScanner::scan_file_single(const std::filesystem::path& abspath)
     return scan_nc_file(abspath);
 }
 
-bool NetCDFScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                                 metadata_dest_func dest)
-{
-    // If the file is empty, skip it
-    auto st = sys::stat(reader->segment().abspath());
-    if (!st)
-        return true;
-    if (S_ISDIR(st->st_mode))
-        throw std::runtime_error(
-            "NetCDFH5::scan_segment cannot be called on directory segments");
-    if (!st->st_size)
-        return true;
-
-    auto md = scan_nc_file(reader->segment().abspath());
-    set_blob_source(*md, reader);
-    return dest(md);
-}
-
 bool NetCDFScanner::scan_pipe(core::NamedFileDescriptor& in,
                               metadata_dest_func dest)
 {
