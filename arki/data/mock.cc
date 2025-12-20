@@ -197,23 +197,15 @@ std::shared_ptr<Metadata>
 MockScanner::scan_file(const std::filesystem::path& pathname)
 {
     auto buf = sys::read_file(pathname);
-    return MockEngine::get().lookup(reinterpret_cast<const uint8_t*>(buf.data()),
-                         buf.size());
-}
-
-void MockScanner::set_blob_source(Metadata& md,
-                                  std::shared_ptr<segment::Reader> reader)
-{
-    struct stat st;
-    sys::stat(reader->segment().abspath(), st);
-    md.add_note_scanned_from(reader->segment().relpath());
-    md.set_source(Source::createBlob(reader, 0, st.st_size));
+    return MockEngine::get().lookup(
+        reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
 }
 
 std::shared_ptr<Metadata>
 MockScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    std::shared_ptr<Metadata> md = MockEngine::get().lookup(data.data(), data.size());
+    std::shared_ptr<Metadata> md =
+        MockEngine::get().lookup(data.data(), data.size());
     md->set_source_inline(m_format, metadata::DataManager::get().to_data(
                                         m_format, std::vector<uint8_t>(data)));
     return md;

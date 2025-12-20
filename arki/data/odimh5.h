@@ -14,8 +14,6 @@ const Validator& validator();
 
 class OdimScanner : public SingleFileScanner
 {
-    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
-
 protected:
     virtual std::shared_ptr<Metadata>
     scan_h5_file(const std::filesystem::path& pathname) = 0;

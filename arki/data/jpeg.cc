@@ -86,15 +86,6 @@ const Validator& validator() { return jpeg_validator; }
  * JPEGScanner
  */
 
-void JPEGScanner::set_blob_source(Metadata& md,
-                                  std::shared_ptr<segment::Reader> reader)
-{
-    struct stat st;
-    sys::stat(reader->segment().abspath(), st);
-    md.add_note_scanned_from(reader->segment().relpath());
-    md.set_source(Source::createBlob(reader, 0, st.st_size));
-}
-
 std::shared_ptr<Metadata>
 JPEGScanner::scan_data(const std::vector<uint8_t>& data)
 {

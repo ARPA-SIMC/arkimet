@@ -34,8 +34,8 @@ public:
 
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_segment(std::shared_ptr<segment::Reader> reader,
-                      metadata_dest_func dest) override;
+    bool scan_file_multi(const std::filesystem::path& abspath,
+                         scan_file_multi_dest_func dest) override;
     std::shared_ptr<Metadata>
     scan_file_single(const std::filesystem::path& abspath) override;
     bool scan_pipe(core::NamedFileDescriptor& in,

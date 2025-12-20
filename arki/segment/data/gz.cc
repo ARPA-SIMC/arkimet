@@ -171,9 +171,19 @@ Reader<Data>::Reader(const std::shared_ptr<const Data> data,
 
 template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
-    auto scanner = arki::data::Scanner::get(this->segment().format());
-    compress::TempUnzip uncompressed(this->segment().abspath());
-    return scanner->scan_segment(this->segment().reader(this->lock), dest);
+    const auto& segment = this->segment();
+    auto scanner        = arki::data::Scanner::get(segment.format());
+    compress::TempUnzip uncompressed(segment.abspath());
+    auto uncompressed_reader = segment.reader(this->lock);
+    return scanner->scan_file_multi(
+        segment.abspath(), [&](std::shared_ptr<Metadata> md, off_t offset,
+                               std::vector<uint8_t>&& data) {
+            md->set_source(
+                Source::createBlob(uncompressed_reader, offset, data.size()));
+            md->set_cached_data(metadata::DataManager::get().to_data(
+                segment.format(), std::move(data)));
+            return dest(md);
+        });
 }
 
 template <typename Data>

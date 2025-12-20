@@ -291,24 +291,20 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
-    auto file = dballe::File::create(dballe::Encoding::BUFR,
-                                     reader->segment().abspath().c_str(), "r");
+    auto file =
+        dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
     while (true)
     {
         auto md            = std::make_shared<Metadata>();
         BinaryMessage rmsg = file->read();
         if (!rmsg)
             break;
-        md->set_source(
-            Source::createBlob(reader, rmsg.offset, rmsg.data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::BUFR,
-            vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
         do_scan(rmsg, md);
-        if (!dest(md))
+        if (!dest(md, rmsg.offset,
+                  std::vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())))
             return false;
     }
     return true;
@@ -379,8 +375,8 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     throw std::runtime_error("BUFR support is not available");
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
     throw std::runtime_error("BUFR support is not available");
 }

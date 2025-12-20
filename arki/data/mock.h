@@ -46,7 +46,6 @@ class MockScanner : public SingleFileScanner
 protected:
     DataFormat m_format;
 
-    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
     std::shared_ptr<Metadata> scan_file(const std::filesystem::path& pathname);
 
 public:

@@ -234,22 +234,18 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     return true;
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
-    vm2::Input input(reader->segment().abspath());
+    vm2::Input input(abspath);
     while (true)
     {
         std::unique_ptr<Metadata> md(new Metadata);
         if (!input.next_with_offset())
             break;
         input.to_metadata(*md);
-        md->set_source(
-            Source::createBlob(reader, input.offset, input.line.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::VM2,
-            std::vector<uint8_t>(input.line.begin(), input.line.end())));
-        if (!dest(move(md)))
+        if (!dest(std::move(md), input.offset,
+                  std::vector<uint8_t>(input.line.begin(), input.line.end())))
             return false;
     }
     return true;
@@ -304,8 +300,8 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     throw std::runtime_error("VM2 support is not available");
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
     throw std::runtime_error("VM2 support is not available");
 }

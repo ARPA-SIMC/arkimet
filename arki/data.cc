@@ -9,7 +9,6 @@
 #include "data/vm2.h"
 #include "metadata.h"
 #include "metadata/data.h"
-#include "segment.h"
 #include "types/source.h"
 #include "types/source/blob.h"
 #include "utils/files.h"
@@ -210,11 +209,11 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
  * SingleFileScanner
  */
 
-bool SingleFileScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                                     metadata_dest_func dest)
+bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
+                                        scan_file_multi_dest_func dest)
 {
     // If the file is empty, skip it
-    auto st = sys::stat(reader->segment().abspath());
+    auto st = sys::stat(abspath);
     if (!st)
         return true;
     if (S_ISDIR(st->st_mode))
@@ -224,20 +223,13 @@ bool SingleFileScanner::scan_segment(std::shared_ptr<segment::Reader> reader,
     if (!st->st_size)
         return true;
 
-    auto md = scan_file_single(reader->segment().abspath());
-
-    md->add_note_scanned_from(reader->segment().relpath());
-    md->set_source(types::Source::createBlob(reader, 0, st->st_size));
-
-    sys::File fd(reader->segment().abspath(), O_RDONLY);
+    auto md = scan_file_single(abspath);
+    sys::File fd(abspath, O_RDONLY);
     sys::MMap mapped_data = fd.mmap(st->st_size, PROT_READ, MAP_PRIVATE);
     std::vector<uint8_t> data(static_cast<const uint8_t*>(mapped_data),
                               static_cast<const uint8_t*>(mapped_data) +
                                   mapped_data.size());
-    md->set_cached_data(metadata::DataManager::get().to_data(
-        reader->segment().format(), std::move(data)));
-
-    return dest(md);
+    return dest(md, 0, std::move(data));
 }
 
 /*

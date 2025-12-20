@@ -4,7 +4,6 @@
 #include <arki/core/fwd.h>
 #include <arki/data/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/segment/fwd.h>
 #include <arki/types/fwd.h>
 #include <cstdint>
 #include <filesystem>
@@ -27,6 +26,13 @@ DataFormat format_from_filename(const std::filesystem::path& fname);
  */
 std::optional<DataFormat> detect_format(const std::filesystem::path& path);
 
+/**
+ * Function signature for metadata consumers
+ */
+typedef std::function<bool(std::shared_ptr<Metadata>, off_t,
+                           std::vector<uint8_t>&&)>
+    scan_file_multi_dest_func;
+
 class Scanner
 {
 public:
@@ -36,13 +42,14 @@ public:
     virtual DataFormat name() const = 0;
 
     /**
-     * Open a file, scan it, send results to dest, and close it.
+     * Scan a file that can contain multiple data entries.
+     *
+     * Scanned metadata will have no source set.
      *
      * Returns true if dest always returned true, else false.
      */
-    virtual bool scan_segment(std::shared_ptr<segment::Reader> reader,
-                              metadata_dest_func dest) = 0;
-
+    virtual bool scan_file_multi(const std::filesystem::path& abspath,
+                                 scan_file_multi_dest_func dest) = 0;
     /**
      * Scan a file that contains only one data entry.
      *
@@ -132,8 +139,8 @@ public:
 class SingleFileScanner : public Scanner
 {
 public:
-    bool scan_segment(std::shared_ptr<segment::Reader> reader,
-                      metadata_dest_func dest) override;
+    bool scan_file_multi(const std::filesystem::path& abspath,
+                         scan_file_multi_dest_func dest) override;
 };
 
 /**

@@ -189,7 +189,15 @@ template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
 {
     const auto& segment = this->segment();
     auto scanner        = arki::data::Scanner::get(segment.format());
-    return scanner->scan_segment(this->segment().reader(this->lock), dest);
+    auto reader         = segment.reader(this->lock);
+    return scanner->scan_file_multi(
+        segment.abspath(), [&](std::shared_ptr<Metadata> md, off_t offset,
+                               std::vector<uint8_t>&& data) {
+            md->set_source(Source::createBlob(reader, offset, data.size()));
+            md->set_cached_data(metadata::DataManager::get().to_data(
+                segment.format(), std::move(data)));
+            return dest(md);
+        });
 }
 
 template <typename Data>
