@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import TYPE_CHECKING
 
-from arkimet.scan.jpeg import Scanner, ScannedImage
+from arkimet.scan.jpeg import ScannedImage, jpeg_scanner
 
 if TYPE_CHECKING:
     import arkimet
@@ -81,4 +81,4 @@ def scan(sample: ScannedImage, md: "arkimet.Metadata"):
     scan_area(sample, md)
 
 
-Scanner.register(scan)
+jpeg_scanner.register(scan)

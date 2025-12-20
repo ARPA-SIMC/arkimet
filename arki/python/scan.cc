@@ -1,4 +1,5 @@
 #include "scan.h"
+#include "arki/data.h"
 #include "arki/data/bufr.h"
 #include "arki/data/grib.h"
 #include "arki/data/jpeg.h"
@@ -6,6 +7,7 @@
 #include "arki/defs.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
 #include "arki/types/values.h"
@@ -15,7 +17,6 @@
 #include "metadata.h"
 #include "scan/bufr.h"
 #include "scan/grib.h"
-#include "scan/jpeg.h"
 #include "scan/netcdf.h"
 #include "scan/odimh5.h"
 #include "scan/vm2.h"
@@ -36,10 +37,9 @@ PyTypeObject* arkipy_scan_Scanner_Type = nullptr;
 namespace {
 
 // Pointer to the arkimet module
-PyObject* module_arkimet = nullptr;
-
-// Pointer to the scanners module
-PyObject* module_scanners = nullptr;
+PyObject* module_arkimet      = nullptr;
+// Pointer to the arkimet.scan module
+PyObject* module_arkimet_scan = nullptr;
 
 Methods<> scan_methods;
 Methods<> scanners_methods;
@@ -113,6 +113,144 @@ Returns a Metadata with inline source.
     }
 };
 
+class PythonScanner : public arki::data::SingleFileScanner
+{
+    DataFormat m_format;
+    PyObject* scanner;
+
+public:
+    PythonScanner(DataFormat format, PyObject* scanner)
+        : m_format(format), scanner(scanner)
+    {
+        Py_XINCREF(scanner);
+    }
+    ~PythonScanner()
+    {
+        // TODO: here we leak the object, never decrementing the reference count
+        // that we own. This is because PythonScanner's destructor may get
+        // called after the Python interpreter has shut down. If we can find a
+        // way to check if the interpreter is still running, we can avoid
+        // leaking here. Alternatively, if we refactor Scanner's registry to be
+        // defined only once before the first scanner is instantiated, we can
+        // get away with the leak here
+        // AcquireGIL gil;
+        // Py_XDECREF(scanner);
+    }
+    PythonScanner(const PythonScanner&)            = delete;
+    PythonScanner(PythonScanner&&)                 = delete;
+    PythonScanner& operator=(const PythonScanner&) = delete;
+    PythonScanner& operator=(PythonScanner&&)      = delete;
+
+    DataFormat name() const override { return m_format; }
+
+    std::shared_ptr<Metadata>
+    scan_file_single(const std::filesystem::path& abspath) override
+    {
+        auto md = std::make_shared<Metadata>();
+
+        AcquireGIL gil;
+        pyo_unique_ptr pyfname(to_python(abspath));
+        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+            scanner, "scan_file", "OO", pyfname.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != 1)
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
+
+        return md;
+    }
+
+    bool scan_pipe(core::NamedFileDescriptor& in,
+                   metadata_dest_func dest) override
+    {
+        // Read all in a buffer
+        std::vector<uint8_t> buf;
+        const unsigned blocksize = 4096;
+        while (true)
+        {
+            buf.resize(buf.size() + blocksize);
+            unsigned read =
+                in.read(buf.data() + buf.size() - blocksize, blocksize);
+            if (read < blocksize)
+            {
+                buf.resize(buf.size() - blocksize + read);
+                break;
+            }
+        }
+
+        return dest(scan_data(buf));
+    }
+
+    std::shared_ptr<Metadata>
+    scan_data(const std::vector<uint8_t>& data) override
+    {
+        auto md = std::make_shared<Metadata>();
+
+        AcquireGIL gil;
+        pyo_unique_ptr pydata(to_python(data));
+        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+            scanner, "scan_data", "OO", pydata.get(), pymd.get())));
+
+        // If use_count is > 1, it means we are potentially and unexpectedly
+        // holding all the metadata (and potentially their data) in memory,
+        // while a supported and important use case is to stream out one
+        // metadata at a time
+        pymd.reset(nullptr);
+        if (md.use_count() != 1)
+            arki::nag::warning(
+                "metadata use count after scanning is %ld instead of 1",
+                md.use_count());
+
+        md->set_source_inline(m_format,
+                              metadata::DataManager::get().to_data(
+                                  m_format, std::vector<uint8_t>(data)));
+
+        return md;
+    }
+};
+
+struct register_scanner : public ClassMethKwargs<register_scanner>
+{
+    constexpr static const char* name = "register_scanner";
+    constexpr static const char* signature =
+        "data_format: str, scanner: DataFormatScannner";
+    constexpr static const char* returns = "None";
+    constexpr static const char* summary =
+        "Register a scanner for the given data format";
+
+    static PyObject* run(arkipy_scan_Scanner* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"data_format", "scanner", nullptr};
+        PyObject* arg_data_format   = nullptr;
+        PyObject* arg_scanner       = nullptr;
+
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO", pass_kwlist(kwlist),
+                                         &arg_data_format, &arg_scanner))
+            return nullptr;
+
+        try
+        {
+            DataFormat data_format = from_python<DataFormat>(arg_data_format);
+            auto scanner =
+                std::make_shared<PythonScanner>(data_format, arg_scanner);
+
+            data::Scanner::register_factory(data_format,
+                                            [=]() noexcept { return scanner; });
+
+            Py_RETURN_NONE;
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct ScannerDef : public Type<ScannerDef, arkipy_scan_Scanner>
 {
     constexpr static const char* name      = "Scanner";
@@ -121,7 +259,7 @@ struct ScannerDef : public Type<ScannerDef, arkipy_scan_Scanner>
 Scanner for binary data.
 )";
     GetSetters<> getsetters;
-    Methods<get_scanner, scan_data> methods;
+    Methods<get_scanner, scan_data, register_scanner> methods;
 
     static void _dealloc(Impl* self)
     {
@@ -140,21 +278,6 @@ Scanner for binary data.
         std::string str = "scanner:" + format_name(self->scanner->name());
         return PyUnicode_FromStringAndSize(str.data(), str.size());
     }
-
-    // static int _init(Impl* self, PyObject* args, PyObject* kw)
-    // {
-    //     static const char* kwlist[] = { nullptr };
-    //     if (!PyArg_ParseTupleAndKeywords(args, kw, "",
-    //     const_cast<char**>(kwlist)))
-    //         return -1;
-
-    //     try {
-    //         new(&(self->scanner))
-    //         std::shared_ptr<arki::data::Scanner>(make_shared<arki:data::Scanner>());
-    //     } ARKI_CATCH_RETURN_INT
-
-    //     return 0;
-    // }
 };
 
 ScannerDef* scanner_def = nullptr;
@@ -173,18 +296,6 @@ static PyModuleDef scan_module = {
     nullptr,                             /* m_traverse */
     nullptr,                             /* m_clear */
     nullptr,                             /* m_free */
-};
-
-static PyModuleDef scanners_module = {
-    PyModuleDef_HEAD_INIT,
-    "scanners",               /* m_name */
-    "Arkimet scanner code",   /* m_doc */
-    -1,                       /* m_size */
-    scanners_methods.as_py(), /* m_methods */
-    nullptr,                  /* m_slots */
-    nullptr,                  /* m_traverse */
-    nullptr,                  /* m_clear */
-    nullptr,                  /* m_free */
 };
 }
 
@@ -206,11 +317,10 @@ static pyo_unique_ptr data_formats_tuple()
 
 void register_scan(PyObject* m)
 {
-    pyo_unique_ptr scan     = throw_ifnull(PyModule_Create(&scan_module));
-    pyo_unique_ptr scanners = throw_ifnull(PyModule_Create(&scanners_module));
+    pyo_unique_ptr scan = throw_ifnull(PyModule_Create(&scan_module));
 
-    module_arkimet  = m;
-    module_scanners = scanners;
+    module_arkimet      = m;
+    module_arkimet_scan = scan.get();
 
     scanner_def = new ScannerDef;
     scanner_def->define(arkipy_scan_Scanner_Type, scan);
@@ -219,11 +329,7 @@ void register_scan(PyObject* m)
     arki::python::scan::register_scan_bufr(scan);
     arki::python::scan::register_scan_odimh5(scan);
     arki::python::scan::register_scan_netcdf(scan);
-    arki::python::scan::register_scan_jpeg(scan);
     arki::python::scan::register_scan_vm2(scan);
-
-    if (PyModule_AddObject(scan, "scanners", scanners.release()) == -1)
-        throw PythonException();
 
     pyo_unique_ptr data_formats(data_formats_tuple());
     if (PyModule_AddObject(scan, "data_formats", data_formats.release()) == -1)
@@ -245,40 +351,20 @@ void load_scanner_scripts()
     if (scanners_loaded)
         return;
 
-    // Get the name of the scanners module
-    if (!module_scanners || !module_arkimet)
-        throw std::runtime_error("load_scanner_scripts was called before the "
-                                 "_arkimet.scan module has been initialized");
+    init_scanner_grib();
+    init_scanner_bufr();
+    init_scanner_netcdf();
+    init_scanner_odimh5();
 
-    std::string base = PyModule_GetName(module_arkimet);
-    base += ".";
-    base += PyModule_GetName(module_scanners);
-
-    std::vector<std::filesystem::path> sources =
-        arki::Config::get().dir_scan.list_files(".py");
-    for (const auto& source : sources)
-    {
-        std::string basename = source.filename();
-
-        // Check if the scanner module had already been imported
-        std::string module_name =
-            base + "." + basename.substr(0, basename.size() - 3);
-        pyo_unique_ptr py_module_name(string_to_python(module_name));
-        pyo_unique_ptr module(ArkiPyImport_GetModule(py_module_name));
-        if (PyErr_Occurred())
-            throw PythonException();
-
-        // Import it if needed
-        if (!module)
-        {
-            std::string source_code = utils::sys::read_file(source);
-            pyo_unique_ptr code(throw_ifnull(
-                Py_CompileStringExFlags(source_code.c_str(), source.c_str(),
-                                        Py_file_input, nullptr, -1)));
-            module = pyo_unique_ptr(throw_ifnull(
-                PyImport_ExecCodeModule(module_name.c_str(), code)));
-        }
-    }
+    AcquireGIL gil;
+    // Import arkimet.scan
+    pyo_unique_ptr arkimet_scan(
+        throw_ifnull(PyImport_ImportModule("arkimet.scan")));
+    // Access arkimet.scan.registry
+    pyo_unique_ptr registry(
+        throw_ifnull(PyObject_GetAttrString(arkimet_scan, "registry")));
+    // Call registry.ensure_loaded()
+    throw_ifnull(PyObject_CallMethod(registry, "ensure_loaded", NULL));
 
     scanners_loaded = true;
 }
@@ -294,14 +380,7 @@ scanner_create(std::shared_ptr<arki::data::Scanner> scanner)
     return result;
 }
 
-void init()
-{
-    init_scanner_grib();
-    init_scanner_bufr();
-    init_scanner_jpeg();
-    init_scanner_netcdf();
-    init_scanner_odimh5();
-}
+void init() { data::Scanner::register_init(load_scanner_scripts); }
 } // namespace scan
 
 } // namespace arki::python

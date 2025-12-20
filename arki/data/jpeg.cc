@@ -82,44 +82,4 @@ const Validator& validator() { return jpeg_validator; }
 
 } // namespace jpeg
 
-/*
- * JPEGScanner
- */
-
-std::shared_ptr<Metadata>
-JPEGScanner::scan_data(const std::vector<uint8_t>& data)
-{
-    std::shared_ptr<Metadata> md = scan_jpeg_data(data);
-    md->set_source_inline(DataFormat::JPEG,
-                          metadata::DataManager::get().to_data(
-                              DataFormat::JPEG, std::vector<uint8_t>(data)));
-    return md;
-}
-
-std::shared_ptr<Metadata>
-JPEGScanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    return scan_jpeg_file(abspath);
-}
-
-bool JPEGScanner::scan_pipe(core::NamedFileDescriptor& in,
-                            metadata_dest_func dest)
-{
-    // Read all in a buffer
-    std::vector<uint8_t> buf;
-    const unsigned blocksize = 4096;
-    while (true)
-    {
-        buf.resize(buf.size() + blocksize);
-        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
-        if (read < blocksize)
-        {
-            buf.resize(buf.size() - blocksize + read);
-            break;
-        }
-    }
-
-    return dest(scan_data(buf));
-}
-
 } // namespace arki::data

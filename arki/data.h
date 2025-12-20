@@ -130,6 +130,11 @@ public:
     static void
     register_factory(DataFormat format,
                      std::function<std::shared_ptr<Scanner>()> factory);
+
+    /**
+     * Register a function to be called before a scanner has been instantiated
+     */
+    static void register_init(std::function<void()> func);
 };
 
 /**
@@ -186,9 +191,6 @@ protected:
                                         const std::string& msg) const;
     [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
-
-/// Initialize scanner registry
-void init();
 
 } // namespace arki::data
 

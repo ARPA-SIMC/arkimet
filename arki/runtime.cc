@@ -158,7 +158,6 @@ void init()
         return;
     types::init_default_types();
     iotrace::init();
-    data::init();
     dataset::qmacro::init();
     initialized = true;
 }

@@ -29,7 +29,7 @@ static std::vector<factory>
 static std::vector<std::shared_ptr<Scanner>>
     scanner_cache(static_cast<unsigned>(DataFormat::__END__));
 
-void init()
+static void init()
 {
     // Initialize a mock scanner for all formats
     for (unsigned format = static_cast<unsigned>(DataFormat::GRIB);
@@ -162,6 +162,18 @@ std::optional<DataFormat> detect_format(const std::filesystem::path& path)
 
 Scanner::~Scanner() {}
 
+static std::vector<std::function<void()>> scanner_init_functions = {init};
+static bool scanner_initialized                                  = false;
+
+void Scanner::register_init(std::function<void()> func)
+{
+    if (scanner_initialized)
+        throw std::runtime_error(
+            "register_init called after a scanner has been instantiated");
+
+    scanner_init_functions.push_back(func);
+}
+
 void Scanner::register_factory(
     DataFormat name, std::function<std::shared_ptr<Scanner>()> factory)
 {
@@ -181,6 +193,13 @@ bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 
 std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
+    if (!scanner_initialized)
+    {
+        for (const auto& func : scanner_init_functions)
+            func();
+        scanner_initialized = true;
+    }
+
     unsigned idx = static_cast<unsigned>(format);
     if (idx >= static_cast<unsigned>(DataFormat::__END__))
         throw std::runtime_error("No scanner available for format '" +
