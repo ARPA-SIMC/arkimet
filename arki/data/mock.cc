@@ -220,7 +220,7 @@ MockScanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-MockScanner::scan_singleton(const std::filesystem::path& abspath)
+MockScanner::scan_file_single(const std::filesystem::path& abspath)
 {
     return scan_file(abspath);
 }

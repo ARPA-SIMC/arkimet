@@ -44,7 +44,17 @@ public:
                               metadata_dest_func dest) = 0;
 
     /**
-     * Scan data from a non-seekable pipe
+     * Scan a file that contains only one data entry.
+     *
+     * Returns a Metadata with no source set.
+     */
+    virtual std::shared_ptr<Metadata>
+    scan_file_single(const std::filesystem::path& abspath) = 0;
+
+    /**
+     * Scan data from a non-seekable pipe.
+     *
+     * Scanned metadata will have INLINE sources.
      */
     virtual bool scan_pipe(core::NamedFileDescriptor& in,
                            metadata_dest_func dest) = 0;
@@ -52,18 +62,10 @@ public:
     /**
      * Scan a memory buffer.
      *
-     * Returns a Metadata with inline source.
+     * Returns a Metadata with INLINE source.
      */
     virtual std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) = 0;
-
-    /**
-     * Open a file, scan it, send results to dest, and close it.
-     *
-     * Scanned metadata will have no source set.
-     */
-    virtual std::shared_ptr<Metadata>
-    scan_singleton(const std::filesystem::path& abspath) = 0;
 
     /**
      * Normalize metadata and data before dispatch, if required.

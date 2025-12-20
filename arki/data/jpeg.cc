@@ -106,7 +106,7 @@ JPEGScanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-JPEGScanner::scan_singleton(const std::filesystem::path& abspath)
+JPEGScanner::scan_file_single(const std::filesystem::path& abspath)
 {
     return scan_jpeg_file(abspath);
 }

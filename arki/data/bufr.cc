@@ -315,7 +315,7 @@ bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
     auto file =
@@ -386,7 +386,7 @@ bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("BUFR support is not available");
 }

@@ -195,7 +195,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
     vm2::Input input(abspath);
@@ -297,7 +297,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("VM2 support is not available");
 }

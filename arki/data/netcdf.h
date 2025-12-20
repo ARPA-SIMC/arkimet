@@ -32,7 +32,7 @@ public:
     bool scan_segment(std::shared_ptr<segment::Reader> reader,
                       metadata_dest_func dest) override;
     std::shared_ptr<Metadata>
-    scan_singleton(const std::filesystem::path& abspath) override;
+    scan_file_single(const std::filesystem::path& abspath) override;
 };
 
 } // namespace arki::data

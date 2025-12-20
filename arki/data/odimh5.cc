@@ -99,7 +99,7 @@ OdimScanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-OdimScanner::scan_singleton(const std::filesystem::path& abspath)
+OdimScanner::scan_file_single(const std::filesystem::path& abspath)
 {
     return scan_h5_file(abspath);
 }
