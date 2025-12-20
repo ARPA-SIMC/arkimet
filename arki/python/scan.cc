@@ -38,7 +38,6 @@ PyObject* module_arkimet      = nullptr;
 PyObject* module_arkimet_scan = nullptr;
 
 Methods<> scan_methods;
-Methods<> scanners_methods;
 
 struct get_scanner : public ClassMethKwargs<get_scanner>
 {
@@ -307,7 +306,7 @@ static pyo_unique_ptr data_formats_tuple()
          i < static_cast<unsigned>(DataFormat::__END__); ++i)
     {
         std::string name = format_name(static_cast<DataFormat>(i));
-        PyTuple_SET_ITEM(data_formats, i - 1, to_python(name));
+        PyTuple_SET_ITEM(data_formats.get(), i - 1, to_python(name));
     }
     return data_formats;
 }
@@ -332,7 +331,7 @@ void register_scan(PyObject* m)
 
     if (PyModule_AddObject(m, "scan", scan.release()) == -1)
         throw PythonException();
-};
+}
 
 namespace scan {
 

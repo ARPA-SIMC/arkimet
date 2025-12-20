@@ -48,7 +48,8 @@ class Registry:
                 if spec is not None:
                     mod = importlib.util.module_from_spec(spec)
                     self.init_module(spec, mod)
-                    if spec.origin is None and data_format in ("grib", "bufr"):
+                    if spec.origin in (None, "namespace") and data_format in ("grib", "bufr"):
+
                         # Special case grib and bufr namespace packages for
                         # compatibility
                         for module_info in pkgutil.iter_modules([path / data_format]):

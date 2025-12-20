@@ -448,6 +448,7 @@ foreach test_info: [
       ],
       cpp_pch: 'pch/arkimet_pch.h',
       dependencies: [
+          thread_dep,
           sqlite3_dep,
           eccodes_dep,
           dballe_dep,
