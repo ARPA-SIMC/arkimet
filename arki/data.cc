@@ -9,10 +9,12 @@
 #include "data/vm2.h"
 #include "metadata.h"
 #include "metadata/data.h"
-#include "segment.h"
+#include "types/source.h"
 #include "types/source/blob.h"
 #include "utils/files.h"
 #include "utils/string.h"
+#include "utils/sys.h"
+#include <sys/mman.h>
 #include <unordered_map>
 
 using namespace std;
@@ -20,33 +22,23 @@ using namespace arki::utils;
 
 namespace arki::data {
 
-typedef std::function<std::shared_ptr<Scanner>()> factory;
-
-static std::vector<factory>
-    factories(static_cast<unsigned>(DataFormat::__END__));
 static std::vector<std::shared_ptr<Scanner>>
-    scanner_cache(static_cast<unsigned>(DataFormat::__END__));
+    scanners(static_cast<unsigned>(DataFormat::__END__));
 
-void init()
+static void init()
 {
-    // Initialize a mock scanner for all formats
-    for (unsigned format = static_cast<unsigned>(DataFormat::GRIB);
-         format < static_cast<unsigned>(DataFormat::__END__); ++format)
-        factories[format] = [=] {
-            return std::make_shared<data::MockScanner>(
-                static_cast<DataFormat>(format));
-        };
-
     // Install the scanners for known formats that need special handling
-    factories[(unsigned)DataFormat::GRIB] = [] {
-        return std::make_shared<data::grib::MockScanner>();
-    };
-    factories[(unsigned)DataFormat::BUFR] = [] {
-        return std::make_shared<data::bufr::MockScanner>();
-    };
-    factories[(unsigned)DataFormat::VM2] = [] {
-        return std::make_shared<data::vm2::Scanner>();
-    };
+    scanners[(unsigned)DataFormat::GRIB] =
+        std::make_shared<data::grib::MockScanner>();
+    scanners[(unsigned)DataFormat::BUFR] =
+        std::make_shared<data::bufr::MockScanner>();
+    scanners[(unsigned)DataFormat::VM2] =
+        std::make_shared<data::vm2::Scanner>();
+    // Initialize a mock scanner for all formats
+    for (unsigned format = static_cast<unsigned>(DataFormat::VM2) + 1;
+         format < static_cast<unsigned>(DataFormat::__END__); ++format)
+        scanners[format] = std::make_shared<data::MockScanner>(
+            static_cast<DataFormat>(format));
 }
 
 DataFormat format_from_filename(const std::filesystem::path& fname)
@@ -160,12 +152,23 @@ std::optional<DataFormat> detect_format(const std::filesystem::path& path)
 
 Scanner::~Scanner() {}
 
-void Scanner::register_factory(
-    DataFormat name, std::function<std::shared_ptr<Scanner>()> factory)
+static std::vector<std::function<void()>> scanner_init_functions = {init};
+static bool scanner_initialized                                  = false;
+
+void Scanner::register_init(std::function<void()> func)
 {
-    unsigned idx       = static_cast<unsigned>(name);
-    factories[idx]     = factory;
-    scanner_cache[idx] = std::shared_ptr<arki::data::Scanner>();
+    if (scanner_initialized)
+        throw std::runtime_error(
+            "register_init called after a scanner has been instantiated");
+
+    scanner_init_functions.push_back(func);
+}
+
+void Scanner::register_scanner(DataFormat name,
+                               std::shared_ptr<Scanner> scanner)
+{
+    unsigned idx  = static_cast<unsigned>(name);
+    scanners[idx] = scanner;
 }
 
 void Scanner::normalize_before_dispatch(Metadata&) {}
@@ -179,21 +182,19 @@ bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 
 std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
+    if (!scanner_initialized)
+    {
+        for (const auto& func : scanner_init_functions)
+            func();
+        scanner_initialized = true;
+    }
+
     unsigned idx = static_cast<unsigned>(format);
     if (idx >= static_cast<unsigned>(DataFormat::__END__))
         throw std::runtime_error("No scanner available for format '" +
                                  format_name(format) + "'");
 
-    // Lookup in cache first, before normalisation
-    if (auto cached = scanner_cache[idx])
-        return cached;
-
-    // Instantiate
-    auto res = factories[idx]();
-    if (!res)
-        throw std::runtime_error("arki::data::init() has not been called");
-    scanner_cache[idx] = res;
-    return res;
+    return scanners[idx];
 }
 
 std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
@@ -201,6 +202,33 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
 {
     throw runtime_error("cannot reconstruct " + format_name(name()) +
                         " data: format not supported");
+}
+
+/*
+ * SingleFileScanner
+ */
+
+bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
+                                        scan_file_multi_dest_func dest)
+{
+    // If the file is empty, skip it
+    auto st = sys::stat(abspath);
+    if (!st)
+        return true;
+    if (S_ISDIR(st->st_mode))
+        throw std::runtime_error(
+            format_name(name()) +
+            ": scan_segment cannot be called on directory segments");
+    if (!st->st_size)
+        return true;
+
+    auto md = scan_file_single(abspath);
+    sys::File fd(abspath, O_RDONLY);
+    sys::MMap mapped_data = fd.mmap(st->st_size, PROT_READ, MAP_PRIVATE);
+    std::vector<uint8_t> data(static_cast<const uint8_t*>(mapped_data),
+                              static_cast<const uint8_t*>(mapped_data) +
+                                  mapped_data.size());
+    return dest(md, 0, std::move(data));
 }
 
 /*

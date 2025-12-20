@@ -81,34 +81,6 @@ Scanner::Scanner()
     grib_multi_support_off(context);
 }
 
-void Scanner::set_source_blob(grib_handle* gh,
-                              std::shared_ptr<segment::Reader> reader, FILE* in,
-                              Metadata& md)
-{
-    // Get the encoded GRIB buffer from the GRIB handle
-    const uint8_t* vbuf;
-    size_t size;
-    check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
-                     "cannot access the encoded GRIB data");
-
-#if 0
-    // We cannot use this as long is too small for 64bit file offsets
-    long offset;
-    check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
-#endif
-    off_t offset = ftello(in);
-    offset -= size;
-
-    md.set_source(Source::createBlob(reader, offset, size));
-    md.set_cached_data(metadata::DataManager::get().to_data(
-        reader->segment().format(), vector<uint8_t>(vbuf, vbuf + size)));
-
-    stringstream note;
-    note << "Scanned from " << reader->segment().relpath().filename().native()
-         << ":" << offset << "+" << size;
-    md.add_note(note.str());
-}
-
 void Scanner::set_source_inline(grib_handle* gh, Metadata& md)
 {
     // Get the encoded GRIB buffer from the GRIB handle
@@ -139,27 +111,42 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
-    files::RAIIFILE in(reader->segment().abspath(), "rb");
+    files::RAIIFILE in(abspath, "rb");
     while (true)
     {
         grib::GribHandle gh(context, in);
         if (!gh)
             break;
+
+        // Get the encoded GRIB buffer from the GRIB handle
+        const uint8_t* vbuf;
+        size_t size;
+        check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
+                         "cannot access the encoded GRIB data");
+
+#if 0
+        // We cannot use this as long is too small for 64bit file offsets
+        long offset;
+        check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
+#endif
+        off_t offset = ftello(in);
+        offset -= size;
+        std::vector<uint8_t> data(vbuf, vbuf + size);
+
         std::shared_ptr<Metadata> md = scan(gh);
-        set_source_blob(gh, reader, in, *md);
         gh.close();
 
-        if (!dest(md))
+        if (!dest(md, offset, std::move(data)))
             return false;
     }
     return true;
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     std::shared_ptr<Metadata> md;
     files::RAIIFILE in(abspath, "rb");
@@ -195,10 +182,6 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
             break;
         std::shared_ptr<Metadata> md = scan(gh);
         set_source_inline(gh, *md);
-        stringstream note;
-        note << "Scanned from standard input";
-        md->add_note(note.str());
-
         if (!dest(md))
             return false;
     }
@@ -259,14 +242,14 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     throw std::runtime_error("GRIB support is not available");
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("GRIB support is not available");
 }

@@ -1,44 +1,43 @@
 import unittest
 import os
-import datetime
+import datetime as dt
 from arkimet.test import SessionMixin
 
 
 class TestScanNetCDF(SessionMixin, unittest.TestCase):
-    def read(self, pathname, size, format="nc"):
+    def read(self, pathname, size, format="netcdf"):
         """
         Read all the metadata from a file
         """
-        with self.session.dataset_reader(cfg={
-                        "format": format,
-                        "name": os.path.basename(pathname),
-                        "path": pathname,
-                        "type": "file",
-                    }) as ds:
+        with self.session.dataset_reader(
+            cfg={
+                "format": format,
+                "name": os.path.basename(pathname),
+                "path": pathname,
+                "type": "file",
+            }
+        ) as ds:
             mds = ds.query_data()
         self.assertEqual(len(mds), 1)
         md = mds[0]
 
         source = md.to_python("source")
-        self.assertEqual(source, {
-            "type": "source",
-            "style": "BLOB",
-            "format": "nc",
-            "basedir": os.getcwd(),
-            "file": pathname,
-            "offset": 0,
-            "size": size,
-        })
+        self.assertEqual(
+            source,
+            {
+                "type": "source",
+                "style": "BLOB",
+                "format": format,
+                "basedir": os.getcwd(),
+                "file": pathname,
+                "offset": 0,
+                "size": size,
+            },
+        )
 
         data = md.data
         self.assertEqual(len(data), size)
         self.assertIn(data[1:3], (b"HD", b"DF"))
-
-        notes = md.get_notes()
-        self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["type"], "note")
-        self.assertEqual(notes[0]["value"], "Scanned from {}".format(os.path.basename(pathname)))
-        self.assertIsInstance(notes[0]["time"], datetime.datetime)
         return md
 
     def assert_empty1_contents(self, md):
@@ -107,12 +106,14 @@ class TestScanNetCDF(SessionMixin, unittest.TestCase):
         """
         Check that the scanner silently discard an empty file
         """
-        with self.session.dataset_reader(cfg={
-                        "format": "nc",
-                        "name": "empty.nc",
-                        "path": "inbound/netcdf/empty.nc",
-                        "type": "file",
-                    }) as ds:
+        with self.session.dataset_reader(
+            cfg={
+                "format": "netcdf",
+                "name": "empty.nc",
+                "path": "inbound/netcdf/empty.nc",
+                "type": "file",
+            }
+        ) as ds:
             mds = ds.query_data()
             self.assertEqual(len(mds), 0)
 

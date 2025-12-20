@@ -18,9 +18,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-export ARKI_SCAN_GRIB1=../conf/scan-grib1/
-export ARKI_SCAN_GRIB2=../conf/scan-grib2/
-
 echo "`date`: Collect configurations..."
 ../src/arki-mergeconf ../$ENVNAME/* > conf
 echo "`date`: Creating inbound directory..."

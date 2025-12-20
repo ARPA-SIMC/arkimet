@@ -1,10 +1,6 @@
 #!/bin/bash
 
 export ARKI_SCAN="@top_srcdir@/conf/scan/"
-export ARKI_SCAN_GRIB1="@top_srcdir@/conf/scan-grib1/"
-export ARKI_SCAN_GRIB2="@top_srcdir@/conf/scan-grib2/"
-export ARKI_SCAN_BUFR="@top_srcdir@/conf/scan-bufr/"
-export ARKI_SCAN_ODIMH5="@top_srcdir@/conf/scan-odimh5/"
 export ARKI_FORMATTER="@top_srcdir@/conf/format/"
 export ARKI_REPORT="@top_srcdir@/conf/report/"
 export ARKI_BBOX="@top_srcdir@/conf/bbox/"

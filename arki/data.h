@@ -4,7 +4,6 @@
 #include <arki/core/fwd.h>
 #include <arki/data/fwd.h>
 #include <arki/metadata/fwd.h>
-#include <arki/segment/fwd.h>
 #include <arki/types/fwd.h>
 #include <cstdint>
 #include <filesystem>
@@ -27,6 +26,13 @@ DataFormat format_from_filename(const std::filesystem::path& fname);
  */
 std::optional<DataFormat> detect_format(const std::filesystem::path& path);
 
+/**
+ * Function signature for metadata consumers
+ */
+typedef std::function<bool(std::shared_ptr<Metadata>, off_t,
+                           std::vector<uint8_t>&&)>
+    scan_file_multi_dest_func;
+
 class Scanner
 {
 public:
@@ -36,15 +42,26 @@ public:
     virtual DataFormat name() const = 0;
 
     /**
-     * Open a file, scan it, send results to dest, and close it.
+     * Scan a file that can contain multiple data entries.
+     *
+     * Scanned metadata will have no source set.
      *
      * Returns true if dest always returned true, else false.
      */
-    virtual bool scan_segment(std::shared_ptr<segment::Reader> reader,
-                              metadata_dest_func dest) = 0;
+    virtual bool scan_file_multi(const std::filesystem::path& abspath,
+                                 scan_file_multi_dest_func dest) = 0;
+    /**
+     * Scan a file that contains only one data entry.
+     *
+     * Returns a Metadata with no source set.
+     */
+    virtual std::shared_ptr<Metadata>
+    scan_file_single(const std::filesystem::path& abspath) = 0;
 
     /**
-     * Scan data from a non-seekable pipe
+     * Scan data from a non-seekable pipe.
+     *
+     * Scanned metadata will have INLINE sources.
      */
     virtual bool scan_pipe(core::NamedFileDescriptor& in,
                            metadata_dest_func dest) = 0;
@@ -52,18 +69,10 @@ public:
     /**
      * Scan a memory buffer.
      *
-     * Returns a Metadata with inline source.
+     * Returns a Metadata with INLINE source.
      */
     virtual std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) = 0;
-
-    /**
-     * Open a file, scan it, send results to dest, and close it.
-     *
-     * Scanned metadata will have no source set.
-     */
-    virtual std::shared_ptr<Metadata>
-    scan_singleton(const std::filesystem::path& abspath) = 0;
 
     /**
      * Normalize metadata and data before dispatch, if required.
@@ -118,9 +127,24 @@ public:
     /**
      * Register the scanner factory function for the given format
      */
-    static void
-    register_factory(DataFormat format,
-                     std::function<std::shared_ptr<Scanner>()> factory);
+    static void register_scanner(DataFormat format,
+                                 std::shared_ptr<Scanner> scanner);
+
+    /**
+     * Register a function to be called before a scanner has been instantiated
+     */
+    static void register_init(std::function<void()> func);
+};
+
+/**
+ * Base class for scanners for data that does not support multiple data items
+ * in the same file
+ */
+class SingleFileScanner : public Scanner
+{
+public:
+    bool scan_file_multi(const std::filesystem::path& abspath,
+                         scan_file_multi_dest_func dest) override;
 };
 
 /**
@@ -166,9 +190,6 @@ protected:
                                         const std::string& msg) const;
     [[noreturn]] void throw_check_error(const std::string& msg) const;
 };
-
-/// Initialize scanner registry
-void init();
 
 } // namespace arki::data
 

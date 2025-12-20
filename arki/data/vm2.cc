@@ -70,7 +70,6 @@ const Validator& validator() { return vm_validator; }
 class Input
 {
 public:
-    std::string md_note;
     std::istream* in           = nullptr;
     meteo::vm2::Parser* parser = nullptr;
     bool close                 = false;
@@ -78,8 +77,7 @@ public:
     std::string line;
     off_t offset = 0;
 
-    Input(const std::filesystem::path& abspath)
-        : md_note("Scanned from " + abspath.filename().native()), close(true)
+    Input(const std::filesystem::path& abspath) : close(true)
     {
         in = new std::ifstream(abspath.c_str());
         if (!in->good())
@@ -154,7 +152,6 @@ public:
 
     void to_metadata(Metadata& md)
     {
-        md.add_note(md_note);
         md.set(Reftime::createPosition(core::Time(value.year, value.month,
                                                   value.mday, value.hour,
                                                   value.min, value.sec)));
@@ -195,7 +192,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     auto md = std::make_shared<Metadata>();
     vm2::Input input(abspath);
@@ -237,22 +234,18 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     return true;
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
-    vm2::Input input(reader->segment().abspath());
+    vm2::Input input(abspath);
     while (true)
     {
         std::unique_ptr<Metadata> md(new Metadata);
         if (!input.next_with_offset())
             break;
         input.to_metadata(*md);
-        md->set_source(
-            Source::createBlob(reader, input.offset, input.line.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::VM2,
-            std::vector<uint8_t>(input.line.begin(), input.line.end())));
-        if (!dest(move(md)))
+        if (!dest(std::move(md), input.offset,
+                  std::vector<uint8_t>(input.line.begin(), input.line.end())))
             return false;
     }
     return true;
@@ -297,7 +290,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 std::shared_ptr<Metadata>
-Scanner::scan_singleton(const std::filesystem::path& abspath)
+Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("VM2 support is not available");
 }
@@ -307,8 +300,8 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     throw std::runtime_error("VM2 support is not available");
 }
 
-bool Scanner::scan_segment(std::shared_ptr<segment::Reader> reader,
-                           metadata_dest_func dest)
+bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
+                              scan_file_multi_dest_func dest)
 {
     throw std::runtime_error("VM2 support is not available");
 }

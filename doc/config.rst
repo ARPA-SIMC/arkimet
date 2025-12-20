@@ -64,10 +64,6 @@ data.
 
 The value provided will be searched *before*, not *instead*, the default value.
 
-``ARKI_SCAN_GRIB1``, ``ARKI_SCAN_GRIB2``, ``ARKI_SCAN_BUFR``,
-``ARKI_SCAN_ODIMH5`` are also supported for compatibility with the past, but
-should be considered deprecated.
-
 
 ``ARKI_IOTRACE``
 ~~~~~~~~~~~~~~~~

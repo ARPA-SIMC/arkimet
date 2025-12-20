@@ -1,7 +1,7 @@
 import unittest
 import os
 import arkimet as arki
-import datetime
+import datetime as dt
 
 
 class TestScanODIMH5(unittest.TestCase):
@@ -10,36 +10,35 @@ class TestScanODIMH5(unittest.TestCase):
         Read all the metadata from a file
         """
         with arki.dataset.Session() as session:
-            with session.dataset_reader(cfg={
-                            "format": format,
-                            "name": os.path.basename(pathname),
-                            "path": pathname,
-                            "type": "file",
-                        }) as ds:
+            with session.dataset_reader(
+                cfg={
+                    "format": format,
+                    "name": os.path.basename(pathname),
+                    "path": pathname,
+                    "type": "file",
+                }
+            ) as ds:
                 mds = ds.query_data()
         self.assertEqual(len(mds), 1)
         md = mds[0]
 
         source = md.to_python("source")
-        self.assertEqual(source, {
-            "type": "source",
-            "style": "BLOB",
-            "format": "odimh5",
-            "basedir": os.getcwd(),
-            "file": pathname,
-            "offset": 0,
-            "size": size,
-        })
+        self.assertEqual(
+            source,
+            {
+                "type": "source",
+                "style": "BLOB",
+                "format": "odimh5",
+                "basedir": os.getcwd(),
+                "file": pathname,
+                "offset": 0,
+                "size": size,
+            },
+        )
 
         data = md.data
         self.assertEqual(len(data), size)
         self.assertEqual(data[1:4], b"HDF")
-
-        notes = md.get_notes()
-        self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["type"], "note")
-        self.assertEqual(notes[0]["value"], "Scanned from {}".format(os.path.basename(pathname)))
-        self.assertIsInstance(notes[0]["time"], datetime.datetime)
         return md
 
     def test_pvol(self):
@@ -51,11 +50,13 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["product"], "ODIMH5(PVOL, SCAN)")
         self.assertEqual(md["level"], "ODIMH5(0, 27)")
         self.assertEqual(md["task"], "task")
-        self.assertEqual(md["quantity"],
-                         "ACRR, BRDR, CLASS, DBZH, DBZV, HGHT, KDP, LDR, PHIDP, QIND, RATE, RHOHV,"
-                         " SNR, SQI, TH, TV, UWND, VIL, VRAD, VWND, WRAD, ZDR, ad, ad_dev, chi2,"
-                         " dbz, dbz_dev, dd, dd_dev, def, def_dev, div, div_dev, ff, ff_dev, n,"
-                         " rhohv, rhohv_dev, w, w_dev, z, z_dev")
+        self.assertEqual(
+            md["quantity"],
+            "ACRR, BRDR, CLASS, DBZH, DBZV, HGHT, KDP, LDR, PHIDP, QIND, RATE, RHOHV,"
+            " SNR, SQI, TH, TV, UWND, VIL, VRAD, VWND, WRAD, ZDR, ad, ad_dev, chi2,"
+            " dbz, dbz_dev, dd, dd_dev, def, def_dev, div, div_dev, ff, ff_dev, n,"
+            " rhohv, rhohv_dev, w, w_dev, z, z_dev",
+        )
         self.assertEqual(md["area"], "ODIMH5(lat=44456700, lon=11623600, radius=1000)")
         self.assertEqual(md["reftime"], "2000-01-02T03:04:05Z")
         self.assertNotIn("run", md)
@@ -88,8 +89,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
 
     def test_comp_etop(self):
         md = self.read("inbound/odimh5/COMP_ETOP_v20.h5", 49113)
@@ -98,8 +100,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "HGHT")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_comp_lbm(self):
@@ -109,8 +112,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_comp_max(self):
@@ -120,8 +124,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_comp_pcappi(self):
@@ -132,8 +137,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
 
     def test_comp_ppi(self):
         md = self.read("inbound/odimh5/COMP_PPI_v20.h5", 49113)
@@ -143,8 +149,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
 
     def test_comp_rr(self):
         md = self.read("inbound/odimh5/COMP_RR_v20.h5", 49049)
@@ -154,8 +161,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "ACRR")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_comp_vil(self):
@@ -166,8 +174,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "VIL")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("timerange", md)
 
     def test_image_cappi(self):
@@ -178,8 +187,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("timerange", md)
 
     def test_image_etop(self):
@@ -189,8 +199,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "HGHT")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_image_hvmi(self):
@@ -200,8 +211,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_image_max(self):
@@ -211,8 +223,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_image_pcappi(self):
@@ -223,8 +236,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
 
     def test_image_ppi(self):
         md = self.read("inbound/odimh5/IMAGE_PPI_v20.h5", 49113)
@@ -234,8 +248,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
 
     def test_image_rr(self):
         md = self.read("inbound/odimh5/IMAGE_RR_v20.h5", 49049)
@@ -245,8 +260,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "ACRR")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_image_vil(self):
@@ -257,8 +273,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T14:30:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "VIL")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
 
     def test_image_zlr_bb(self):
         md = self.read("inbound/odimh5/IMAGE_ZLR-BB_v20.h5", 62161)
@@ -267,8 +284,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-03-18T10:00:00Z")
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_xsec(self):
@@ -278,8 +296,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["reftime"], "2013-11-04T14:10:00Z")
         self.assertEqual(md["task"], "XZS")
         self.assertEqual(md["quantity"], "DBZH")
-        self.assertEqual(md["area"],
-                         "GRIB(latfirst=44320636, latlast=44821945, lonfirst=11122189, lonlast=12546566, type=0)")
+        self.assertEqual(
+            md["area"], "GRIB(latfirst=44320636, latlast=44821945, lonfirst=11122189, lonlast=12546566, type=0)"
+        )
         self.assertNotIn("level", md)
 
     def test_empty(self):
@@ -287,11 +306,13 @@ class TestScanODIMH5(unittest.TestCase):
         Check that the scanner silently discard an empty file
         """
         with arki.dataset.Session() as session:
-            with session.dataset_reader(cfg={
-                        "format": "odimh5",
-                        "name": "empty.h5",
-                        "path": "inbound/odimh5/empty.h5",
-                        "type": "file",
-                    }) as ds:
+            with session.dataset_reader(
+                cfg={
+                    "format": "odimh5",
+                    "name": "empty.h5",
+                    "path": "inbound/odimh5/empty.h5",
+                    "type": "file",
+                }
+            ) as ds:
                 mds = ds.query_data()
                 self.assertEqual(len(mds), 0)

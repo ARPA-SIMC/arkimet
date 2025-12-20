@@ -1,18 +1,20 @@
-import datetime
+import datetime as dt
 import re
 import math
 import calendar
 
 
 def odimh5_datetime2epoch(date, time):
-    return calendar.timegm((
-        int(date[:4]),
-        int(date[4:6]),
-        int(date[6:8]),
-        int(time[:2]),
-        int(time[2:4]),
-        int(time[4:6]),
-    ))
+    return calendar.timegm(
+        (
+            int(date[:4]),
+            int(date[4:6]),
+            int(date[6:8]),
+            int(time[:2]),
+            int(time[2:4]),
+            int(time[4:6]),
+        )
+    )
 
 
 def odimh5_set_reftime(h5f, md):
@@ -21,10 +23,7 @@ def odimh5_set_reftime(h5f, md):
     time = what.attrs["time"]
     timefmt = "%Y%m%d%H%M%S" if len(time) == 6 else "%Y%m%d%H%M"
 
-    md["reftime"] = {
-        "style": "POSITION",
-        "time": datetime.datetime.strptime((date + time).decode(), timefmt)
-    }
+    md["reftime"] = {"style": "POSITION", "time": dt.datetime.strptime((date + time).decode(), timefmt)}
 
 
 source_wmo = re.compile("WMO:([^,]+)")
@@ -102,18 +101,23 @@ def odimh5_pvol_set_area(h5f, md):
             if radhor is not None and radhor > radius:
                 radius = radhor
 
-    md["area"] = {"style": "ODIMH5", "value": {
-        "lat": int(round(lat * 1000000)),
-        "lon": int(round(lon * 1000000)),
-        "radius": int(round(radius * 1000)),
-    }}
+    md["area"] = {
+        "style": "ODIMH5",
+        "value": {
+            "lat": int(round(lat * 1000000)),
+            "lon": int(round(lon * 1000000)),
+            "radius": int(round(radius * 1000)),
+        },
+    }
 
 
 def odimh5_horizobj_set_area(h5f, md):
     attrs = h5f["where"].attrs
     lons = [attrs[x] for x in ("LL_lon", "LR_lon", "UL_lon", "UR_lon")]
     lats = [attrs[x] for x in ("LL_lat", "LR_lat", "UL_lat", "UR_lat")]
-    md["area"] = {"style": "GRIB", "value": {
+    md["area"] = {
+        "style": "GRIB",
+        "value": {
             "type": 0,
             "latfirst": int(math.floor(min(lats) * 1000000)),
             "latlast": int(math.floor(max(lats) * 1000000)),
@@ -238,7 +242,7 @@ if __name__ == "__main__":
 
     class Encoder(json.JSONEncoder):
         def default(self, o):
-            if isinstance(o, datetime.datetime):
+            if isinstance(o, dt.datetime):
                 return [o.year, o.month, o.day, o.hour, o.minute, o.second]
             else:
                 return json.JSONEncoder.default(self, o)
@@ -251,6 +255,7 @@ if __name__ == "__main__":
         scan(f, metadata)
         print(json.dumps(metadata, cls=Encoder))
 else:
-    from arkimet.scan.odimh5 import Scanner
-    from arkimet.scan.timedef import UNIT_SECOND
-    Scanner.register(scan)
+    from arkimet.scan.odimh5 import odimh5_scanner
+    from arkimet.scan.utils.timedef import UNIT_SECOND
+
+    odimh5_scanner.register(scan)

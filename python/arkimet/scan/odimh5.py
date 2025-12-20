@@ -1,6 +1,12 @@
+import io
+import logging
 import sys
+import tempfile
+from pathlib import Path
 from typing import Callable
+
 import arkimet
+import arkimet.scan
 
 try:
     import h5py
@@ -8,18 +14,22 @@ try:
     HAVE_H5PY = True
 except ImportError:
     HAVE_H5PY = False
-import logging
 
 log = logging.getLogger("arkimet.scan.odimh5")
 
 
-class Scanner:
-    scanners = []
-
+class ODIMH5Scanner(arkimet.scan.DataFormatScannner):
     def __init__(self):
-        self.scanners.sort(key=lambda p: p[0])
+        self.scanners = []
+        self.scanners_sorted = True
 
-    def scan(self, pathname: str, md: arkimet.Metadata):
+    def scan_data(self, data: bytes, md: arkimet.Metadata):
+        with tempfile.NamedTemporaryFile("wb") as tf:
+            tf.write(data)
+            tf.flush()
+            self.scan_file(Path(tf.name), md)
+
+    def scan_file(self, pathname: Path, md: arkimet.Metadata) -> None:
         # FIXME: hack to deal with Centos not having h5py for python3
         if HAVE_H5PY:
             with h5py.File(pathname, "r") as f:
@@ -57,7 +67,12 @@ class Scanner:
             for k, v in metadata.items():
                 md[k] = v
 
-    @classmethod
-    def register(cls, scanner: Callable[["h5py.File", arkimet.Metadata], None], priority=0):
-        if scanner not in cls.scanners:
-            cls.scanners.append((priority, scanner))
+    def register(self, scanner: Callable[[Path, arkimet.Metadata], None], priority=0):
+        if scanner not in self.scanners:
+            self.scanners.append((priority, scanner))
+            self.scanners_sorted = False
+
+
+odimh5_scanner = ODIMH5Scanner()
+
+arkimet.scan.registry.register_scanner("odimh5", odimh5_scanner)

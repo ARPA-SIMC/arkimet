@@ -1,6 +1,6 @@
-from arkimet.scan.nc import Scanner
+from arkimet.scan.netcdf import netcdf_scanner
 import netCDF4
-import datetime
+import datetime as dt
 
 POSSIBLE_TIME_DIMENSIONS = ("dstart", "time", "ocean_time")
 
@@ -14,7 +14,9 @@ def scan_area_default(dataset, md):
 
     lats = dataset["/lat"]
     lons = dataset["/lon"]
-    md["area"] = {"style": "GRIB", "value": {
+    md["area"] = {
+        "style": "GRIB",
+        "value": {
             "type": 0,
             "latfirst": int(round(min(lats) * 1000000)),
             "latlast": int(round(max(lats) * 1000000)),
@@ -29,10 +31,10 @@ def scan_reftime_default(dataset, md):
     if time is None:
         time = getattr(dataset, "time", None)
     if time is not None:
-        dt = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
+        d = dt.datetime.strptime(time, "%Y-%m-%d %H:%M:%S")
         md["reftime"] = {
             "style": "POSITION",
-            "time": dt,
+            "time": d,
         }
         return
 
@@ -41,10 +43,10 @@ def scan_reftime_default(dataset, md):
             times = dataset["/" + name]
             if not times.shape or not times.shape[0]:
                 continue
-            dt = netCDF4.num2date(times[0], units=times.units, calendar=times.calendar)
+            d = netCDF4.num2date(times[0], units=times.units, calendar=times.calendar)
             md["reftime"] = {
                 "style": "POSITION",
-                "time": dt,
+                "time": d,
             }
             break
 
@@ -69,10 +71,10 @@ def scan_arpa(dataset, md):
     if runtype in ("fc", "forecast"):
         forecast_reference_time = getattr(dataset, "forecast_reference_time", None)
         if forecast_reference_time is not None:
-            dt = datetime.datetime.strptime(forecast_reference_time, "%Y-%m-%d %H:%M:%S")
+            d = dt.datetime.strptime(forecast_reference_time, "%Y-%m-%d %H:%M:%S")
             md["reftime"] = {
                 "style": "POSITION",
-                "time": dt,
+                "time": d,
             }
         else:
             scan_reftime_default(dataset, md)
@@ -106,4 +108,4 @@ def scan(dataset, md):
     # TODO: Timerange
 
 
-Scanner.register(scan)
+netcdf_scanner.register(scan)

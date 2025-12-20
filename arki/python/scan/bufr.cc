@@ -109,8 +109,8 @@ void register_scan_bufr(PyObject* scan)
 void init_scanner_bufr()
 {
 #ifdef HAVE_DBALLE
-    arki::data::Scanner::register_factory(
-        DataFormat::BUFR, [] { return std::make_shared<PythonBufrScanner>(); });
+    arki::data::Scanner::register_scanner(
+        DataFormat::BUFR, std::make_shared<PythonBufrScanner>());
 #endif
 }
 } // namespace arki::python::scan

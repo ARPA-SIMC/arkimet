@@ -6,35 +6,8 @@
 #include <string>
 #include <vector>
 
-namespace arki::data {
-
-namespace jpeg {
+namespace arki::data::jpeg {
 const Validator& validator();
-}
-
-class JPEGScanner : public Scanner
-{
-    void set_blob_source(Metadata& md, std::shared_ptr<segment::Reader> reader);
-
-protected:
-    virtual std::shared_ptr<Metadata>
-    scan_jpeg_file(const std::filesystem::path& pathname) = 0;
-    virtual std::shared_ptr<Metadata>
-    scan_jpeg_data(const std::vector<uint8_t>& data) = 0;
-
-public:
-    DataFormat name() const override { return DataFormat::JPEG; }
-
-    std::shared_ptr<Metadata>
-    scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_pipe(core::NamedFileDescriptor& in,
-                   metadata_dest_func dest) override;
-    bool scan_segment(std::shared_ptr<segment::Reader> reader,
-                      metadata_dest_func dest) override;
-    std::shared_ptr<Metadata>
-    scan_singleton(const std::filesystem::path& abspath) override;
-};
-
-} // namespace arki::data
+} // namespace arki::data::jpeg
 
 #endif

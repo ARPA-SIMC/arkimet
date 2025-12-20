@@ -1,3 +1,11 @@
+# New in version UNRELEASED
+
+* Dropped legacy support for deprecated and unused `ARKI_SCAN_GRIB1`,
+  `ARKI_SCAN_GRIB2`, `ARKI_SCAN_BUFR`, `ARKI_SCAN_ODIMH5` environment
+  configuration
+* Redesigned scanner configuration to make it easier to support new data
+  formats (#359)
+
 # New in version 1.62
 
 * Implemented reading byte values from GRIB files in scanners (#353)

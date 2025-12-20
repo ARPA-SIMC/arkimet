@@ -220,7 +220,7 @@ struct CheckBackend : public AppendCheckBackend
                     SequenceFile::data_fname(idx, segment.format());
                 try
                 {
-                    scanner->scan_singleton(fname);
+                    scanner->scan_file_single(fname);
                 }
                 catch (std::exception& e)
                 {
@@ -902,7 +902,8 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
     auto scanner = arki::data::Scanner::get(segment.format());
     for (const auto& fi : on_disk)
     {
-        auto md = scanner->scan_singleton(segment.abspath() / fi.second.fname);
+        auto md =
+            scanner->scan_file_single(segment.abspath() / fi.second.fname);
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
         if (!dest(md))
             return false;
@@ -922,7 +923,7 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter,
         std::shared_ptr<Metadata> md;
         try
         {
-            md = scanner->scan_singleton(segment.abspath() / fi.second.fname);
+            md = scanner->scan_file_single(segment.abspath() / fi.second.fname);
         }
         catch (std::exception& e)
         {
