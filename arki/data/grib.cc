@@ -102,11 +102,7 @@ void Scanner::set_source_blob(grib_handle* gh,
     md.set_source(Source::createBlob(reader, offset, size));
     md.set_cached_data(metadata::DataManager::get().to_data(
         reader->segment().format(), vector<uint8_t>(vbuf, vbuf + size)));
-
-    stringstream note;
-    note << "Scanned from " << reader->segment().relpath().filename().native()
-         << ":" << offset << "+" << size;
-    md.add_note(note.str());
+    md.add_note_scanned_from(reader->segment().relpath(), offset, size);
 }
 
 void Scanner::set_source_inline(grib_handle* gh, Metadata& md)
@@ -195,10 +191,6 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
             break;
         std::shared_ptr<Metadata> md = scan(gh);
         set_source_inline(gh, *md);
-        stringstream note;
-        note << "Scanned from standard input";
-        md->add_note(note.str());
-
         if (!dest(md))
             return false;
     }

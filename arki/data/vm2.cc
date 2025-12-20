@@ -70,7 +70,6 @@ const Validator& validator() { return vm_validator; }
 class Input
 {
 public:
-    std::string md_note;
     std::istream* in           = nullptr;
     meteo::vm2::Parser* parser = nullptr;
     bool close                 = false;
@@ -78,8 +77,7 @@ public:
     std::string line;
     off_t offset = 0;
 
-    Input(const std::filesystem::path& abspath)
-        : md_note("Scanned from " + abspath.filename().native()), close(true)
+    Input(const std::filesystem::path& abspath) : close(true)
     {
         in = new std::ifstream(abspath.c_str());
         if (!in->good())
@@ -154,7 +152,6 @@ public:
 
     void to_metadata(Metadata& md)
     {
-        md.add_note(md_note);
         md.set(Reftime::createPosition(core::Time(value.year, value.month,
                                                   value.mday, value.hour,
                                                   value.min, value.sec)));

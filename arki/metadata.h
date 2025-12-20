@@ -281,6 +281,8 @@ public:
     void add_note(const std::string& note);
     void add_note(std::unique_ptr<types::Note> note);
     void add_note_scanned_from(const std::filesystem::path& source);
+    void add_note_scanned_from(const std::filesystem::path& source,
+                               off_t offset, size_t size);
     const types::Note& get_last_note() const;
 
     /// Check if the items match, ignoring Source, Notes, and Value items

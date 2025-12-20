@@ -449,6 +449,15 @@ void Metadata::add_note_scanned_from(const std::filesystem::path& source)
     m_index.append_note(Note::create(note.str()));
 }
 
+void Metadata::add_note_scanned_from(const std::filesystem::path& source,
+                                     off_t offset, size_t size)
+{
+    stringstream note;
+    note << "Scanned from " << source.filename().native() << ":" << offset
+         << "+" << size;
+    m_index.append_note(Note::create(note.str()));
+}
+
 const types::Note& Metadata::get_last_note() const
 {
     auto n = m_index.get_last_note();
