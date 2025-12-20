@@ -5,7 +5,7 @@ from arkimet.test import SessionMixin
 
 
 class TestScanNetCDF(SessionMixin, unittest.TestCase):
-    def read(self, pathname, size, format="nc"):
+    def read(self, pathname, size, format="netcdf"):
         """
         Read all the metadata from a file
         """
@@ -27,7 +27,7 @@ class TestScanNetCDF(SessionMixin, unittest.TestCase):
             {
                 "type": "source",
                 "style": "BLOB",
-                "format": "nc",
+                "format": format,
                 "basedir": os.getcwd(),
                 "file": pathname,
                 "offset": 0,
@@ -108,7 +108,7 @@ class TestScanNetCDF(SessionMixin, unittest.TestCase):
         """
         with self.session.dataset_reader(
             cfg={
-                "format": "nc",
+                "format": "netcdf",
                 "name": "empty.nc",
                 "path": "inbound/netcdf/empty.nc",
                 "type": "file",

@@ -49,7 +49,7 @@ python3.install_sources(
     'arkimet/scan/bufr.py',
     'arkimet/scan/vm2.py',
     'arkimet/scan/odimh5.py',
-    'arkimet/scan/nc.py',
+    'arkimet/scan/netcdf.py',
     'arkimet/scan/jpeg.py',
     subdir: 'arkimet/scan',
 )

@@ -2,8 +2,6 @@
 #include "arki/data.h"
 #include "arki/data/bufr.h"
 #include "arki/data/grib.h"
-#include "arki/data/jpeg.h"
-#include "arki/data/netcdf.h"
 #include "arki/defs.h"
 #include "arki/libconfig.h"
 #include "arki/metadata.h"
@@ -17,7 +15,6 @@
 #include "metadata.h"
 #include "scan/bufr.h"
 #include "scan/grib.h"
-#include "scan/netcdf.h"
 #include "scan/vm2.h"
 #include "structured.h"
 #include "utils/methods.h"
@@ -327,7 +324,6 @@ void register_scan(PyObject* m)
 
     arki::python::scan::register_scan_grib(scan);
     arki::python::scan::register_scan_bufr(scan);
-    arki::python::scan::register_scan_netcdf(scan);
     arki::python::scan::register_scan_vm2(scan);
 
     pyo_unique_ptr data_formats(data_formats_tuple());
@@ -352,7 +348,6 @@ void load_scanner_scripts()
 
     init_scanner_grib();
     init_scanner_bufr();
-    init_scanner_netcdf();
 
     AcquireGIL gil;
     // Import arkimet.scan

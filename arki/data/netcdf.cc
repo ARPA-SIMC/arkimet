@@ -17,8 +17,7 @@ using namespace std;
 using namespace arki::types;
 using namespace arki::utils;
 
-namespace arki::data {
-namespace netcdf {
+namespace arki::data::netcdf {
 
 /* taken from: http://www.hdfgroup.org/HDF5/doc/H5.format.html#Superblock */
 static const unsigned char hdf5_sign[8]   = {0x89, 0x48, 0x44, 0x46,
@@ -91,54 +90,4 @@ static NetCDFValidator netcdf_validator;
 
 const Validator& validator() { return netcdf_validator; }
 
-} // namespace netcdf
-
-/*
- * NetCDFScanner
- */
-
-std::shared_ptr<Metadata>
-NetCDFScanner::scan_nc_data(const std::vector<uint8_t>& data)
-{
-    sys::Tempfile tmpfd;
-    tmpfd.write_all_or_throw(data.data(), data.size());
-    return scan_nc_file(tmpfd.path());
-}
-
-std::shared_ptr<Metadata>
-NetCDFScanner::scan_data(const std::vector<uint8_t>& data)
-{
-    std::shared_ptr<Metadata> md = scan_nc_data(data);
-    md->set_source_inline(DataFormat::NETCDF,
-                          metadata::DataManager::get().to_data(
-                              DataFormat::NETCDF, std::vector<uint8_t>(data)));
-    return md;
-}
-
-std::shared_ptr<Metadata>
-NetCDFScanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    return scan_nc_file(abspath);
-}
-
-bool NetCDFScanner::scan_pipe(core::NamedFileDescriptor& in,
-                              metadata_dest_func dest)
-{
-    // Read all in a buffer
-    std::vector<uint8_t> buf;
-    const unsigned blocksize = 4096;
-    while (true)
-    {
-        buf.resize(buf.size() + blocksize);
-        unsigned read = in.read(buf.data() + buf.size() - blocksize, blocksize);
-        if (read < blocksize)
-        {
-            buf.resize(buf.size() - blocksize + read);
-            break;
-        }
-    }
-
-    return dest(scan_data(buf));
-}
-
-} // namespace arki::data
+} // namespace arki::data::netcdf

@@ -1,4 +1,4 @@
-from arkimet.scan.nc import Scanner
+from arkimet.scan.netcdf import netcdf_scanner
 import netCDF4
 import datetime as dt
 
@@ -108,4 +108,4 @@ def scan(dataset, md):
     # TODO: Timerange
 
 
-Scanner.register(scan)
+netcdf_scanner.register(scan)

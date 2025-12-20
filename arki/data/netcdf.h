@@ -6,31 +6,8 @@
 #include <string>
 #include <vector>
 
-namespace arki::data {
-
-namespace netcdf {
+namespace arki::data::netcdf {
 const Validator& validator();
-}
-
-class NetCDFScanner : public SingleFileScanner
-{
-protected:
-    virtual std::shared_ptr<Metadata>
-    scan_nc_file(const std::filesystem::path& pathname) = 0;
-    virtual std::shared_ptr<Metadata>
-    scan_nc_data(const std::vector<uint8_t>& data);
-
-public:
-    DataFormat name() const override { return DataFormat::NETCDF; }
-
-    std::shared_ptr<Metadata>
-    scan_data(const std::vector<uint8_t>& data) override;
-    bool scan_pipe(core::NamedFileDescriptor& in,
-                   metadata_dest_func dest) override;
-    std::shared_ptr<Metadata>
-    scan_file_single(const std::filesystem::path& abspath) override;
-};
-
-} // namespace arki::data
+} // namespace arki::data::netcdf
 
 #endif

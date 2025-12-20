@@ -8,7 +8,7 @@ install_data(
   'scan/bufr/bufr_pollution.py',
   'scan/grib/grib1.py',
   'scan/grib/grib2.py',
-  'scan/nc.py',
+  'scan/netcdf.py',
   'scan/odimh5.py',
   'scan/jpeg.py',
   install_dir: conf_dir / 'scan')

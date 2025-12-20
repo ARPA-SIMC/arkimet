@@ -8,7 +8,7 @@ using namespace arki::utils;
 namespace arki {
 
 std::string format_names[] = {
-    "", "grib", "bufr", "vm2", "odimh5", "nc", "jpeg",
+    "", "grib", "bufr", "vm2", "odimh5", "netcdf", "jpeg",
 };
 
 const std::string& format_name(DataFormat format)
