@@ -38,12 +38,6 @@ class TestScanNetCDF(SessionMixin, unittest.TestCase):
         data = md.data
         self.assertEqual(len(data), size)
         self.assertIn(data[1:3], (b"HD", b"DF"))
-
-        notes = md.get_notes()
-        self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["type"], "note")
-        self.assertEqual(notes[0]["value"], "Scanned from {}".format(os.path.basename(pathname)))
-        self.assertIsInstance(notes[0]["time"], dt.datetime)
         return md
 
     def assert_empty1_contents(self, md):

@@ -42,39 +42,47 @@ class TestReadConfig(unittest.TestCase):
         pathname = os.path.abspath("inbound/test.grib1")
         section = arki.dataset.read_config(pathname)
         contents = list(section.items())
-        self.assertEqual(contents, [
-            ('format', 'grib'),
-            ('name', pathname),
-            ('path', pathname),
-            ('type', 'file'),
-        ])
+        self.assertEqual(
+            contents,
+            [
+                ("format", "grib"),
+                ("name", pathname),
+                ("path", pathname),
+                ("type", "file"),
+            ],
+        )
 
     def test_http(self):
         with daemon(
-                os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect") as url:
+            os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect"
+        ) as url:
             sections = arki.dataset.http.load_cfg_sections(url)
-            self.assertEqual(sections.keys(), ('error', 'test200', 'test80'))
+            self.assertEqual(sections.keys(), ("error", "test200", "test80"))
 
 
 class TestDatasetReader(SessionMixin, unittest.TestCase):
     def test_create(self):
-        with self.session.dataset_reader(cfg={
-                    "format": "grib",
-                    "name": "test.grib1",
-                    "path": "inbound/test.grib1",
-                    "type": "file",
-                }) as ds:
+        with self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+            }
+        ) as ds:
             self.assertEqual(str(ds), "dataset.Reader(file, test.grib1)")
             self.assertEqual(repr(ds), "dataset.Reader(file, test.grib1)")
 
     def test_query_data(self):
-        ds = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-            "postprocess": "countbytes",
-        })
+        ds = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+                "postprocess": "countbytes",
+            }
+        )
 
         count = 0
 
@@ -93,12 +101,14 @@ class TestDatasetReader(SessionMixin, unittest.TestCase):
 
         # Output
         with tempfile.TemporaryFile() as fd:
+
             def stream_results(md):
                 md.write(fd)
+
             ds.query_data(on_metadata=stream_results)
             fd.seek(0)
             queried = fd.read()
-        self.assertEqual(len(queried), 588)
+        self.assertEqual(len(queried), 466)
 
         def query_reftimes(matcher=None, sort=None):
             res = []
@@ -110,6 +120,7 @@ class TestDatasetReader(SessionMixin, unittest.TestCase):
                         continue
                     res.append([i["time"].month, i["time"].day])
                     break
+
             ds.query_data(matcher=matcher, sort=sort, on_metadata=on_metadata)
             return res
 
@@ -123,13 +134,15 @@ class TestDatasetReader(SessionMixin, unittest.TestCase):
         # self.fail("no way yet to test with_data")
 
     def test_query_summary(self):
-        ds = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-            "postprocess": "countbytes",
-        })
+        ds = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+                "postprocess": "countbytes",
+            }
+        )
 
         # No arguments
         res = ds.query_summary()
@@ -153,13 +166,15 @@ class TestDatasetReader(SessionMixin, unittest.TestCase):
         self.assertEqual(queried[:2], b"SU")
 
     def test_query_bytes(self):
-        ds = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "inbound/test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-            "postprocess": "countbytes",
-        })
+        ds = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "inbound/test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+                "postprocess": "countbytes",
+            }
+        )
 
         with open("inbound/test.grib1", "rb") as fd:
             orig = fd.read()
@@ -194,6 +209,7 @@ class TestDatasetReader(SessionMixin, unittest.TestCase):
         def data_start_hook():
             nonlocal triggered
             triggered = True
+
         with tempfile.TemporaryFile() as fd:
             ds.query_bytes(file=fd, data_start_hook=data_start_hook)
             fd.seek(0)
@@ -208,32 +224,34 @@ class TestDatasetReader(SessionMixin, unittest.TestCase):
             queried = fd.read()
         # This is bigger than 44412 because postprocessors are also sent
         # metadata, so that arki-xargs can work.
-        self.assertEqual(queried, b"44937\n")
+        self.assertEqual(queried, b"44815\n")
 
         with io.BytesIO() as fd:
             ds.query_bytes(file=fd, postprocess="countbytes")
             queried = fd.getvalue()
         # This is bigger than 44412 because postprocessors are also sent
         # metadata, so that arki-xargs can work.
-        self.assertEqual(queried, b"44937\n")
+        self.assertEqual(queried, b"44815\n")
 
         queried = ds.query_bytes(postprocess="countbytes")
         # This is bigger than 44412 because postprocessors are also sent
         # metadata, so that arki-xargs can work.
-        self.assertEqual(queried, b"44937\n")
+        self.assertEqual(queried, b"44815\n")
 
     def test_query_data_qmacro(self):
         with arki.dataset.Session() as session:
-            session.add_dataset("""
+            session.add_dataset(
+                """
 format = grib
 name = test200
 path = inbound/test.grib1
 type = file
-""")
+"""
+            )
             with session.querymacro(
-                        "expa 2007-07-08",
-                        "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
-                        ) as ds:
+                "expa 2007-07-08",
+                "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
+            ) as ds:
                 with ds.reader() as reader:
                     count = 0
 
@@ -247,12 +265,14 @@ type = file
 
     def test_query_data_merged(self):
         with arki.dataset.Session() as session:
-            session.add_dataset("""
+            session.add_dataset(
+                """
 format = grib
 name = test200
 path = inbound/test.grib1
 type = file
-""")
+"""
+            )
             with session.merged() as ds:
                 with ds.reader() as reader:
                     count = 0
@@ -266,9 +286,11 @@ type = file
                     self.assertEqual(count, 3)
 
     def test_query_data_memoryusage(self):
-        ds = self.session.dataset_reader(cfg={
-            "type": "testlarge",
-        })
+        ds = self.session.dataset_reader(
+            cfg={
+                "type": "testlarge",
+            }
+        )
         count = 0
 
         def count_results(md):
@@ -280,12 +302,14 @@ type = file
         self.assertEqual(count, 24841)
 
     def test_progress(self):
-        ds = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-        })
+        ds = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+            }
+        )
 
         count = 0
 
@@ -323,15 +347,17 @@ type = file
 
     def test_progress_qmacro(self):
         with arki.dataset.Session() as session:
-            session.add_dataset("""
+            session.add_dataset(
+                """
 format = grib
 name = test200
 path = inbound/test.grib1
 type = file
-""")
+"""
+            )
             with session.querymacro(
-                    "expa 2007-07-08",
-                    "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n") as ds:
+                "expa 2007-07-08", "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n"
+            ) as ds:
                 with ds.reader() as reader:
                     count = 0
 
@@ -370,18 +396,22 @@ type = file
             raise unittest.SkipTest("Test skipped, see #217")
 
         with arki.dataset.Session() as session:
-            session.add_dataset("""
+            session.add_dataset(
+                """
 format = grib
 name = test1
 path = inbound/test.grib1
 type = file
-""")
-            session.add_dataset("""
+"""
+            )
+            session.add_dataset(
+                """
 format = bufr
 name = test2
 path = inbound/test.bufr
 type = file
-""")
+"""
+            )
 
             with session.merged() as ds:
                 with ds.reader() as reader:
@@ -429,20 +459,24 @@ class TestDatasetWriter(SessionMixin, unittest.TestCase):
             pass
         os.mkdir("testds")
 
-        dest = self.session.dataset_writer(cfg={
-            "format": "grib",
-            "name": "testds",
-            "path": "testds",
-            "type": "iseg",
-            "step": "daily",
-        })
+        dest = self.session.dataset_writer(
+            cfg={
+                "format": "grib",
+                "name": "testds",
+                "path": "testds",
+                "type": "iseg",
+                "step": "daily",
+            }
+        )
 
-        source = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-        })
+        source = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+            }
+        )
 
         def do_import(md):
             dest.acquire(md)
@@ -450,13 +484,15 @@ class TestDatasetWriter(SessionMixin, unittest.TestCase):
         source.query_data(on_metadata=do_import)
         dest.flush()
 
-        dest = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "testds",
-            "path": "testds",
-            "type": "iseg",
-            "step": "daily",
-        })
+        dest = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "testds",
+                "path": "testds",
+                "type": "iseg",
+                "step": "daily",
+            }
+        )
 
         count = 0
 
@@ -474,20 +510,24 @@ class TestDatasetWriter(SessionMixin, unittest.TestCase):
             pass
         os.mkdir("testds")
 
-        dest = self.session.dataset_writer(cfg={
-            "format": "grib",
-            "name": "testds",
-            "path": "testds",
-            "type": "iseg",
-            "step": "daily",
-        })
+        dest = self.session.dataset_writer(
+            cfg={
+                "format": "grib",
+                "name": "testds",
+                "path": "testds",
+                "type": "iseg",
+                "step": "daily",
+            }
+        )
 
-        source = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "test.grib1",
-            "path": "inbound/test.grib1",
-            "type": "file",
-        })
+        source = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "test.grib1",
+                "path": "inbound/test.grib1",
+                "type": "file",
+            }
+        )
 
         mds = source.query_data()
         res = dest.acquire_batch(mds)
@@ -495,13 +535,15 @@ class TestDatasetWriter(SessionMixin, unittest.TestCase):
 
         dest.flush()
 
-        dest = self.session.dataset_reader(cfg={
-            "format": "grib",
-            "name": "testds",
-            "path": "testds",
-            "type": "iseg",
-            "step": "daily",
-        })
+        dest = self.session.dataset_reader(
+            cfg={
+                "format": "grib",
+                "name": "testds",
+                "path": "testds",
+                "type": "iseg",
+                "step": "daily",
+            }
+        )
 
         count = 0
 

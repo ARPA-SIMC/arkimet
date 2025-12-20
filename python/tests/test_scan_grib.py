@@ -101,13 +101,6 @@ class TestScanGrib(unittest.TestCase):
 
         self.assertGribSource(md, "inbound/test.grib1", 0, 7218)
 
-        # Check notes
-        notes = md.get_notes()
-        self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["type"], "note")
-        self.assertEqual(notes[0]["value"], "Scanned from test.grib1:0+7218")
-        self.assertIsInstance(notes[0]["time"], dt.datetime)
-
         self.assertEqual(md["origin"], "GRIB1(200, 000, 101)")
         self.assertEqual(md["product"], "GRIB1(200, 140, 229)")
         self.assertEqual(md["level"], "GRIB1(001)")
@@ -165,13 +158,6 @@ class TestScanGrib(unittest.TestCase):
         md = mds[0]
 
         self.assertGribSource(md, "inbound/padded.grib1", 100, 7218)
-
-        # Check notes
-        notes = md.get_notes()
-        self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["type"], "note")
-        self.assertEqual(notes[0]["value"], "Scanned from padded.grib1:100+7218")
-        self.assertIsInstance(notes[0]["time"], dt.datetime)
 
         self.assertEqual(md["origin"], "GRIB1(200, 000, 101)")
         self.assertEqual(md["product"], "GRIB1(200, 140, 229)")

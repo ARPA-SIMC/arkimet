@@ -40,12 +40,6 @@ class TestScanJPEG(unittest.TestCase):
         self.assertEqual(len(data), size)
         self.assertEqual(data[:2], b"\xff\xd8")
         self.assertEqual(data[-2:], b"\xff\xd9")
-
-        notes = md.get_notes()
-        self.assertEqual(len(notes), 1)
-        self.assertEqual(notes[0]["type"], "note")
-        self.assertEqual(notes[0]["value"], "Scanned from {}".format(os.path.basename(pathname)))
-        self.assertIsInstance(notes[0]["time"], dt.datetime)
         return md
 
     def test_autumn(self):
