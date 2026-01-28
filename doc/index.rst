@@ -39,6 +39,7 @@ Arkimet is Free Software, licensed under the GNU General Public License version
    http-api
    config
    match-alias
+   howtos/new-data-format
    python-howtos/index
    python/index
 

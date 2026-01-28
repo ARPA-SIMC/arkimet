@@ -41,62 +41,6 @@ static void init()
             static_cast<DataFormat>(format));
 }
 
-DataFormat format_from_filename(const std::filesystem::path& fname)
-{
-    // Extract the extension
-    auto ext = fname.extension();
-    if (not ext.empty())
-    {
-        if (ext == ".zip" || ext == ".gz" || ext == ".tar")
-            ext = fname.stem().extension();
-    }
-
-    if (not ext.empty())
-    {
-        std::string f = str::lower(ext);
-
-        if (f == ".grib")
-            return DataFormat::GRIB;
-        if (f == ".grib1")
-            return DataFormat::GRIB;
-        if (f == ".grib2")
-            return DataFormat::GRIB;
-
-        if (f == ".bufr")
-            return DataFormat::BUFR;
-        if (f == ".vm2")
-            return DataFormat::VM2;
-
-        if (f == ".h5")
-            return DataFormat::ODIMH5;
-        if (f == ".hdf5")
-            return DataFormat::ODIMH5;
-        if (f == ".odim")
-            return DataFormat::ODIMH5;
-        if (f == ".odimh5")
-            return DataFormat::ODIMH5;
-
-        if (f == ".nc")
-            return DataFormat::NETCDF;
-        if (f == ".netcdf")
-            return DataFormat::NETCDF;
-
-        if (f == ".jpg")
-            return DataFormat::JPEG;
-        if (f == ".jpeg")
-            return DataFormat::JPEG;
-
-        throw std::runtime_error("unsupported extension '" + f + "'");
-    }
-    else
-    {
-        stringstream ss;
-        ss << "cannot auto-detect format from file name " << fname
-           << ": file extension not recognised";
-        throw std::runtime_error(ss.str());
-    }
-}
-
 std::optional<DataFormat> detect_format(const std::filesystem::path& path)
 {
     // Extract the extension
@@ -144,6 +88,17 @@ std::optional<DataFormat> detect_format(const std::filesystem::path& path)
         return DataFormat::JPEG;
 
     return std::optional<DataFormat>();
+}
+
+DataFormat format_from_filename(const std::filesystem::path& path)
+{
+    if (auto detected = detect_format(path))
+        return detected.value();
+
+    std::stringstream ss;
+    ss << "cannot auto-detect format from file name " << path
+       << ": file extension not recognised";
+    throw std::runtime_error(ss.str());
 }
 
 /*
