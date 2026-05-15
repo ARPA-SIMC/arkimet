@@ -96,10 +96,22 @@ def odimh5_pvol_set_area(h5f, md):
     for name, group in h5f.items():
         if not name.startswith("dataset"):
             continue
+
+        radhor = None
         if "how" in group:
+            # Search for radhor in how
             radhor = group["how"].attrs.get("radhoriz")
-            if radhor is not None and radhor > radius:
-                radius = radhor
+
+        if radhor is None and "where" in group:
+            # Otherwise, calculate radhor from nbins and scale
+            nbins = group["where"].attrs.get("nbins")
+            rscale = group["where"].attrs.get("rscale")
+            if nbins is not None and rscale is not None:
+                # Convert from metres to kilometres for compatibility with the radhoriz attribute
+                radhor = (nbins * rscale)/1000.0
+
+        if radhor is not None and radhor > radius:
+            radius = radhor
 
     md["area"] = {
         "style": "ODIMH5",
