@@ -1,4 +1,4 @@
-# New in version UNRELEASED
+# New in version 1.63
 
 * Dropped legacy support for deprecated and unused `ARKI_SCAN_GRIB1`,
   `ARKI_SCAN_GRIB2`, `ARKI_SCAN_BUFR`, `ARKI_SCAN_ODIMH5` environment

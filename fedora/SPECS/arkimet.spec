@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.62
+Version: 1.63
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,14 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Fri May 22 2026 Daniele Branchini  <dbranchini@arpae.it> - 1.63-1
+- Dropped legacy support for deprecated and unused `ARKI_SCAN_GRIB1`,
+  `ARKI_SCAN_GRIB2`, `ARKI_SCAN_BUFR`, `ARKI_SCAN_ODIMH5` environment
+  configuration
+- Redesigned scanner configuration to make it easier to support new data
+  formats (#359)
+- ODIM scanner: calculate ODIM radius from nbins and rscale if missing (#361)
+
 * Thu Nov 13 2025 Daniele Branchini  <dbranchini@arpae.it> - 1.62-1
 - Implemented reading byte values from GRIB files in scanners (#353)
 - Added uuidOfHGrid metadatum when scanning grib2 unstructured grids (#353)
