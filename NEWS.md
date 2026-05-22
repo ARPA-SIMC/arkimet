@@ -5,6 +5,7 @@
   configuration
 * Redesigned scanner configuration to make it easier to support new data
   formats (#359)
+* ODIM scanner: calculate ODIM radius from nbins and rscale if missing (#361)
 
 # New in version 1.62
 
