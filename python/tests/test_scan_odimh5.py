@@ -72,7 +72,7 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["level"], "ODIMH5(-0.2, 16)")
         self.assertEqual(md["task"], "DPC Standard Scan")
         self.assertEqual(md["quantity"], "DBZH, QIND, VRAD")
-        self.assertEqual(md["area"], "ODIMH5(lat=46562500, lon=12970300, radius=0)")
+        self.assertEqual(md["area"], "ODIMH5(lat=46562500, lon=12970300, radius=200000)")
         self.assertEqual(md["reftime"], "2020-05-29T15:30:00Z")
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
