@@ -46,6 +46,7 @@ python3.install_sources(
     'arkimet/scan/__init__.py',
     'arkimet/scan/grib.py',
     'arkimet/scan/utils/common.py',
+    'arkimet/scan/utils/jpeg.py',
     'arkimet/scan/bufr.py',
     'arkimet/scan/vm2.py',
     'arkimet/scan/odimh5.py',
