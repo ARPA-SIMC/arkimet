@@ -1,3 +1,7 @@
+# New in version 1.65
+
+* Install `arkimet/scan/utils` files in the right path (#362)
+
 # New in version 1.64
 
 * Add missing module to meson.build (#362)
