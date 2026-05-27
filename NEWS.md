@@ -1,3 +1,7 @@
+# New in version 1.64
+
+* Add missing module to meson.build (#362)
+
 # New in version 1.63
 
 * Dropped legacy support for deprecated and unused `ARKI_SCAN_GRIB1`,

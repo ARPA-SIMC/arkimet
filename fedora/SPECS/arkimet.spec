@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.63
+Version: 1.64
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Wed May 27 2026 Daniele Branchini  <dbranchini@arpae.it> - 1.64-1
+- Add missing module to meson.build (#362)
+
 * Fri May 22 2026 Daniele Branchini  <dbranchini@arpae.it> - 1.63-1
 - Dropped legacy support for deprecated and unused `ARKI_SCAN_GRIB1`,
   `ARKI_SCAN_GRIB2`, `ARKI_SCAN_BUFR`, `ARKI_SCAN_ODIMH5` environment
