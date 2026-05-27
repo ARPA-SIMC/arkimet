@@ -42,17 +42,21 @@ python3.install_sources(
 )
 
 python3.install_sources(
-    'arkimet/scan/utils/timedef.py',
     'arkimet/scan/__init__.py',
     'arkimet/scan/grib.py',
-    'arkimet/scan/utils/common.py',
-    'arkimet/scan/utils/jpeg.py',
     'arkimet/scan/bufr.py',
     'arkimet/scan/vm2.py',
     'arkimet/scan/odimh5.py',
     'arkimet/scan/netcdf.py',
     'arkimet/scan/jpeg.py',
     subdir: 'arkimet/scan',
+)
+
+python3.install_sources(
+    'arkimet/scan/utils/timedef.py',
+    'arkimet/scan/utils/common.py',
+    'arkimet/scan/utils/jpeg.py',
+    subdir: 'arkimet/scan/utils',
 )
 
 python3.install_sources(
