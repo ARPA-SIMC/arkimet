@@ -6,8 +6,12 @@ install_data(
   'scan/bufr/bufr_generic.py',
   'scan/bufr/bufr_mobile.py',
   'scan/bufr/bufr_pollution.py',
+  install_dir: conf_dir / 'scan/bufr')
+install_data(
   'scan/grib/grib1.py',
   'scan/grib/grib2.py',
+  install_dir: conf_dir / 'scan/grib')
+install_data(
   'scan/netcdf.py',
   'scan/odimh5.py',
   'scan/jpeg.py',
