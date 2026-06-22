@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.65
+Version: 1.66
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,9 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Jun 22 2026 Daniele Branchini  <dbranchini@arpae.it> - 1.66-1
+- Don't lose directory structure when installing config files (#363)
+
 * Wed May 27 2026 Daniele Branchini  <dbranchini@arpae.it> - 1.65-1
 - Install `arkimet/scan/utils` files in the right path (#362)
 

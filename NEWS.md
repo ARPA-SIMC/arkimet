@@ -1,3 +1,7 @@
+# New in version 1.66
+
+Don't lose directory structure when installing config files (#363)
+
 # New in version 1.65
 
 * Install `arkimet/scan/utils` files in the right path (#362)
