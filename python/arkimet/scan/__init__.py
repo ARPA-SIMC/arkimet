@@ -45,18 +45,22 @@ class Registry:
             sys.path = [path.as_posix()] + sys.path
             for data_format in data_formats:
                 spec = importlib.util.find_spec(data_format)
-                if spec is not None:
+                if spec is None:
+                    continue
+                if spec.origin in (None, "namespace") and data_format in ("grib", "bufr"):
+                    # Special case grib and bufr namespace packages for
+                    # compatibility
+                    #
+                    # Paths are seen as namespace-only packages, which we
+                    # skip because we load the individual files inside
+                    for module_info in pkgutil.iter_modules([path / data_format]):
+                        subspec = importlib.util.find_spec(data_format + "." + module_info.name)
+                        if subspec is not None:
+                            submod = importlib.util.module_from_spec(subspec)
+                            self.init_module(subspec, submod)
+                else:
                     mod = importlib.util.module_from_spec(spec)
                     self.init_module(spec, mod)
-                    if spec.origin in (None, "namespace") and data_format in ("grib", "bufr"):
-
-                        # Special case grib and bufr namespace packages for
-                        # compatibility
-                        for module_info in pkgutil.iter_modules([path / data_format]):
-                            subspec = importlib.util.find_spec(data_format + "." + module_info.name)
-                            if subspec is not None:
-                                submod = importlib.util.module_from_spec(subspec)
-                                self.init_module(subspec, submod)
         finally:
             sys.path = orig_path
 
