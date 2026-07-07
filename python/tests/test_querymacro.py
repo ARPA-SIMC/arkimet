@@ -1,11 +1,9 @@
 # python 3.7+ from __future__ import annotations
 import unittest
-import io
 import os
 import arkimet as arki
 from contextlib import contextmanager
 from arkimet.test import Env, ServerProcess
-from arkimet.cmdline.server import make_server
 
 
 class QmacroTestMixin:
@@ -16,12 +14,14 @@ class QmacroTestMixin:
         with Env(**kw) as env:
             dest = env.session.dataset_writer(cfg=env.ds_cfg)
 
-            source = env.session.dataset_reader(cfg={
-                "format": "grib",
-                "name": "test.grib1",
-                "path": "inbound/test.grib1",
-                "type": "file",
-            })
+            source = env.session.dataset_reader(
+                cfg={
+                    "format": "grib",
+                    "name": "test.grib1",
+                    "path": "inbound/test.grib1",
+                    "type": "file",
+                }
+            )
             mds = source.query_data()
             for md in mds:
                 for i in range(7, 10):
@@ -69,9 +69,10 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
     def test_expa(self):
         with self.datasets() as env:
             with env.session.querymacro(
-                    "expa",
-                    "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-                    "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n") as dataset:
+                "expa",
+                "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+                "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n",
+            ) as dataset:
                 with dataset.reader() as reader:
                     mdc = reader.query_data()
                     self.assertEqual(len(mdc), 2)
@@ -86,9 +87,10 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
         # Try "expa" matchers with parameter
         with self.datasets() as env:
             with env.session.querymacro(
-                    "expa 2009-08-08",
-                    "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-                    "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n") as dataset:
+                "expa 2009-08-08",
+                "ds:testds. d:@. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+                "ds:testds. d:@-1. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n",
+            ) as dataset:
                 with dataset.reader() as reader:
                     mdc = reader.query_data()
                     self.assertEqual(len(mdc), 2)
@@ -103,9 +105,10 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
         # Try "expa" matchers with inline option
         with self.datasets() as env:
             with env.session.querymacro(
-                    "expa",
-                    "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-                    "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n") as dataset:
+                "expa",
+                "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+                "ds:testds. d:2009-08-07. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n",
+            ) as dataset:
                 with dataset.reader() as reader:
                     mdc = reader.query_data(with_data=True)
                     self.assertEqual(len(mdc), 2)
@@ -121,9 +124,10 @@ class TestExpa(QmacroTestMixin, unittest.TestCase):
         with self.datasets() as env:
             # Try "expa" matchers with sort option
             with env.session.querymacro(
-                    "expa",
-                    "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
-                    "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n") as dataset:
+                "expa",
+                "ds:testds. d:2009-08-07. t:0000. s:AN. l:G00. v:GRIB1/200/140/229.\n"
+                "ds:testds. d:2009-08-08. t:0000. s:GRIB1/1. l:MSL. v:GRIB1/80/2/2.\n",
+            ) as dataset:
                 with dataset.reader() as reader:
                     mdc = reader.query_data(sort="month:-reftime")
                     self.assertEqual(len(mdc), 2)
@@ -166,20 +170,17 @@ testsecond = GRIB1,80,2,2
 [level]
 ground = GRIB1,1
 """
-        with io.StringIO(CONFIG1) as fd:
-            server1 = make_server("localhost", 0, arki.cfg.Sections.parse(fd), aliases=ALIASES1)
-        with io.StringIO(CONFIG2) as fd:
-            server2 = make_server("localhost", 0, arki.cfg.Sections.parse(fd), aliases=ALIASES2)
-        with ServerProcess(server1) as s1:
-            with ServerProcess(server2) as s2:
+        with ServerProcess("localhost", 0, CONFIG1, aliases=ALIASES1) as s1:
+            with ServerProcess("localhost", 0, CONFIG2, aliases=ALIASES2) as s2:
                 with arki.dataset.Session() as session:
-                    session.add_dataset(s1.server.remote_cfg.get("test1"))
-                    session.add_dataset(s2.server.remote_cfg.get("test2"))
+                    session.add_dataset(s1.remote_cfg.get("test1"))
+                    session.add_dataset(s2.remote_cfg.get("test2"))
                     # Query both servers with a mix of aliases from both servers
                     with session.querymacro(
-                            "expa",
-                            "ds:test1. d:2007-07-08. t:1300. s:GRIB1. l:ground. v:testfirst.\n"
-                            "ds:test2. d:2007-07-07. t:0000. s:GRIB1. l:msl. v:testsecond.\n") as qmacro:
+                        "expa",
+                        "ds:test1. d:2007-07-08. t:1300. s:GRIB1. l:ground. v:testfirst.\n"
+                        "ds:test2. d:2007-07-07. t:0000. s:GRIB1. l:msl. v:testsecond.\n",
+                    ) as qmacro:
                         with qmacro.reader() as reader:
                             mdc = reader.query_data(sort="month:-reftime")
                             self.assertEqual(len(mdc), 2)
@@ -191,5 +192,3 @@ ground = GRIB1,1
 
                             s = reader.query_summary()
                             self.assertEqual(s.count, 2)
-        server2.server_close()
-        server1.server_close()

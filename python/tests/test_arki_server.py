@@ -6,7 +6,6 @@ import io
 import requests
 import arkimet as arki
 import arkimet.test
-from arkimet.cmdline.server import make_server
 
 
 class Progress:
@@ -90,10 +89,10 @@ class TestArkiServer(unittest.TestCase):
         super().setUp()
         self.ctx = contextlib.ExitStack().__enter__()
         self.env = self.ctx.enter_context(Env(format="grib"))
-        # TODO: randomly allocate a port
-        self.server = self.ctx.enter_context(make_server("localhost", 0, self.env.config))
-        self.server_url = self.server.url
-        self.server_process = self.ctx.enter_context(arkimet.test.ServerProcess(self.server))
+        with io.StringIO() as fd:
+            self.env.config.write(fd)
+            self.server_process = self.ctx.enter_context(arkimet.test.ServerProcess("localhost", 0, fd.getvalue()))
+        self.server_url = self.server_process.url
 
     def tearDown(self):
         self.ctx.__exit__(None, None, None)

@@ -310,21 +310,41 @@ class LogCapture(logging.Handler):
 
 
 class ServerProcess(multiprocessing.Process):
-    def __init__(self, server):
+    def __init__(
+        self, host: str, port: int, config: str, url: Optional[str] = None, aliases: Optional[str] = None
+    ) -> None:
         super().__init__()
-        self.server = server
+        self.host = host
+        self.port = port
+        self.config = config
+        self.url = url
+        self.aliases = aliases
         self.server_exception = None
+        self.url_queue = multiprocessing.Queue()
+        self.remote_cfg = None
 
     def run(self):
+        from arkimet.cmdline.server import make_server
+
+        with io.StringIO(self.config) as fd:
+            server = make_server(self.host, self.port, arki.cfg.Sections.parse(fd), aliases=self.aliases)
+        self.url_queue.put(server.url)
+        with io.StringIO() as fd:
+            server.remote_cfg.write(fd)
+            self.url_queue.put(fd.getvalue())
+
         with arki.test.LogCapture():
             try:
-                self.server.serve_forever()
+                server.serve_forever()
             except Exception as e:
                 self.server_exception = e
-                self.server.shutdown()
+                server.shutdown()
 
     def __enter__(self):
         self.start()
+        self.url = self.url_queue.get()
+        with io.StringIO(self.url_queue.get()) as fd:
+            self.remote_cfg = arki.cfg.Sections.parse(fd)
         return self
 
     def __exit__(self, type, value, traceback):

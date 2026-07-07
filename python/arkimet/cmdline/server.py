@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import datetime as dt
+from typing import Optional
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ForkingMixIn
 from urllib.parse import unquote, urlsplit
@@ -230,7 +231,10 @@ class DefaultLogFilter:
         return getattr(record, "perf", None) is None
 
 
-def make_server(host, port, config, url=None, aliases=None):
+def make_server(
+    host: str, port: int, config: arki.cfg.Sections, url: Optional[str] = None, aliases: Optional[str] = None
+) -> ArkiServer:
+    """Instantiate an ArkiServer."""
     httpd = ArkiServer((host, port), Handler, aliases=aliases)
     if url is not None:
         httpd.url = url
