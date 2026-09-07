@@ -4,9 +4,7 @@ import datetime as dt
 import logging
 import re
 import socket
-import subprocess
 import sys
-import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ForkingMixIn
 from typing import Optional
@@ -19,8 +17,10 @@ from arkimet.server import views
 
 try:
     from setproctitle import setproctitle
+
+    HAS_SETPROCTITLE = True
 except ModuleNotFoundError:
-    setproctitle = None
+    HAS_SETPROCTITLE = False
 from arkimet.cmdline.base import App
 
 
@@ -164,7 +164,7 @@ class Handler(BaseHTTPRequestHandler):
         from werkzeug.wrappers import Request
 
         request = Request(self.make_environ())
-        if setproctitle is not None:
+        if HAS_SETPROCTITLE:
             setproctitle(
                 "arki-server {} for {}".format(
                     request.base_url, request.remote_addr
@@ -310,11 +310,6 @@ class Server(App):
             help="log to standard error in a way compatible with journald",
         )
 
-        parser.add_argument(
-            "--runtest",
-            metavar="cmd",
-            help="start the server, run the given test command and return its exit status",
-        )
         return parser
 
     def setup_logging(self):
@@ -410,25 +405,6 @@ class Server(App):
         )
 
         try:
-            if self.args.runtest:
-                exit_code = 0
-                args = self.args
-
-                class TestThread(threading.Thread):
-                    def run(self):
-                        try:
-                            subprocess.check_call(args.runtest, shell=True)
-                        except subprocess.CalledProcessError:
-                            nonlocal exit_code
-                            exit_code = 1
-                        httpd.shutdown()
-
-                test_thread = TestThread()
-                test_thread.start()
-                httpd.serve_forever()
-                test_thread.join()
-                sys.exit(exit_code)
-            else:
-                httpd.serve_forever()
+            httpd.serve_forever()
         finally:
             httpd.server_close()
