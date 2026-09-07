@@ -1,11 +1,11 @@
-from typing import Callable
-
 # import functools
 import io
 import logging
 from pathlib import Path
+from typing import Callable
 
 from PIL import Image
+
 import arkimet
 import arkimet.scan
 
@@ -47,7 +47,11 @@ class JPEGScanner(arkimet.scan.DataFormatScannner):
             except Exception:
                 log.warning("scanner function failed", exc_info=True)
 
-    def register(self, scanner: Callable[[ScannedImage, arkimet.Metadata], None], priority=0) -> None:
+    def register(
+        self,
+        scanner: Callable[[ScannedImage, arkimet.Metadata], None],
+        priority=0,
+    ) -> None:
         if scanner not in self.scanners:
             self.scanners.append((priority, scanner))
             self.scanners_sorted = False

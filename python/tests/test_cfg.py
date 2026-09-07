@@ -1,6 +1,7 @@
-import unittest
-import tempfile
 import io
+import tempfile
+import unittest
+
 import arkimet as arki
 
 

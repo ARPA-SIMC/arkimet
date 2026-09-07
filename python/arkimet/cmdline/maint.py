@@ -14,13 +14,21 @@ class Unarchive(ArkimetCommand):
     """
     Move archived segments back online
     """
+
     log = logging.getLogger("arki-maint")
 
     @classmethod
-    def make_subparser(cls, subparsers: "argparse._SubParsersAction[Any]") -> argparse.ArgumentParser:
+    def make_subparser(
+        cls, subparsers: "argparse._SubParsersAction[Any]"
+    ) -> argparse.ArgumentParser:
         parser = super().make_subparser(subparsers)
-        parser.add_argument("segments", metavar="segment", nargs="+", action="store",
-                            help="pathname of segment to unarchive")
+        parser.add_argument(
+            "segments",
+            metavar="segment",
+            nargs="+",
+            action="store",
+            help="pathname of segment to unarchive",
+        )
         return parser
 
     def run(self):
@@ -30,7 +38,9 @@ class Unarchive(ArkimetCommand):
         for path in self.args.segments:
             path = os.path.abspath(path)
             if ARCPATH not in path:
-                self.log.warning("%s: ignoring file not inside .archive/last/", path)
+                self.log.warning(
+                    "%s: ignoring file not inside .archive/last/", path
+                )
                 continue
 
             dataset, segment = path.split("/.archive/last/")
@@ -49,13 +59,22 @@ class ScanTest(ArkimetCommand):
     """
     Run a query on a dataset, rescan the resulting data, and show metadata changes
     """
+
     @classmethod
-    def make_subparser(cls, subparsers: "argparse._SubParsersAction[Any]") -> argparse.ArgumentParser:
+    def make_subparser(
+        cls, subparsers: "argparse._SubParsersAction[Any]"
+    ) -> argparse.ArgumentParser:
         parser = super().make_subparser(subparsers)
-        parser.add_argument("query", metavar="query", action="store",
-                            help="query to run")
-        parser.add_argument("dataset", metavar="path", nargs="+", action="store",
-                            help="dataset(s) to query")
+        parser.add_argument(
+            "query", metavar="query", action="store", help="query to run"
+        )
+        parser.add_argument(
+            "dataset",
+            metavar="path",
+            nargs="+",
+            action="store",
+            help="dataset(s) to query",
+        )
         return parser
 
     TypesDict = Dict[str, List[Dict[str, Any]]]
@@ -71,7 +90,9 @@ class ScanTest(ArkimetCommand):
 
         return source, res
 
-    def compare(self, orig: TypesDict, new: arkimet.Metadata) -> Tuple[TypesDict, TypesDict]:
+    def compare(
+        self, orig: TypesDict, new: arkimet.Metadata
+    ) -> Tuple[TypesDict, TypesDict]:
         added = defaultdict(list)
         for item in new.to_python()["items"]:
             if item["type"] == "source":
@@ -103,7 +124,9 @@ class ScanTest(ArkimetCommand):
                 with session.dataset_reader(cfg=cfg) as ds:
                     for orig in ds.query_data(query, with_data=True):
                         source, orig_data = self.index(orig)
-                        scanner = arkimet.scan.Scanner.get_scanner(source["format"])
+                        scanner = arkimet.scan.Scanner.get_scanner(
+                            source["format"]
+                        )
                         new = scanner.scan_data(orig.data)
 
                         added, removed = self.compare(orig_data, new)
@@ -126,12 +149,15 @@ class Maint(ArkimetCommand):
     """
     Perform maintenance operations on arkimet datasets
     """
+
     log = logging.getLogger("arki-maint")
 
     @classmethod
     def make_parser(cls) -> argparse.ArgumentParser:
         parser = super().make_parser()
-        subparsers = parser.add_subparsers(help="sub-command help", dest="command")
+        subparsers = parser.add_subparsers(
+            help="sub-command help", dest="command"
+        )
         Unarchive.make_subparser(subparsers)
         ScanTest.make_subparser(subparsers)
         return parser

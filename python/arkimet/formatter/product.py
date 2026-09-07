@@ -1,8 +1,9 @@
-from arkimet.formatter import Formatter
-from arkimet.formatter.eccodes import GribTable
-import arkimet as arki
 import os
 import re
+
+import arkimet as arki
+from arkimet.formatter import Formatter
+from arkimet.formatter.eccodes import GribTable
 
 re_grib1_product = re.compile(r"\*\*")
 
@@ -22,12 +23,28 @@ def format_product(v):
 
         return None
     elif v["style"] == "GRIB2":
-        centre, category, discipline, number, table_version, local_table_version = (
-                v["centre"], v["category"], v["discipline"], v["number"],
-                v["table_version"], v["local_table_version"])
+        (
+            centre,
+            category,
+            discipline,
+            number,
+            table_version,
+            local_table_version,
+        ) = (
+            v["centre"],
+            v["category"],
+            v["discipline"],
+            v["number"],
+            v["table_version"],
+            v["local_table_version"],
+        )
 
-        tableprefix = GribTable.get_grib2_table_prefix(centre, table_version, local_table_version)
-        tablename = os.path.join(tableprefix, "4.2.{}.{}".format(discipline, category))
+        tableprefix = GribTable.get_grib2_table_prefix(
+            centre, table_version, local_table_version
+        )
+        tablename = os.path.join(
+            tableprefix, "4.2.{}.{}".format(discipline, category)
+        )
         names = GribTable.load(2, tablename)
 
         if names.has(number):

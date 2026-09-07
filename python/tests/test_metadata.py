@@ -1,9 +1,10 @@
-import unittest
-import os
-import io
-import tempfile
-import arkimet as arki
 import datetime as dt
+import io
+import os
+import tempfile
+import unittest
+
+import arkimet as arki
 
 
 class TestMetadata(unittest.TestCase):
@@ -30,7 +31,12 @@ class TestMetadata(unittest.TestCase):
 
         py_reftime = md.to_python("reftime")
         self.assertEqual(
-            py_reftime, {"type": "reftime", "style": "POSITION", "time": dt.datetime(2007, 7, 8, 13, 0, 0)}
+            py_reftime,
+            {
+                "type": "reftime",
+                "style": "POSITION",
+                "time": dt.datetime(2007, 7, 8, 13, 0, 0),
+            },
         )
 
         md["reftime"] = "2019-07-30T12:00:00Z"
@@ -41,7 +47,12 @@ class TestMetadata(unittest.TestCase):
 
         self.assertIn("source", md)
 
-        self.assertEqual(md["source"], "BLOB(grib,{}:0+7218)".format(os.path.abspath("inbound/test.grib1")))
+        self.assertEqual(
+            md["source"],
+            "BLOB(grib,{}:0+7218)".format(
+                os.path.abspath("inbound/test.grib1")
+            ),
+        )
 
         py_source = md.to_python("source")
         self.assertEqual(
@@ -57,12 +68,22 @@ class TestMetadata(unittest.TestCase):
             },
         )
         md["source"] = py_source
-        self.assertEqual(md["source"], "BLOB(grib,{}:0+7218)".format(os.path.abspath("inbound/test.grib1")))
+        self.assertEqual(
+            md["source"],
+            "BLOB(grib,{}:0+7218)".format(
+                os.path.abspath("inbound/test.grib1")
+            ),
+        )
 
     def test_to_string(self):
         md = self.read("inbound/test.grib1")[0]
         self.assertEqual(md.to_string("origin"), "GRIB1(200, 000, 101)")
-        self.assertEqual(md.to_string("source"), "BLOB(grib,{}:0+7218)".format(os.path.abspath("inbound/test.grib1")))
+        self.assertEqual(
+            md.to_string("source"),
+            "BLOB(grib,{}:0+7218)".format(
+                os.path.abspath("inbound/test.grib1")
+            ),
+        )
 
     def test_to_python(self):
         mds = self.read("inbound/test.grib1")
@@ -87,7 +108,11 @@ class TestMetadata(unittest.TestCase):
             res.append(md)
 
         # I/O on named file
-        self.assertTrue(arki.Metadata.read_bundle("inbound/test.grib1.arkimet", dest=store_md))
+        self.assertTrue(
+            arki.Metadata.read_bundle(
+                "inbound/test.grib1.arkimet", dest=store_md
+            )
+        )
         self.assertEqual(len(res), 3)
         self.assertEqual(
             res[0].to_python("source"),
@@ -113,7 +138,11 @@ class TestMetadata(unittest.TestCase):
 
         # I/O on named file with basedir and pathname
         with tempfile.TemporaryDirectory() as basedir:
-            res = arki.Metadata.read_bundle("inbound/test.grib1.arkimet", basedir=basedir, pathname="pathname")
+            res = arki.Metadata.read_bundle(
+                "inbound/test.grib1.arkimet",
+                basedir=basedir,
+                pathname="pathname",
+            )
             self.assertEqual(len(res), 3)
             self.assertEqual(
                 res[0].to_python("source"),
@@ -160,7 +189,9 @@ class TestMetadata(unittest.TestCase):
         # I/O on real file descriptor with basedir and pathname
         with tempfile.TemporaryDirectory() as basedir:
             with open("inbound/test.grib1.arkimet", "rb") as fd:
-                res = arki.Metadata.read_bundle(fd.fileno(), basedir=basedir, pathname="pathname")
+                res = arki.Metadata.read_bundle(
+                    fd.fileno(), basedir=basedir, pathname="pathname"
+                )
             self.assertEqual(len(res), 3)
             self.assertEqual(
                 res[0].to_python("source"),
@@ -213,7 +244,10 @@ class TestMetadata(unittest.TestCase):
         with io.BytesIO() as out:
             md.write(out, format="yaml")
             self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
-            self.assertNotIn(b"# sfc Surface (of the Earth, which includes sea surface)", out.getvalue())
+            self.assertNotIn(
+                b"# sfc Surface (of the Earth, which includes sea surface)",
+                out.getvalue(),
+            )
 
             # Read from bytes()
             md1 = arki.Metadata.read_yaml(out.getvalue())
@@ -240,7 +274,10 @@ class TestMetadata(unittest.TestCase):
         with io.BytesIO() as out:
             md.write(out, format="yaml", annotate=True)
             self.assertEqual(out.getvalue()[:12], b"Source: BLOB")
-            self.assertIn(b"# sfc Surface (of the Earth, which includes sea surface)", out.getvalue())
+            self.assertIn(
+                b"# sfc Surface (of the Earth, which includes sea surface)",
+                out.getvalue(),
+            )
 
             out.seek(0)
             md1 = arki.Metadata.read_yaml(out)

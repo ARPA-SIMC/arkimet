@@ -4,8 +4,9 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+
 from arkimet.cmdline.mergeconf import Mergeconf
-from arkimet.test import daemon, CmdlineTestMixin
+from arkimet.test import CmdlineTestMixin, daemon
 
 
 class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
@@ -13,7 +14,10 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
 
     def test_http(self):
         with daemon(
-            os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect"
+            os.path.join(
+                os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"
+            ),
+            "--action=redirect",
         ) as url:
             out = self.call_output_success(url)
             self.assertEqual(
@@ -42,7 +46,10 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
 
     def test_ignore_system_datasets(self):
         with daemon(
-            os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect"
+            os.path.join(
+                os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"
+            ),
+            "--action=redirect",
         ) as url:
             out = self.call_output_success("--ignore-system-datasets", url)
             self.assertEqual(
@@ -65,7 +72,10 @@ class TestArkiMergeconf(CmdlineTestMixin, unittest.TestCase):
 
     def test_restrict(self):
         with daemon(
-            os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect"
+            os.path.join(
+                os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"
+            ),
+            "--action=redirect",
         ) as url:
             out = self.call_output_success("--restrict=test,test1", url)
             self.assertEqual(
@@ -105,13 +115,19 @@ type=discard
     def test_load_configs(self):
         with tempfile.NamedTemporaryFile("wt") as conf1:
             with tempfile.NamedTemporaryFile("wt") as conf2:
-                conf1.write("[ds1]\npath=/tmp/ds1\ntype=discard\n[common]\npath=/tmp/common1\ntype=discard\n")
+                conf1.write(
+                    "[ds1]\npath=/tmp/ds1\ntype=discard\n[common]\npath=/tmp/common1\ntype=discard\n"
+                )
                 conf1.flush()
-                conf2.write("[ds2]\npath=/tmp/ds2\ntype=discard\n[common]\npath=/tmp/common2\ntype=discard\n")
+                conf2.write(
+                    "[ds2]\npath=/tmp/ds2\ntype=discard\n[common]\npath=/tmp/common2\ntype=discard\n"
+                )
                 conf2.flush()
 
                 with self.assertLogs() as log:
-                    out = self.call_output_success("--config=" + conf1.name, "--config=" + conf2.name)
+                    out = self.call_output_success(
+                        "--config=" + conf1.name, "--config=" + conf2.name
+                    )
                 self.assertEqual(
                     out.splitlines(),
                     [
@@ -163,7 +179,9 @@ type=discard
         # See https://github.com/ARPA-SIMC/arkimet/issues/348
         with tempfile.TemporaryDirectory() as workdir_str:
             workdir = Path(workdir_str)
-            (workdir / "config").write_text("type=iseg\nformat=grib\nstep=daily\n")
+            (workdir / "config").write_text(
+                "type=iseg\nformat=grib\nstep=daily\n"
+            )
             out = self.call_output_success(workdir.as_posix())
             self.assertEqual(out.splitlines()[0], f"[{workdir.name}]")
 

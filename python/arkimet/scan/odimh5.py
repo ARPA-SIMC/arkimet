@@ -1,4 +1,3 @@
-import io
 import logging
 import sys
 import tempfile
@@ -44,8 +43,8 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScannner):
                     except Exception:
                         log.warning("scanner function failed", exc_info=True)
         else:
-            import json
             import inspect
+            import json
             import subprocess
 
             metadata = {}
@@ -59,7 +58,11 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScannner):
                 )
                 stdout, stderr = proc.communicate(input=json.dumps(metadata))
                 if proc.returncode != 0:
-                    log.error("scanner %s returned error code %d", scanner, proc.returncode)
+                    log.error(
+                        "scanner %s returned error code %d",
+                        scanner,
+                        proc.returncode,
+                    )
                     continue
 
                 metadata = json.loads(stdout)
@@ -67,7 +70,9 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScannner):
             for k, v in metadata.items():
                 md[k] = v
 
-    def register(self, scanner: Callable[[Path, arkimet.Metadata], None], priority=0):
+    def register(
+        self, scanner: Callable[[Path, arkimet.Metadata], None], priority=0
+    ):
         if scanner not in self.scanners:
             self.scanners.append((priority, scanner))
             self.scanners_sorted = False

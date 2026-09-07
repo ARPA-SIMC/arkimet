@@ -1,9 +1,11 @@
-from typing import Callable
-from collections import defaultdict
-import arkimet
-import dballe
-import math
 import logging
+import math
+from collections import defaultdict
+from typing import Callable
+
+import dballe
+
+import arkimet
 
 log = logging.getLogger("arkimet.scan.bufr")
 
@@ -33,7 +35,12 @@ class Scanner:
                 log.warning("scanner function failed", exc_info=True)
 
     @classmethod
-    def register(cls, type: str, scanner: Callable[[dballe.Message, arkimet.Metadata], None], priority=0):
+    def register(
+        cls,
+        type: str,
+        scanner: Callable[[dballe.Message, arkimet.Metadata], None],
+        priority=0,
+    ):
         if scanner not in cls.by_type[type]:
             cls.by_type[type].append((priority, scanner))
 
@@ -42,8 +49,8 @@ def read_area_fixed(msg):
     """
     Read the area from a BUFR containing a fixed station
     """
-    lat = msg.get_named('latitude')
-    lon = msg.get_named('longitude')
+    lat = msg.get_named("latitude")
+    lon = msg.get_named("longitude")
     if lat is not None and lon is not None:
         return {"lat": lat.enqi(), "lon": lon.enqi()}
     else:
@@ -54,14 +61,14 @@ def read_area_mobile(msg):
     """
     Read the area from a BUFR containing a mobile station
     """
-    lat = msg.get_named('latitude')
-    lon = msg.get_named('longitude')
+    lat = msg.get_named("latitude")
+    lon = msg.get_named("longitude")
     if lat is not None and lon is not None:
         # Approximate to 1 degree to allow arkimet to perform grouping
         return {
             "type": "mob",
             "x": math.floor(lon.enqd()),
-            "y": math.floor(lat.enqd())
+            "y": math.floor(lat.enqd()),
         }
     else:
         return None
@@ -72,9 +79,9 @@ def read_proddef(msg):
     Read a default proddef value for a message
     """
     res = {}
-    blo = msg.get_named('block')
-    sta = msg.get_named('station')
-    id = msg.get_named('ident')
+    blo = msg.get_named("block")
+    sta = msg.get_named("station")
+    id = msg.get_named("ident")
     found = False
     if blo:
         res["blo"] = blo.enqi()
@@ -89,6 +96,7 @@ def read_proddef(msg):
         return res
     else:
         return None
+
 
 # function bufr_scan_forecast(msg)
 #     local forecast = nil

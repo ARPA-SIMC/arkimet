@@ -1,8 +1,9 @@
 # python 3.7+ from __future__ import annotations
-import unittest
 import os
-import arkimet as arki
+import unittest
 from contextlib import contextmanager
+
+import arkimet as arki
 from arkimet.test import Env, ServerProcess
 
 
@@ -186,9 +187,13 @@ ground = GRIB1,1
                             self.assertEqual(len(mdc), 2)
 
                             self.assertTrue(mdc[0].has_source())
-                            self.assertEqual(mdc[0]["reftime"], "2007-07-08T13:00:00Z")
+                            self.assertEqual(
+                                mdc[0]["reftime"], "2007-07-08T13:00:00Z"
+                            )
                             self.assertTrue(mdc[1].has_source())
-                            self.assertEqual(mdc[1]["reftime"], "2007-07-07T00:00:00Z")
+                            self.assertEqual(
+                                mdc[1]["reftime"], "2007-07-07T00:00:00Z"
+                            )
 
                             s = reader.query_summary()
                             self.assertEqual(s.count, 2)

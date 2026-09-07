@@ -1,9 +1,8 @@
-from typing import Any, Dict
-
 # import functools
 import sys
+from typing import Any, Dict
 
-from PIL import Image, ExifTags
+from PIL import ExifTags, Image
 
 image_tags = {v: k for k, v in ExifTags.TAGS.items()}
 gps_tags = {v: k for k, v in ExifTags.GPSTAGS.items()}
@@ -67,7 +66,9 @@ class ScannedImage:
         """
         tagid = image_tags.get(tag_name)
         if tagid is None:
-            raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.TAGS")
+            raise KeyError(
+                f"Exif tag {tag_name!r} is not available in PIL.ExifTags.TAGS"
+            )
         return self.exif.get(tagid)
 
     def get_gps(self, tag_name: str) -> Any:
@@ -76,7 +77,9 @@ class ScannedImage:
         """
         tagid = gps_tags.get(tag_name)
         if tagid is None:
-            raise KeyError(f"Exif tag {tag_name!r} is not available in PIL.ExifTags.GPSTAGS")
+            raise KeyError(
+                f"Exif tag {tag_name!r} is not available in PIL.ExifTags.GPSTAGS"
+            )
         return self.gpsinfo.get(tagid)
 
     def dump(self, file=None):

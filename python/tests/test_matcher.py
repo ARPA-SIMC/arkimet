@@ -1,7 +1,8 @@
-import unittest
 import glob
-import re
 import os
+import re
+import unittest
+
 import arkimet as arki
 from arkimet.test import SessionMixin
 
@@ -35,7 +36,9 @@ class TestMatcher(SessionMixin, unittest.TestCase):
         """
         Run the doc/matcher/*.txt as doctests
         """
-        re_given = re.compile(r"^Given (\w+ ``[^`]+``(?:\s*,\s*\w+ ``[^`]+``)*)")
+        re_given = re.compile(
+            r"^Given (\w+ ``[^`]+``(?:\s*,\s*\w+ ``[^`]+``)*)"
+        )
         re_given_item = re.compile(r"(\w+) ``([^`]+)``")
         re_matches = re.compile(r"^\* ``(.+)`` matches\b")
         re_not_matches = re.compile(r"^\* ``(.+)`` does not match\b")
@@ -61,15 +64,21 @@ class TestMatcher(SessionMixin, unittest.TestCase):
                             try:
                                 md[m.group(1)] = m.group(2)
                             except Exception as e:
-                                self.fail("{}:{}: cannot parse metadata in line {}: {}".format(
-                                    pathname, lineno, line.rstrip(), e))
+                                self.fail(
+                                    "{}:{}: cannot parse metadata in line {}: {}".format(
+                                        pathname, lineno, line.rstrip(), e
+                                    )
+                                )
                         continue
 
                     mo = re_matches.match(line)
                     if mo:
                         if md is None:
-                            self.fail("{}:{}: `matches` line found before Given line".format(
-                                pathname, lineno))
+                            self.fail(
+                                "{}:{}: `matches` line found before Given line".format(
+                                    pathname, lineno
+                                )
+                            )
 
                         matcher = self.session.matcher(mo.group(1))
                         self.assertTrue(matcher.match(md))
@@ -79,8 +88,11 @@ class TestMatcher(SessionMixin, unittest.TestCase):
                     mo = re_not_matches.match(line)
                     if mo:
                         if md is None:
-                            self.fail("{}:{}: `does not match` line found before Given line".format(
-                                pathname, lineno))
+                            self.fail(
+                                "{}:{}: `does not match` line found before Given line".format(
+                                    pathname, lineno
+                                )
+                            )
 
                         matcher = self.session.matcher(mo.group(1))
                         self.assertFalse(matcher.match(md))
@@ -96,7 +108,16 @@ class TestMatcher(SessionMixin, unittest.TestCase):
                             expected_not_matches = int(mo.group(2))
                         continue
 
-                if (expected_matches != count_matches
-                   or expected_not_matches != count_not_matches):
-                    self.fail("{}: test count expectations failed: matches {}/{}, not matches {}/{}".format(
-                        pathname, count_matches, expected_matches, count_not_matches, expected_not_matches))
+                if (
+                    expected_matches != count_matches
+                    or expected_not_matches != count_not_matches
+                ):
+                    self.fail(
+                        "{}: test count expectations failed: matches {}/{}, not matches {}/{}".format(
+                            pathname,
+                            count_matches,
+                            expected_matches,
+                            count_not_matches,
+                            expected_not_matches,
+                        )
+                    )

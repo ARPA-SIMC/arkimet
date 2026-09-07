@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Any
+from typing import Any, Dict, Tuple
 
 UNIT_MINUTE = 0
 UNIT_HOUR = 1
@@ -37,7 +37,11 @@ def timeunit_suffix(unit: int) -> str:
     if unit == UNIT_MISSING:
         raise ValueError("cannot find suffix for MISSING (255) time unit")
     else:
-        raise ValueError("cannot find find time unit suffix: time unit is unknown ({})".format(unit))
+        raise ValueError(
+            "cannot find find time unit suffix: time unit is unknown ({})".format(
+                unit
+            )
+        )
 
 
 def unit_can_be_seconds(unit: int) -> bool:
@@ -45,9 +49,24 @@ def unit_can_be_seconds(unit: int) -> bool:
     Return true if the unit can be represented in seconds, false if the unit can
     be represented in months.
     """
-    if unit in (UNIT_SECOND, UNIT_MINUTE, UNIT_HOUR, UNIT_3HOURS, UNIT_6HOURS, UNIT_12HOURS, UNIT_DAY):
+    if unit in (
+        UNIT_SECOND,
+        UNIT_MINUTE,
+        UNIT_HOUR,
+        UNIT_3HOURS,
+        UNIT_6HOURS,
+        UNIT_12HOURS,
+        UNIT_DAY,
+    ):
         return True
-    if unit in (UNIT_MONTH, UNIT_YEAR, UNIT_DECADE, UNIT_NORMAL, UNIT_CENTURY, UNIT_MISSING):
+    if unit in (
+        UNIT_MONTH,
+        UNIT_YEAR,
+        UNIT_DECADE,
+        UNIT_NORMAL,
+        UNIT_CENTURY,
+        UNIT_MISSING,
+    ):
         return False
     raise ValueError("invalid timedef unit {}".format(unit))
 
@@ -65,8 +84,11 @@ def compare_units(unit1: int, unit2: int) -> int:
 
     if unit_can_be_seconds(unit1):
         if not unit_can_be_seconds(unit2):
-            raise ValueError("cannot compare two different kinds of time units ({} and {})".format(
-                timeunit_suffix(unit1), timeunit_suffix(unit2)))
+            raise ValueError(
+                "cannot compare two different kinds of time units ({} and {})".format(
+                    timeunit_suffix(unit1), timeunit_suffix(unit2)
+                )
+            )
 
         if unit1 == UNIT_SECOND:
             return -1
@@ -91,18 +113,31 @@ def compare_units(unit1: int, unit2: int) -> int:
             else:
                 return -1
         elif unit1 == UNIT_12HOURS:
-            if unit2 in (UNIT_6HOURS, UNIT_3HOURS, UNIT_HOUR, UNIT_MINUTE, UNIT_SECOND):
+            if unit2 in (
+                UNIT_6HOURS,
+                UNIT_3HOURS,
+                UNIT_HOUR,
+                UNIT_MINUTE,
+                UNIT_SECOND,
+            ):
                 return 1
             else:
                 return -1
         elif unit1 == UNIT_DAY:
             return 1
         else:
-            raise ValueError("unable to compare unknown unit type {}".format(timeunit_suffix(unit1)))
+            raise ValueError(
+                "unable to compare unknown unit type {}".format(
+                    timeunit_suffix(unit1)
+                )
+            )
     else:
         if unit_can_be_seconds(unit2):
-            raise ValueError("cannot compare two different kinds of time units ({} and {})".format(
-                timeunit_suffix(unit1), timeunit_suffix(unit2)))
+            raise ValueError(
+                "cannot compare two different kinds of time units ({} and {})".format(
+                    timeunit_suffix(unit1), timeunit_suffix(unit2)
+                )
+            )
         if unit1 == UNIT_MONTH:
             return -1
         elif unit1 == UNIT_YEAR:
@@ -126,7 +161,11 @@ def compare_units(unit1: int, unit2: int) -> int:
             else:
                 return -1
         else:
-            raise ValueError("unable to compare unknown unit type {}".format(timeunit_suffix(unit1)))
+            raise ValueError(
+                "unable to compare unknown unit type {}".format(
+                    timeunit_suffix(unit1)
+                )
+            )
 
 
 def restrict_unit(val: int, unit: int) -> Tuple[int, int]:
@@ -267,8 +306,11 @@ def make_same_units(tr: Dict[str, Any]):
             else:
                 val1, unit1 = tval1, tunit1
 
-    raise ValueError("Cannot convert {} and {} to the same unit".format(
-        timeunit_suffix(unit1), timeunit_suffix(unit2)))
+    raise ValueError(
+        "Cannot convert {} and {} to the same unit".format(
+            timeunit_suffix(unit1), timeunit_suffix(unit2)
+        )
+    )
 
 
 __all__ = [

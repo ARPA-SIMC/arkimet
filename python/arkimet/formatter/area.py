@@ -1,6 +1,6 @@
+import arkimet as arki
 from arkimet.formatter import Formatter
 from arkimet.formatter.eccodes import GribTable
-import arkimet as arki
 
 
 def format_area(v):

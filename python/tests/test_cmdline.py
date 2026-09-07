@@ -1,4 +1,5 @@
 import unittest
+
 import arkimet.cmdline
 import arkimet.cmdline.base
 
@@ -6,6 +7,7 @@ import arkimet.cmdline.base
 class TestRestrict(unittest.TestCase):
     def _restrict(self, restrict_pattern, restrict_value):
         from arkimet.cmdline.base import RestrictSectionFilter
+
         f = RestrictSectionFilter(restrict_pattern)
         config = arkimet.cfg.Section()
         config["restrict"] = restrict_value
@@ -13,11 +15,19 @@ class TestRestrict(unittest.TestCase):
 
     def assertRestrictPasses(self, restrict, filter):
         if not self._restrict(filter, restrict):
-            self.fail("restrict value of {} was not accepted by filter {}".format(restrict, filter))
+            self.fail(
+                "restrict value of {} was not accepted by filter {}".format(
+                    restrict, filter
+                )
+            )
 
     def assertRestrictNotPasses(self, restrict, filter):
         if self._restrict(filter, restrict):
-            self.fail("restrict value of {} was unexpectedly accepted by filter {}".format(restrict, filter))
+            self.fail(
+                "restrict value of {} was unexpectedly accepted by filter {}".format(
+                    restrict, filter
+                )
+            )
 
     def test_restrict(self):
         self.assertRestrictPasses("", "")
@@ -70,7 +80,15 @@ class TestParseSize(unittest.TestCase):
         self.assertEqual(parse("1P"), 1000 * 1000 * 1000 * 1000 * 1000)
         self.assertEqual(parse("1EB"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000)
         self.assertEqual(parse("1E"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000)
-        self.assertEqual(parse("1ZB"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000)
-        self.assertEqual(parse("1Z"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000)
-        self.assertEqual(parse("1YB"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000)
-        self.assertEqual(parse("1Y"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000)
+        self.assertEqual(
+            parse("1ZB"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000
+        )
+        self.assertEqual(
+            parse("1Z"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000
+        )
+        self.assertEqual(
+            parse("1YB"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000
+        )
+        self.assertEqual(
+            parse("1Y"), 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000
+        )

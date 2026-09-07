@@ -1,12 +1,14 @@
-from typing import Dict, Set
-import arkimet as arki
 import logging
+from typing import Dict, Set
+
+import arkimet as arki
 
 
 class AliasMerger:
     """
     Fetch and merge alias databases from different servers
     """
+
     def __init__(self, log: logging.Logger):
         self.log = log
         self.aliases = arki.cfg.Sections()
@@ -46,14 +48,18 @@ class AliasMerger:
                     self.log.warning(
                         "server %s: no aliases found in section [%s]."
                         " Skipping this section of aliases in the merged database",
-                        server, secname)
+                        server,
+                        secname,
+                    )
                     break
                 else:
                     sections[server] = section
             else:
                 self.aliases[secname] = self.merge_sections(secname, sections)
 
-    def merge_sections(self, secname: str, sections: Dict[str, arki.cfg.Section]):
+    def merge_sections(
+        self, secname: str, sections: Dict[str, arki.cfg.Section]
+    ):
         """
         Merge alias sections from different servers.
 
@@ -63,13 +69,16 @@ class AliasMerger:
         If an entry has different definitions between servers, raise an
         exception.
         """
+
         def log_definitions(name: str):
             """
             Log all definitions for an alias in all servers
             """
             for server, aliases in sections.items():
                 val = aliases.get(name)
-                self.log.warning("Server %s: [%s] %s = %r", server, secname, name, val)
+                self.log.warning(
+                    "Server %s: [%s] %s = %r", server, secname, name, val
+                )
 
         skipped: Set[str] = set()
         conflict: Set[str] = set()
@@ -92,11 +101,17 @@ class AliasMerger:
 
         for name in skipped - conflict:
             log_definitions(name)
-            self.log.warning("[%s] %s: skipped as not available in all servers", secname, name)
+            self.log.warning(
+                "[%s] %s: skipped as not available in all servers",
+                secname,
+                name,
+            )
 
         for name in conflict:
             log_definitions(name)
-            self.log.error("[%s] %s: not all servers have the same value", secname, name)
+            self.log.error(
+                "[%s] %s: not all servers have the same value", secname, name
+            )
 
         if conflict:
             raise RuntimeError(f"[{secname}]: alias mismatches between servers")

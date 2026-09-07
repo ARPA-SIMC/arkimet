@@ -1,16 +1,17 @@
-import arkimet as arki
-from contextlib import contextmanager
 import contextlib
-import multiprocessing
-import subprocess
-import shutil
-import os
 import io
+import logging
+import multiprocessing
+import os
+import shutil
+import subprocess
 import sys
 import tempfile
-import logging
-from typing import Optional, Type
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Optional, Type
+
+import arkimet as arki
 from arkimet.cmdline.base import App
 
 
@@ -51,11 +52,15 @@ def skip_unless_arpae_tests():
 
 @contextmanager
 def daemon(*cmd):
-    with subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True) as proc:
+    with subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, universal_newlines=True
+    ) as proc:
         try:
             init = proc.stdout.readline()
             if not init.startswith("OK "):
-                raise RuntimeError("Process startup line was {} instead of OK".format(init))
+                raise RuntimeError(
+                    "Process startup line was {} instead of OK".format(init)
+                )
             yield "http://localhost:" + init[3:].strip()
         finally:
             proc.terminate()
@@ -241,7 +246,9 @@ class CmdlineTestMixin:
             sys.stderr = orig_stderr
         return out, err, res
 
-    def call_output_success(self, *args, binary=False, returncode=None, input=None):
+    def call_output_success(
+        self, *args, binary=False, returncode=None, input=None
+    ):
         out, err, res = self.call_output(*args, binary=binary, input=input)
         self.assertEqual(err, "")
         if returncode is None:
@@ -311,7 +318,12 @@ class LogCapture(logging.Handler):
 
 class ServerProcess(multiprocessing.Process):
     def __init__(
-        self, host: str, port: int, config: str, url: Optional[str] = None, aliases: Optional[str] = None
+        self,
+        host: str,
+        port: int,
+        config: str,
+        url: Optional[str] = None,
+        aliases: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.host = host
@@ -320,14 +332,19 @@ class ServerProcess(multiprocessing.Process):
         self.url = url
         self.aliases = aliases
         self.server_exception = None
-        self.url_queue = multiprocessing.Queue()
+        self.url_queue: multiprocessing.Queue[str] = multiprocessing.Queue()
         self.remote_cfg = None
 
     def run(self):
         from arkimet.cmdline.server import make_server
 
         with io.StringIO(self.config) as fd:
-            server = make_server(self.host, self.port, arki.cfg.Sections.parse(fd), aliases=self.aliases)
+            server = make_server(
+                self.host,
+                self.port,
+                arki.cfg.Sections.parse(fd),
+                aliases=self.aliases,
+            )
         self.url_queue.put(server.url)
         with io.StringIO() as fd:
             server.remote_cfg.write(fd)

@@ -42,7 +42,9 @@ class GribTable:
     """
 
     cache = {}
-    re_table_line = re.compile(r"^\s*(?P<idx>\d+)\s+(?P<abbr>\S+)\s+(?P<desc>.+)$")
+    re_table_line = re.compile(
+        r"^\s*(?P<idx>\d+)\s+(?P<abbr>\S+)\s+(?P<desc>.+)$"
+    )
 
     def __init__(self, edition: int, table: str):
         self.edition = edition
@@ -52,7 +54,9 @@ class GribTable:
 
         for path in get_eccodes_def_dir():
             # Build the file name
-            fname = os.path.join(path, "grib" + str(edition), str(table)) + ".table"
+            fname = (
+                os.path.join(path, "grib" + str(edition), str(table)) + ".table"
+            )
             try:
                 with open(fname, "rt") as fd:
                     for line in fd:
@@ -114,9 +118,17 @@ class GribTable:
         if table_version is None or table_version == 255:
             table_version = default_table_version
 
-        if local_table_version is not None and local_table_version not in (0, 255):
+        if local_table_version is not None and local_table_version not in (
+            0,
+            255,
+        ):
             centres = cls.load(1, "0")
             if centres.has(centre):
-                return os.path.join('tables', 'local', centres.abbr(centre), str(local_table_version))
+                return os.path.join(
+                    "tables",
+                    "local",
+                    centres.abbr(centre),
+                    str(local_table_version),
+                )
 
-        return os.path.join('tables', str(table_version))
+        return os.path.join("tables", str(table_version))

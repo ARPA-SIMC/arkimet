@@ -1,5 +1,5 @@
-from arkimet.bbox import BBox
 import arkimet.scan.vm2
+from arkimet.bbox import BBox
 
 
 def bbox_vm2(area):

@@ -1,7 +1,7 @@
-import unittest
 import os
+import unittest
+
 import arkimet as arki
-import datetime as dt
 
 
 class TestScanODIMH5(unittest.TestCase):
@@ -57,7 +57,9 @@ class TestScanODIMH5(unittest.TestCase):
             " dbz, dbz_dev, dd, dd_dev, def, def_dev, div, div_dev, ff, ff_dev, n,"
             " rhohv, rhohv_dev, w, w_dev, z, z_dev",
         )
-        self.assertEqual(md["area"], "ODIMH5(lat=44456700, lon=11623600, radius=1000)")
+        self.assertEqual(
+            md["area"], "ODIMH5(lat=44456700, lon=11623600, radius=1000)"
+        )
         self.assertEqual(md["reftime"], "2000-01-02T03:04:05Z")
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
@@ -72,7 +74,9 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["level"], "ODIMH5(-0.2, 16)")
         self.assertEqual(md["task"], "DPC Standard Scan")
         self.assertEqual(md["quantity"], "DBZH, QIND, VRAD")
-        self.assertEqual(md["area"], "ODIMH5(lat=46562500, lon=12970300, radius=200000)")
+        self.assertEqual(
+            md["area"], "ODIMH5(lat=46562500, lon=12970300, radius=200000)"
+        )
         self.assertEqual(md["reftime"], "2020-05-29T15:30:00Z")
         self.assertNotIn("run", md)
         self.assertNotIn("timerange", md)
@@ -90,7 +94,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
 
     def test_comp_etop(self):
@@ -101,7 +106,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "HGHT")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -113,7 +119,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -125,7 +132,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -138,7 +146,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
 
     def test_comp_ppi(self):
@@ -150,7 +159,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
 
     def test_comp_rr(self):
@@ -162,7 +172,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "ACRR")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -175,7 +186,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "VIL")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("timerange", md)
 
@@ -188,7 +200,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("timerange", md)
 
@@ -200,7 +213,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "HGHT")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -212,7 +226,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -224,7 +239,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -237,7 +253,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
 
     def test_image_ppi(self):
@@ -249,7 +266,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
 
     def test_image_rr(self):
@@ -261,7 +279,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "ACRR")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -274,7 +293,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "VIL")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
 
     def test_image_zlr_bb(self):
@@ -285,7 +305,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "ZLR-BB")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)"
+            md["area"],
+            "GRIB(latfirst=42314117, latlast=46912151, lonfirst=8273203, lonlast=14987079, type=0)",
         )
         self.assertNotIn("level", md)
 
@@ -297,7 +318,8 @@ class TestScanODIMH5(unittest.TestCase):
         self.assertEqual(md["task"], "XZS")
         self.assertEqual(md["quantity"], "DBZH")
         self.assertEqual(
-            md["area"], "GRIB(latfirst=44320636, latlast=44821945, lonfirst=11122189, lonlast=12546566, type=0)"
+            md["area"],
+            "GRIB(latfirst=44320636, latlast=44821945, lonfirst=11122189, lonlast=12546566, type=0)",
         )
         self.assertNotIn("level", md)
 

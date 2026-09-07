@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from arkimet.test import SessionMixin
 
 
@@ -8,25 +9,30 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
         """
         Read all the metadata from a file
         """
-        with self.session.dataset_reader(cfg={
-                        "format": format,
-                        "name": os.path.basename(pathname),
-                        "path": pathname,
-                        "type": "file",
-                    }) as ds:
+        with self.session.dataset_reader(
+            cfg={
+                "format": format,
+                "name": os.path.basename(pathname),
+                "path": pathname,
+                "type": "file",
+            }
+        ) as ds:
             return ds.query_data()
 
     def assertBufrSource(self, md, filename, offset, size):
         source = md.to_python("source")
-        self.assertEqual(source, {
-            "type": "source",
-            "style": "BLOB",
-            "format": "bufr",
-            "basedir": os.getcwd(),
-            "file": filename,
-            "offset": offset,
-            "size": size,
-        })
+        self.assertEqual(
+            source,
+            {
+                "type": "source",
+                "style": "BLOB",
+                "format": "bufr",
+                "basedir": os.getcwd(),
+                "file": filename,
+                "offset": offset,
+                "size": size,
+            },
+        )
 
         data = md.data
         self.assertEqual(len(data), size)
@@ -147,9 +153,13 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
         md = mds[0]
         self.assertBufrSource(md, "inbound/pollution.bufr", 0, 178)
         self.assertEqual(md["origin"], "BUFR(098, 000)")
-        self.assertEqual(md["product"], "BUFR(008, 255, 171, p=NO2, t=pollution)")
+        self.assertEqual(
+            md["product"], "BUFR(008, 255, 171, p=NO2, t=pollution)"
+        )
         self.assertEqual(md["area"], "GRIB(lat=4601194, lon=826889)")
-        self.assertEqual(md["proddef"], "GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)")
+        self.assertEqual(
+            md["proddef"], "GRIB(gems=IT0002, name=NO_3118_PIEVEVERGONTE)"
+        )
         self.assertEqual(md["reftime"], "2010-08-08T23:00:00Z")
         self.assertNotIn("run", md)
         self.assertNotIn("level", md)
@@ -261,7 +271,9 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
         self.assertEqual(len(mds), 1)
 
         md = mds[0]
-        self.assertBufrSource(md, "inbound/synop-gts-different-date-in-header.bufr", 0, 220)
+        self.assertBufrSource(
+            md, "inbound/synop-gts-different-date-in-header.bufr", 0, 220
+        )
         self.assertEqual(md["origin"], "BUFR(074, 000)")
         self.assertEqual(md["product"], "BUFR(000, 000, 000, t=synop)")
         self.assertEqual(md["area"], "GRIB(lat=4586878, lon=717080)")

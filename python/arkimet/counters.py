@@ -1,8 +1,12 @@
 import _arkimet
 
 _export = (
-    "plain_data_read_count", "gzip_data_read_count", "gzip_forward_seek_bytes",
-    "gzip_idx_reposition_count", "acquire_single_count", "acquire_batch_count",
+    "plain_data_read_count",
+    "gzip_data_read_count",
+    "gzip_forward_seek_bytes",
+    "gzip_idx_reposition_count",
+    "acquire_single_count",
+    "acquire_batch_count",
 )
 __all__ = []
 

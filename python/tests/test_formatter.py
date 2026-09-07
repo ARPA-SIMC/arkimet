@@ -1,4 +1,5 @@
 import unittest
+
 import arkimet as arki
 from arkimet.test import skip_unless_vm2
 
@@ -6,19 +7,31 @@ from arkimet.test import skip_unless_vm2
 class TestFormatter(unittest.TestCase):
     def test_origin(self):
         formatter = arki.Formatter()
-        res = formatter.format({"type": "origin", "style": "GRIB1", "centre": 200, "subcentre": 0, "process": 0})
-        self.assertEqual(res, "GRIB1 from ARPAE SIMC Emilia Romagna, subcentre 0, process 0")
+        res = formatter.format(
+            {
+                "type": "origin",
+                "style": "GRIB1",
+                "centre": 200,
+                "subcentre": 0,
+                "process": 0,
+            }
+        )
+        self.assertEqual(
+            res, "GRIB1 from ARPAE SIMC Emilia Romagna, subcentre 0, process 0"
+        )
 
     def test_vm2(self):
         skip_unless_vm2()
 
         with arki.dataset.Session() as session:
-            ds = session.dataset_reader(cfg={
-                "format": "vm2",
-                "name": "fixture.vm2",
-                "path": "inbound/fixture.vm2",
-                "type": "file",
-            })
+            ds = session.dataset_reader(
+                cfg={
+                    "format": "vm2",
+                    "name": "fixture.vm2",
+                    "path": "inbound/fixture.vm2",
+                    "type": "file",
+                }
+            )
             mds = ds.query_data()
             formatter = arki.Formatter()
             res = formatter.format(mds[0].to_python("area"))
@@ -26,4 +39,6 @@ class TestFormatter(unittest.TestCase):
 
             res = formatter.format(mds[0].to_python("product"))
             self.assertEqual(
-                    res, "id=227, bcode=B11002, l1=10000, l2=0, lt1=103, lt2=0, p1=86400, p2=86400, tr=0, unit=M/S")
+                res,
+                "id=227, bcode=B11002, l1=10000, l2=0, lt1=103, lt2=0, p1=86400, p2=86400, tr=0, unit=M/S",
+            )

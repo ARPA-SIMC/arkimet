@@ -1,6 +1,6 @@
-import unittest
 import os
-import datetime as dt
+import unittest
+
 from arkimet.test import SessionMixin
 
 

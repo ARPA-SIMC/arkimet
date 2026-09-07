@@ -1,7 +1,8 @@
 import _arkimet
 
 _export = (
-    "Section", "Sections",
+    "Section",
+    "Sections",
 )
 __all__ = []
 

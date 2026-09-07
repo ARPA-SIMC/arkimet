@@ -1,15 +1,15 @@
 # python 3.7+ from __future__ import annotations
 import argparse
+import datetime as dt
 import logging
 import re
 import socket
 import subprocess
 import sys
 import threading
-import datetime as dt
-from typing import Optional
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ForkingMixIn
+from typing import Optional
 from urllib.parse import unquote, urlsplit
 
 from werkzeug.exceptions import HTTPException, NotFound
@@ -41,7 +41,10 @@ class ArkiServer(ForkingMixIn, HTTPServer):
                 Rule("/dataset/<name>", endpoint="ArkiDatasetIndex"),
                 Rule("/dataset/<name>/query", endpoint="arki_dataset_query"),
                 Rule("/dataset/<name>/summary", endpoint="ArkiDatasetSummary"),
-                Rule("/dataset/<name>/summaryshort", endpoint="ArkiDatasetSummaryShort"),
+                Rule(
+                    "/dataset/<name>/summaryshort",
+                    endpoint="ArkiDatasetSummaryShort",
+                ),
                 Rule("/dataset/<name>/config", endpoint="ArkiDatasetConfig"),
             ]
         )
@@ -86,7 +89,9 @@ class Handler(BaseHTTPRequestHandler):
         Create an environment that can be used with werkzeug
         """
         try:
-            from werkzeug._compat import wsgi_encoding_dance as _wsgi_encoding_dance
+            from werkzeug._compat import (
+                wsgi_encoding_dance as _wsgi_encoding_dance,
+            )
         except ModuleNotFoundError:
             from werkzeug._internal import _wsgi_encoding_dance
 
@@ -143,7 +148,9 @@ class Handler(BaseHTTPRequestHandler):
         logging.info(
             '%s - - [%s] "%s" %s %s',
             self.client_address[0],
-            dt.datetime.now(dt.timezone.utc).strftime("%d/%b/%Y:%H:%M:%S +0000"),
+            dt.datetime.now(dt.timezone.utc).strftime(
+                "%d/%b/%Y:%H:%M:%S +0000"
+            ),
             self.requestline,
             code,
             size,
@@ -158,7 +165,11 @@ class Handler(BaseHTTPRequestHandler):
 
         request = Request(self.make_environ())
         if setproctitle is not None:
-            setproctitle("arki-server {} for {}".format(request.base_url, request.remote_addr))
+            setproctitle(
+                "arki-server {} for {}".format(
+                    request.base_url, request.remote_addr
+                )
+            )
         adapter = self.server.url_map.bind_to_environ(request.environ)
         try:
             endpoint, values = adapter.match()
@@ -232,7 +243,11 @@ class DefaultLogFilter:
 
 
 def make_server(
-    host: str, port: int, config: arki.cfg.Sections, url: Optional[str] = None, aliases: Optional[str] = None
+    host: str,
+    port: int,
+    config: arki.cfg.Sections,
+    url: Optional[str] = None,
+    aliases: Optional[str] = None,
 ) -> ArkiServer:
     """Instantiate an ArkiServer."""
     httpd = ArkiServer((host, port), Handler, aliases=aliases)
@@ -252,26 +267,53 @@ class Server(App):
         parser = super().make_parser()
         parser.add_argument("configfile", help="dataset configuration file")
         parser.add_argument(
-            "--host", "--hostname", metavar="host", default="", help="interface to listen to. Default: all interfaces"
+            "--host",
+            "--hostname",
+            metavar="host",
+            default="",
+            help="interface to listen to. Default: all interfaces",
         )
         parser.add_argument(
-            "--port", "-p", metavar="port", type=int, default=8080, help="port to listen not. Default: 8080"
+            "--port",
+            "-p",
+            metavar="port",
+            type=int,
+            default=8080,
+            help="port to listen not. Default: 8080",
         )
-        parser.add_argument("--url", metavar="url", help="url to use to reach the server")
+        parser.add_argument(
+            "--url", metavar="url", help="url to use to reach the server"
+        )
 
-        parser.add_argument("--accesslog", metavar="file", help="file where to log normal access information")
         parser.add_argument(
-            "--perflog", metavar="file", help="file where to log query information and performance statistics"
+            "--accesslog",
+            metavar="file",
+            help="file where to log normal access information",
         )
-        parser.add_argument("--errorlog", metavar="file", help="file where to log errors")
-        parser.add_argument("--syslog", action="store_true", help="log to system log")
-        parser.add_argument("--quiet", action="store_true", help="do not log to standard output")
         parser.add_argument(
-            "--journald", action="store_true", help="log to standard error in a way compatible with journald"
+            "--perflog",
+            metavar="file",
+            help="file where to log query information and performance statistics",
+        )
+        parser.add_argument(
+            "--errorlog", metavar="file", help="file where to log errors"
+        )
+        parser.add_argument(
+            "--syslog", action="store_true", help="log to system log"
+        )
+        parser.add_argument(
+            "--quiet", action="store_true", help="do not log to standard output"
+        )
+        parser.add_argument(
+            "--journald",
+            action="store_true",
+            help="log to standard error in a way compatible with journald",
         )
 
         parser.add_argument(
-            "--runtest", metavar="cmd", help="start the server, run the given test command and return its exit status"
+            "--runtest",
+            metavar="cmd",
+            help="start the server, run the given test command and return its exit status",
         )
         return parser
 
@@ -288,7 +330,11 @@ class Server(App):
             if self.args.journald:
                 h.setFormatter(JournaldFormatter())
             else:
-                h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+                h.setFormatter(
+                    logging.Formatter(
+                        "%(asctime)-15s %(levelname)s %(message)s"
+                    )
+                )
             if self.args.debug:
                 h.setLevel(logging.DEBUG)
             elif self.args.verbose:
@@ -340,13 +386,17 @@ class Server(App):
             from logging.handlers import WatchedFileHandler
 
             h = WatchedFileHandler(self.args.errorlog)
-            h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+            h.setFormatter(
+                logging.Formatter("%(asctime)-15s %(levelname)s %(message)s")
+            )
             h.setLevel(logging.WARN)
             root_logger.addHandler(h)
 
         if self.args.syslog:
             h = logging.SyslogHandler()
-            h.setFormatter(logging.Formatter("%(asctime)-15s %(levelname)s %(message)s"))
+            h.setFormatter(
+                logging.Formatter("%(asctime)-15s %(levelname)s %(message)s")
+            )
             root_logger.addHandler(h)
 
     def run(self):
@@ -355,7 +405,9 @@ class Server(App):
         logging.info("Reading configuration from %s", self.args.configfile)
         config = arki.cfg.Sections.parse(self.args.configfile)
 
-        httpd = make_server(self.args.host, self.args.port, config, self.args.url)
+        httpd = make_server(
+            self.args.host, self.args.port, config, self.args.url
+        )
 
         try:
             if self.args.runtest:

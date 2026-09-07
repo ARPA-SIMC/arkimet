@@ -1,7 +1,7 @@
-import unittest
 import os
+import unittest
+
 import arkimet as arki
-import datetime as dt
 
 
 class TestScanJPEG(unittest.TestCase):

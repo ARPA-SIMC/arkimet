@@ -19,7 +19,10 @@ class Mergeconf(AppConfigMixin, App):
     def make_parser(cls) -> argparse.ArgumentParser:
         parser = super().make_parser()
         parser.add_argument(
-            "-o", "--output", metavar="file", help="write the output to the given file instead of standard output"
+            "-o",
+            "--output",
+            metavar="file",
+            help="write the output to the given file instead of standard output",
         )
         parser.add_argument(
             "--extra",
@@ -28,13 +31,16 @@ class Mergeconf(AppConfigMixin, App):
             " and include it in the configuration",
         )
         parser.add_argument(
-            "--ignore-system-datasets", action="store_true", help="ignore error and duplicates datasets"
+            "--ignore-system-datasets",
+            action="store_true",
+            help="ignore error and duplicates datasets",
         )
         parser.add_argument(
             "--restrict",
             metavar="names",
             action="store",
-            help="restrict operations to only those datasets that allow one of the given" " (comma separated) names",
+            help="restrict operations to only those datasets that allow one of the given"
+            " (comma separated) names",
         )
         parser.add_argument(
             "-C",
@@ -43,7 +49,12 @@ class Mergeconf(AppConfigMixin, App):
             action="append",
             help="merge configuration from the given file (can be given more than once)",
         )
-        parser.add_argument("sources", nargs="*", action="store", help="datasets, configuration files or remote urls")
+        parser.add_argument(
+            "sources",
+            nargs="*",
+            action="store",
+            help="datasets, configuration files or remote urls",
+        )
         return parser
 
     def run(self):
@@ -69,7 +80,9 @@ class Mergeconf(AppConfigMixin, App):
         if not self.session.has_datasets():
             if self.config_filter_discarded:
                 raise Fail("none of the configuration provided were useable")
-            raise Fail("you need to specify at least one config file or dataset")
+            raise Fail(
+                "you need to specify at least one config file or dataset"
+            )
 
         # Validate the configuration
         has_errors = False

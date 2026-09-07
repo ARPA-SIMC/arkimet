@@ -22,7 +22,6 @@ class Fail(BaseException):
 
     No stack trace is printed.
     """
-    pass
 
 
 class Success(BaseException):
@@ -30,18 +29,24 @@ class Success(BaseException):
     Exception raised when a command has been successfully handled, and no
     further processing should happen
     """
-    pass
 
 
 class Command:
     """
     Base class for actions run from command line
     """
-    NAME: str
-    argumentparser_class: Type[argparse.ArgumentParser] = argparse.ArgumentParser
 
-    def __init__(self, parser: argparse.ArgumentParser, args: argparse.Namespace):
-        self.NAME = getattr(self.__class__, "NAME", self.__class__.__name__.lower())
+    NAME: str
+    argumentparser_class: Type[argparse.ArgumentParser] = (
+        argparse.ArgumentParser
+    )
+
+    def __init__(
+        self, parser: argparse.ArgumentParser, args: argparse.Namespace
+    ):
+        self.NAME = getattr(
+            self.__class__, "NAME", self.__class__.__name__.lower()
+        )
         self.parser = parser
         self.args = args
         self.setup_logging()
@@ -59,10 +64,10 @@ class Command:
 
     @classmethod
     def add_logging_options(cls, parser):
-        parser.add_argument("--verbose", "-v", action="store_true",
-                            help="verbose output")
-        parser.add_argument("--debug", action="store_true",
-                            help="debug output")
+        parser.add_argument(
+            "--verbose", "-v", action="store_true", help="verbose output"
+        )
+        parser.add_argument("--debug", action="store_true", help="debug output")
 
     @classmethod
     def make_parser(cls) -> argparse.ArgumentParser:
@@ -73,7 +78,9 @@ class Command:
         return parser
 
     @classmethod
-    def make_subparser(cls, subparsers: "argparse._SubParsersAction[Any]") -> argparse.ArgumentParser:
+    def make_subparser(
+        cls, subparsers: "argparse._SubParsersAction[Any]"
+    ) -> argparse.ArgumentParser:
         cls.NAME = getattr(cls, "NAME", cls.__name__.lower())
         parser: argparse.ArgumentParser = subparsers.add_parser(
             cls.NAME,

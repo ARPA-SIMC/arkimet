@@ -1,8 +1,10 @@
-from typing import Callable
-from collections import defaultdict
-import arkimet
-import _arkimet
 import logging
+from collections import defaultdict
+from typing import Callable
+
+import _arkimet
+
+import arkimet
 
 Grib = _arkimet.scan.grib.Grib
 GribReader = _arkimet.scan.grib.GribReader
@@ -35,6 +37,11 @@ class Scanner:
                 log.warning("scanner function failed", exc_info=True)
 
     @classmethod
-    def register(cls, edition: int, scanner: Callable[[Grib, arkimet.Metadata], None], priority=0):
+    def register(
+        cls,
+        edition: int,
+        scanner: Callable[[Grib, arkimet.Metadata], None],
+        priority=0,
+    ):
         if scanner not in cls.by_edition[edition]:
             cls.by_edition[edition].append((priority, scanner))

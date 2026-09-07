@@ -21,13 +21,18 @@ class Progress:
     def start(self, expected_count=0, expected_bytes=0):
         if progressbar is not None:
             self.pbar = progressbar.ProgressBar(
-                    maxval=expected_bytes or progressbar.widgets.UnknownLength,
-                    fd=self.fd, widgets=[
-                        progressbar.Timer(), " ",
-                        progressbar.AnimatedMarker(), " ",
-                        progressbar.Counter(), " ",
-                        progressbar.FileTransferSpeed(),
-                    ])
+                maxval=expected_bytes or progressbar.widgets.UnknownLength,
+                fd=self.fd,
+                widgets=[
+                    progressbar.Timer(),
+                    " ",
+                    progressbar.AnimatedMarker(),
+                    " ",
+                    progressbar.Counter(),
+                    " ",
+                    progressbar.FileTransferSpeed(),
+                ],
+            )
             self.pbar.start()
         else:
             self.pbar = None
@@ -47,6 +52,7 @@ class Query(AppConfigMixin, AppWithProcessor):
     Query the datasets in the given config file for data matching the given
     expression, and output the matching metadata.
     """
+
     log = logging.getLogger("arki-query")
 
     @classmethod
@@ -54,33 +60,55 @@ class Query(AppConfigMixin, AppWithProcessor):
         parser = super().make_parser()
 
         # Inputs
-        parser.add_argument("--stdin", metavar="format",
-                            help="read input from standard input in the given format")
-        parser.add_argument("query", nargs="?",
-                            help="arkimet query to run")
-        parser.add_argument("source", nargs="*",
-                            help="input files or datasets")
+        parser.add_argument(
+            "--stdin",
+            metavar="format",
+            help="read input from standard input in the given format",
+        )
+        parser.add_argument("query", nargs="?", help="arkimet query to run")
+        parser.add_argument("source", nargs="*", help="input files or datasets")
 
         # arki-query
-        parser.add_argument("--config", "-C", metavar="file", action="append",
-                            help="read configuration about input sources from the given file"
-                                 " (can be given more than once)")
-        parser.add_argument("--restrict", metavar="names",
-                            help="restrict operations to only those datasets that allow one"
-                                 " of the given (comma separated) names")
+        parser.add_argument(
+            "--config",
+            "-C",
+            metavar="file",
+            action="append",
+            help="read configuration about input sources from the given file"
+            " (can be given more than once)",
+        )
+        parser.add_argument(
+            "--restrict",
+            metavar="names",
+            help="restrict operations to only those datasets that allow one"
+            " of the given (comma separated) names",
+        )
 
-        parser.add_argument("--merged", action="store_true",
-                            help="if multiple datasets are given, merge their data and output it in"
-                                 " reference time order.  Note: sorting does not work when using"
-                                 " --postprocess or --data")
+        parser.add_argument(
+            "--merged",
+            action="store_true",
+            help="if multiple datasets are given, merge their data and output it in"
+            " reference time order.  Note: sorting does not work when using"
+            " --postprocess or --data",
+        )
 
-        parser.add_argument("--file", "-f", metavar="file",
-                            help="read the query expression from the given file")
+        parser.add_argument(
+            "--file",
+            "-f",
+            metavar="file",
+            help="read the query expression from the given file",
+        )
 
-        parser.add_argument("--qmacro", metavar="name",
-                            help="run the given query macro instead of a plain query")
-        parser.add_argument("--progress", action="store_true",
-                            help="show a progress bar on stderr")
+        parser.add_argument(
+            "--qmacro",
+            metavar="name",
+            help="run the given query macro instead of a plain query",
+        )
+        parser.add_argument(
+            "--progress",
+            action="store_true",
+            help="show a progress bar on stderr",
+        )
 
         return parser
 
@@ -98,13 +126,21 @@ class Query(AppConfigMixin, AppWithProcessor):
 
         if self.args.stdin is not None:
             if self.sources:
-                self.parser.error("you cannot specify input files or datasets when using --stdin")
+                self.parser.error(
+                    "you cannot specify input files or datasets when using --stdin"
+                )
             if self.args.config:
-                self.parser.error("--stdin cannot be used together with --config")
+                self.parser.error(
+                    "--stdin cannot be used together with --config"
+                )
             if self.args.restrict:
-                self.parser.error("--stdin cannot be used together with --restr")
+                self.parser.error(
+                    "--stdin cannot be used together with --restr"
+                )
             if self.args.qmacro:
-                self.parser.error("--stdin cannot be used together with --qmacro")
+                self.parser.error(
+                    "--stdin cannot be used together with --qmacro"
+                )
         else:
             # From -C options, looking for config files or datasets
             if self.args.config:
@@ -121,14 +157,23 @@ class Query(AppConfigMixin, AppWithProcessor):
 
             if not self.session.has_datasets():
                 if self.config_filter_discarded:
-                    self.parser.error("no accessible datasets found for the given --restrict value")
+                    self.parser.error(
+                        "no accessible datasets found for the given --restrict value"
+                    )
                 else:
-                    self.parser.error("you need to specify at least one input file or dataset")
+                    self.parser.error(
+                        "you need to specify at least one input file or dataset"
+                    )
 
             # Some things cannot be done when querying multiple datasets at the same time
-            if self.session.dataset_pool_size() > 1 and not self.args.qmacro and self.args.postproc:
+            if (
+                self.session.dataset_pool_size() > 1
+                and not self.args.qmacro
+                and self.args.postproc
+            ):
                 self.parser.error(
-                        "postprocessing is not possible when querying more than one dataset at the same time")
+                    "postprocessing is not possible when querying more than one dataset at the same time"
+                )
 
     def run(self):
         super().run()
@@ -141,7 +186,9 @@ class Query(AppConfigMixin, AppWithProcessor):
             qmacro_query = self.query
         else:
             if self.query is None:
-                self.parser.error("you need to specify a filter expression or use --file")
+                self.parser.error(
+                    "you need to specify a filter expression or use --file"
+                )
             strquery = self.query
             qmacro_query = None
 
@@ -156,21 +203,21 @@ class Query(AppConfigMixin, AppWithProcessor):
             if self.args.progress:
                 progress = Progress()
             arki_query.set_processor(
-                    query=query,
-                    outfile=outfd,
-                    yaml=self.args.yaml,
-                    json=self.args.json,
-                    annotate=self.args.annotate,
-                    inline=self.args.inline,
-                    data=self.args.data,
-                    summary=self.args.summary,
-                    summary_short=self.args.summary_short,
-                    summary_restrict=self.args.summary_restrict,
-                    archive=self.args.archive,
-                    postproc=self.args.postproc,
-                    postproc_data=self.args.postproc_data,
-                    sort=self.args.sort,
-                    progress=progress,
+                query=query,
+                outfile=outfd,
+                yaml=self.args.yaml,
+                json=self.args.json,
+                annotate=self.args.annotate,
+                inline=self.args.inline,
+                data=self.args.data,
+                summary=self.args.summary,
+                summary_short=self.args.summary_short,
+                summary_restrict=self.args.summary_restrict,
+                archive=self.args.archive,
+                postproc=self.args.postproc,
+                postproc_data=self.args.postproc_data,
+                sort=self.args.sort,
+                progress=progress,
             )
 
             if self.args.stdin:
@@ -178,6 +225,8 @@ class Query(AppConfigMixin, AppWithProcessor):
             elif self.args.merged:
                 raise Exit(arki_query.query_merged())
             elif self.args.qmacro:
-                raise Exit(arki_query.query_qmacro(self.args.qmacro, qmacro_query))
+                raise Exit(
+                    arki_query.query_qmacro(self.args.qmacro, qmacro_query)
+                )
             else:
                 raise Exit(arki_query.query_sections())

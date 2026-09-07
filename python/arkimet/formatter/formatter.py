@@ -2,10 +2,12 @@
 This module implements a registry of Python formatters for various metadata
 types, along with default implementations.
 """
-# python 3.7+ from __future__ import annotations
-from typing import Dict, Any, Callable, Optional
-from collections import defaultdict
+
 import logging
+from collections import defaultdict
+
+# python 3.7+ from __future__ import annotations
+from typing import Any, Callable, Dict, Optional
 
 log = logging.getLogger("arkimet.formatter")
 
@@ -19,6 +21,7 @@ class Formatter:
     Use :class:`arkimet.Formatter` to do the actual formatting: it will call
     either into this or in C++ implementations as needed.
     """
+
     formatters = defaultdict(list)
 
     def format(self, t: Dict[str, Any]) -> str:
@@ -48,7 +51,9 @@ class Formatter:
         return None
 
     @classmethod
-    def register(cls, type: str, formatter: Callable[[Dict[str, Any]], Optional[str]]):
+    def register(
+        cls, type: str, formatter: Callable[[Dict[str, Any]], Optional[str]]
+    ):
         """
         Register a callable as a formatter for the given metadata type.
 

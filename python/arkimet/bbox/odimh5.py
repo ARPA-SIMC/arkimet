@@ -1,5 +1,6 @@
-from arkimet.bbox import BBox
 import math
+
+from arkimet.bbox import BBox
 
 
 def bbox_odimh5(area):
@@ -41,8 +42,12 @@ def bbox_odimh5(area):
             cos_lat1 = math.cos(lat1)
             sin_angle = math.sin(angle)
             cos_angle = math.cos(angle)
-            lat2 = math.asin(sin_lat1 * cos_d_R + cos_lat1 * sin_d_R * cos_angle)
-            lon2 = lon1 + math.atan2(sin_angle * sin_d_R * cos_lat1, cos_d_R - sin_lat1 * sin_lat1)
+            lat2 = math.asin(
+                sin_lat1 * cos_d_R + cos_lat1 * sin_d_R * cos_angle
+            )
+            lon2 = lon1 + math.atan2(
+                sin_angle * sin_d_R * cos_lat1, cos_d_R - sin_lat1 * sin_lat1
+            )
             return todegree(lon2), todegree(lat2)
 
         DIST = RADIUS

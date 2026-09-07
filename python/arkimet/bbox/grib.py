@@ -1,6 +1,8 @@
-from arkimet.bbox import BBox
-from .common import utm2ll2, utm2ll, norm_lon
 import math
+
+from arkimet.bbox import BBox
+
+from .common import norm_lon, utm2ll, utm2ll2
 
 
 def bbox_grib(area):
@@ -10,15 +12,19 @@ def bbox_grib(area):
     v = area["value"]
     if v.get("utm") == 1 and v.get("tn") == 32768:
         latfirst, latlast, lonfirst, lonlast = (
-                v["latfirst"], v["latlast"], v["lonfirst"], v["lonlast"])
+            v["latfirst"],
+            v["latlast"],
+            v["lonfirst"],
+            v["lonlast"],
+        )
         fe, fn, zone = v["fe"], v["fn"], v["zone"]
 
         # Compute the bounding box for the Calmet gribs, that memorize the UTM
         # coordinates instead of lat and lon
         bbox = []
         bbox.append(utm2ll2(lonfirst, latfirst, fe, fn, zone))
-        bbox.append(utm2ll2(lonlast,  latfirst, fe, fn, zone))
-        bbox.append(utm2ll2(lonlast,  latlast, fe, fn, zone))
+        bbox.append(utm2ll2(lonlast, latfirst, fe, fn, zone))
+        bbox.append(utm2ll2(lonlast, latlast, fe, fn, zone))
         bbox.append(utm2ll2(lonfirst, latlast, fe, fn, zone))
         bbox.append(bbox[0])
         return bbox
@@ -32,12 +38,14 @@ def bbox_grib(area):
         # coordinates instead of lat and lon
         bbox = []
         bbox.append(utm2ll(lonfirst, latfirst))
-        bbox.append(utm2ll(lonlast,  latfirst))
-        bbox.append(utm2ll(lonlast,  latlast))
+        bbox.append(utm2ll(lonlast, latfirst))
+        bbox.append(utm2ll(lonlast, latlast))
         bbox.append(utm2ll(lonfirst, latlast))
         bbox.append(bbox[0])
         return bbox
-    elif (v.get("type") == 0 or v.get("tn") == 0) and v.get("latfirst") is not None:
+    elif (v.get("type") == 0 or v.get("tn") == 0) and v.get(
+        "latfirst"
+    ) is not None:
         # Normal latlon
         latfirst = v["latfirst"] / 1000000.0
         latlast = v["latlast"] / 1000000.0
@@ -46,14 +54,17 @@ def bbox_grib(area):
 
         bbox = []
         bbox.append((latfirst, lonfirst))
-        bbox.append((latlast,  lonfirst))
-        bbox.append((latlast,  lonlast))
+        bbox.append((latlast, lonfirst))
+        bbox.append((latlast, lonlast))
         bbox.append((latfirst, lonlast))
         bbox.append(bbox[0])
         return bbox
-    elif ((v.get("type") == 10 or v.get("tn") == 1)
-          and v.get("latp") is not None and v.get("lonp") is not None
-          and v.get("rot") == 0):
+    elif (
+        (v.get("type") == 10 or v.get("tn") == 1)
+        and v.get("latp") is not None
+        and v.get("lonp") is not None
+        and v.get("rot") == 0
+    ):
         # Rotated latlon
         # ProjectionInDegrees è grib2
         latsp = v["latp"] / 1000000.0
@@ -68,9 +79,13 @@ def bbox_grib(area):
         def r2ll(x, y):
             x = math.radians(x)
             y = math.radians(y)
-            rlat = math.asin(sy0 * math.cos(y) * math.cos(x) + cy0 * math.sin(y))
+            rlat = math.asin(
+                sy0 * math.cos(y) * math.cos(x) + cy0 * math.sin(y)
+            )
             lat = math.degrees(rlat)
-            lon = lonsouthpole + math.degrees(math.asin(math.sin(x) * math.cos(y) / math.cos(rlat)))
+            lon = lonsouthpole + math.degrees(
+                math.asin(math.sin(x) * math.cos(y) / math.cos(rlat))
+            )
             return (lat, lon)
 
         # Number of points to sample
@@ -112,9 +127,7 @@ def bbox_grib(area):
             (y, x),
         ]
     elif v.get("lat") is not None and v.get("lon") is not None:
-        return [
-            (v["lat"] / 100000, v["lon"] / 100000)
-        ]
+        return [(v["lat"] / 100000, v["lon"] / 100000)]
 
 
 BBox.register("GRIB", bbox_grib)

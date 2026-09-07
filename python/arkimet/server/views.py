@@ -95,7 +95,9 @@ class ArkiView:
         self.handler.send_header("Content-Type", self.content_type)
         fname = self.get_headers_filename()
         if fname is not None:
-            self.handler.send_header("Content-Disposition", "attachment; filename=" + fname)
+            self.handler.send_header(
+                "Content-Disposition", "attachment; filename=" + fname
+            )
         self.handler.end_headers()
         self.handler.flush_headers()
         self.headers_sent = True
@@ -138,7 +140,9 @@ class ArkiView:
                 self.handler.wfile.write(message)
             self.handler.wfile.write(b"\n")
         else:
-            logging.error("Sending HTTP error %d after headers have been sent", code)
+            logging.error(
+                "Sending HTTP error %d after headers have been sent", code
+            )
 
     def log_end(self):
         self.info["ts_end"] = time.time()
@@ -200,7 +204,10 @@ class HTMLWriter:
         self.print(
             "<{name}{attrs}>".format(
                 name=name,
-                attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
+                attrs=" ".join(
+                    "{key}='{val}'".format(key=key, val=quote(val))
+                    for key, val in kw.items()
+                ),
             )
         )
         yield
@@ -210,13 +217,20 @@ class HTMLWriter:
         self.print(
             "<{name}{attrs}>{text}</{name}>".format(
                 name=name,
-                attrs=" ".join("{key}='{val}'".format(key=key, val=quote(val)) for key, val in kw.items()),
+                attrs=" ".join(
+                    "{key}='{val}'".format(key=key, val=quote(val))
+                    for key, val in kw.items()
+                ),
                 text=text,
             )
         )
 
     def head(self, title):
-        self.print("<head><title>{title}</title></head>".format(title=html.escape(title)))
+        self.print(
+            "<head><title>{title}</title></head>".format(
+                title=html.escape(title)
+            )
+        )
 
     def p(self, text):
         self.print("<p>{text}</p>".format(text=html.escape(text)))
@@ -225,7 +239,11 @@ class HTMLWriter:
         self.print("<h1>{text}</h1>".format(text=html.escape(text)))
 
     def a(self, href, text):
-        self.print("<a href='{href}'>{text}</a>".format(href=quote(href), text=html.escape(text)))
+        self.print(
+            "<a href='{href}'>{text}</a>".format(
+                href=quote(href), text=html.escape(text)
+            )
+        )
 
 
 class ArkiIndex(ArkiView):
@@ -294,11 +312,15 @@ class ArkiDatasetConfig(ArkiView):
             # ./run-local arki-query "" http://localhost:8080/dataset/<name>
             # curl http://localhost:8080/dataset/<name>/config
             if self.kwargs["name"] not in self.handler.server.remote_cfg:
-                raise NotFound("Dataset {} not found".format(self.kwargs["name"]))
+                raise NotFound(
+                    "Dataset {} not found".format(self.kwargs["name"])
+                )
             self.headers_filename = self.kwargs["name"] + ".config"
             cfg = configparser.ConfigParser()
             cfg.add_section(self.kwargs["name"])
-            for k, v in self.handler.server.remote_cfg[self.kwargs["name"]].items():
+            for k, v in self.handler.server.remote_cfg[
+                self.kwargs["name"]
+            ].items():
                 cfg.set(self.kwargs["name"], k, v)
 
             out = io.StringIO()
@@ -356,7 +378,10 @@ class ArkiDatasetSummary(ArkiDatasetQuery):
         with self.response():
             summary = self.get_dataset_reader().query_summary(self.get_query())
             self.send_headers()
-            summary.write(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
+            summary.write(
+                self.handler.wfile,
+                format=self.request.values.get("style", "yaml").strip(),
+            )
 
     def post(self):
         self.content_type = "application/octet-stream"
@@ -364,7 +389,10 @@ class ArkiDatasetSummary(ArkiDatasetQuery):
         with self.response():
             summary = self.get_dataset_reader().query_summary(self.get_query())
             self.send_headers()
-            summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
+            summary.write(
+                self.handler.wfile,
+                format=self.request.values.get("style", "binary").strip(),
+            )
 
 
 class ArkiDatasetSummaryShort(ArkiDatasetQuery):
@@ -374,7 +402,10 @@ class ArkiDatasetSummaryShort(ArkiDatasetQuery):
         with self.response():
             summary = self.get_dataset_reader().query_summary(self.get_query())
             self.send_headers()
-            summary.write_short(self.handler.wfile, format=self.request.values.get("style", "yaml").strip())
+            summary.write_short(
+                self.handler.wfile,
+                format=self.request.values.get("style", "yaml").strip(),
+            )
 
 
 class DatasetQueryData(ArkiDatasetQuery):
@@ -406,7 +437,9 @@ class DatasetQueryMetadata(ArkiDatasetQuery):
         with self.response():
             self.url = self.get_metadata_url()
             self.get_dataset_reader().query_data(
-                on_metadata=self.on_metadata, matcher=self.get_query(), sort=self.get_sort()
+                on_metadata=self.on_metadata,
+                matcher=self.get_query(),
+                sort=self.get_sort(),
             )
 
 
@@ -422,7 +455,10 @@ class DatasetQueryMetadataInline(ArkiDatasetQuery):
     def post(self):
         with self.response():
             self.get_dataset_reader().query_data(
-                on_metadata=self.on_metadata, matcher=self.get_query(), with_data=True, sort=self.get_sort()
+                on_metadata=self.on_metadata,
+                matcher=self.get_query(),
+                with_data=True,
+                sort=self.get_sort(),
             )
 
 
@@ -485,7 +521,11 @@ def arki_dataset_query(request, handler, **kw):
 class QMacroMixin:
     def get_headers_filename(self):
         if self.headers_ext:
-            return self.request.values.get("qmacro", "").strip() + "." + self.headers_ext
+            return (
+                self.request.values.get("qmacro", "").strip()
+                + "."
+                + self.headers_ext
+            )
         else:
             return self.request.values.get("qmacro", "").strip()
 
@@ -498,7 +538,9 @@ class QMacroMixin:
         if not qmacro:
             return self.session.merged().reader()
         else:
-            return self.session.querymacro(qmacro, self.request.values.get("query", "").strip()).reader()
+            return self.session.querymacro(
+                qmacro, self.request.values.get("query", "").strip()
+            ).reader()
 
     def get_query(self):
         return ""
@@ -521,7 +563,10 @@ class ArkiSummary(QMacroMixin, ArkiView):
         with self.response():
             summary = self.get_dataset_reader().query_summary(self.get_query())
             self.send_headers()
-            summary.write(self.handler.wfile, format=self.request.values.get("style", "binary").strip())
+            summary.write(
+                self.handler.wfile,
+                format=self.request.values.get("style", "binary").strip(),
+            )
 
 
 class ArkiDatasetIndex(ArkiView):
@@ -544,10 +589,18 @@ class ArkiDatasetIndex(ArkiView):
                     page.p("Configuration:")
                     with page.tag("pre"):
                         for k, v in sorted(cfg.items()):
-                            print("{k} = {v}".format(k=html.escape(k), v=html.escape(v)), file=page.out)
+                            print(
+                                "{k} = {v}".format(
+                                    k=html.escape(k), v=html.escape(v)
+                                ),
+                                file=page.out,
+                            )
                     with page.ul():
                         with page.li():
-                            page.a("/dataset/" + name + "/summary", "Download summary")
+                            page.a(
+                                "/dataset/" + name + "/summary",
+                                "Download summary",
+                            )
                         with page.li():
                             page.a("/", "List of all datasets")
 

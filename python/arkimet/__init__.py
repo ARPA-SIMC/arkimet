@@ -3,13 +3,11 @@ Python modules to work with Arkimet archives.
 """
 
 from _arkimet import (
-    # Classes
     BBox,
     Formatter,
     Matcher,
     Metadata,
     Summary,
-    # Functions and variables
     config,
     debug_tty,
     expand_query,
@@ -20,9 +18,8 @@ from _arkimet import (
     make_qmacro_dataset,
     set_verbosity,
 )
-from . import counters
-from . import cfg
-from . import dataset
+
+from . import cfg, counters, dataset
 
 __all__ = (
     "BBox",

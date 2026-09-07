@@ -1,10 +1,4 @@
 from .formatter import Formatter
-from . import origin
-from . import product
-from . import level
-from . import timerange
-from . import area
-from . import proddef
-
+from . import area, level, origin, proddef, product, timerange
 
 __all__ = ["Formatter"]

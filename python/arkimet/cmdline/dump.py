@@ -31,9 +31,17 @@ class Dump(App):
     def make_parser(cls) -> argparse.ArgumentParser:
         parser = super().make_parser()
         parser.add_argument(
-            "-o", "--output", metavar="file", help="write the output to the given file instead of standard output"
+            "-o",
+            "--output",
+            metavar="file",
+            help="write the output to the given file instead of standard output",
         )
-        parser.add_argument("input", action="store", nargs="?", help="file to read (or stdin if omitted)")
+        parser.add_argument(
+            "input",
+            action="store",
+            nargs="?",
+            help="file to read (or stdin if omitted)",
+        )
 
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
@@ -52,18 +60,32 @@ class Dump(App):
             help="dump the alias database (to dump the aliases of a remote server,"
             " put the server URL on the command line)",
         )
-        group.add_argument("--info", action="store_true", help="dump configuration information")
-        group.add_argument("--bbox", action="store_true", help="dump the bounding box")
         group.add_argument(
-            "--from-yaml-data", action="store_true", help="read a Yaml data dump and write binary metadata"
+            "--info", action="store_true", help="dump configuration information"
         )
         group.add_argument(
-            "--from-yaml-summary", action="store_true", help="read a Yaml summary dump and write a binary summary"
+            "--bbox", action="store_true", help="dump the bounding box"
         )
         group.add_argument(
-            "--annotate", action="store_true", help="annotate the human-readable Yaml output with field descriptions"
+            "--from-yaml-data",
+            action="store_true",
+            help="read a Yaml data dump and write binary metadata",
         )
-        group.add_argument("--doc-metadata", action="store_true", help="Print documentation of metadata types")
+        group.add_argument(
+            "--from-yaml-summary",
+            action="store_true",
+            help="read a Yaml summary dump and write a binary summary",
+        )
+        group.add_argument(
+            "--annotate",
+            action="store_true",
+            help="annotate the human-readable Yaml output with field descriptions",
+        )
+        group.add_argument(
+            "--doc-metadata",
+            action="store_true",
+            help="Print documentation of metadata types",
+        )
 
         return parser
 
@@ -96,7 +118,9 @@ class Dump(App):
 
         if self.args.aliases:
             if self.args.input:
-                sections = arkimet.dataset.http.get_alias_database(self.args.input)
+                sections = arkimet.dataset.http.get_alias_database(
+                    self.args.input
+                )
             else:
                 with arkimet.dataset.Session() as session:
                     sections = session.get_alias_database()
@@ -109,7 +133,9 @@ class Dump(App):
             raise Exit()
 
         if self.args.config:
-            self.parser.error("please use arki-mergeconf instead of arki-dump --config")
+            self.parser.error(
+                "please use arki-mergeconf instead of arki-dump --config"
+            )
 
         if self.args.info:
             cfg = arkimet.config()

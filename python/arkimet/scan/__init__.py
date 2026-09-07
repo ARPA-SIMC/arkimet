@@ -30,7 +30,12 @@ class Registry:
         try:
             spec.loader.exec_module(mod)
         except Exception as e:
-            log.error("%s: could not initialize module %s", spec.origin, mod.__name__, exc_info=e)
+            log.error(
+                "%s: could not initialize module %s",
+                spec.origin,
+                mod.__name__,
+                exc_info=e,
+            )
 
     def load_arkimet(self) -> None:
         for data_format in data_formats:
@@ -47,14 +52,21 @@ class Registry:
                 spec = importlib.util.find_spec(data_format)
                 if spec is None:
                     continue
-                if spec.origin in (None, "namespace") and data_format in ("grib", "bufr"):
+                if spec.origin in (None, "namespace") and data_format in (
+                    "grib",
+                    "bufr",
+                ):
                     # Special case grib and bufr namespace packages for
                     # compatibility
                     #
                     # Paths are seen as namespace-only packages, which we
                     # skip because we load the individual files inside
-                    for module_info in pkgutil.iter_modules([path / data_format]):
-                        subspec = importlib.util.find_spec(data_format + "." + module_info.name)
+                    for module_info in pkgutil.iter_modules(
+                        [path / data_format]
+                    ):
+                        subspec = importlib.util.find_spec(
+                            data_format + "." + module_info.name
+                        )
                         if subspec is not None:
                             submod = importlib.util.module_from_spec(subspec)
                             self.init_module(subspec, submod)
@@ -74,7 +86,9 @@ class Registry:
         if not self.loaded:
             self.load()
 
-    def register_scanner(self, data_format: str, scanner: "DataFormatScanner") -> None:
+    def register_scanner(
+        self, data_format: str, scanner: "DataFormatScanner"
+    ) -> None:
         Scanner.register_scanner(data_format, scanner)
 
 

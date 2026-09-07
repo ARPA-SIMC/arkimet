@@ -1,2 +1,19 @@
+[project]
+name = "arkimet"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">= 3.6"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE"]
+
+[project.urls]
+"Source code" = "https://github.com/ARPA-SIMC/arkimet"
+
 [tool.black]
-line-length = 120
+line-length = 80
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = "invalid-name,too-many-instance-attributes,too-many-locals,missing-function-docstring,too-many-arguments"
+
+[tool.pylint.MAIN]
+max-line-length = 80

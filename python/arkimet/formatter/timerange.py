@@ -65,23 +65,34 @@ def format_timerange(v):
             if step_len == 0 and stat_len == 0:
                 return "Analysis or observation, istantaneous value"
             else:
-                return "Forecast at t+{} {}, instantaneous value".format(step_len, timedef_units.get(step_unit, "-"))
+                return "Forecast at t+{} {}, instantaneous value".format(
+                    step_len, timedef_units.get(step_unit, "-")
+                )
         else:
             prefix = timedef_prefixes.get(stat_type)
             if prefix is None:
-                raise RuntimeError("Unknown statistical processing {}".format(stat_type))
+                raise RuntimeError(
+                    "Unknown statistical processing {}".format(stat_type)
+                )
             elif step_len is None and stat_len is None:
                 return prefix
             else:
                 if stat_len is not None:
-                    prefix = "{} over {} {}".format(prefix, stat_len, timedef_units.get(stat_unit, "-"))
+                    prefix = "{} over {} {}".format(
+                        prefix, stat_len, timedef_units.get(stat_unit, "-")
+                    )
                 if step_len is None:
                     return prefix
                 elif step_len < 0:
                     return "{} {} {} before reference time".format(
-                            prefix, (-1 * step_len), timedef_units.get(step_unit, "-"))
+                        prefix,
+                        (-1 * step_len),
+                        timedef_units.get(step_unit, "-"),
+                    )
                 else:
-                    return "{} at forecast time {} {}".format(prefix, step_len, timedef_units.get(step_unit, "-"))
+                    return "{} at forecast time {} {}".format(
+                        prefix, step_len, timedef_units.get(step_unit, "-")
+                    )
 
 
 Formatter.register("timerange", format_timerange)

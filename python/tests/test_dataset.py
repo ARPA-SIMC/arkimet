@@ -1,11 +1,12 @@
 # python 3.7+ from __future__ import annotations
-import unittest
-import tempfile
-import arkimet as arki
-import os
 import io
+import os
 import shutil
-from arkimet.test import daemon, SessionMixin
+import tempfile
+import unittest
+
+import arkimet as arki
+from arkimet.test import SessionMixin, daemon
 
 
 class Progress:
@@ -54,7 +55,10 @@ class TestReadConfig(unittest.TestCase):
 
     def test_http(self):
         with daemon(
-            os.path.join(os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"), "--action=redirect"
+            os.path.join(
+                os.environ["TOP_SRCDIR"], "arki/dataset/http-test-daemon"
+            ),
+            "--action=redirect",
         ) as url:
             sections = arki.dataset.http.load_cfg_sections(url)
             self.assertEqual(sections.keys(), ("error", "test200", "test80"))
@@ -356,7 +360,8 @@ type = file
 """
             )
             with session.querymacro(
-                "expa 2007-07-08", "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n"
+                "expa 2007-07-08",
+                "ds:test200. d:@. t:1300. s:GRIB1/0/0h/0h. l:GRIB1/1. v:GRIB1/200/140/229.\n",
             ) as ds:
                 with ds.reader() as reader:
                     count = 0
@@ -368,7 +373,9 @@ type = file
                     progress = Progress()
 
                     # No arguments
-                    reader.query_data(on_metadata=count_results, progress=progress)
+                    reader.query_data(
+                        on_metadata=count_results, progress=progress
+                    )
                     self.assertEqual(count, 1)
                     self.assertEqual(progress.total_count, 1)
                     self.assertEqual(progress.total_bytes, 7218)
@@ -424,7 +431,9 @@ type = file
                     progress = Progress()
 
                     # No arguments
-                    reader.query_data(on_metadata=count_results, progress=progress)
+                    reader.query_data(
+                        on_metadata=count_results, progress=progress
+                    )
                     self.assertEqual(count, 6)
                     self.assertEqual(progress.total_count, 6)
                     self.assertEqual(progress.total_bytes, 45046)

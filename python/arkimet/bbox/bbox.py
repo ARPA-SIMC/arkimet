@@ -1,6 +1,6 @@
-from typing import Dict, Any, Callable, Optional, List, Tuple
-from collections import defaultdict
 import logging
+from collections import defaultdict
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 log = logging.getLogger("arkimet.bbox")
 
@@ -9,6 +9,7 @@ class BBox:
     """
     Infrastructure for computing bounding boxes from arkimet areas
     """
+
     by_style = defaultdict(list)
 
     def compute(self, t: Dict[str, Any]) -> List[Tuple[float, float]]:
@@ -35,6 +36,10 @@ class BBox:
         return None
 
     @classmethod
-    def register(cls, style: str, bbox: Callable[[Dict[str, Any]], Optional[List[Tuple[float, float]]]]):
+    def register(
+        cls,
+        style: str,
+        bbox: Callable[[Dict[str, Any]], Optional[List[Tuple[float, float]]]],
+    ):
         if bbox not in cls.by_style[style]:
             cls.by_style[style].append(bbox)

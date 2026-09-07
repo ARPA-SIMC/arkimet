@@ -1,9 +1,9 @@
-import unittest
 import binascii
 import os
+import unittest
+
 import arkimet as arki
 from arkimet.test import skip_unless_arpae_tests
-import datetime as dt
 
 
 class TestGrib(unittest.TestCase):
@@ -16,8 +16,14 @@ class TestGrib(unittest.TestCase):
         with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
             with next(reader) as grib:
                 self.assertEqual(grib["centre"], "cnmc")
-                self.assertEqual(grib["uuidOfHGrid"], binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")))
-                self.assertEqual(grib.get_string("uuidOfHGrid"), "f5886b95a7a666979e2fd51f0af52b20")
+                self.assertEqual(
+                    grib["uuidOfHGrid"],
+                    binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")),
+                )
+                self.assertEqual(
+                    grib.get_string("uuidOfHGrid"),
+                    "f5886b95a7a666979e2fd51f0af52b20",
+                )
 
             with self.assertRaises(StopIteration):
                 next(reader)
@@ -26,7 +32,9 @@ class TestGrib(unittest.TestCase):
         with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
             with next(reader) as grib:
                 self.assertEqual(grib.get_string("does-not-exist"), None)
-                self.assertEqual(grib.get_string("does-not-exist", "not found"), "not found")
+                self.assertEqual(
+                    grib.get_string("does-not-exist", "not found"), "not found"
+                )
 
             with self.assertRaises(StopIteration):
                 next(reader)
@@ -124,7 +132,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["timerange"], "GRIB1(001)")
         self.assertEqual(
             md["area"],
-            "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000," " lonfirst=-60000000, lonlast=42000000, type=0)",
+            "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000,"
+            " lonfirst=-60000000, lonlast=42000000, type=0)",
         )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-07T00:00:00Z")
@@ -182,7 +191,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["timerange"], "GRIB1(001)")
         self.assertEqual(
             md["area"],
-            "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000," " lonfirst=-60000000, lonlast=42000000, type=0)",
+            "GRIB(Ni=205, Nj=85, latfirst=30000000, latlast=72000000,"
+            " lonfirst=-60000000, lonlast=42000000, type=0)",
         )
         self.assertEqual(md["proddef"], "GRIB(tod=1)")
         self.assertEqual(md["reftime"], "2007-07-07T00:00:00Z")
@@ -257,7 +267,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(len(mds), 1)
         md = mds[0]
 
-        self.assertGribSource(md, "inbound/cleps_pf16_HighPriority.grib2", 0, 432)
+        self.assertGribSource(
+            md, "inbound/cleps_pf16_HighPriority.grib2", 0, 432
+        )
         self.assertEqual(md["origin"], "GRIB2(00250, 00098, 004, 255, 131)")
         self.assertEqual(md["product"], "GRIB2(00250, 002, 000, 000, 005, 000)")
         self.assertEqual(md["level"], "GRIB2S(001,   -,          -)")
@@ -267,7 +279,9 @@ class TestScanGrib(unittest.TestCase):
             "GRIB(Ni=511, Nj=415, latfirst=-16125000, latlast=9750000, latp=-40000000,"
             " lonfirst=344250000, lonlast=16125000, lonp=10000000, rot=0, tn=1)",
         )
-        self.assertEqual(md["proddef"], "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)")
+        self.assertEqual(
+            md["proddef"], "GRIB(mc=ti, mt=0, pf=16, tf=16, tod=4, ty=3)"
+        )
         self.assertEqual(md["reftime"], "2013-10-22T00:00:00Z")
         self.assertEqual(md["run"], "MINUTE(00:00)")
 
@@ -331,7 +345,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(len(mds), 1)
 
         self.assertEqual(mds[0]["origin"], "GRIB2(00200, 00000, 000, 000, 203)")
-        self.assertEqual(mds[0]["product"], "GRIB2(00200, 000, 200, 033, 005, 000)")
+        self.assertEqual(
+            mds[0]["product"], "GRIB2(00200, 000, 200, 033, 005, 000)"
+        )
         self.assertEqual(mds[0]["level"], "GRIB2S(103, 000, 0000000010)")
         self.assertEqual(mds[0]["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
@@ -508,7 +524,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertGribSource(md, "inbound/issue317.grib", 0, 248)
         self.assertEqual(md["origin"], "GRIB2(00080, 00255, 004, 255, 015)")
         self.assertEqual(md["product"], "GRIB2(00080, 000, 003, 006, 011, 001)")
-        self.assertEqual(md["level"], "GRIB2D(150, 000, 0000000066, 101, 002, 0000000000)")
+        self.assertEqual(
+            md["level"], "GRIB2D(150, 000, 0000000066, 101, 002, 0000000000)"
+        )
         self.assertEqual(md["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
             md["area"],
@@ -524,7 +542,9 @@ class TestScanGrib(unittest.TestCase):
         self.assertGribSource(md, "inbound/issue317.grib", 248, 224)
         self.assertEqual(md["origin"], "GRIB2(00080, 00255, 004, 255, 015)")
         self.assertEqual(md["product"], "GRIB2(00080, 001, 002, 000, 011, 001)")
-        self.assertEqual(md["level"], "GRIB2D(001,   -,          -,162, 000, 0000000000)")
+        self.assertEqual(
+            md["level"], "GRIB2D(001,   -,          -,162, 000, 0000000000)"
+        )
         self.assertEqual(md["timerange"], "Timedef(0s, 254, 0s)")
         self.assertEqual(
             md["area"],
@@ -548,7 +568,8 @@ class TestScanGrib(unittest.TestCase):
         self.assertEqual(md["timerange"], "GRIB1(000, 000h)")
         self.assertEqual(
             md["area"],
-            "GRIB(Ni=253, Nj=173, latfirst=50200000, latlast=33000000," " lonfirst=-2300000, lonlast=22900000, type=0)",
+            "GRIB(Ni=253, Nj=173, latfirst=50200000, latlast=33000000,"
+            " lonfirst=-2300000, lonlast=22900000, type=0)",
         )
         # issue201: set pl and pt
         self.assertEqual(md["proddef"], "GRIB(ld=1, mt=2, nn=0, tod=1)")

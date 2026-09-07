@@ -1,7 +1,9 @@
 import _arkimet
 
 _export = (
-    "load_cfg_sections", "get_alias_database", "expand_remote_query",
+    "load_cfg_sections",
+    "get_alias_database",
+    "expand_remote_query",
 )
 __all__ = []
 

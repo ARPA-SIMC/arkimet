@@ -35,7 +35,11 @@ class NetCDFScanner(arkimet.scan.DataFormatScannner):
                 except Exception:
                     log.warning("scanner function failed", exc_info=True)
 
-    def register(self, scanner: Callable[["netCDF4.Dataset", arkimet.Metadata], None], priority=0) -> None:
+    def register(
+        self,
+        scanner: Callable[["netCDF4.Dataset", arkimet.Metadata], None],
+        priority=0,
+    ) -> None:
         if scanner not in self.scanners:
             self.scanners.append((priority, scanner))
             self.scanners_sorted = False
