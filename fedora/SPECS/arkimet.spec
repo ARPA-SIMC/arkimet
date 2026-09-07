@@ -3,7 +3,7 @@
 
 Summary: Archive for weather information
 Name: arkimet
-Version: 1.67
+Version: 1.68
 Release: 1
 License: GPL
 Group: Applications/Meteo
@@ -177,6 +177,10 @@ if [ "$1" = "1" ]; then
 fi
 
 %changelog
+* Mon Sep 07 2026 Daniele Branchini  <dbranchini@arpae.it> - 1.68-1
+- Do not pickle ArkiServer objects in tests, but instantiate them on the remote end
+- Reformatted code and removed unused one
+
 * Tue Jul 07 2026 Davide Cesari  <dcesari@arpae.it> - 1.67-1
 - Reorganize plugin management
 

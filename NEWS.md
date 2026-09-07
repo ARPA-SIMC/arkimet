@@ -1,10 +1,15 @@
+# New in version 1.68
+
+* Do not pickle ArkiServer objects in tests, but instantiate them on the remote end
+* Reformatted code and removed unused one
+
 # New in version 1.67
 
-Reorganize plugin management (#363)
+* Reorganize plugin management (#363)
 
 # New in version 1.66
 
-Don't lose directory structure when installing config files (#363)
+* Don't lose directory structure when installing config files (#363)
 
 # New in version 1.65
 
