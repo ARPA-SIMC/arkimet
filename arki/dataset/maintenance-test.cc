@@ -326,6 +326,40 @@ template <typename Fixture> void CheckTest<Fixture>::register_tests_dir()
                          wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
                          wassert(f.query_results({1, 3, 0, 2}));
                      });
+
+    this->add_method("check_truncated_files_above_sequence", R"(
+       - if arkimet is interrupted during rollback of an append operation on a
+         dir dataset, there are files whose name has a higher sequence number
+         than the sequence file. This will break further appends, and needs to
+         be detected and fixed. [unaligned]
+    )",
+                     [&](Fixture& f) {
+                         auto corrupted_entry = "testds" / f.test_relpath /
+                                                ("000005."s + f.format);
+                         sys::write_file(corrupted_entry, "");
+                         wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+                         wassert(f.query_results({1, 3, 0, 2}));
+                     });
+
+    this->add_method(
+        "check_truncated_files_inside_seq", R"(
+       - if a spurious file that cannot be scanned exists in a directory
+         segment, it is treated as any unindexed data, which in this case may
+         be deleted data [dirty]
+    )",
+        [&](Fixture& f) {
+            auto corrupted_entry =
+                "testds" / f.test_relpath / ("000005."s + f.format);
+            sys::write_file(corrupted_entry, "");
+            {
+                segment::SequenceFile sf("testds" / f.test_relpath);
+                sf.open();
+                sys::PreserveFileTimes pft(sf);
+                sf.write_sequence(7u);
+            }
+            wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+            wassert(f.query_results({1, 3, 0, 2}));
+        });
 }
 
 template <typename Fixture> void CheckTest<Fixture>::register_tests_zip()
@@ -573,10 +607,10 @@ template <typename TestFixture> void CheckTest<TestFixture>::register_tests()
                         state.get("testds:" + f.test_relpath_wrongstep.native())
                             .state) == segment::SEGMENT_CORRUPTED);
 
-                // We are breaking the invariant that segments sorted by file
-                // name are in the same sequence of segments sorted by time of
-                // file contents, but the invariant that data queried is sorted
-                // by reftime must still stand
+                // We are breaking the invariant that segments sorted by
+                // file name are in the same sequence of segments sorted by
+                // time of file contents, but the invariant that data
+                // queried is sorted by reftime must still stand
                 wassert(f.query_results({1, 3, 0, 2}));
             });
 
@@ -694,6 +728,63 @@ template <typename Fixture> void FixTest<Fixture>::register_tests_dir()
             wassert(f.ensure_localds_clean(3, 3));
             wassert(f.query_results({3, 0, 2}));
         });
+    this->add_method(
+        "fix_unscannable_spurious_files_after_seq", R"(
+       - if a spurious file that cannot be scanned exists in a directory
+         segment, but is after the last sequence committed in the sequence
+         file, then it's considered an aborted write and scheduled for
+         repacking
+    )",
+        [&](Fixture& f) {
+            auto corrupted_entry =
+                "testds" / f.test_relpath / ("000005."s + f.format);
+            sys::write_file(corrupted_entry, "");
+            wassert(f.state_is(3, segment::SEGMENT_UNALIGNED));
+            {
+                auto checker(f.makeSegmentedChecker());
+                ReporterExpected e;
+                e.report.emplace_back("testds", "check", "2 files ok");
+                e.rescanned.emplace_back("testds", f.test_relpath);
+                wassert(actual(checker.get()).check(e, true));
+            }
+            wassert(f.state_is(3, segment::SEGMENT_DIRTY));
+            {
+                auto checker(f.makeSegmentedChecker());
+                ReporterExpected e;
+                e.report.emplace_back("testds", "repack", "2 files ok");
+                e.repacked.emplace_back("testds", f.test_relpath);
+                wassert(actual(checker.get()).repack(e, true));
+            }
+            wassert(f.ensure_localds_clean(3, 4));
+            wassert(f.query_results({1, 3, 0, 2}));
+        });
+
+    this->add_method("fix_truncated_file_inside_sequence", R"(
+       - if a spurious file that cannot be scanned exists in a directory
+         segment, require manual intervention, as it should either be deleted
+         or fixed, and arkimet cannot make the call. [corrupted]
+    )",
+                     [&](Fixture& f) {
+                         {
+                             sys::File df("testds" / f.test_relpath /
+                                              ("000000."s + f.format),
+                                          O_RDWR);
+                             sys::PreserveFileTimes pft(df);
+                             df.ftruncate(0);
+                         }
+
+                         {
+                             auto checker(f.makeSegmentedChecker());
+                             ReporterExpected e;
+                             e.report.emplace_back("testds", "check",
+                                                   "2 files ok");
+                             e.segment_manual_intervention.emplace_back(
+                                 "testds", f.test_relpath);
+                             wassert(actual(checker.get()).check(e, true));
+                         }
+
+                         wassert(f.state_is(3, segment::SEGMENT_CORRUPTED));
+                     });
 }
 
 template <typename TestFixture> void FixTest<TestFixture>::register_tests()
@@ -880,8 +971,8 @@ template <typename Fixture> void RepackTest<Fixture>::register_tests_concat()
     });
 
     this->add_method("repack_timestamps", [&](Fixture& f) {
-        // Set the segment to a past timestamp and rescan it, making it as if
-        // it were imported a long time ago
+        // Set the segment to a past timestamp and rescan it, making it as
+        // if it were imported a long time ago
         {
             sys::touch("testds" / f.test_relpath, 199926000);
 
