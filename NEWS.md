@@ -1,3 +1,8 @@
+# New in version UNRELEASED
+
+* Overwrite spurious files after the last committed sequence in directory
+  segments (#315)
+
 # New in version 1.68
 
 * Do not pickle ArkiServer objects in tests, but instantiate them on the remote end

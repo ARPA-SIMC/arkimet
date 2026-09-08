@@ -223,6 +223,42 @@ void Tests<Data, FixtureData>::register_tests()
         wassert(actual(seq.read_sequence()) == 2u);
     });
 
+    this->add_method("append_overwrite_spurious_files", [](Fixture& f) {
+        delete_if_exists(relpath);
+        wassert(actual_file(relpath).not_exists());
+
+        // Create the segment with an item
+        metadata::TestCollection mdc("inbound/test.grib1");
+        {
+            auto w(make_w());
+            w->append(mdc[0]);
+            w->commit();
+        }
+
+        // Add a spurious file after the current sequence number
+        {
+            segment::SequenceFile seq(relpath);
+            seq.open();
+            size_t last = seq.read_sequence();
+            auto spurious_path =
+                relpath / seq.data_fname(last + 1, DataFormat::GRIB);
+            sys::write_file(spurious_path, "");
+        }
+
+        {
+            auto w(make_w());
+            w->append(mdc[1]);
+            w->commit();
+        }
+
+        segment::SequenceFile seq(relpath);
+        seq.open();
+        wassert(actual(seq.read_sequence()) == 1u);
+
+        size_t data_size = mdc[1].data_size();
+        wassert(actual(sys::size(relpath / "000001.grib")) == data_size);
+    });
+
     // Try to append some data
     this->add_method("append", [](Fixture& f) {
         if (std::filesystem::is_directory(relpath))
@@ -298,7 +334,8 @@ void Tests<Data, FixtureData>::register_tests()
                 size_t data_size = md.data_size();
 
                 // Start the append transaction, the file is written
-                // Rolling back a transaction does leave a gap in the sequence
+                // Rolling back a transaction does leave a gap in the
+                // sequence
                 const types::source::Blob& new_source = w->append(md);
                 wassert(actual((size_t)new_source.offset) == 2u);
                 wassert(actual(sys::size(w->segment().abspath() /
