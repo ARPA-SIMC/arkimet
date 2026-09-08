@@ -486,20 +486,38 @@ const types::source::Blob& BaseWriter<Data>::append(Metadata& md)
 {
     this->fired = false;
 
-    File fd(this->segment().abspath() /
-                SequenceFile::data_fname(current_pos, this->segment().format()),
-            O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+    std::unique_ptr<File> fd;
+    while (true)
+    {
+        auto path =
+            this->segment().abspath() /
+            SequenceFile::data_fname(current_pos, this->segment().format());
+        try
+        {
+            fd = std::make_unique<File>(
+                path, O_WRONLY | O_CLOEXEC | O_CREAT | O_EXCL, 0666);
+            break;
+        }
+        catch (std::system_error& e)
+        {
+            if (e.code() == std::errc::file_exists)
+                std::filesystem::remove(path);
+            else
+                throw;
+        }
+    }
+
     try
     {
-        write_file(md, fd);
+        write_file(md, *fd);
     }
     catch (...)
     {
-        unlink(fd.path().c_str());
+        unlink(fd->path().c_str());
         throw;
     }
-    written.push_back(fd.path());
-    fd.close();
+    written.push_back(fd->path());
+    fd->close();
     pending.emplace_back(this->config, md,
                          source::Blob::create_unlocked(
                              md.source().format, this->segment().root(),
