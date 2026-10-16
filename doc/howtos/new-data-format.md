@@ -1,6 +1,4 @@
-====================================
-Adding support for a new file format
-====================================
+# Adding support for a new file format
 
 This document describes how to add support for a new data format in arkimet,
 provided that:
@@ -23,31 +21,29 @@ Support is added in two steps:
 2. Create a Python scanner to extract metadata from files.
 
 
-Adding support in the C++ library
-=================================
+## Adding support in the C++ library
 
 #. Decide a short string identifier for the new format. You can look at the
-   ``format_names`` array in ``arki/defs.cc`` to see what are the existing
+   `format_names` array in `arki/defs.cc` to see what are the existing
    ones.
-#. In ``arki/defs.h``, add an entry for the new format in the ``DataFormat``
+#. In `arki/defs.h`, add an entry for the new format in the `DataFormat`
    enum.
-#. In ``arki/defs.cc``, add the relevant name to the ``format_names`` array.
-#. In ``arki/defs.cc``, add support for the new name in the
-   ``format_from_string`` function.
-#. In ``arki/data.cc``, add change ``detect_format`` to support the extension
+#. In `arki/defs.cc`, add the relevant name to the `format_names` array.
+#. In `arki/defs.cc`, add support for the new name in the
+   `format_from_string` function.
+#. In `arki/data.cc`, add change `detect_format` to support the extension
    of the new file format.
 #. Recompile arkimet
 
 
-Adding a Python scanner
-=======================
+## Adding a Python scanner
 
-#. Copy ``python/arkimet/scan/netcdf.py`` to
-   ``python/arckimet/scan/{formatname}.py``, where ``formatname`` is the string
-   identifier previously added to ``arki/defs.cc``.
+#. Copy `python/arkimet/scan/netcdf.py` to
+   `python/arckimet/scan/{formatname}.py`, where `formatname` is the string
+   identifier previously added to `arki/defs.cc`.
 #. Using the NetCDF scanner as a template, code support for your new scanner.
-#. Copy ``python/tests/test_scan_netcdf.py`` to
-   ``python/tests/test_scan_{formatname}.py`` and use it as a template for your
+#. Copy `python/tests/test_scan_netcdf.py` to
+   `python/tests/test_scan_{formatname}.py` and use it as a template for your
    unit tests to test your new scanner's behaviour.
-#. Update ``python/meson.build`` to include your new scanner in the arkimet
+#. Update `python/meson.build` to include your new scanner in the arkimet
    binary distribution.

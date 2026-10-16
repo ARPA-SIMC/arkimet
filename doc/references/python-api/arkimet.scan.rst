@@ -11,13 +11,6 @@ arkimet.scan.bufr module
     :members:
     :undoc-members:
 
-arkimet.scan.common module
---------------------------
-
-.. automodule:: arkimet.scan.common
-    :members:
-    :undoc-members:
-
 arkimet.scan.grib module
 ------------------------
 
@@ -29,13 +22,6 @@ arkimet.scan.odimh5 module
 --------------------------
 
 .. automodule:: arkimet.scan.odimh5
-    :members:
-    :undoc-members:
-
-arkimet.scan.timedef module
----------------------------
-
-.. automodule:: arkimet.scan.timedef
     :members:
     :undoc-members:
 

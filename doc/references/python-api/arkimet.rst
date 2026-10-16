@@ -1,5 +1,5 @@
-arkimet package
-===============
+arkimet Python API
+==================
 
 Subpackages
 -----------

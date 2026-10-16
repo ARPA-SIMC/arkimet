@@ -1,5 +1,13 @@
+=====================
 arkimet documentation
 =====================
+
+Welcome to wreport's documentation. The documentation follows the `Diataxis
+<https://diataxis.fr/>`_ structure of tutorials, how-to guides, explanations
+and reference.
+
+Introduction
+============
 
 Arkimet is a set of tools to organize, archive and distribute data files. It
 currently supports data in GRIB, BUFR, HDF5 and VM2 formats.
@@ -30,21 +38,38 @@ Arkimet is Free Software, licensed under the GNU General Public License version
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Tutorials
 
-   metadata
-   matcher
-   datasets
-   segments
-   http-api
-   config
-   match-alias
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Howtos
+
    howtos/new-data-format
-   python-howtos/index
-   python/index
+   howtos/python-api/format_metadata.rst
+   howtos/python-api/read_inline_file.rst
 
-==================
+.. toctree::
+   :maxdepth: 2
+   :caption: Explanations
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: References
+
+   references/metadata
+   references/matcher
+   references/datasets
+   references/segments
+   references/http-api
+   references/config
+   references/python-api/arkimet
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Index
+
+   genindex
+   search
+
