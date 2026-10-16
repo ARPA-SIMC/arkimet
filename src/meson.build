@@ -18,7 +18,7 @@ endif
 foreach script: scripts
     install_data(script[0], install_dir: get_option('bindir'))
     custom_target(script[0] + '.1',
-                  input: [script[0], '../doc' / 'mhooks-' + script[0]],
+                  input: [script[0], 'mhooks-' + script[0]],
                   output: script[0] + '.1',
                   command: [run_local, help2man, '--include', '@INPUT1@', '--name=' + script[1], '--section=1', '--no-info', '--version-string=' + meson.project_version(), '@INPUT0@'],
                   depends: [py_arkimet],
