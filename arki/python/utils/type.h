@@ -16,7 +16,7 @@ template <typename Child, typename IMPL> struct Getter
 
     static PyObject* get(Impl* self, void* closure)
     {
-        PyErr_Format(PyExc_NotImplementedError, "getter %s is not implemented",
+        PyErr_Format(PyExc_NotImplementedError, "%s getter is not implemented",
                      Child::name);
         return nullptr;
     }
@@ -25,6 +25,35 @@ template <typename Child, typename IMPL> struct Getter
     {
         return PyGetSetDef{const_cast<char*>(Child::name), (getter)Child::get,
                            nullptr, const_cast<char*>(Child::doc),
+                           Child::closure};
+    }
+};
+
+template <typename Child, typename IMPL> struct GetSetter
+{
+    typedef IMPL Impl;
+    constexpr static const char* name = "TODO";
+    constexpr static const char* doc  = "TODO: write getsetter documentation";
+    constexpr static void* closure    = nullptr;
+
+    static PyObject* get(Impl* self, void* closure)
+    {
+        PyErr_Format(PyExc_NotImplementedError, "%s getter is not implemented",
+                     Child::name);
+        return nullptr;
+    }
+
+    static int set(Impl* self, PyObject* value, void* closure)
+    {
+        PyErr_Format(PyExc_NotImplementedError, "%s setter is not implemented",
+                     Child::name);
+        return -1;
+    }
+
+    static constexpr PyGetSetDef def()
+    {
+        return PyGetSetDef{const_cast<char*>(Child::name), (getter)Child::get,
+                           (setter)Child::set, const_cast<char*>(Child::doc),
                            Child::closure};
     }
 };
@@ -163,6 +192,8 @@ template <typename Child, typename IMPL> struct Type
     constexpr static binaryfunc mp_subscript        = nullptr;
     constexpr static objobjargproc mp_ass_subscript = nullptr;
 
+    constexpr static unsigned long tp_flags = Py_TPFLAGS_DEFAULT;
+
     static int _init(Impl* self, PyObject* args, PyObject* kw)
     {
         // Default implementation raising NotImplementedError
@@ -181,8 +212,6 @@ template <typename Child, typename IMPL> struct Type
     void define(PyTypeObject*& type_object, PyObject* module = nullptr)
     {
         Child* d = static_cast<Child*>(this);
-
-        unsigned long tp_flags = Py_TPFLAGS_DEFAULT;
 
         PySequenceMethods* tp_as_sequence = nullptr;
         if (Child::sq_length || Child::sq_concat || Child::sq_repeat ||
@@ -215,7 +244,7 @@ template <typename Child, typename IMPL> struct Type
             0,                                               // tp_getattro
             0,                                               // tp_setattro
             0,                                               // tp_as_buffer
-            tp_flags,                                        // tp_flags
+            (unsigned long)Child::tp_flags,                  // tp_flags
             Child::doc,                                      // tp_doc
             0,                                               // tp_traverse
             0,                                               // tp_clear
