@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
 namespace arki::data {
@@ -29,8 +30,7 @@ std::optional<DataFormat> detect_format(const std::filesystem::path& path);
 /**
  * Function signature for metadata consumers
  */
-typedef std::function<bool(std::shared_ptr<Metadata>, off_t,
-                           std::vector<uint8_t>&&)>
+typedef std::function<bool(std::shared_ptr<Metadata>, off_t)>
     scan_file_multi_dest_func;
 
 class Scanner
@@ -142,6 +142,11 @@ public:
  */
 class SingleFileScanner : public Scanner
 {
+protected:
+    std::vector<uint8_t> read_file(const std::filesystem::path& abspath);
+    std::vector<uint8_t> read_file(const std::filesystem::path& abspath,
+                                   const struct stat& st);
+
 public:
     bool scan_file_multi(const std::filesystem::path& abspath,
                          scan_file_multi_dest_func dest) override;

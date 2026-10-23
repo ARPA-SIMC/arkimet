@@ -12,6 +12,7 @@
 #include "arki/types/reftime.h"
 #include "arki/types/run.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/types/timerange.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -32,8 +33,106 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_data_grib");
 
+class ConcreteScanner : public arki::data::grib::Scanner
+{
+protected:
+    void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override {}
+};
+
 void Tests::register_tests()
 {
+    add_method("scan_file_multi", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "fixture.grib1";
+        ConcreteScanner scanner;
+        std::vector<std::shared_ptr<Metadata>> mds;
+        std::vector<off_t> offsets;
+        wassert_true(scanner.scan_file_multi(
+            src, [&](std::shared_ptr<Metadata> md_, off_t offset) {
+                mds.emplace_back(md_);
+                offsets.emplace_back(offset);
+                return true;
+            }));
+        wassert(actual(mds.size()) == 3u);
+        wassert(actual(offsets.size()) == 3u);
+
+        wassert(actual_type(mds[0]->source())
+                    .is_source_blob(DataFormat::GRIB, basedir, "fixture.grib1",
+                                    0, 7218));
+        wassert_true(mds[0]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[0]->sourceBlob().read_data());
+        wassert(actual(offsets[0]) == 0);
+
+        wassert(actual_type(mds[1]->source())
+                    .is_source_blob(DataFormat::GRIB, basedir, "fixture.grib1",
+                                    7218, 34960));
+        wassert_true(mds[1]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[1]->sourceBlob().read_data());
+        wassert(actual(offsets[1]) == 7218);
+
+        wassert(actual_type(mds[2]->source())
+                    .is_source_blob(DataFormat::GRIB, basedir, "fixture.grib1",
+                                    42178, 2234));
+        wassert_true(mds[2]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[2]->sourceBlob().read_data());
+        wassert(actual(offsets[2]) == 42178);
+    });
+
+    add_method("scan_pipe", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "fixture.grib1";
+        ConcreteScanner scanner;
+        std::vector<std::shared_ptr<Metadata>> mds;
+        core::File in(src, O_RDONLY);
+        wassert_true(scanner.scan_pipe(in, [&](std::shared_ptr<Metadata> md) {
+            mds.emplace_back(md);
+            return true;
+        }));
+        wassert(actual(mds.size()) == 3u);
+
+        wassert(actual_type(mds[0]->source())
+                    .is_source_inline(DataFormat::GRIB, 7218));
+        wassert_true(mds[0]->has_cached_data());
+
+        wassert(actual_type(mds[1]->source())
+                    .is_source_inline(DataFormat::GRIB, 34960));
+        wassert_true(mds[1]->has_cached_data());
+
+        wassert(actual_type(mds[2]->source())
+                    .is_source_inline(DataFormat::GRIB, 2234));
+        wassert_true(mds[2]->has_cached_data());
+    });
+
+    add_method("scan_file_single", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "issue264.grib";
+        ConcreteScanner scanner;
+        std::shared_ptr<Metadata> md = scanner.scan_file_single(src);
+        wassert_true(md.get());
+        wassert(actual_type(md->source())
+                    .is_source_blob(DataFormat::GRIB, basedir, "issue264.grib",
+                                    0, 179));
+        wassert_true(md->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, md->sourceBlob().read_data());
+    });
+
+    add_method("scan_data", [] {
+        auto basedir         = std::filesystem::current_path() / "inbound";
+        auto src             = basedir / "issue264.grib";
+        std::string data_str = sys::read_file(src);
+        std::vector<uint8_t> data(data_str.begin(), data_str.end());
+
+        ConcreteScanner scanner;
+        std::shared_ptr<Metadata> md = scanner.scan_data(data);
+        wassert_true(md.get());
+        wassert(actual_type(md->source())
+                    .is_source_inline(DataFormat::GRIB, data_str.size()));
+        wassert_true(md->has_cached_data());
+    });
 
     // Test validation
     add_method("validation", [] {

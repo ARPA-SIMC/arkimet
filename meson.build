@@ -155,7 +155,7 @@ libcrypto_dep = dependency('libcrypto')
 sqlite3_dep = dependency('sqlite3')
 
 pymod = import('python')
-python3 = pymod.find_installation('python3', required: false)
+python3 = pymod.find_installation('python3')
 
 # dnl Check for python
 # if test $enable_python != no
@@ -170,19 +170,14 @@ python3 = pymod.find_installation('python3', required: false)
 #     AX_PYTHON_MODULE(netcdf4)
 # fi
 
-if python3.found()
-    # FIXME: python3.path() is only available from meson 0.50: this is a workaround
-    python3_path = python3.get_variable('BINDIR') / python3.get_variable('PYTHON') + python3.language_version()
+# FIXME: python3.path() is only available from meson 0.50: this is a workaround
+python3_path = python3.get_variable('BINDIR') / python3.get_variable('PYTHON') + python3.language_version()
 
-    sphinx = find_program('sphinx-build', 'sphinx-build-3', 'sphinx-build-' + python3.language_version(), required: false)
-    asciidoc = find_program('asciidoc', required: false)
+sphinx = find_program('sphinx-build', 'sphinx-build-3', 'sphinx-build-' + python3.language_version(), required: false)
+asciidoc = find_program('asciidoc', required: false)
 
-    build_docs = sphinx.found()
-    docdir = get_option('datadir') / 'doc' / meson.project_name()
-else
-    warning('Documentation disabled, requires doxygen, sphinx, and the breathe python module')
-    build_docs = false
-endif
+build_docs = sphinx.found()
+docdir = get_option('datadir') / 'doc' / meson.project_name()
 
 # Generate config.h
 configure_file(output: 'config.h', configuration: conf_data)
@@ -199,11 +194,7 @@ run_local_cfg = configure_file(output: 'run-local', input: 'run-local.in', confi
 run_local = find_program(run_local_cfg)
 
 subdir('arki')
-
-if python3.found()
-    subdir('python')
-endif
-
+subdir('python')
 subdir('src')
 subdir('conf')
 

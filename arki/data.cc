@@ -163,6 +163,25 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
  * SingleFileScanner
  */
 
+std::vector<uint8_t>
+SingleFileScanner::read_file(const std::filesystem::path& abspath)
+{
+    struct stat st;
+    sys::stat(abspath, st);
+    return read_file(abspath, st);
+}
+
+std::vector<uint8_t>
+SingleFileScanner::read_file(const std::filesystem::path& abspath,
+                             const struct stat& st)
+{
+    sys::File fd(abspath, O_RDONLY);
+    sys::MMap mapped_data = fd.mmap(st.st_size, PROT_READ, MAP_PRIVATE);
+    return std::vector<uint8_t>(static_cast<const uint8_t*>(mapped_data),
+                                static_cast<const uint8_t*>(mapped_data) +
+                                    mapped_data.size());
+}
+
 bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
                                         scan_file_multi_dest_func dest)
 {
@@ -178,12 +197,7 @@ bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
         return true;
 
     auto md = scan_file_single(abspath);
-    sys::File fd(abspath, O_RDONLY);
-    sys::MMap mapped_data = fd.mmap(st->st_size, PROT_READ, MAP_PRIVATE);
-    std::vector<uint8_t> data(static_cast<const uint8_t*>(mapped_data),
-                              static_cast<const uint8_t*>(mapped_data) +
-                                  mapped_data.size());
-    return dest(md, 0, std::move(data));
+    return dest(md, 0);
 }
 
 /*

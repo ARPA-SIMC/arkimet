@@ -199,6 +199,9 @@ Scanner::scan_file_single(const std::filesystem::path& abspath)
     if (!input.next())
         throw std::runtime_error(abspath.native() + " contains no VM2 data");
     input.to_metadata(*md);
+    md->set_source(arki::types::Source::createBlobUnlocked(
+        DataFormat::VM2, abspath.parent_path(), abspath.filename(), 0,
+        input.line.size()));
     md->set_cached_data(metadata::DataManager::get().to_data(
         DataFormat::VM2,
         std::vector<uint8_t>(input.line.begin(), input.line.end())));
@@ -228,7 +231,7 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
             metadata::DataManager::get().to_data(
                 DataFormat::VM2,
                 vector<uint8_t>(input.line.begin(), input.line.end())));
-        if (!dest(move(md)))
+        if (!dest(std::move(md)))
             return false;
     }
     return true;
@@ -244,8 +247,13 @@ bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
         if (!input.next_with_offset())
             break;
         input.to_metadata(*md);
-        if (!dest(std::move(md), input.offset,
-                  std::vector<uint8_t>(input.line.begin(), input.line.end())))
+        std::vector<uint8_t> data(input.line.begin(), input.line.end());
+        md->set_source(arki::types::Source::createBlobUnlocked(
+            DataFormat::VM2, abspath.parent_path(), abspath.filename(),
+            input.offset, data.size()));
+        md->set_cached_data(metadata::DataManager::get().to_data(
+            DataFormat::VM2, std::move(data)));
+        if (!dest(std::move(md), input.offset))
             return false;
     }
     return true;

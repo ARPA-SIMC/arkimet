@@ -68,10 +68,8 @@ static void load_gribscanner_object()
 class PythonGribScanner : public arki::data::grib::Scanner
 {
 protected:
-    std::shared_ptr<Metadata> scan(grib_handle* gh) override
+    void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override
     {
-        auto md = std::make_shared<Metadata>();
-
         AcquireGIL gil;
         if (!gribscanner_object)
             load_gribscanner_object();
@@ -90,8 +88,6 @@ protected:
             arki::nag::warning(
                 "metadata use count after scanning is %ld instead of 1",
                 md.use_count());
-
-        return md;
     }
 
 public:

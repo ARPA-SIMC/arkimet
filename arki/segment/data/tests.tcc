@@ -21,6 +21,8 @@ void SegmentFixture<Data, FixtureData>::test_setup()
     using namespace arki::utils;
     sys::rmtree_ifexists("testseg");
     std::filesystem::create_directory("testseg");
+    for (const auto& md : td.mds)
+        wassert(actual(md->data_size()) > 0);
     seg_mds = td.mds.clone();
     session = std::make_shared<segment::scan::Session>(
         std::filesystem::current_path());

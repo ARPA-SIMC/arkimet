@@ -194,11 +194,17 @@ MockScanner::MockScanner(DataFormat format) : m_format(format) {}
 MockScanner::~MockScanner() {}
 
 std::shared_ptr<Metadata>
-MockScanner::scan_file(const std::filesystem::path& pathname)
+MockScanner::scan_file(const std::filesystem::path& abspath)
 {
-    auto buf = sys::read_file(pathname);
-    return MockEngine::get().lookup(
+    auto buf = sys::read_file(abspath);
+    auto md  = MockEngine::get().lookup(
         reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
+    std::vector<uint8_t> data(buf.begin(), buf.end());
+    md->set_source(arki::types::Source::createBlobUnlocked(
+        name(), abspath.parent_path(), abspath.filename(), 0, data.size()));
+    md->set_cached_data(
+        metadata::DataManager::get().to_data(name(), std::move(data)));
+    return md;
 }
 
 std::shared_ptr<Metadata>

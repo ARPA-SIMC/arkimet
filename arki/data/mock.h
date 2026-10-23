@@ -46,7 +46,7 @@ class MockScanner : public SingleFileScanner
 protected:
     DataFormat m_format;
 
-    std::shared_ptr<Metadata> scan_file(const std::filesystem::path& pathname);
+    std::shared_ptr<Metadata> scan_file(const std::filesystem::path& abspath);
 
 public:
     explicit MockScanner(DataFormat format);

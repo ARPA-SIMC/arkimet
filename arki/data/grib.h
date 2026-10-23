@@ -49,7 +49,7 @@ protected:
     void set_source_inline(grib_handle* gh, Metadata& md);
 
     // Read from gh and add metadata to md
-    virtual std::shared_ptr<Metadata> scan(grib_handle* gh) = 0;
+    virtual void scan(grib_handle* gh, std::shared_ptr<Metadata>) = 0;
 
 public:
     Scanner();
@@ -68,7 +68,7 @@ public:
 class MockScanner : public Scanner
 {
 protected:
-    std::shared_ptr<Metadata> scan(grib_handle* gh) override;
+    void scan(grib_handle* gh, std::shared_ptr<Metadata>) override;
 };
 
 } // namespace arki::data::grib
