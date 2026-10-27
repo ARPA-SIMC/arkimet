@@ -232,7 +232,7 @@ struct register_scanner : public ClassMethKwargs<register_scanner>
 {
     constexpr static const char* name = "register_scanner";
     constexpr static const char* signature =
-        "data_format: str, scanner: DataFormatScannner";
+        "data_format: str, scanner: DataFormatScanner";
     constexpr static const char* returns = "None";
     constexpr static const char* summary =
         "Register a scanner for the given data format";

@@ -1,7 +1,7 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List, Tuple
 
 import netCDF4
 
@@ -11,23 +11,38 @@ import arkimet.scan
 log = logging.getLogger("arkimet.scan.netcdf")
 
 
-class NetCDFScanner(arkimet.scan.DataFormatScannner):
-    def __init__(self):
-        self.scanners = []
-        self.scanners_sorted = True
+class NetCDFScanner(arkimet.scan.DataFormatScanner):
+    """
+    Scanner for NetCDF files.
+
+    This is registered with the arkimet library as the entry point for managing
+    NetCDF data.
+
+    Scanner configuration scripts for NetCDF files need to register with this
+    class to be executed.
+    """
+
+    def __init__(self) -> None:
+        """Intialize the NetCDF scanner with an empty plugin list."""
+        self.scanners: List[
+            Tuple[int, Callable[["netCDF4.Dataset", arkimet.Metadata], None]]
+        ] = []
+        self.scanners_sorted: bool = True
 
     def scan_data(self, data: bytes, md: arkimet.Metadata):
+        """Scan a memory buffer as a NetCDF file."""
         with tempfile.NamedTemporaryFile("wb") as tf:
             tf.write(data)
             tf.flush()
             self.scan_file(Path(tf.name), md)
 
     def scan_file(self, pathname: Path, md: arkimet.Metadata) -> None:
+        """Scan a NetCDF file."""
         with netCDF4.Dataset(pathname, "r") as f:
-            # Try all scanner functions in the list, in priority order, stopping at
-            # the first one that returns False.
-            # Note that False is explicitly required: returning None will not stop
-            # the scanner chain.
+            # Try all scanner functions in the list, in priority order,
+            # stopping at the first one that returns False.
+            # Note that False is explicitly required: returning None will not
+            # stop the scanner chain.
             for prio, scan in self.scanners:
                 try:
                     if scan(f, md) is False:
@@ -38,13 +53,22 @@ class NetCDFScanner(arkimet.scan.DataFormatScannner):
     def register(
         self,
         scanner: Callable[["netCDF4.Dataset", arkimet.Metadata], None],
-        priority=0,
+        priority: int = 0,
     ) -> None:
+        """
+        Register a callable as an additional scanner.
+
+        :param scanner: the callable to run to scan extra data from an image
+        :param priority: the order of execution (lower numbers run first)
+        """
         if scanner not in self.scanners:
             self.scanners.append((priority, scanner))
             self.scanners_sorted = False
 
 
+#: Main NetCDFScanner instance that handles scanning, and that plugins can use
+#: to register themselves
 netcdf_scanner = NetCDFScanner()
 
+# Register netcdf_scanner with the arkimet library
 arkimet.scan.registry.register_scanner("netcdf", netcdf_scanner)
