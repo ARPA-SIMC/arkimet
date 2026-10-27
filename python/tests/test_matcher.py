@@ -45,7 +45,7 @@ class TestMatcher(SessionMixin, unittest.TestCase):
         re_doctest_info = re.compile(r".. doctest (\w+): (.+)")
 
         docdir = os.path.join(os.environ["TOP_SRCDIR"], "doc")
-        doctests = [os.path.join(docdir, "matcher.rst")]
+        doctests = [os.path.join(docdir, "references/matcher.rst")]
         doctests += glob.glob(os.path.join(docdir, "matcher", "*.rst"))
         self.assertTrue(doctests)
 
