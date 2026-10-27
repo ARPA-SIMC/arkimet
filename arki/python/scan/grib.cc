@@ -70,6 +70,7 @@ class PythonGribScanner : public arki::data::grib::Scanner
 protected:
     void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override
     {
+        long orig_use_count = md.use_count();
         AcquireGIL gil;
         if (!gribscanner_object)
             load_gribscanner_object();
@@ -84,10 +85,10 @@ protected:
         // while a supported and important use case is to stream out one
         // metadata at a time
         pymd.reset(nullptr);
-        if (md.use_count() != 1)
+        if (md.use_count() != orig_use_count)
             arki::nag::warning(
-                "metadata use count after scanning is %ld instead of 1",
-                md.use_count());
+                "metadata use count after scan is %ld instead of %ld",
+                md.use_count(), orig_use_count);
     }
 
 public:

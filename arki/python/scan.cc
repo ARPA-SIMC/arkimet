@@ -163,9 +163,9 @@ public:
             // metadata at a time
             pymd.reset(nullptr);
             if (md.use_count() != 1)
-                arki::nag::warning(
-                    "metadata use count after scanning is %ld instead of 1",
-                    md.use_count());
+                arki::nag::warning("metadata use count after scan_file_single "
+                                   "is %ld instead of 1",
+                                   md.use_count());
         }
 
         if (!md->has_cached_data())
@@ -217,7 +217,7 @@ public:
         pymd.reset(nullptr);
         if (md.use_count() != 1)
             arki::nag::warning(
-                "metadata use count after scanning is %ld instead of 1",
+                "metadata use count after scan_data is %ld instead of 1",
                 md.use_count());
 
         md->set_source_inline(m_format,

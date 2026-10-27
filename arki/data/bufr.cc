@@ -292,7 +292,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              scan_file_multi_dest_func dest)
+                              metadata_dest_func dest)
 {
     auto file =
         dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
@@ -309,7 +309,7 @@ bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
             rmsg.offset, data.size()));
         md->set_cached_data(metadata::DataManager::get().to_data(
             DataFormat::BUFR, std::move(data)));
-        if (!dest(md, rmsg.offset))
+        if (!dest(md))
             return false;
     }
     return true;
@@ -387,7 +387,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              scan_file_multi_dest_func dest)
+                              metadata_dest_func dest)
 {
     throw std::runtime_error("BUFR support is not available");
 }

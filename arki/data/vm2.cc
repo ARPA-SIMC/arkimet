@@ -238,7 +238,7 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 }
 
 bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              scan_file_multi_dest_func dest)
+                              metadata_dest_func dest)
 {
     vm2::Input input(abspath);
     while (true)
@@ -253,7 +253,7 @@ bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
             input.offset, data.size()));
         md->set_cached_data(metadata::DataManager::get().to_data(
             DataFormat::VM2, std::move(data)));
-        if (!dest(std::move(md), input.offset))
+        if (!dest(std::move(md)))
             return false;
     }
     return true;
@@ -309,7 +309,7 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 }
 
 bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              scan_file_multi_dest_func dest)
+                              metadata_dest_func dest)
 {
     throw std::runtime_error("VM2 support is not available");
 }

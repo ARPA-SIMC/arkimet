@@ -183,7 +183,7 @@ SingleFileScanner::read_file(const std::filesystem::path& abspath,
 }
 
 bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
-                                        scan_file_multi_dest_func dest)
+                                        metadata_dest_func dest)
 {
     // If the file is empty, skip it
     auto st = sys::stat(abspath);
@@ -197,7 +197,7 @@ bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
         return true;
 
     auto md = scan_file_single(abspath);
-    return dest(md, 0);
+    return dest(md);
 }
 
 /*

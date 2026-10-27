@@ -38,15 +38,12 @@ void Tests::register_tests()
         auto src     = basedir / "fixture.bufr";
         ConcreteScanner scanner;
         std::vector<std::shared_ptr<Metadata>> mds;
-        std::vector<off_t> offsets;
-        wassert_true(scanner.scan_file_multi(
-            src, [&](std::shared_ptr<Metadata> md_, off_t offset) {
+        wassert_true(
+            scanner.scan_file_multi(src, [&](std::shared_ptr<Metadata> md_) {
                 mds.emplace_back(md_);
-                offsets.emplace_back(offset);
                 return true;
             }));
         wassert(actual(mds.size()) == 3u);
-        wassert(actual(offsets.size()) == 3u);
 
         wassert(actual_type(mds[0]->source())
                     .is_source_blob(DataFormat::BUFR, basedir, "fixture.bufr",
@@ -54,7 +51,6 @@ void Tests::register_tests()
         wassert_true(mds[0]->has_cached_data());
         // read_data fails as the blob is not associated with a reader
         wassert_throws(std::runtime_error, mds[0]->sourceBlob().read_data());
-        wassert(actual(offsets[0]) == 0);
 
         wassert(actual_type(mds[1]->source())
                     .is_source_blob(DataFormat::BUFR, basedir, "fixture.bufr",
@@ -62,7 +58,6 @@ void Tests::register_tests()
         wassert_true(mds[1]->has_cached_data());
         // read_data fails as the blob is not associated with a reader
         wassert_throws(std::runtime_error, mds[1]->sourceBlob().read_data());
-        wassert(actual(offsets[1]) == 146);
 
         wassert(actual_type(mds[2]->source())
                     .is_source_blob(DataFormat::BUFR, basedir, "fixture.bufr",
@@ -70,7 +65,6 @@ void Tests::register_tests()
         wassert_true(mds[2]->has_cached_data());
         // read_data fails as the blob is not associated with a reader
         wassert_throws(std::runtime_error, mds[2]->sourceBlob().read_data());
-        wassert(actual(offsets[2]) == 318);
     });
 
     add_method("scan_pipe", [] {

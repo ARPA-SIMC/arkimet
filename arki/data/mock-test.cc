@@ -44,15 +44,12 @@ void Tests::register_tests()
         auto src = basedir / "00.odimh5";
         arki::data::MockScanner scanner(DataFormat::ODIMH5);
         std::vector<std::shared_ptr<Metadata>> mds;
-        std::vector<off_t> offsets;
-        wassert_true(scanner.scan_file_multi(
-            src, [&](std::shared_ptr<Metadata> md_, off_t offset) {
+        wassert_true(
+            scanner.scan_file_multi(src, [&](std::shared_ptr<Metadata> md_) {
                 mds.emplace_back(md_);
-                offsets.emplace_back(offset);
                 return true;
             }));
         wassert(actual(mds.size()) == 1u);
-        wassert(actual(offsets.size()) == 1u);
 
         wassert(actual_type(mds[0]->source())
                     .is_source_blob(DataFormat::ODIMH5, basedir, "00.odimh5", 0,
@@ -60,7 +57,6 @@ void Tests::register_tests()
         wassert_true(mds[0]->has_cached_data());
         // read_data fails as the blob is not associated with a reader
         wassert_throws(std::runtime_error, mds[0]->sourceBlob().read_data());
-        wassert(actual(offsets[0]) == 0);
     });
 
     add_method("scan_pipe", [] {
