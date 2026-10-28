@@ -20,6 +20,7 @@
 #include "arki/python/dataset.h"
 #include "arki/python/dataset/querymacro.h"
 #include "arki/python/dataset/reader.h"
+#include "arki/python/files.h"
 #include "arki/python/formatter.h"
 #include "arki/python/matcher.h"
 #include "arki/python/metadata.h"
@@ -518,6 +519,7 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_scan(m);
         register_dataset(m);
         register_counters(m);
+        register_files(m);
 
         pyo_unique_ptr cmdline = throw_ifnull(PyModule_Create(&cmdline_module));
         register_arki_query(cmdline);
