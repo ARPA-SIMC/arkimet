@@ -186,7 +186,7 @@ void Tests::register_tests()
         add_method("scan_singleton_" + format_name(td.format), [=] {
             auto scanner = data::Scanner::get(td.format);
             auto md      = scanner->scan_file_single(td.pathname);
-            wassert_false(md->has_source());
+            wassert_true(md->has_source());
         });
     }
 

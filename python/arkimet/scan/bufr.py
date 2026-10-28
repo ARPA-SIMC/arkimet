@@ -1,7 +1,7 @@
 import logging
 import math
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Dict, List, Tuple, Optional, Any
 
 import dballe
 
@@ -11,13 +11,35 @@ log = logging.getLogger("arkimet.scan.bufr")
 
 
 class Scanner:
-    by_type = defaultdict(list)
+    """
+    Python engine for scanning BUFR files.
 
-    def __init__(self):
+    This is instantiated once during library initialization, and called to scan
+    each BUFR message.
+
+    It manages its own plugin system to be extended with scanner configuration
+    scripts.
+    """
+
+    #: Registered scanner plugins, by DB-All.e message type
+    by_type: Dict[
+        str,
+        List[Tuple[int, Callable[[dballe.Message, arkimet.Metadata], None]]],
+    ] = defaultdict(list)
+
+    def __init__(self) -> None:
+        """
+        Initialize the scanner.
+
+        This is called once, at library startup.
+
+        Plugins need to already be registered by the time this is called.
+        """
         for type, scanners in self.by_type.items():
             scanners.sort(key=lambda p: p[0])
 
-    def scan(self, msg: dballe.Message, md: arkimet.Metadata):
+    def scan(self, msg: dballe.Message, md: arkimet.Metadata) -> None:
+        """Scan a BUFR message."""
         # Find the formatter list for this style
         scanners = self.by_type.get(msg.type)
         if scanners is None:
@@ -40,12 +62,13 @@ class Scanner:
         type: str,
         scanner: Callable[[dballe.Message, arkimet.Metadata], None],
         priority=0,
-    ):
+    ) -> None:
+        """Register a scanner plugin."""
         if scanner not in cls.by_type[type]:
             cls.by_type[type].append((priority, scanner))
 
 
-def read_area_fixed(msg):
+def read_area_fixed(msg: dballe.Message) -> Optional[Dict[str, Any]]:
     """
     Read the area from a BUFR containing a fixed station
     """
@@ -57,7 +80,7 @@ def read_area_fixed(msg):
         return None
 
 
-def read_area_mobile(msg):
+def read_area_mobile(msg: dballe.Message) -> Optional[Dict[str, Any]]:
     """
     Read the area from a BUFR containing a mobile station
     """
@@ -74,11 +97,11 @@ def read_area_mobile(msg):
         return None
 
 
-def read_proddef(msg):
+def read_proddef(msg: dballe.Message) -> Optional[Dict[str, Any]]:
     """
     Read a default proddef value for a message
     """
-    res = {}
+    res: Dict[str, Any] = {}
     blo = msg.get_named("block")
     sta = msg.get_named("station")
     id = msg.get_named("ident")

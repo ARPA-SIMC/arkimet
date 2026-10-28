@@ -52,7 +52,7 @@ protected:
                     std::shared_ptr<dballe::Message> msg,
                     std::shared_ptr<Metadata> md) override
     {
-        auto orig_use_count = md.use_count();
+        long orig_use_count = md.use_count();
 
         AcquireGIL gil;
         if (!bufrscanner_object)
@@ -70,7 +70,7 @@ protected:
         pymd.reset(nullptr);
         if (md.use_count() != orig_use_count)
             arki::nag::warning(
-                "metadata use count after scanning is %ld instead of %ld",
+                "metadata use count after scan_extra is %ld instead of %ld",
                 md.use_count(), orig_use_count);
     }
 

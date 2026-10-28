@@ -49,7 +49,7 @@ protected:
     void set_source_inline(grib_handle* gh, Metadata& md);
 
     // Read from gh and add metadata to md
-    virtual std::shared_ptr<Metadata> scan(grib_handle* gh) = 0;
+    virtual void scan(grib_handle* gh, std::shared_ptr<Metadata>) = 0;
 
 public:
     Scanner();
@@ -58,7 +58,7 @@ public:
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
     bool scan_file_multi(const std::filesystem::path& abspath,
-                         scan_file_multi_dest_func dest) override;
+                         metadata_dest_func dest) override;
     std::shared_ptr<Metadata>
     scan_file_single(const std::filesystem::path& abspath) override;
     bool scan_pipe(core::NamedFileDescriptor& in,
@@ -68,7 +68,7 @@ public:
 class MockScanner : public Scanner
 {
 protected:
-    std::shared_ptr<Metadata> scan(grib_handle* gh) override;
+    void scan(grib_handle* gh, std::shared_ptr<Metadata>) override;
 };
 
 } // namespace arki::data::grib

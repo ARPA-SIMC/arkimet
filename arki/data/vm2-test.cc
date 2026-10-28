@@ -3,6 +3,7 @@
 #include "arki/metadata/data.h"
 #include "arki/metadata/tests.h"
 #include "arki/types/source.h"
+#include "arki/types/source/blob.h"
 #include "arki/types/value.h"
 #include "arki/utils/sys.h"
 #include <fcntl.h>
@@ -25,6 +26,103 @@ class Tests : public TestCase
 
 void Tests::register_tests()
 {
+    add_method("scan_file_multi", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "test.vm2";
+        data::vm2::Scanner scanner;
+        std::vector<std::shared_ptr<Metadata>> mds;
+        wassert_true(
+            scanner.scan_file_multi(src, [&](std::shared_ptr<Metadata> md_) {
+                mds.emplace_back(md_);
+                return true;
+            }));
+        wassert(actual(mds.size()) == 4u);
+
+        wassert(
+            actual_type(mds[0]->source())
+                .is_source_blob(DataFormat::VM2, basedir, "test.vm2", 0, 34));
+        wassert_true(mds[0]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[0]->sourceBlob().read_data());
+
+        wassert(
+            actual_type(mds[1]->source())
+                .is_source_blob(DataFormat::VM2, basedir, "test.vm2", 35, 35));
+        wassert_true(mds[1]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[1]->sourceBlob().read_data());
+
+        wassert(
+            actual_type(mds[2]->source())
+                .is_source_blob(DataFormat::VM2, basedir, "test.vm2", 71, 33));
+        wassert_true(mds[2]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[2]->sourceBlob().read_data());
+
+        wassert(
+            actual_type(mds[3]->source())
+                .is_source_blob(DataFormat::VM2, basedir, "test.vm2", 105, 32));
+        wassert_true(mds[3]->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, mds[3]->sourceBlob().read_data());
+    });
+
+    add_method("scan_pipe", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "test.vm2";
+        data::vm2::Scanner scanner;
+        std::vector<std::shared_ptr<Metadata>> mds;
+        core::File in(src, O_RDONLY);
+        wassert_true(scanner.scan_pipe(in, [&](std::shared_ptr<Metadata> md) {
+            mds.emplace_back(md);
+            return true;
+        }));
+        wassert(actual(mds.size()) == 4u);
+
+        wassert(actual_type(mds[0]->source())
+                    .is_source_inline(DataFormat::VM2, 34));
+        wassert_true(mds[0]->has_cached_data());
+
+        wassert(actual_type(mds[1]->source())
+                    .is_source_inline(DataFormat::VM2, 35));
+        wassert_true(mds[1]->has_cached_data());
+
+        wassert(actual_type(mds[2]->source())
+                    .is_source_inline(DataFormat::VM2, 33));
+        wassert_true(mds[2]->has_cached_data());
+
+        wassert(actual_type(mds[3]->source())
+                    .is_source_inline(DataFormat::VM2, 32));
+        wassert_true(mds[3]->has_cached_data());
+    });
+
+    add_method("scan_file_single", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "single.vm2";
+        data::vm2::Scanner scanner;
+        std::shared_ptr<Metadata> md = scanner.scan_file_single(src);
+        wassert_true(md.get());
+        wassert(
+            actual_type(md->source())
+                .is_source_blob(DataFormat::VM2, basedir, "single.vm2", 0, 34));
+        wassert_true(md->has_cached_data());
+        // read_data fails as the blob is not associated with a reader
+        wassert_throws(std::runtime_error, md->sourceBlob().read_data());
+    });
+
+    add_method("scan_data", [] {
+        auto basedir = std::filesystem::current_path() / "inbound";
+        auto src     = basedir / "single.vm2";
+        std::string data_str("200707081300,1,227,1.2,,,000000000");
+        std::vector<uint8_t> data(data_str.begin(), data_str.end());
+
+        data::vm2::Scanner scanner;
+        std::shared_ptr<Metadata> md = scanner.scan_data(data);
+        wassert_true(md.get());
+        wassert(actual_type(md->source())
+                    .is_source_inline(DataFormat::VM2, data_str.size()));
+        wassert_true(md->has_cached_data());
+    });
 
     // Scan a well-known vm2 sample
     add_method("scan", []() {

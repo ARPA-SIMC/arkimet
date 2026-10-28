@@ -176,12 +176,10 @@ template <typename Data> bool Reader<Data>::scan_data(metadata_dest_func dest)
     compress::TempUnzip uncompressed(segment.abspath());
     auto uncompressed_reader = segment.reader(this->lock);
     return scanner->scan_file_multi(
-        segment.abspath(), [&](std::shared_ptr<Metadata> md, off_t offset,
-                               std::vector<uint8_t>&& data) {
-            md->set_source(
-                Source::createBlob(uncompressed_reader, offset, data.size()));
-            md->set_cached_data(metadata::DataManager::get().to_data(
-                segment.format(), std::move(data)));
+        segment.abspath(), [&](std::shared_ptr<Metadata> md) {
+            md->set_source(Source::createBlob(uncompressed_reader,
+                                              md->sourceBlob().offset,
+                                              md->sourceBlob().size));
             return dest(md);
         });
 }

@@ -8,6 +8,7 @@
 #include "arki/metadata/data.h"
 #include "arki/nag.h"
 #include "arki/runtime.h"
+#include "arki/types/source.h"
 #include "arki/types/values.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
@@ -143,23 +144,36 @@ public:
     std::shared_ptr<Metadata>
     scan_file_single(const std::filesystem::path& abspath) override
     {
+        struct stat st;
+        sys::stat(abspath, st);
         auto md = std::make_shared<Metadata>();
+        md->set_source(arki::types::Source::createBlobUnlocked(
+            name(), abspath.parent_path(), abspath.filename(), 0, st.st_size));
 
-        AcquireGIL gil;
-        pyo_unique_ptr pyfname(to_python(abspath));
-        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
-        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-            scanner, "scan_file", "OO", pyfname.get(), pymd.get())));
+        {
+            AcquireGIL gil;
+            pyo_unique_ptr pyfname(to_python(abspath));
+            pyo_unique_ptr pymd((PyObject*)metadata_create(md));
+            pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
+                scanner, "scan_file", "OO", pyfname.get(), pymd.get())));
 
-        // If use_count is > 1, it means we are potentially and unexpectedly
-        // holding all the metadata (and potentially their data) in memory,
-        // while a supported and important use case is to stream out one
-        // metadata at a time
-        pymd.reset(nullptr);
-        if (md.use_count() != 1)
-            arki::nag::warning(
-                "metadata use count after scanning is %ld instead of 1",
-                md.use_count());
+            // If use_count is > 1, it means we are potentially and unexpectedly
+            // holding all the metadata (and potentially their data) in memory,
+            // while a supported and important use case is to stream out one
+            // metadata at a time
+            pymd.reset(nullptr);
+            if (md.use_count() != 1)
+                arki::nag::warning("metadata use count after scan_file_single "
+                                   "is %ld instead of 1",
+                                   md.use_count());
+        }
+
+        if (!md->has_cached_data())
+        {
+            auto data = this->read_file(abspath, st);
+            md->set_cached_data(
+                metadata::DataManager::get().to_data(name(), std::move(data)));
+        }
 
         return md;
     }
@@ -203,7 +217,7 @@ public:
         pymd.reset(nullptr);
         if (md.use_count() != 1)
             arki::nag::warning(
-                "metadata use count after scanning is %ld instead of 1",
+                "metadata use count after scan_data is %ld instead of 1",
                 md.use_count());
 
         md->set_source_inline(m_format,
@@ -218,7 +232,7 @@ struct register_scanner : public ClassMethKwargs<register_scanner>
 {
     constexpr static const char* name = "register_scanner";
     constexpr static const char* signature =
-        "data_format: str, scanner: DataFormatScannner";
+        "data_format: str, scanner: DataFormatScanner";
     constexpr static const char* returns = "None";
     constexpr static const char* summary =
         "Register a scanner for the given data format";

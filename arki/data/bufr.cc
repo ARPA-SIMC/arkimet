@@ -292,7 +292,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              scan_file_multi_dest_func dest)
+                              metadata_dest_func dest)
 {
     auto file =
         dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
@@ -303,8 +303,13 @@ bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
         if (!rmsg)
             break;
         do_scan(rmsg, md);
-        if (!dest(md, rmsg.offset,
-                  std::vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())))
+        std::vector<uint8_t> data(rmsg.data.begin(), rmsg.data.end());
+        md->set_source(arki::types::Source::createBlobUnlocked(
+            DataFormat::BUFR, abspath.parent_path(), abspath.filename(),
+            rmsg.offset, data.size()));
+        md->set_cached_data(metadata::DataManager::get().to_data(
+            DataFormat::BUFR, std::move(data)));
+        if (!dest(md))
             return false;
     }
     return true;
@@ -323,6 +328,12 @@ Scanner::scan_file_single(const std::filesystem::path& abspath)
     if (file->read())
         throw std::runtime_error(abspath.native() +
                                  " contains more than one BUFR");
+    std::vector<uint8_t> data(rmsg.data.begin(), rmsg.data.end());
+    md->set_source(arki::types::Source::createBlobUnlocked(
+        DataFormat::BUFR, abspath.parent_path(), abspath.filename(), 0,
+        data.size()));
+    md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::BUFR,
+                                                             std::move(data)));
     return md;
 }
 
@@ -376,7 +387,7 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 }
 
 bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              scan_file_multi_dest_func dest)
+                              metadata_dest_func dest)
 {
     throw std::runtime_error("BUFR support is not available");
 }

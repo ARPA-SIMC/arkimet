@@ -18,9 +18,34 @@ data_formats = _arkimet.scan.data_formats
 log = logging.getLogger("arkimet.scan")
 
 
+class DataFormatScanner(abc.ABC):
+    """
+    Interface for data format scanners.
+
+    This handles scanning for all data formats where one file contains one
+    instance of data to archive, and therefore that do not require splitting a
+    data stream in multiple messages in a format specific way, like GRIB and
+    BUFR.
+
+    Scanners are registered using :py:meth:`Registry.register_scanner` at
+    module load time.
+    """
+
+    @abc.abstractmethod
+    def scan_file(self, path: Path, md: "arkimet.Metadata") -> None:
+        """Scan metadata for the given file."""
+
+    @abc.abstractmethod
+    def scan_data(self, data: bytes, md: "arkimet.Metadata") -> None:
+        """Scan metadata for the given file."""
+
+
 class Registry:
     """
-    Scanner registry.
+    Registry of pure-python data format scanners.
+
+    It handles locating and instantiating :py:class:`DataFormatScanner`
+    instances, and registering them with the Arkimet library
     """
 
     def __init__(self) -> None:
@@ -87,21 +112,16 @@ class Registry:
             self.load()
 
     def register_scanner(
-        self, data_format: str, scanner: "DataFormatScanner"
+        self, data_format: str, scanner: DataFormatScanner
     ) -> None:
+        """
+        Register a scanner for a data format.
+
+        :param data_format: name of the data format, as known by Arkimet
+        :param scanner: :py:class:`DataFormatScanner` instance that handles the
+          format
+        """
         Scanner.register_scanner(data_format, scanner)
-
-
-class DataFormatScannner(abc.ABC):
-    """Interface for data format scanners."""
-
-    @abc.abstractmethod
-    def scan_file(self, path: Path, md: "arkimet.Metadata") -> None:
-        """Scan metadata for the given file."""
-
-    @abc.abstractmethod
-    def scan_data(self, data: bytes, md: "arkimet.Metadata") -> None:
-        """Scan metadata for the given file."""
 
 
 registry = Registry()
