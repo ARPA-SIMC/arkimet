@@ -74,6 +74,7 @@ class VM2;
 
 class Quantity;
 class Task;
+class Field;
 
 class ItemSet;
 class ValueBag;

@@ -70,6 +70,7 @@ static Keys make_json()
     res.run_value                    = "va";
     res.quantity_value               = "va";
     res.task_value                   = "va";
+    res.field_value                  = "fi";
     res.assigneddataset_time         = "ti";
     res.assigneddataset_name         = "na";
     res.assigneddataset_id           = "id";
@@ -154,6 +155,7 @@ static Keys make_python()
     res.run_value                    = "value";
     res.quantity_value               = "value";
     res.task_value                   = "value";
+    res.field_value                  = "value";
     res.assigneddataset_time         = "time";
     res.assigneddataset_name         = "name";
     res.assigneddataset_id           = "id";
