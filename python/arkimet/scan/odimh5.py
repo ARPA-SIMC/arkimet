@@ -7,12 +7,7 @@ from typing import Callable, List, Tuple, Any, Dict
 import arkimet
 import arkimet.scan
 
-try:
-    import h5py
-
-    HAVE_H5PY = True
-except ImportError:
-    HAVE_H5PY = False
+import h5py
 
 log = logging.getLogger("arkimet.scan.odimh5")
 
@@ -31,7 +26,7 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScanner):
     def __init__(self) -> None:
         """Intialize the ODIM scanner with an empty plugin list."""
         self.scanners: List[
-            Tuple[int, Callable[[Path, arkimet.Metadata], None]]
+            Tuple[int, Callable[[h5py.File, arkimet.Metadata], None]]
         ] = []
         self.scanners_sorted: bool = True
 
@@ -44,50 +39,21 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScanner):
 
     def scan_file(self, pathname: Path, md: arkimet.Metadata) -> None:
         """Scan an ODIM file."""
-        # FIXME: hack to deal with Centos not having h5py for python3
-        if HAVE_H5PY:
-            with h5py.File(pathname, "r") as f:
-                # Try all scanner functions in the list, in priority order,
-                # stopping at the first one that returns False.
-                # Note that False is explicitly required: returning None will
-                # not stop the scanner chain.
-                for prio, scan in self.scanners:
-                    try:
-                        if scan(f, md) is False:
-                            break
-                    except Exception:
-                        log.warning("scanner function failed", exc_info=True)
-        else:
-            import inspect
-            import json
-            import subprocess
-
-            metadata: Dict[str, Any] = {}
+        with h5py.File(pathname, "r") as f:
+            # Try all scanner functions in the list, in priority order,
+            # stopping at the first one that returns False.
+            # Note that False is explicitly required: returning None will
+            # not stop the scanner chain.
             for prio, scan in self.scanners:
-                scanner = inspect.getfile(scan)
-                proc = subprocess.Popen(
-                    [sys.executable, scanner, pathname],
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    universal_newlines=True,
-                )
-                stdout, stderr = proc.communicate(input=json.dumps(metadata))
-                if proc.returncode != 0:
-                    log.error(
-                        "scanner %s returned error code %d",
-                        scanner,
-                        proc.returncode,
-                    )
-                    continue
-
-                metadata = json.loads(stdout)
-
-            for k, v in metadata.items():
-                md[k] = v
+                try:
+                    if scan(f, md) is False:
+                        break
+                except Exception:
+                    log.warning("scanner function failed", exc_info=True)
 
     def register(
         self,
-        scanner: Callable[[Path, arkimet.Metadata], None],
+        scanner: Callable[[h5py.File, arkimet.Metadata], None],
         priority: int = 0,
     ):
         """
