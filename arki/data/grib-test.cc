@@ -41,16 +41,15 @@ protected:
 
 void Tests::register_tests()
 {
-    add_method("scan_file_multi", [] {
+    add_method("scan_file", [] {
         auto basedir = std::filesystem::current_path() / "inbound";
         auto src     = basedir / "fixture.grib1";
         ConcreteScanner scanner;
         std::vector<std::shared_ptr<Metadata>> mds;
-        wassert_true(
-            scanner.scan_file_multi(src, [&](std::shared_ptr<Metadata> md_) {
-                mds.emplace_back(md_);
-                return true;
-            }));
+        wassert_true(scanner.scan_file(src, [&](std::shared_ptr<Metadata> md_) {
+            mds.emplace_back(md_);
+            return true;
+        }));
         wassert(actual(mds.size()) == 3u);
 
         wassert(actual_type(mds[0]->source())

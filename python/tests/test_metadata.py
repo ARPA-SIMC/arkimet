@@ -3,6 +3,7 @@ import io
 import os
 import tempfile
 import unittest
+from pathlib import Path
 
 import arkimet as arki
 
@@ -317,3 +318,17 @@ class TestMetadata(unittest.TestCase):
             out.seek(0)
             md1 = arki.Metadata.read_json(out)
             self.assertEqual(md.to_python(), md1.to_python())
+
+    def test_for_data(self) -> None:
+        path = Path("inbound/acars.bufr").absolute()
+        md = arki.Metadata.for_path("bufr", path)
+        self.assertTrue(md.has_source())
+        self.assertEqual(md["source"], f"BLOB(bufr,{path}:0+238)")
+        self.assertEqual(md.data, path.read_bytes())
+
+    def test_for_bytes(self) -> None:
+        data = b"1234567890"
+        md = arki.Metadata.for_bytes("grib", data)
+        self.assertTrue(md.has_source())
+        self.assertEqual(md["source"], "INLINE(grib,10)")
+        self.assertEqual(md.data, data)

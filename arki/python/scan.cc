@@ -13,6 +13,7 @@
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
 #include "common.h"
+#include "files.h"
 #include "metadata.h"
 #include "scan/bufr.h"
 #include "scan/grib.h"
@@ -109,10 +110,50 @@ Returns a Metadata with inline source.
     }
 };
 
-class PythonScanner : public arki::data::SingleFileScanner
+/**
+ * arki::data::Scanner implementation that proxies calls to Python
+ */
+class PythonScanner : public arki::data::Scanner
 {
+protected:
     DataFormat m_format;
     PyObject* scanner;
+
+    bool iterate_metadata_generator(PyObject* gen, metadata_dest_func dest)
+    {
+        pyo_unique_ptr iterator(throw_ifnull(PyObject_GetIter(gen)));
+        while (true)
+        {
+            pyo_unique_ptr item(PyIter_Next(iterator));
+            if (!item.get())
+                break;
+
+            if (!arkipy_Metadata_Check(item))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "generator produced %R instead of arki.Metadata",
+                             item.get());
+                throw PythonException();
+            }
+
+            // Take a ref to the metadata, so we have it even after we release
+            // the GIL
+            std::shared_ptr<arki::Metadata> md(
+                ((arkipy_Metadata*)(item.get()))->md);
+
+            // Release the GIL while calling dest
+            {
+                ReleaseGIL release_gil;
+                if (!dest(md))
+                    return false;
+            }
+        }
+
+        if (PyErr_Occurred())
+            throw PythonException();
+
+        return true;
+    }
 
 public:
     PythonScanner(DataFormat format, PyObject* scanner)
@@ -141,68 +182,46 @@ public:
 
     DataFormat name() const override { return m_format; }
 
-    std::shared_ptr<Metadata>
-    scan_file_single(const std::filesystem::path& abspath) override
+    /**
+     * Proxy scan_file to python's scan_file.
+     *
+     * The python method called is expected to have signature::
+     *  def scan_file(self, path: Path) -> Generator[arkimet.Metadata]
+     */
+    bool scan_file(const std::filesystem::path& abspath,
+                   metadata_dest_func dest) override
     {
-        struct stat st;
-        sys::stat(abspath, st);
-        auto md = std::make_shared<Metadata>();
-        md->set_source(arki::types::Source::createBlobUnlocked(
-            name(), abspath.parent_path(), abspath.filename(), 0, st.st_size));
-
-        {
-            AcquireGIL gil;
-            pyo_unique_ptr pyfname(to_python(abspath));
-            pyo_unique_ptr pymd((PyObject*)metadata_create(md));
-            pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-                scanner, "scan_file", "OO", pyfname.get(), pymd.get())));
-
-            // If use_count is > 1, it means we are potentially and unexpectedly
-            // holding all the metadata (and potentially their data) in memory,
-            // while a supported and important use case is to stream out one
-            // metadata at a time
-            pymd.reset(nullptr);
-            if (md.use_count() != 1)
-                arki::nag::warning("metadata use count after scan_file_single "
-                                   "is %ld instead of 1",
-                                   md.use_count());
-        }
-
-        if (!md->has_cached_data())
-        {
-            auto data = this->read_file(abspath, st);
-            md->set_cached_data(
-                metadata::DataManager::get().to_data(name(), std::move(data)));
-        }
-
-        return md;
+        // Call scan_file
+        AcquireGIL gil;
+        pyo_unique_ptr py_abspath(to_python(abspath));
+        pyo_unique_ptr py_gen(throw_ifnull(
+            PyObject_CallMethod(scanner, "scan_file", "O", py_abspath.get())));
+        return iterate_metadata_generator(py_gen, dest);
     }
 
+    /**
+     * Proxy scan_pipe to python's scan_file.
+     *
+     * The python method called is expected to have signature::
+     *  def scan_pipe(self, file: IO[bytes]) -> Generator[arkimet.Metadata]
+     */
     bool scan_pipe(core::NamedFileDescriptor& in,
                    metadata_dest_func dest) override
     {
-        // Read all in a buffer
-        std::vector<uint8_t> buf;
-        const unsigned blocksize = 4096;
-        while (true)
-        {
-            buf.resize(buf.size() + blocksize);
-            unsigned read =
-                in.read(buf.data() + buf.size() - blocksize, blocksize);
-            if (read < blocksize)
-            {
-                buf.resize(buf.size() - blocksize + read);
-                break;
-            }
-        }
-
-        return dest(scan_data(buf));
+        AcquireGIL gil;
+        pyo_unique_ptr py_file(throw_ifnull(file_to_python(in)));
+        pyo_unique_ptr py_gen(throw_ifnull(
+            PyObject_CallMethod(scanner, "scan_pipe", "O", py_file.get())));
+        return iterate_metadata_generator(py_gen, dest);
     }
 
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override
     {
         auto md = std::make_shared<Metadata>();
+        md->set_source_inline(m_format,
+                              metadata::DataManager::get().to_data(
+                                  m_format, std::vector<uint8_t>(data)));
 
         AcquireGIL gil;
         pyo_unique_ptr pydata(to_python(data));
@@ -219,10 +238,6 @@ public:
             arki::nag::warning(
                 "metadata use count after scan_data is %ld instead of 1",
                 md.use_count());
-
-        md->set_source_inline(m_format,
-                              metadata::DataManager::get().to_data(
-                                  m_format, std::vector<uint8_t>(data)));
 
         return md;
     }

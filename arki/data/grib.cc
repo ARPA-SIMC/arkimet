@@ -109,8 +109,8 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              metadata_dest_func dest)
+bool Scanner::scan_file(const std::filesystem::path& abspath,
+                        metadata_dest_func dest)
 {
     files::RAIIFILE in(abspath, "rb");
     while (true)
@@ -260,8 +260,8 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     throw std::runtime_error("GRIB support is not available");
 }
 
-bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              metadata_dest_func dest)
+bool Scanner::scan_file(const std::filesystem::path& abspath,
+                        metadata_dest_func dest)
 {
     throw std::runtime_error("GRIB support is not available");
 }

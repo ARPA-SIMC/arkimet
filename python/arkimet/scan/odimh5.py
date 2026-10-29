@@ -2,7 +2,7 @@ import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import Callable, List, Tuple, Any, Dict
+from typing import Callable, List, Tuple, Any, Dict, Iterable, IO
 
 import arkimet
 import arkimet.scan
@@ -30,14 +30,7 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScanner):
         ] = []
         self.scanners_sorted: bool = True
 
-    def scan_data(self, data: bytes, md: arkimet.Metadata):
-        """Scan a memory buffer as an ODIM file."""
-        with tempfile.NamedTemporaryFile("wb") as tf:
-            tf.write(data)
-            tf.flush()
-            self.scan_file(Path(tf.name), md)
-
-    def scan_file(self, pathname: Path, md: arkimet.Metadata) -> None:
+    def scan_single_file(self, pathname: Path, md: arkimet.Metadata) -> None:
         """Scan an ODIM file."""
         with h5py.File(pathname, "r") as f:
             # Try all scanner functions in the list, in priority order,
@@ -50,6 +43,30 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScanner):
                         break
                 except Exception:
                     log.warning("scanner function failed", exc_info=True)
+
+    def scan_file(self, pathname: Path) -> Iterable[arkimet.Metadata]:
+        """Scan an ODIM file."""
+        md = arkimet.Metadata.for_path("odimh5", pathname)
+        if not md.data_size:
+            return
+        self.scan_single_file(pathname, md)
+        yield md
+
+    def scan_pipe(self, file: IO[bytes]) -> Iterable[arkimet.Metadata]:
+        """Scan ODIM data from a pipe."""
+        data = file.read()
+        if not data:
+            return
+        yield self.scan_data(data)
+
+    def scan_data(self, data: bytes) -> arkimet.Metadata:
+        """Scan a bytes object as ODIM."""
+        md = arkimet.Metadata.for_bytes(data)
+        with tempfile.NamedTemporaryFile("wb") as tf:
+            tf.write(data)
+            tf.flush()
+            self.scan_single_file(Path(tf.name), md)
+        return md
 
     def register(
         self,

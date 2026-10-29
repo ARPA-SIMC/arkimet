@@ -194,7 +194,7 @@ MockScanner::MockScanner(DataFormat format) : m_format(format) {}
 MockScanner::~MockScanner() {}
 
 std::shared_ptr<Metadata>
-MockScanner::scan_file(const std::filesystem::path& abspath)
+MockScanner::scan_whole_file(const std::filesystem::path& abspath)
 {
     auto buf = sys::read_file(abspath);
     auto md  = MockEngine::get().lookup(
@@ -205,6 +205,13 @@ MockScanner::scan_file(const std::filesystem::path& abspath)
     md->set_cached_data(
         metadata::DataManager::get().to_data(name(), std::move(data)));
     return md;
+}
+
+bool MockScanner::scan_file(const std::filesystem::path& abspath,
+                            metadata_dest_func dest)
+{
+    auto md = scan_whole_file(abspath);
+    return dest(md);
 }
 
 std::shared_ptr<Metadata>
@@ -220,7 +227,7 @@ MockScanner::scan_data(const std::vector<uint8_t>& data)
 std::shared_ptr<Metadata>
 MockScanner::scan_file_single(const std::filesystem::path& abspath)
 {
-    return scan_file(abspath);
+    return scan_whole_file(abspath);
 }
 
 bool MockScanner::scan_pipe(core::NamedFileDescriptor& in,

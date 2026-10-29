@@ -46,7 +46,8 @@ class MockScanner : public SingleFileScanner
 protected:
     DataFormat m_format;
 
-    std::shared_ptr<Metadata> scan_file(const std::filesystem::path& abspath);
+    std::shared_ptr<Metadata>
+    scan_whole_file(const std::filesystem::path& abspath);
 
 public:
     explicit MockScanner(DataFormat format);
@@ -54,6 +55,8 @@ public:
 
     DataFormat name() const override { return m_format; }
 
+    bool scan_file(const std::filesystem::path& abspath,
+                   metadata_dest_func dest) override;
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in,

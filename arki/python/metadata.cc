@@ -22,6 +22,7 @@
 #include "utils/values.h"
 #include <Python.h>
 #include <sstream>
+#include <sys/mman.h>
 
 using namespace std;
 using namespace arki;
@@ -779,6 +780,105 @@ struct print_type_documentation
     }
 };
 
+struct for_path : public ClassMethKwargs<for_path>
+{
+    constexpr static const char* name      = "for_path";
+    constexpr static const char* signature = "format: str, path: str | Path";
+    constexpr static const char* returns   = "arkimet.Metadata";
+    constexpr static const char* summary =
+        "Create a new empty :py:class:`arkimet.Metadata` instance for a file.";
+    constexpr static const char* doc = R"(
+The resulting metadata will have a source item pointing at the whole file
+contents, and the file contents as cached data.
+
+No other metadata items will be set
+)";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"format", "path", nullptr};
+        PyObject* arg_format        = nullptr;
+        PyObject* arg_path          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO",
+                                         const_cast<char**>(kwlist),
+                                         &arg_format, &arg_path))
+            return nullptr;
+
+        try
+        {
+            struct stat st;
+            DataFormat format          = dataformat_from_python(arg_format);
+            std::filesystem::path path = path_from_python(arg_path);
+            sys::File fd(path, O_RDONLY);
+            fd.fstat(st);
+
+            std::vector<uint8_t> data;
+            if (st.st_size > 0)
+            {
+                sys::MMap mapped_data =
+                    fd.mmap(st.st_size, PROT_READ, MAP_PRIVATE);
+                data = std::vector<uint8_t>(
+                    static_cast<const uint8_t*>(mapped_data),
+                    static_cast<const uint8_t*>(mapped_data) +
+                        mapped_data.size());
+            }
+
+            auto md = std::make_shared<Metadata>();
+            md->set_source(arki::types::Source::createBlobUnlocked(
+                format, path.parent_path(), path.filename(), 0, data.size()));
+            md->set_cached_data(
+                metadata::DataManager::get().to_data(format, std::move(data)));
+            return (PyObject*)metadata_create(md);
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct for_bytes : public ClassMethKwargs<for_bytes>
+{
+    constexpr static const char* name      = "for_bytes";
+    constexpr static const char* signature = "format: str, data: bytes";
+    constexpr static const char* returns   = "arkimet.Metadata";
+    constexpr static const char* summary =
+        "Create a new empty :py:class:`arkimet.Metadata` instance from data in "
+        "memory.";
+    constexpr static const char* doc = R"(
+The resulting metadata will have an inline source item, with the buffer
+contents as cached data.
+
+No other metadata items will be set
+)";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"format", "data", nullptr};
+        PyObject* arg_format        = nullptr;
+        PyObject* arg_data          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "OO!",
+                                         const_cast<char**>(kwlist),
+                                         &arg_format, &PyBytes_Type, &arg_data))
+            return nullptr;
+
+        try
+        {
+            DataFormat format = dataformat_from_python(arg_format);
+            char* pydata;
+            Py_ssize_t pydata_len;
+            if (PyBytes_AsStringAndSize(arg_data, &pydata, &pydata_len) == -1)
+                return nullptr;
+
+            const uint8_t* udata = reinterpret_cast<uint8_t*>(pydata);
+            std::vector<uint8_t> data(udata, udata + pydata_len);
+
+            auto md = std::make_shared<Metadata>();
+            md->set_source_inline(format, metadata::DataManager::get().to_data(
+                                              format, std::move(data)));
+            return (PyObject*)metadata_create(md);
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct MetadataDef : public Type<MetadataDef, arkipy_Metadata>
 {
     constexpr static const char* name      = "Metadata";
@@ -805,7 +905,7 @@ For example::
     GetSetters<data, data_size> getsetters;
     Methods<has_source, write, make_absolute, make_inline, make_url, to_string,
             to_python, get_notes, del_notes, read_bundle, write_bundle,
-            read_yaml, read_json, print_type_documentation>
+            read_yaml, read_json, print_type_documentation, for_path, for_bytes>
         methods;
 
     static void _dealloc(Impl* self)

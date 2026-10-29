@@ -237,8 +237,8 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     return true;
 }
 
-bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              metadata_dest_func dest)
+bool Scanner::scan_file(const std::filesystem::path& abspath,
+                        metadata_dest_func dest)
 {
     vm2::Input input(abspath);
     while (true)
@@ -308,8 +308,8 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
     throw std::runtime_error("VM2 support is not available");
 }
 
-bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              metadata_dest_func dest)
+bool Scanner::scan_file(const std::filesystem::path& abspath,
+                        metadata_dest_func dest)
 {
     throw std::runtime_error("VM2 support is not available");
 }

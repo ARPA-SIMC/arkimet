@@ -9,6 +9,7 @@
 #include "data/vm2.h"
 #include "metadata.h"
 #include "metadata/data.h"
+#include "nag.h"
 #include "types/source.h"
 #include "types/source/blob.h"
 #include "utils/files.h"
@@ -159,6 +160,26 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
                         " data: format not supported");
 }
 
+std::shared_ptr<Metadata>
+Scanner::scan_file_single(const std::filesystem::path& abspath)
+{
+    std::shared_ptr<Metadata> md;
+
+    scan_file(abspath, [&](std::shared_ptr<Metadata> md) {
+        if (md.get())
+        {
+            nag::warning("%s: data file contains more than one data instance, "
+                         "considering only the first one",
+                         abspath.c_str());
+
+            return false;
+        }
+        return true;
+    });
+
+    return md;
+}
+
 /*
  * SingleFileScanner
  */
@@ -180,24 +201,6 @@ SingleFileScanner::read_file(const std::filesystem::path& abspath,
     return std::vector<uint8_t>(static_cast<const uint8_t*>(mapped_data),
                                 static_cast<const uint8_t*>(mapped_data) +
                                     mapped_data.size());
-}
-
-bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
-                                        metadata_dest_func dest)
-{
-    // If the file is empty, skip it
-    auto st = sys::stat(abspath);
-    if (!st)
-        return true;
-    if (S_ISDIR(st->st_mode))
-        throw std::runtime_error(
-            format_name(name()) +
-            ": scan_segment cannot be called on directory segments");
-    if (!st->st_size)
-        return true;
-
-    auto md = scan_file_single(abspath);
-    return dest(md);
 }
 
 /*
