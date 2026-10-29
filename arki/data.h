@@ -44,15 +44,6 @@ public:
      */
     virtual bool scan_file(const std::filesystem::path& abspath,
                            metadata_dest_func dest) = 0;
-    /**
-     * Scan a file that contains only one data entry.
-     *
-     * Scanned metadata will have a BLOB source.
-     *
-     * Returns a Metadata with no source set.
-     */
-    virtual std::shared_ptr<Metadata>
-    scan_file_single(const std::filesystem::path& abspath);
 
     /**
      * Scan data from a non-seekable pipe.

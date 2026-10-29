@@ -160,26 +160,6 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata&,
                         " data: format not supported");
 }
 
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    std::shared_ptr<Metadata> md;
-
-    scan_file(abspath, [&](std::shared_ptr<Metadata> md) {
-        if (md.get())
-        {
-            nag::warning("%s: data file contains more than one data instance, "
-                         "considering only the first one",
-                         abspath.c_str());
-
-            return false;
-        }
-        return true;
-    });
-
-    return md;
-}
-
 /*
  * SingleFileScanner
  */

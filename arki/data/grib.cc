@@ -149,45 +149,6 @@ bool Scanner::scan_file(const std::filesystem::path& abspath,
     return true;
 }
 
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    std::shared_ptr<Metadata> md;
-    files::RAIIFILE in(abspath, "rb");
-    {
-        grib::GribHandle gh(context, in);
-        if (!gh)
-            throw std::runtime_error(abspath.native() +
-                                     " contains no GRIB data");
-
-        // Get the encoded GRIB buffer from the GRIB handle
-        const uint8_t* vbuf;
-        size_t size;
-        check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
-                         "cannot access the encoded GRIB data");
-        std::vector<uint8_t> data(vbuf, vbuf + size);
-
-        md = std::make_shared<Metadata>();
-        md->set_source(arki::types::Source::createBlobUnlocked(
-            DataFormat::GRIB, abspath.parent_path(), abspath.filename(), 0,
-            data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::GRIB, std::move(data)));
-        scan(gh, md);
-        gh.close();
-    }
-
-    {
-        grib::GribHandle gh(context, in);
-        if (gh)
-            throw std::runtime_error(abspath.native() +
-                                     " contains more than one GRIB data");
-        gh.close();
-    }
-
-    return md;
-}
-
 bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
                         metadata_dest_func dest)
 {
@@ -262,12 +223,6 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 
 bool Scanner::scan_file(const std::filesystem::path& abspath,
                         metadata_dest_func dest)
-{
-    throw std::runtime_error("GRIB support is not available");
-}
-
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("GRIB support is not available");
 }

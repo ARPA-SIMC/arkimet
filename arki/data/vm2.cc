@@ -191,27 +191,6 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    auto md = std::make_shared<Metadata>();
-    vm2::Input input(abspath);
-    if (!input.next())
-        throw std::runtime_error(abspath.native() + " contains no VM2 data");
-    input.to_metadata(*md);
-    md->set_source(arki::types::Source::createBlobUnlocked(
-        DataFormat::VM2, abspath.parent_path(), abspath.filename(), 0,
-        input.line.size()));
-    md->set_cached_data(metadata::DataManager::get().to_data(
-        DataFormat::VM2,
-        std::vector<uint8_t>(input.line.begin(), input.line.end())));
-
-    if (input.next())
-        throw std::runtime_error(abspath.native() +
-                                 " contains more than one VM2 data");
-    return md;
-}
-
 bool Scanner::scan_pipe(core::NamedFileDescriptor& in, metadata_dest_func dest)
 {
     using namespace std;
@@ -293,12 +272,6 @@ std::vector<uint8_t> Scanner::reconstruct(const Metadata& md,
  */
 
 std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
-{
-    throw std::runtime_error("VM2 support is not available");
-}
-
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("VM2 support is not available");
 }

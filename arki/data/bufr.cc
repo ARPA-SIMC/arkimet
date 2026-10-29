@@ -315,28 +315,6 @@ bool Scanner::scan_file(const std::filesystem::path& abspath,
     return true;
 }
 
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    auto md = std::make_shared<Metadata>();
-    auto file =
-        dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
-    BinaryMessage rmsg = file->read();
-    if (!rmsg)
-        throw std::runtime_error(abspath.native() + " contains no BUFR data");
-    do_scan(rmsg, md);
-    if (file->read())
-        throw std::runtime_error(abspath.native() +
-                                 " contains more than one BUFR");
-    std::vector<uint8_t> data(rmsg.data.begin(), rmsg.data.end());
-    md->set_source(arki::types::Source::createBlobUnlocked(
-        DataFormat::BUFR, abspath.parent_path(), abspath.filename(), 0,
-        data.size()));
-    md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::BUFR,
-                                                             std::move(data)));
-    return md;
-}
-
 bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
                         metadata_dest_func dest)
 {
@@ -388,12 +366,6 @@ std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
 
 bool Scanner::scan_file(const std::filesystem::path& abspath,
                         metadata_dest_func dest)
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
 {
     throw std::runtime_error("BUFR support is not available");
 }

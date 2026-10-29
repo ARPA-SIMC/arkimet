@@ -178,18 +178,6 @@ void Tests::register_tests()
         });
     }
 
-    for (auto td :
-         {TestData("inbound/ship.bufr"), TestData("inbound/oddunits.grib"),
-          TestData("inbound/odimh5/XSEC_v21.h5"),
-          TestData("inbound/single.vm2")})
-    {
-        add_method("scan_singleton_" + format_name(td.format), [=] {
-            auto scanner = data::Scanner::get(td.format);
-            auto md      = scanner->scan_file_single(td.pathname);
-            wassert_true(md->has_source());
-        });
-    }
-
     add_method("usn", [] {
         auto scanner = data::Scanner::get(DataFormat::GRIB);
         {

@@ -224,12 +224,6 @@ MockScanner::scan_data(const std::vector<uint8_t>& data)
     return md;
 }
 
-std::shared_ptr<Metadata>
-MockScanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    return scan_whole_file(abspath);
-}
-
 bool MockScanner::scan_pipe(core::NamedFileDescriptor& in,
                             metadata_dest_func dest)
 {

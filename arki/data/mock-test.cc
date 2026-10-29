@@ -76,21 +76,6 @@ void Tests::register_tests()
         wassert_true(mds[0]->has_cached_data());
     });
 
-    add_method("scan_file_single", [] {
-        auto basedir =
-            std::filesystem::current_path() / "inbound" / "fixture.odimh5";
-        auto src = basedir / "00.odimh5";
-        arki::data::MockScanner scanner(DataFormat::ODIMH5);
-        std::shared_ptr<Metadata> md = scanner.scan_file_single(src);
-        wassert_true(md.get());
-        wassert(actual_type(md->source())
-                    .is_source_blob(DataFormat::ODIMH5, basedir, "00.odimh5", 0,
-                                    49057));
-        wassert_true(md->has_cached_data());
-        // read_data fails as the blob is not associated with a reader
-        wassert_throws(std::runtime_error, md->sourceBlob().read_data());
-    });
-
     add_method("scan_data", [] {
         auto basedir         = std::filesystem::current_path() / "inbound";
         auto src             = basedir / "fixture.odimh5" / "00.odimh5";

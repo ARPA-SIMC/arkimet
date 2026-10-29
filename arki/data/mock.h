@@ -61,8 +61,6 @@ public:
     scan_data(const std::vector<uint8_t>& data) override;
     bool scan_pipe(core::NamedFileDescriptor& in,
                    metadata_dest_func dest) override;
-    std::shared_ptr<Metadata>
-    scan_file_single(const std::filesystem::path& abspath) override;
 };
 
 } // namespace arki::data
