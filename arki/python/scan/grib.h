@@ -4,6 +4,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "arki/data/grib.h"
 #include <Python.h>
+#include <filesystem>
 
 extern "C" {
 
@@ -23,8 +24,7 @@ extern PyTypeObject* arkipy_scan_Grib_Type;
 typedef struct
 {
     PyObject_HEAD;
-    FILE* file;
-    grib_context* context;
+    arki::data::grib::Scan* scan;
 } arkipy_scan_GribReader;
 
 extern PyTypeObject* arkipy_scan_GribReader_Type;
@@ -37,7 +37,6 @@ extern PyTypeObject* arkipy_scan_GribReader_Type;
 namespace arki::python::scan {
 
 void register_scan_grib(PyObject* scan);
-void init_scanner_grib();
 
 } // namespace arki::python::scan
 

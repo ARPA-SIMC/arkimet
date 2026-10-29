@@ -111,6 +111,13 @@ Scanner::~Scanner() {}
 static std::vector<std::function<void()>> scanner_init_functions = {init};
 static bool scanner_initialized                                  = false;
 
+static void initialize_scanners()
+{
+    scanner_initialized = true;
+    for (const auto& func : scanner_init_functions)
+        func();
+}
+
 void Scanner::register_init(std::function<void()> func)
 {
     if (scanner_initialized)
@@ -123,6 +130,8 @@ void Scanner::register_init(std::function<void()> func)
 void Scanner::register_scanner(DataFormat name,
                                std::shared_ptr<Scanner> scanner)
 {
+    if (!scanner_initialized)
+        initialize_scanners();
     unsigned idx  = static_cast<unsigned>(name);
     scanners[idx] = scanner;
 }
@@ -139,12 +148,7 @@ bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
     if (!scanner_initialized)
-    {
-        for (const auto& func : scanner_init_functions)
-            func();
-        scanner_initialized = true;
-    }
-
+        initialize_scanners();
     unsigned idx = static_cast<unsigned>(format);
     if (idx >= static_cast<unsigned>(DataFormat::__END__))
         throw std::runtime_error("No scanner available for format '" +

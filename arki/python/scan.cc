@@ -218,16 +218,19 @@ public:
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override
     {
-        auto md = std::make_shared<Metadata>();
-        md->set_source_inline(m_format,
-                              metadata::DataManager::get().to_data(
-                                  m_format, std::vector<uint8_t>(data)));
-
         AcquireGIL gil;
         pyo_unique_ptr pydata(to_python(data));
-        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
-        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-            scanner, "scan_data", "OO", pydata.get(), pymd.get())));
+        pyo_unique_ptr pymd(throw_ifnull(
+            PyObject_CallMethod(scanner, "scan_data", "O", pydata.get())));
+
+        if (!arkipy_Metadata_Check(pymd))
+        {
+            PyErr_Format(PyExc_TypeError,
+                         "scan_data returned %R instead of arkimet.Metadata",
+                         pymd.get());
+            throw PythonException();
+        }
+        auto md = ((arkipy_Metadata*)pymd.get())->md;
 
         // If use_count is > 1, it means we are potentially and unexpectedly
         // holding all the metadata (and potentially their data) in memory,
@@ -374,7 +377,6 @@ void load_scanner_scripts()
     if (scanners_loaded)
         return;
 
-    init_scanner_grib();
     init_scanner_bufr();
 
     AcquireGIL gil;
