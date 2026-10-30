@@ -78,221 +78,21 @@ static BufrValidator bufr_validator;
 const Validator& validator() { return bufr_validator; }
 
 /*
- * Scanner
+ * MockScanner
  */
 
 #ifdef HAVE_DBALLE
-namespace {
-class Harvest
+
+void MockScanner::do_scan(dballe::BinaryMessage& rmsg,
+                          std::shared_ptr<Metadata> md)
 {
-protected:
-    std::vector<std::shared_ptr<dballe::Message>> msgs;
-
-public:
-    dballe::Importer& importer;
-    std::unique_ptr<Reftime> reftime;
-    std::unique_ptr<Origin> origin;
-    std::unique_ptr<Product> product;
-    std::shared_ptr<Message> msg;
-
-    explicit Harvest(dballe::Importer& importer) : importer(importer), msg(0) {}
-
-    void refine_reftime(const Message& msg)
-    {
-        Datetime dt;
-        try
-        {
-            dt = msg.get_datetime();
-        }
-        catch (wreport::error_consistency&)
-        {
-            return;
-        }
-        if (dt.is_missing())
-            return;
-        reftime = Reftime::createPosition(core::Time(
-            dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second));
-    }
-
-    void harvest_from_dballe(const BinaryMessage& rmsg, Metadata&)
-    {
-        msg.reset();
-        auto bulletin = BufrBulletin::decode_header(
-            rmsg.data, rmsg.pathname.c_str(), rmsg.offset);
-
-#if 0
-        // Detect optional section and handle it
-        switch (msg->opt.bufr.optional_section_length)
-        {
-            case 14: read_info_fixed(msg->opt.bufr.optional_section, md); break;
-            case 11: read_info_mobile(msg->opt.bufr.optional_section, md); break;
-            default: break;
-        }
-#endif
-
-        // Set reference time
-        // FIXME: WRONG! The header date should ALWAYS be ignored
-        reftime = Reftime::createPosition(core::Time(
-            bulletin->rep_year, bulletin->rep_month, bulletin->rep_day,
-            bulletin->rep_hour, bulletin->rep_minute, bulletin->rep_second));
-
-        // Set origin from the bufr header
-        switch (bulletin->edition_number)
-        {
-            case 2:
-            case 3:
-            case 4:
-                // No process?
-                origin = Origin::createBUFR(bulletin->originating_centre,
-                                            bulletin->originating_subcentre);
-                break;
-            default: {
-                std::stringstream ss;
-                ss << "cannot extract metadata from BUFR message: edition is "
-                   << bulletin->edition_number
-                   << " but I can only handle 3 and 4";
-                throw std::runtime_error(ss.str());
-            }
-        }
-
-        // Default to a generic product unless we find more info later
-        // md.set(types::product::BUFR::create("generic"));
-
-        // Try to decode the data; if we fail, we are done
-        try
-        {
-            // Ignore domain errors, it's ok if we lose some oddball data
-            wreport::options::LocalOverride<bool> o(
-                wreport::options::var_silent_domain_errors, true);
-
-            bulletin = BufrBulletin::decode(rmsg.data, rmsg.pathname.c_str(),
-                                            rmsg.offset);
-        }
-        catch (wreport::error& e)
-        {
-            // We can still try to handle partially decoded files
-
-            // Not if the error was not a parse error
-            if (e.code() != WR_ERR_PARSE)
-                return;
-
-            // Not if we didn't decode just one subset
-            if (bulletin->subsets.size() != 1)
-                return;
-
-            // Not if the subset is empty
-            if (bulletin->subsets[0].empty())
-                return;
-        }
-        catch (const std::exception& e)
-        {
-            return;
-        }
-
-        // If there is more than one subset, we are done
-        if (bulletin->subsets.size() != 1)
-            return;
-
-        // Try to parse as a dba_msg
-        try
-        {
-            // We already set the importer to ignore domain errors
-            msgs = importer.from_bulletin(*bulletin);
-        }
-        catch (const std::exception& e)
-        {
-            // If we cannot import it as a Msgs, we are done
-            return;
-        }
-
-        // We decoded a different number of subsets than declared by the BUFR.
-        // How could this happen? Treat it as an obscure BUFR and go no further
-        if (msgs.size() != 1)
-            return;
-
-        msg = msgs[0];
-
-        // Set the product from the msg type
-        types::values::ValueBagBuilder vbuilder;
-        vbuilder.add("t", format_message_type(msg->get_type()));
-        types::ValueBag newvals = vbuilder.build();
-        product                 = Product::createBUFR(
-            bulletin->data_category, bulletin->data_subcategory,
-            bulletin->data_subcategory_local, newvals);
-
-        // Set reference time from date and time if available
-        refine_reftime(*msg);
-    }
-};
-} // namespace
-
-Scanner::Scanner()
-{
-    auto opts           = ImporterOptions::create();
-    opts->domain_errors = ImporterOptions::DomainErrors::UNSET;
-    opts->simplified    = true;
-    importer = Importer::create(dballe::Encoding::BUFR, *opts).release();
+    auto new_md = MockEngine::get().lookup(
+        reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
+    md->merge(*new_md);
 }
 
-Scanner::~Scanner() { delete importer; }
-
-void Scanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
-{
-    Harvest harvest(*importer);
-    harvest.harvest_from_dballe(rmsg, *md);
-
-    if (harvest.reftime)
-        md->set(std::move(harvest.reftime));
-    if (harvest.origin)
-        md->set(std::move(harvest.origin));
-    if (harvest.product)
-        md->set(std::move(harvest.product));
-
-    if (harvest.msg)
-    {
-        // DB-All.e managed to make sense of the message: let the subclasser
-        // try to extract further metadata
-        scan_extra(rmsg, harvest.msg, md);
-    }
-
-    // Check that the date is a valid date, unset if it is rubbish
-    const reftime::Position* rt = md->get<types::reftime::Position>();
-    if (rt)
-    {
-        auto time = rt->get_Position();
-        if (time.ye <= 0)
-            md->unset(TYPE_REFTIME);
-        else
-        {
-            core::Time t = time;
-            t.normalise();
-            if (t != time)
-                md->unset(TYPE_REFTIME);
-        }
-    }
-
-    // Convert validity times to emission times
-    // If md has a timedef, substract it from the reftime
-    const timerange::Timedef* timedef = md->get<types::timerange::Timedef>();
-    if (timedef)
-        if (const reftime::Position* p = md->get<types::reftime::Position>())
-            md->set(timedef->validity_time_to_emission_time(*p));
-}
-
-std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
-{
-    auto md = std::make_shared<Metadata>();
-    md->set_source_inline(DataFormat::BUFR,
-                          metadata::DataManager::get().to_data(
-                              DataFormat::BUFR, std::vector<uint8_t>(data)));
-    BinaryMessage rmsg(Encoding::BUFR);
-    rmsg.data = std::string(data.begin(), data.end());
-    do_scan(rmsg, md);
-    return md;
-}
-
-bool Scanner::scan_file(const std::filesystem::path& abspath,
-                        metadata_dest_func dest)
+bool MockScanner::scan_file(const std::filesystem::path& abspath,
+                            metadata_dest_func dest)
 {
     auto file =
         dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
@@ -302,21 +102,23 @@ bool Scanner::scan_file(const std::filesystem::path& abspath,
         BinaryMessage rmsg = file->read();
         if (!rmsg)
             break;
-        do_scan(rmsg, md);
         std::vector<uint8_t> data(rmsg.data.begin(), rmsg.data.end());
         md->set_source(arki::types::Source::createBlobUnlocked(
             DataFormat::BUFR, abspath.parent_path(), abspath.filename(),
             rmsg.offset, data.size()));
         md->set_cached_data(metadata::DataManager::get().to_data(
             DataFormat::BUFR, std::move(data)));
+
+        do_scan(rmsg, md);
+
         if (!dest(md))
             return false;
     }
     return true;
 }
 
-bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
-                        metadata_dest_func dest)
+bool MockScanner::scan_pipe(core::NamedFileDescriptor& infd,
+                            metadata_dest_func dest)
 {
     files::RAIIFILE in(infd, "rb");
     auto file =
@@ -339,87 +141,65 @@ bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
     return true;
 }
 
-int Scanner::update_sequence_number_raw(const std::string& buf) const
+std::shared_ptr<Metadata>
+MockScanner::scan_data(const std::vector<uint8_t>& data)
 {
-    auto bulletin = BufrBulletin::decode_header(buf);
-    return bulletin->update_sequence_number;
+    auto md = std::make_shared<Metadata>();
+    md->set_source_inline(DataFormat::BUFR,
+                          metadata::DataManager::get().to_data(
+                              DataFormat::BUFR, std::vector<uint8_t>(data)));
+    BinaryMessage rmsg(Encoding::BUFR);
+    rmsg.data = std::string(data.begin(), data.end());
+    do_scan(rmsg, md);
+    return md;
+}
+
+bool MockScanner::update_sequence_number(std::shared_ptr<Metadata> md,
+                                         int& usn) const
+{
+    // Update Sequence Numbers are only supported by BUFR
+    if (md->source().format != DataFormat::BUFR)
+        return false;
+
+    const auto& data = md->get_data();
+    auto buf         = data.read();
+    std::string strbuf((const char*)buf.data(), buf.size());
+    auto bulletin = BufrBulletin::decode_header(strbuf);
+    usn           = bulletin->update_sequence_number;
+    return true;
 }
 
 #else
 
-Scanner::Scanner()
+void MockScanner::do_scan(dballe::BinaryMessage& rmsg,
+                          std::shared_ptr<Metadata> md)
 {
     throw std::runtime_error("BUFR support is not available");
 }
 
-Scanner::~Scanner() {}
-
-void Scanner::do_scan(BinaryMessage& rmsg, std::shared_ptr<Metadata> md)
+bool MockScanner::scan_file(const std::filesystem::path& abspath,
+                            metadata_dest_func dest)
 {
     throw std::runtime_error("BUFR support is not available");
 }
 
-std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
+bool MockScanner::scan_pipe(core::NamedFileDescriptor& in,
+                            metadata_dest_func dest)
 {
     throw std::runtime_error("BUFR support is not available");
 }
 
-bool Scanner::scan_file(const std::filesystem::path& abspath,
-                        metadata_dest_func dest)
+std::shared_ptr<Metadata>
+MockScanner::scan_data(const std::vector<uint8_t>& data)
 {
     throw std::runtime_error("BUFR support is not available");
 }
 
-bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
-                        metadata_dest_func dest)
+bool MockScanner::update_sequence_number(std::shared_ptr<Metadata> md,
+                                         int& usn) const
 {
     throw std::runtime_error("BUFR support is not available");
 }
-
-int Scanner::update_sequence_number_raw(const std::string& buf) const
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-
 #endif
-
-bool Scanner::update_sequence_number(const types::source::Blob& source,
-                                     int& usn) const
-{
-    // Update Sequence Numbers are only supported by BUFR
-    if (source.format != DataFormat::BUFR)
-        return false;
-
-    auto data = source.read_data();
-    string buf((const char*)data.data(), data.size());
-    usn = update_sequence_number_raw(buf);
-    return true;
-}
-
-bool Scanner::update_sequence_number(Metadata& md, int& usn) const
-{
-    // Update Sequence Numbers are only supported by BUFR
-    if (md.source().format != DataFormat::BUFR)
-        return false;
-
-    const auto& data = md.get_data();
-    auto buf         = data.read();
-    string strbuf((const char*)buf.data(), buf.size());
-    usn = update_sequence_number_raw(strbuf);
-    return true;
-}
-
-/*
- * MockScanner
- */
-
-void MockScanner::scan_extra(dballe::BinaryMessage& rmsg,
-                             std::shared_ptr<dballe::Message>,
-                             std::shared_ptr<Metadata> md)
-{
-    auto new_md = MockEngine::get().lookup(
-        reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
-    md->merge(*new_md);
-}
 
 } // namespace arki::data::bufr

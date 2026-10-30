@@ -85,19 +85,7 @@ public:
      *   true if the update sequence number could be found, else false
      *
      */
-    virtual bool update_sequence_number(Metadata& md, int& usn) const;
-
-    /**
-     * Return the update sequence number for this data
-     *
-     * @retval
-     *   The update sequence number found. This is left untouched if the
-     * function returns false.
-     * @returns
-     *   true if the update sequence number could be found, else false
-     *
-     */
-    virtual bool update_sequence_number(const types::source::Blob& source,
+    virtual bool update_sequence_number(std::shared_ptr<Metadata> md,
                                         int& usn) const;
 
     /**

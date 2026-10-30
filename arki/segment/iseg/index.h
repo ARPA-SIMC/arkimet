@@ -124,6 +124,22 @@ public:
     core::Pending begin_transaction();
 
     /**
+     * Return the Blob source for an index row.
+     *
+     * Returns an empty unique_ptr if the given rowid does not point to a valid
+     * row
+     */
+    std::unique_ptr<types::source::Blob> source_for_rowid(int64_t rowid) const;
+
+    /**
+     * Return the metadata for an index row.
+     *
+     * Returns an empty shared_ptr if the given rowid does not point to a valid
+     * row
+     */
+    std::shared_ptr<Metadata> metadata_for_rowid(int64_t rowid) const;
+
+    /**
      * Return the min-max reftime interval known to the index.
      *
      * Begin extreme is included in the range, end extreme is excluded
@@ -205,8 +221,7 @@ public:
      * If the item already exists, returns the blob source pointing to the data
      * currently in the dataset
      */
-    std::unique_ptr<types::source::Blob> index(const Metadata& md,
-                                               uint64_t ofs);
+    std::optional<int64_t> index(const Metadata& md, uint64_t ofs);
 
     /**
      * Index the given metadata item, or replace it in the index.

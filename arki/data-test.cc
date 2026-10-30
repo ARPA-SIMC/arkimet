@@ -185,7 +185,7 @@ void Tests::register_tests()
             // must be left untouched
             metadata::TestCollection mdc("inbound/test.grib1");
             int usn = 42;
-            wassert_false(scanner->update_sequence_number(mdc[0], usn));
+            wassert_false(scanner->update_sequence_number(mdc.get(0), usn));
             wassert(actual(usn) == 42);
         }
     });

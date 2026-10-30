@@ -247,6 +247,11 @@ class BUFRScanner(arkimet.scan.DataFormatScanner):
         binmsg = dballe.BinaryMessage(data=data, encoding="BUFR")
         return self.scan_binmsg(binmsg)
 
+    def update_sequence_number(self, md: arkimet.Metadata) -> int:
+        """Extract the update sequence number from BUFR data."""
+        bulletin = wreport.Bulletin.decode_bufr_header(md.data)
+        return bulletin.update_sequence_number
+
     def register(
         self,
         type: str,

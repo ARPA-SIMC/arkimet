@@ -1,6 +1,8 @@
 import os
 import unittest
+from pathlib import Path
 
+import arkimet
 from arkimet.test import SessionMixin
 
 
@@ -361,3 +363,19 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
                 r"|BUFR has an invalid reference time):"
                 r" .+(is not between|is out of range for).+",
             )
+
+    def test_usn(self):
+        scanner = arkimet.scan.bufr.bufr_scanner
+        inbound = Path("inbound")
+        for name, expected in (
+            ("acars.bufr", 0),
+            ("ship.bufr", 1),
+            ("synop-gts.bufr", 0),
+            ("synop-gts-usn2.bufr", 2),
+        ):
+            with self.subTest(name=name):
+                path = inbound / name
+                mds = list(scanner.scan_file(path))
+                self.assertEqual(len(mds), 1)
+                usn = scanner.update_sequence_number(mds[0])
+                self.assertEqual(usn, expected)

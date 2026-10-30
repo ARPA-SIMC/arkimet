@@ -132,8 +132,9 @@ void Tests::register_tests()
             wassert(actual(mdc_read.size()) == 1u);
             auto scanner = data::Scanner::get(mdc_read[0].source().format);
             int usn;
-            wassert(actual(scanner->update_sequence_number(mdc_read[0], usn))
-                        .istrue());
+            wassert(
+                actual(scanner->update_sequence_number(mdc_read.get(0), usn))
+                    .istrue());
             wassert(actual(usn) == 2);
         }
     });

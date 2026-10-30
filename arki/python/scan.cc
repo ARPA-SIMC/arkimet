@@ -213,6 +213,12 @@ public:
         return iterate_metadata_generator(py_gen, dest);
     }
 
+    /**
+     * Proxy scan_data to python's scan_data.
+     *
+     * The python method called is expected to have signature::
+     *  def scan_data(self, data: bytes) -> arkimet.Metadata
+     */
     std::shared_ptr<Metadata>
     scan_data(const std::vector<uint8_t>& data) override
     {
@@ -241,6 +247,35 @@ public:
                 md.use_count());
 
         return md;
+    }
+
+    /**
+     * Proxy update_sequence_number to python's update_sequence_number.
+     *
+     * The plugin should not define the method if it does not support it:
+     * ``hasattr`` is used to avoid loading data if it is not needed.
+     *
+     * The python method called is expected to have signature::
+     *  def update_sequence_number(self, data: bytes) -> int
+     */
+    bool update_sequence_number(std::shared_ptr<Metadata> md,
+                                int& usn) const override
+    {
+        // If the Python plugin does not define the method, return False
+        // without reading data
+        {
+            AcquireGIL gil;
+
+            if (!PyObject_HasAttrString(scanner, "update_sequence_number"))
+                return false;
+        }
+
+        pyo_unique_ptr py_md((PyObject*)metadata_create(md));
+        pyo_unique_ptr py_usn(throw_ifnull(PyObject_CallMethod(
+            scanner, "update_sequence_number", "O", py_md.get())));
+
+        usn = int_from_python(py_usn);
+        return true;
     }
 };
 

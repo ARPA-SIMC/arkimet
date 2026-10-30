@@ -138,12 +138,10 @@ void Scanner::register_scanner(DataFormat name,
 
 void Scanner::normalize_before_dispatch(Metadata&) {}
 
-bool Scanner::update_sequence_number(const types::source::Blob&, int&) const
+bool Scanner::update_sequence_number(std::shared_ptr<Metadata>, int&) const
 {
     return false;
 }
-
-bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
 
 std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
