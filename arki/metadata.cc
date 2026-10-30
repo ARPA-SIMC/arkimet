@@ -14,6 +14,7 @@
 #include "types/note.h"
 #include "types/source/blob.h"
 #include "types/source/inline.h"
+#include "types/timerange.h"
 #include "types/value.h"
 #include "utils/compress.h"
 #include "utils/string.h"
@@ -995,6 +996,13 @@ void Metadata::dump_internals(FILE* out) const
     for (const auto& i : m_index)
         fprintf(out, "    %3u: %s: %s\n", idx++, i->tag().c_str(),
                 i->to_string().c_str());
+}
+
+void Metadata::convert_validity_time_to_emission_time()
+{
+    if (const timerange::Timedef* timedef = get<types::timerange::Timedef>())
+        if (const reftime::Position* p = get<types::reftime::Position>())
+            set(timedef->validity_time_to_emission_time(*p));
 }
 
 } // namespace arki

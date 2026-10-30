@@ -319,6 +319,13 @@ class TestMetadata(unittest.TestCase):
             md1 = arki.Metadata.read_json(out)
             self.assertEqual(md.to_python(), md1.to_python())
 
+    def test_for_blob(self) -> None:
+        path = Path("inbound/acars.bufr").absolute()
+        md = arki.Metadata.for_blob("bufr", path, 42, b"12345")
+        self.assertTrue(md.has_source())
+        self.assertEqual(md["source"], f"BLOB(bufr,{path}:42+5)")
+        self.assertEqual(md.data, b"12345")
+
     def test_for_data(self) -> None:
         path = Path("inbound/acars.bufr").absolute()
         md = arki.Metadata.for_path("bufr", path)

@@ -21,41 +21,6 @@ class Scanner:
     register themselves.
     """
 
-    #
-    #     #: Registered scanner plugins by GRIB edition number
-    #     by_edition: Dict[
-    #         int, List[Tuple[int, Callable[[Grib, arkimet.Metadata], None]]]
-    #     ] = defaultdict(list)
-    #
-    #     def __init__(self) -> None:
-    #         """
-    #         Initialize the scanner.
-    #
-    #         This is called once, at library startup.
-    #
-    #         Plugins need to already be registered by the time this is called.
-    #         """
-    #         for type, scanners in self.by_edition.items():
-    #             scanners.sort(key=lambda p: p[0])
-    #
-    #     def scan(self, grib: Grib, md: arkimet.Metadata) -> None:
-    #         """Scan a GRIB message."""
-    #         # Find the formatter list for this style
-    #         scanners = self.by_edition.get(grib.edition)
-    #         if scanners is None:
-    #             return None
-    #
-    #         # Try all scanner functions in the list, in priority order, stopping at
-    #         # the first one that returns False.
-    #         # Note that False is explicitly required: returning None will not stop
-    #         # the scanner chain.
-    #         for prio, scan in scanners:
-    #             try:
-    #                 if scan(grib, md) is False:
-    #                     break
-    #             except Exception:
-    #                 log.warning("scanner function failed", exc_info=True)
-
     @classmethod
     def register(
         cls,
@@ -95,7 +60,7 @@ class GRIBScanner(arkimet.scan.DataFormatScanner):
         return self.by_edition.get(edition)
 
     def scan_grib(self, grib: Grib, md: arkimet.Metadata) -> None:
-        """Scan a GRIB image as a Grib instance."""
+        """Scan GRIB data as a Grib instance."""
         # Find the formatter list for this style
         scanners = self.get_scanners(grib.edition)
         if scanners is None:
@@ -145,7 +110,7 @@ class GRIBScanner(arkimet.scan.DataFormatScanner):
         """
         Register a callable as an additional scanner.
 
-        :param scanner: the callable to run to scan extra data from an image
+        :param scanner: the callable to run to scan extra data from a GRIB
         :param priority: the order of execution (lower numbers run first)
         """
         if scanner not in self.by_edition[edition]:

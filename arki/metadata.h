@@ -398,6 +398,9 @@ public:
 
     /// Dump the contents of the index to the given file descriptor
     void dump_internals(FILE* out) const;
+
+    /// If timerange is set to a timedef, subtract it from reftime
+    void convert_validity_time_to_emission_time();
 };
 
 } // namespace arki

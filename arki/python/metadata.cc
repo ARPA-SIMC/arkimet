@@ -387,6 +387,27 @@ struct del_notes : public MethNoargs<del_notes, arkipy_Metadata>
     }
 };
 
+struct convert_validity_time_to_emission_time
+    : public MethNoargs<convert_validity_time_to_emission_time, arkipy_Metadata>
+{
+    constexpr static const char* name =
+        "convert_validity_time_to_emission_time";
+    constexpr static const char* signature = "";
+    constexpr static const char* returns   = "None";
+    constexpr static const char* summary =
+        "if timerange is set to a timedef, subtract it from reftime";
+
+    static PyObject* run(Impl* self)
+    {
+        try
+        {
+            self->md->convert_validity_time_to_emission_time();
+            Py_RETURN_NONE;
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct read_bundle : public ClassMethKwargs<read_bundle>
 {
     constexpr static const char* name = "read_bundle";
@@ -780,6 +801,59 @@ struct print_type_documentation
     }
 };
 
+struct for_blob : public ClassMethKwargs<for_blob>
+{
+    constexpr static const char* name = "for_blob";
+    constexpr static const char* signature =
+        "format: str, path: str | Path, offset: int, data: bytes";
+    constexpr static const char* returns = "arkimet.Metadata";
+    constexpr static const char* summary =
+        "Create a new empty :py:class:`arkimet.Metadata` instance for a file "
+        "segment.";
+    constexpr static const char* doc = R"(
+The resulting metadata will have a source item pointing at the file segment,
+and `data` as the cached data.
+
+No other metadata items will be set
+)";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"format", "path", "offset", "data",
+                                       nullptr};
+        PyObject* arg_format        = nullptr;
+        PyObject* arg_path          = nullptr;
+        unsigned long offset        = 0;
+        PyObject* arg_data          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(
+                args, kw, "OOkO!", const_cast<char**>(kwlist), &arg_format,
+                &arg_path, &offset, &PyBytes_Type, &arg_data))
+            return nullptr;
+
+        try
+        {
+            DataFormat format          = dataformat_from_python(arg_format);
+            std::filesystem::path path = path_from_python(arg_path);
+            char* pydata;
+            Py_ssize_t pydata_len;
+            if (PyBytes_AsStringAndSize(arg_data, &pydata, &pydata_len) == -1)
+                return nullptr;
+
+            const uint8_t* udata = reinterpret_cast<uint8_t*>(pydata);
+            std::vector<uint8_t> data(udata, udata + pydata_len);
+
+            auto md = std::make_shared<Metadata>();
+            md->set_source(arki::types::Source::createBlobUnlocked(
+                format, path.parent_path(), path.filename(), offset,
+                data.size()));
+            md->set_cached_data(
+                metadata::DataManager::get().to_data(format, std::move(data)));
+            return (PyObject*)metadata_create(md);
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
 struct for_path : public ClassMethKwargs<for_path>
 {
     constexpr static const char* name      = "for_path";
@@ -904,8 +978,10 @@ For example::
 )";
     GetSetters<data, data_size> getsetters;
     Methods<has_source, write, make_absolute, make_inline, make_url, to_string,
-            to_python, get_notes, del_notes, read_bundle, write_bundle,
-            read_yaml, read_json, print_type_documentation, for_path, for_bytes>
+            to_python, get_notes, del_notes,
+            convert_validity_time_to_emission_time, read_bundle, write_bundle,
+            read_yaml, read_json, print_type_documentation, for_blob, for_path,
+            for_bytes>
         methods;
 
     static void _dealloc(Impl* self)
