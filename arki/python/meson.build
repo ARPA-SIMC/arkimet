@@ -41,10 +41,6 @@ py_arkimet_sources = files(
     'arkimet.cc',
 )
 
-if dballe_dep.found()
-    py_arkimet_sources += files('utils/dballe.cc')
-endif
-
 py_arkimet = python3.extension_module('_arkimet',
     py_arkimet_sources,
     cpp_pch: '../pch/arkimet_pch.h',

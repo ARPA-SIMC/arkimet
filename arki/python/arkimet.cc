@@ -471,9 +471,6 @@ PyMODINIT_FUNC PyInit__arkimet(void)
 
         pyo_unique_ptr features(throw_ifnull(PyFrozenSet_New(nullptr)));
 
-#ifdef HAVE_DBALLE
-        add_feature(features, "dballe");
-#endif
 #ifdef HAVE_GEOS
         add_feature(features, "geos");
 #endif
