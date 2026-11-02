@@ -12,20 +12,10 @@
 #include "arki/types/values.h"
 #include "arki/utils/files.h"
 #include "arki/utils/sys.h"
-#include "mock.h"
 #include <cstring>
-#ifdef HAVE_DBALLE
-#include <dballe/file.h>
-#include <dballe/importer.h>
-#include <dballe/message.h>
-#include <wreport/bulletin.h>
-#include <wreport/options.h>
-#endif
 #include <sstream>
 
 using namespace std;
-using namespace wreport;
-using namespace dballe;
 using namespace arki::types;
 using namespace arki::utils;
 
@@ -76,130 +66,5 @@ struct BufrValidator : public Validator
 static BufrValidator bufr_validator;
 
 const Validator& validator() { return bufr_validator; }
-
-/*
- * MockScanner
- */
-
-#ifdef HAVE_DBALLE
-
-void MockScanner::do_scan(dballe::BinaryMessage& rmsg,
-                          std::shared_ptr<Metadata> md)
-{
-    auto new_md = MockEngine::get().lookup(
-        reinterpret_cast<const uint8_t*>(rmsg.data.data()), rmsg.data.size());
-    md->merge(*new_md);
-}
-
-bool MockScanner::scan_file(const std::filesystem::path& abspath,
-                            metadata_dest_func dest)
-{
-    auto file =
-        dballe::File::create(dballe::Encoding::BUFR, abspath.c_str(), "r");
-    while (true)
-    {
-        auto md            = std::make_shared<Metadata>();
-        BinaryMessage rmsg = file->read();
-        if (!rmsg)
-            break;
-        std::vector<uint8_t> data(rmsg.data.begin(), rmsg.data.end());
-        md->set_source(arki::types::Source::createBlobUnlocked(
-            DataFormat::BUFR, abspath.parent_path(), abspath.filename(),
-            rmsg.offset, data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::BUFR, std::move(data)));
-
-        do_scan(rmsg, md);
-
-        if (!dest(md))
-            return false;
-    }
-    return true;
-}
-
-bool MockScanner::scan_pipe(core::NamedFileDescriptor& infd,
-                            metadata_dest_func dest)
-{
-    files::RAIIFILE in(infd, "rb");
-    auto file =
-        dballe::File::create(dballe::Encoding::BUFR, in, false, infd.path());
-    while (true)
-    {
-        auto md            = std::make_shared<Metadata>();
-        BinaryMessage rmsg = file->read();
-        if (!rmsg)
-            break;
-        md->set_source_inline(
-            DataFormat::BUFR,
-            metadata::DataManager::get().to_data(
-                DataFormat::BUFR,
-                vector<uint8_t>(rmsg.data.begin(), rmsg.data.end())));
-        do_scan(rmsg, md);
-        if (!dest(std::move(md)))
-            return false;
-    }
-    return true;
-}
-
-std::shared_ptr<Metadata>
-MockScanner::scan_data(const std::vector<uint8_t>& data)
-{
-    auto md = std::make_shared<Metadata>();
-    md->set_source_inline(DataFormat::BUFR,
-                          metadata::DataManager::get().to_data(
-                              DataFormat::BUFR, std::vector<uint8_t>(data)));
-    BinaryMessage rmsg(Encoding::BUFR);
-    rmsg.data = std::string(data.begin(), data.end());
-    do_scan(rmsg, md);
-    return md;
-}
-
-bool MockScanner::update_sequence_number(std::shared_ptr<Metadata> md,
-                                         int& usn) const
-{
-    // Update Sequence Numbers are only supported by BUFR
-    if (md->source().format != DataFormat::BUFR)
-        return false;
-
-    const auto& data = md->get_data();
-    auto buf         = data.read();
-    std::string strbuf((const char*)buf.data(), buf.size());
-    auto bulletin = BufrBulletin::decode_header(strbuf);
-    usn           = bulletin->update_sequence_number;
-    return true;
-}
-
-#else
-
-void MockScanner::do_scan(dballe::BinaryMessage& rmsg,
-                          std::shared_ptr<Metadata> md)
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-
-bool MockScanner::scan_file(const std::filesystem::path& abspath,
-                            metadata_dest_func dest)
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-
-bool MockScanner::scan_pipe(core::NamedFileDescriptor& in,
-                            metadata_dest_func dest)
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-
-std::shared_ptr<Metadata>
-MockScanner::scan_data(const std::vector<uint8_t>& data)
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-
-bool MockScanner::update_sequence_number(std::shared_ptr<Metadata> md,
-                                         int& usn) const
-{
-    throw std::runtime_error("BUFR support is not available");
-}
-#endif
 
 } // namespace arki::data::bufr

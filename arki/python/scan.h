@@ -6,10 +6,6 @@
 #include <arki/data/fwd.h>
 #include <memory>
 
-namespace dballe {
-struct Message;
-}
-
 extern "C" {
 
 typedef struct

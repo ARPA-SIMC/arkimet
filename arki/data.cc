@@ -3,7 +3,6 @@
 #include "data/bufr.h"
 #include "data/grib.h"
 #include "data/jpeg.h"
-#include "data/mock.h"
 #include "data/netcdf.h"
 #include "data/odimh5.h"
 #include "data/vm2.h"
@@ -28,18 +27,8 @@ static std::vector<std::shared_ptr<Scanner>>
 
 static void init()
 {
-    // Install the scanners for known formats that need special handling
-    scanners[(unsigned)DataFormat::GRIB] =
-        std::make_shared<data::grib::MockScanner>();
-    scanners[(unsigned)DataFormat::BUFR] =
-        std::make_shared<data::bufr::MockScanner>();
     scanners[(unsigned)DataFormat::VM2] =
         std::make_shared<data::vm2::Scanner>();
-    // Initialize a mock scanner for all formats
-    for (unsigned format = static_cast<unsigned>(DataFormat::VM2) + 1;
-         format < static_cast<unsigned>(DataFormat::__END__); ++format)
-        scanners[format] = std::make_shared<data::MockScanner>(
-            static_cast<DataFormat>(format));
 }
 
 std::optional<DataFormat> detect_format(const std::filesystem::path& path)
@@ -149,6 +138,11 @@ std::shared_ptr<Scanner> Scanner::get(DataFormat format)
         initialize_scanners();
     unsigned idx = static_cast<unsigned>(format);
     if (idx >= static_cast<unsigned>(DataFormat::__END__))
+        throw std::runtime_error(
+            "Cannot find scanner for unsupported format '" +
+            format_name(format) + "'");
+
+    if (!scanners[idx])
         throw std::runtime_error("No scanner available for format '" +
                                  format_name(format) + "'");
 

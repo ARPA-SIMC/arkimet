@@ -7,7 +7,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "mock.h"
 #include <cstring>
 #ifdef HAVE_GRIBAPI
 #include <grib_api.h>
@@ -187,61 +186,6 @@ std::shared_ptr<Metadata> ScanData::metadata() const
     return md;
 }
 
-/*
- * MockScanner
- */
-void MockScanner::scan(grib_handle* gh, std::shared_ptr<Metadata> md)
-{
-    // Get the encoded GRIB buffer from the GRIB handle
-    const uint8_t* vbuf;
-    size_t size;
-    check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
-                     "cannot access the encoded GRIB data");
-    auto new_md = MockEngine::get().lookup(vbuf, size);
-    md->merge(*new_md);
-}
-
-bool MockScanner::scan_file(const std::filesystem::path& abspath,
-                            metadata_dest_func dest)
-{
-    ScanFile gribs(abspath);
-    while (gribs.next())
-    {
-        auto md = gribs.metadata();
-        scan(gribs.handle(), md);
-        if (!dest(md))
-            return false;
-    }
-    return true;
-}
-
-bool MockScanner::scan_pipe(core::NamedFileDescriptor& in,
-                            metadata_dest_func dest)
-{
-    ScanPipe gribs(in);
-    while (gribs.next())
-    {
-        auto md = gribs.metadata();
-        scan(gribs.handle(), md);
-        if (!dest(md))
-            return false;
-    }
-    return true;
-}
-
-std::shared_ptr<Metadata>
-MockScanner::scan_data(const std::vector<uint8_t>& data)
-{
-    ScanData gribs(data);
-    std::shared_ptr<Metadata> md;
-    while (gribs.next())
-    {
-        md = gribs.metadata();
-        scan(gribs.handle(), md);
-    }
-    return md;
-}
-
 #else
 
 Scan::Scan() { throw std::runtime_error("GRIB support is not available"); }
@@ -299,10 +243,6 @@ std::shared_ptr<Metadata> ScanPipe::metadata() const
     throw std::runtime_error("GRIB support is not available");
 }
 
-std::shared_ptr<Metadata> MockScanner::scan(grib_handle* gh)
-{
-    throw std::runtime_error("GRIB support is not available");
-}
 #endif
 
 struct GribValidator : public Validator

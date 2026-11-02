@@ -77,26 +77,5 @@ public:
     std::shared_ptr<Metadata> metadata() const override;
 };
 
-/**
- * Scan GRIB data using the mock scan engine used for tests
- */
-class MockScanner : public data::Scanner
-{
-protected:
-    void scan(grib_handle* gh, std::shared_ptr<Metadata>);
-
-public:
-    DataFormat name() const override { return DataFormat::GRIB; }
-
-    bool scan_file(const std::filesystem::path& abspath,
-                   metadata_dest_func dest) override;
-
-    bool scan_pipe(core::NamedFileDescriptor& in,
-                   metadata_dest_func dest) override;
-
-    std::shared_ptr<Metadata>
-    scan_data(const std::vector<uint8_t>& data) override;
-};
-
 } // namespace arki::data::grib
 #endif

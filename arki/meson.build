@@ -127,7 +127,7 @@ libarkimet_sources = [
     'segment/iseg/index.cc',
     'formatter.cc',
     'data.cc',
-    'data/mock.cc',
+    'data/bufr.cc',
     'data/odimh5.cc',
     'data/netcdf.cc',
     'data/jpeg.cc',
@@ -174,10 +174,6 @@ subdir('matcher/reftime')
 
 if eccodes_dep.found()
     libarkimet_sources += ['data/grib.cc']
-endif
-
-if dballe_dep.found()
-    libarkimet_sources += ['data/bufr.cc']
 endif
 
 if meteo_vm2_dep.found()
@@ -324,7 +320,7 @@ test_core_sources = [
     'matcher/task-test.cc',
     'matcher/quantity-test.cc',
     'data-test.cc',
-    'data/mock-test.cc',
+    'data/bufr-test.cc',
     'data/odimh5-test.cc',
     'data/netcdf-test.cc',
     'data/jpeg-test.cc',
@@ -338,10 +334,6 @@ test_core_sources = [
 
 if eccodes_dep.found()
     test_core_sources += ['data/grib-test.cc']
-endif
-
-if dballe_dep.found()
-    test_core_sources += ['data/bufr-test.cc']
 endif
 
 if meteo_vm2_dep.found()
