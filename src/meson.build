@@ -9,11 +9,8 @@ scripts = [
     ['arki-server', 'Arkimet server for remote dataset access.'],
     ['arki-testtar', 'Build a .tar version of a dataset for testing, without storing the actual data.'],
     ['arki-web-proxy', 'Dispatching proxy for arki-servers.'],
+    ['arki-bufr-prepare', 'Read BUFR messages, and encode each subsection in a separate message.'],
 ]
-
-if dballe_dep.found()
-    scripts += [['arki-bufr-prepare', 'Read BUFR messages, and encode each subsection in a separate message.']]
-endif
 
 foreach script: scripts
     install_data(script[0], install_dir: get_option('bindir'))
@@ -38,7 +35,6 @@ if get_option('profiling') != 'none'
     perf_deps = [
         sqlite3_dep,
         eccodes_dep,
-        dballe_dep,
         meteo_vm2_dep,
         libcurl_dep,
     ]

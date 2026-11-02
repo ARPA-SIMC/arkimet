@@ -3,12 +3,12 @@
 #include "data/bufr.h"
 #include "data/grib.h"
 #include "data/jpeg.h"
-#include "data/mock.h"
 #include "data/netcdf.h"
 #include "data/odimh5.h"
 #include "data/vm2.h"
 #include "metadata.h"
 #include "metadata/data.h"
+#include "nag.h"
 #include "types/source.h"
 #include "types/source/blob.h"
 #include "utils/files.h"
@@ -27,18 +27,8 @@ static std::vector<std::shared_ptr<Scanner>>
 
 static void init()
 {
-    // Install the scanners for known formats that need special handling
-    scanners[(unsigned)DataFormat::GRIB] =
-        std::make_shared<data::grib::MockScanner>();
-    scanners[(unsigned)DataFormat::BUFR] =
-        std::make_shared<data::bufr::MockScanner>();
     scanners[(unsigned)DataFormat::VM2] =
         std::make_shared<data::vm2::Scanner>();
-    // Initialize a mock scanner for all formats
-    for (unsigned format = static_cast<unsigned>(DataFormat::VM2) + 1;
-         format < static_cast<unsigned>(DataFormat::__END__); ++format)
-        scanners[format] = std::make_shared<data::MockScanner>(
-            static_cast<DataFormat>(format));
 }
 
 std::optional<DataFormat> detect_format(const std::filesystem::path& path)
@@ -110,6 +100,13 @@ Scanner::~Scanner() {}
 static std::vector<std::function<void()>> scanner_init_functions = {init};
 static bool scanner_initialized                                  = false;
 
+static void initialize_scanners()
+{
+    scanner_initialized = true;
+    for (const auto& func : scanner_init_functions)
+        func();
+}
+
 void Scanner::register_init(std::function<void()> func)
 {
     if (scanner_initialized)
@@ -122,30 +119,30 @@ void Scanner::register_init(std::function<void()> func)
 void Scanner::register_scanner(DataFormat name,
                                std::shared_ptr<Scanner> scanner)
 {
+    if (!scanner_initialized)
+        initialize_scanners();
     unsigned idx  = static_cast<unsigned>(name);
     scanners[idx] = scanner;
 }
 
 void Scanner::normalize_before_dispatch(Metadata&) {}
 
-bool Scanner::update_sequence_number(const types::source::Blob&, int&) const
+bool Scanner::update_sequence_number(std::shared_ptr<Metadata>, int&) const
 {
     return false;
 }
 
-bool Scanner::update_sequence_number(Metadata&, int&) const { return false; }
-
 std::shared_ptr<Scanner> Scanner::get(DataFormat format)
 {
     if (!scanner_initialized)
-    {
-        for (const auto& func : scanner_init_functions)
-            func();
-        scanner_initialized = true;
-    }
-
+        initialize_scanners();
     unsigned idx = static_cast<unsigned>(format);
     if (idx >= static_cast<unsigned>(DataFormat::__END__))
+        throw std::runtime_error(
+            "Cannot find scanner for unsupported format '" +
+            format_name(format) + "'");
+
+    if (!scanners[idx])
         throw std::runtime_error("No scanner available for format '" +
                                  format_name(format) + "'");
 
@@ -180,24 +177,6 @@ SingleFileScanner::read_file(const std::filesystem::path& abspath,
     return std::vector<uint8_t>(static_cast<const uint8_t*>(mapped_data),
                                 static_cast<const uint8_t*>(mapped_data) +
                                     mapped_data.size());
-}
-
-bool SingleFileScanner::scan_file_multi(const std::filesystem::path& abspath,
-                                        metadata_dest_func dest)
-{
-    // If the file is empty, skip it
-    auto st = sys::stat(abspath);
-    if (!st)
-        return true;
-    if (S_ISDIR(st->st_mode))
-        throw std::runtime_error(
-            format_name(name()) +
-            ": scan_segment cannot be called on directory segments");
-    if (!st->st_size)
-        return true;
-
-    auto md = scan_file_single(abspath);
-    return dest(md);
 }
 
 /*

@@ -6,13 +6,7 @@
 #include <arki/data/fwd.h>
 #include <memory>
 
-namespace dballe {
-struct Message;
-}
-
 extern "C" {
-
-struct grib_handle;
 
 typedef struct
 {

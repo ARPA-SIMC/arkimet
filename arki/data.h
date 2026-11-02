@@ -38,19 +38,12 @@ public:
     /**
      * Scan a file that can contain multiple data entries.
      *
-     * Scanned metadata will have no source set.
+     * Scanned metadata will have BLOB sources.
      *
      * Returns true if dest always returned true, else false.
      */
-    virtual bool scan_file_multi(const std::filesystem::path& abspath,
-                                 metadata_dest_func dest) = 0;
-    /**
-     * Scan a file that contains only one data entry.
-     *
-     * Returns a Metadata with no source set.
-     */
-    virtual std::shared_ptr<Metadata>
-    scan_file_single(const std::filesystem::path& abspath) = 0;
+    virtual bool scan_file(const std::filesystem::path& abspath,
+                           metadata_dest_func dest) = 0;
 
     /**
      * Scan data from a non-seekable pipe.
@@ -92,19 +85,7 @@ public:
      *   true if the update sequence number could be found, else false
      *
      */
-    virtual bool update_sequence_number(Metadata& md, int& usn) const;
-
-    /**
-     * Return the update sequence number for this data
-     *
-     * @retval
-     *   The update sequence number found. This is left untouched if the
-     * function returns false.
-     * @returns
-     *   true if the update sequence number could be found, else false
-     *
-     */
-    virtual bool update_sequence_number(const types::source::Blob& source,
+    virtual bool update_sequence_number(std::shared_ptr<Metadata> md,
                                         int& usn) const;
 
     /**
@@ -140,10 +121,6 @@ protected:
     std::vector<uint8_t> read_file(const std::filesystem::path& abspath);
     std::vector<uint8_t> read_file(const std::filesystem::path& abspath,
                                    const struct stat& st);
-
-public:
-    bool scan_file_multi(const std::filesystem::path& abspath,
-                         metadata_dest_func dest) override;
 };
 
 /**

@@ -1,7 +1,6 @@
 import _arkimet
 
 _export = (
-    "ArkiBUFRPrepare",
     "ArkiCheck",
     "ArkiDump",
     "ArkiQuery",

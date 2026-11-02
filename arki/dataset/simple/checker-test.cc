@@ -6,6 +6,7 @@
 #include "arki/matcher.h"
 #include "arki/metadata.h"
 #include "arki/metadata/collection.h"
+#include "arki/nag.h"
 #include "arki/query.h"
 #include "arki/types/source/blob.h"
 #include "arki/utils/files.h"
@@ -135,6 +136,9 @@ void Tests::register_tests()
 
     // Test maintenance scan on compressed archives
     add_method("scan_compressed", [](Fixture& f) {
+        nag::RaiseHandler rh(true, false);
+        rh.install();
+
         auto setup = [&] {
             auto checker = f.makeSegmentedChecker();
             auto segment =
@@ -168,12 +172,14 @@ void Tests::register_tests()
         // Try removing summary and metadata
         removemd();
 
-        // We can still query
+        // We can still query, but not the segment without metadata
         {
+            expect_nags(true, false);
             metadata::Collection mdc;
             auto reader = f.makeSimpleReader();
             wassert(mdc.add(*reader, Matcher()));
             wassert(actual(mdc.size()) == 2u);
+            wassert(nags.nagged("07-08.grib: segment data is not available"));
         }
 
         // Maintenance should show one file to rescan
@@ -188,6 +194,7 @@ void Tests::register_tests()
 
         // Fix the dataset
         {
+            expect_nags(true, false);
             auto checker = f.makeSimpleChecker();
 
             // Check should reindex the file
@@ -197,6 +204,7 @@ void Tests::register_tests()
 
             // Repack should do nothing
             wassert(actual(*checker).repack_clean(true));
+            wassert(nags.nagged("07-08.grib: segment data is not available"));
         }
 
         // Everything should be fine now
@@ -226,10 +234,12 @@ void Tests::register_tests()
 
         // And repack should have changed nothing
         {
+            expect_nags(true, false);
             metadata::Collection mdc;
             auto reader = f.makeSimpleReader();
             mdc.add(*reader, Matcher());
             wassert(actual(mdc.size()) == 2u);
+            wassert(nags.nagged("07-08.grib: segment data is not available"));
         }
         wassert(actual_file("testds/2007/07-08.grib").not_exists());
         wassert(actual_file("testds/2007/07-08.grib.gz").exists());

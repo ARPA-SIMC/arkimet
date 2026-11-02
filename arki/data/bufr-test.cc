@@ -21,25 +21,15 @@ class Tests : public TestCase
     void register_tests() override;
 } test("arki_data_bufr");
 
-class ConcreteScanner : public arki::data::bufr::Scanner
-{
-protected:
-    void scan_extra(dballe::BinaryMessage& rmsg,
-                    std::shared_ptr<dballe::Message> msg,
-                    std::shared_ptr<Metadata> md) override
-    {
-    }
-};
-
 void Tests::register_tests()
 {
-    add_method("scan_file_multi", [] {
+    add_method("scan_file", [] {
         auto basedir = std::filesystem::current_path() / "inbound";
         auto src     = basedir / "fixture.bufr";
-        ConcreteScanner scanner;
+        auto scanner = data::Scanner::get(DataFormat::BUFR);
         std::vector<std::shared_ptr<Metadata>> mds;
         wassert_true(
-            scanner.scan_file_multi(src, [&](std::shared_ptr<Metadata> md_) {
+            scanner->scan_file(src, [&](std::shared_ptr<Metadata> md_) {
                 mds.emplace_back(md_);
                 return true;
             }));
@@ -70,10 +60,10 @@ void Tests::register_tests()
     add_method("scan_pipe", [] {
         auto basedir = std::filesystem::current_path() / "inbound";
         auto src     = basedir / "fixture.bufr";
-        ConcreteScanner scanner;
+        auto scanner = data::Scanner::get(DataFormat::BUFR);
         std::vector<std::shared_ptr<Metadata>> mds;
         core::File in(src, O_RDONLY);
-        wassert_true(scanner.scan_pipe(in, [&](std::shared_ptr<Metadata> md) {
+        wassert_true(scanner->scan_pipe(in, [&](std::shared_ptr<Metadata> md) {
             mds.emplace_back(md);
             return true;
         }));
@@ -92,28 +82,14 @@ void Tests::register_tests()
         wassert_true(mds[2]->has_cached_data());
     });
 
-    add_method("scan_file_single", [] {
-        auto basedir = std::filesystem::current_path() / "inbound";
-        auto src     = basedir / "acars.bufr";
-        ConcreteScanner scanner;
-        std::shared_ptr<Metadata> md = scanner.scan_file_single(src);
-        wassert_true(md.get());
-        wassert(actual_type(md->source())
-                    .is_source_blob(DataFormat::BUFR, basedir, "acars.bufr", 0,
-                                    238));
-        wassert_true(md->has_cached_data());
-        // read_data fails as the blob is not associated with a reader
-        wassert_throws(std::runtime_error, md->sourceBlob().read_data());
-    });
-
     add_method("scan_data", [] {
         auto basedir         = std::filesystem::current_path() / "inbound";
         auto src             = basedir / "acars.bufr";
+        auto scanner         = data::Scanner::get(DataFormat::BUFR);
         std::string data_str = sys::read_file(src);
         std::vector<uint8_t> data(data_str.begin(), data_str.end());
 
-        ConcreteScanner scanner;
-        std::shared_ptr<Metadata> md = scanner.scan_data(data);
+        std::shared_ptr<Metadata> md = scanner->scan_data(data);
         wassert_true(md.get());
         wassert(actual_type(md->source())
                     .is_source_inline(DataFormat::BUFR, data_str.size()));
@@ -159,14 +135,14 @@ void Tests::register_tests()
         {
             metadata::TestCollection mdc("inbound/synop-gts.bufr");
             int usn;
-            wassert_true(scanner->update_sequence_number(mdc[0], usn));
+            wassert_true(scanner->update_sequence_number(mdc.get(0), usn));
             wassert(actual(usn) == 0);
         }
 
         {
             metadata::TestCollection mdc("inbound/synop-gts-usn2.bufr");
             int usn;
-            wassert_true(scanner->update_sequence_number(mdc[0], usn));
+            wassert_true(scanner->update_sequence_number(mdc.get(0), usn));
             wassert(actual(usn) == 2);
         }
     });

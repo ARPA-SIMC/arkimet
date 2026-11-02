@@ -4,6 +4,7 @@ Python modules to work with Arkimet archives.
 
 from _arkimet import (
     BBox,
+    File,
     Formatter,
     Matcher,
     Metadata,
@@ -23,6 +24,7 @@ from . import cfg, counters, dataset
 
 __all__ = (
     "BBox",
+    "File",
     "Formatter",
     "Matcher",
     "Metadata",

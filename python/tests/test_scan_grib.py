@@ -1,43 +1,70 @@
 import binascii
 import os
 import unittest
+from pathlib import Path
 
 import arkimet as arki
 from arkimet.test import skip_unless_arpae_tests
+import arkimet.scan.grib
 
 
-class TestGrib(unittest.TestCase):
+class TestGribReader(unittest.TestCase):
     """Test the Grib accessor used by the scanner."""
 
     def setUp(self):
         self.session = arki.dataset.Session()
 
-    def test_read_bytes(self) -> None:
-        with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
-            with next(reader) as grib:
-                self.assertEqual(grib["centre"], "cnmc")
-                self.assertEqual(
-                    grib["uuidOfHGrid"],
-                    binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")),
-                )
-                self.assertEqual(
-                    grib.get_string("uuidOfHGrid"),
-                    "f5886b95a7a666979e2fd51f0af52b20",
-                )
+    def assertUnstr0(
+        self, reader: "arki.scan.grib.GribReader", source: str
+    ) -> None:
+        grib, md = next(reader)
+        with grib:
+            self.assertEqual(grib["centre"], "cnmc")
+            self.assertEqual(
+                grib["uuidOfHGrid"],
+                binascii.unhexlify(("f5886b95a7a666979e2fd51f0af52b20")),
+            )
+            self.assertEqual(
+                grib.get_string("uuidOfHGrid"),
+                "f5886b95a7a666979e2fd51f0af52b20",
+            )
 
-            with self.assertRaises(StopIteration):
-                next(reader)
+            self.assertEqual(md["source"], source)
+
+            self.assertEqual(grib.get_string("does-not-exist"), None)
+            self.assertEqual(
+                grib.get_string("does-not-exist", "not found"), "not found"
+            )
+
+        with self.assertRaises(StopIteration):
+            next(reader)
+
+    def test_from_path(self) -> None:
+        with arki.scan.grib.GribReader.from_path(
+            "inbound/unstr0.grib"
+        ) as reader:
+            self.assertUnstr0(reader, "BLOB(grib,inbound/unstr0.grib:0+174)")
+
+    def test_from_arkifile(self) -> None:
+        with Path("inbound/unstr0.grib").open("rb") as pyfile:
+            f = arki.File(pyfile.fileno(), pyfile.name)
+            with arki.scan.grib.GribReader.from_pipe(f) as reader:
+                self.assertUnstr0(reader, "INLINE(grib,174)")
+
+    def test_from_pyfile(self) -> None:
+        with Path("inbound/unstr0.grib").open("rb") as file:
+            with arki.scan.grib.GribReader.from_pipe(file) as reader:
+                self.assertUnstr0(reader, "INLINE(grib,174)")
+
+    def test_from_bytes(self) -> None:
+        with Path("inbound/unstr0.grib").open("rb") as file:
+            with arki.scan.grib.GribReader.from_pipe(file) as reader:
+                self.assertUnstr0(reader, "INLINE(grib,174)")
 
     def test_get_string(self) -> None:
-        with arki.scan.grib.GribReader("inbound/unstr0.grib") as reader:
-            with next(reader) as grib:
-                self.assertEqual(grib.get_string("does-not-exist"), None)
-                self.assertEqual(
-                    grib.get_string("does-not-exist", "not found"), "not found"
-                )
-
-            with self.assertRaises(StopIteration):
-                next(reader)
+        path = Path("inbound/unstr0.grib")
+        with arki.scan.grib.GribReader.from_bytes(path.read_bytes()) as reader:
+            self.assertUnstr0(reader, "INLINE(grib,174)")
 
 
 class TestScanGrib(unittest.TestCase):

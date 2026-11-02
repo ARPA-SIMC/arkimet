@@ -108,7 +108,7 @@ html_static_path = ["_static"]
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "dballedoc"
+htmlhelp_basename = "arkimetdoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -132,7 +132,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "dballe.tex", "dballe Documentation", "Enrico Zini", "manual"),
+    (
+        master_doc,
+        "arkimet.tex",
+        "arkimet Documentation",
+        "Enrico Zini",
+        "manual",
+    ),
 ]
 
 
@@ -140,7 +146,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "dballe", "dballe Documentation", [author], 1)]
+man_pages = [(master_doc, "arkimet", "arkimet Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -151,10 +157,10 @@ man_pages = [(master_doc, "dballe", "dballe Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "dballe",
-        "dballe Documentation",
+        "arkimet",
+        "arkimet Documentation",
         author,
-        "dballe",
+        "arkimet",
         "Short term database for point-based weather data.",
         "Miscellaneous",
     ),

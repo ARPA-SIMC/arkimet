@@ -18,7 +18,6 @@ py_arkimet_sources = files(
     'matcher.cc',
     'scan.cc',
     'scan/grib.cc',
-    'scan/bufr.cc',
     'scan/vm2.cc',
     'dataset.cc',
     'dataset/session.cc',
@@ -39,13 +38,8 @@ py_arkimet_sources = files(
     'arki-check.cc',
     'arki-dump.cc',
     'arki-xargs.cc',
-    'arki-bufr-prepare.cc',
     'arkimet.cc',
 )
-
-if dballe_dep.found()
-    py_arkimet_sources += files('utils/dballe.cc')
-endif
 
 py_arkimet = python3.extension_module('_arkimet',
     py_arkimet_sources,

@@ -5,8 +5,19 @@
 #include <arki/core/file.h>
 #include <arki/stream/fwd.h>
 
-namespace arki {
-namespace python {
+extern "C" {
+/// arki.File python object
+typedef struct
+{
+    PyObject_HEAD arki::utils::sys::NamedFileDescriptor fd;
+} arkipy_File;
+extern PyTypeObject* arkipy_File_Type;
+#define arkipy_File_Check(ob)                                                  \
+    (Py_TYPE(ob) == arkipy_File_Type ||                                        \
+     PyType_IsSubtype(Py_TYPE(ob), arkipy_File_Type))
+}
+
+namespace arki::python {
 
 template <typename AbstractFile> struct FileBase
 {
@@ -66,7 +77,13 @@ std::unique_ptr<StreamOutput> textio_stream_output(PyObject* o);
  */
 std::unique_ptr<StreamOutput> binaryio_stream_output(PyObject* o);
 
-} // namespace python
-} // namespace arki
+/**
+ * Create a Python proxy for a NamedFileDescriptor
+ */
+PyObject* file_to_python(arki::utils::sys::NamedFileDescriptor& fd);
+
+void register_files(PyObject* m);
+
+} // namespace arki::python
 
 #endif

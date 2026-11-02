@@ -2,7 +2,7 @@
 import io
 import logging
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Iterable, IO
 
 from PIL import Image
 
@@ -36,16 +36,24 @@ class JPEGScanner(arkimet.scan.DataFormatScanner):
         """Scan a JPEG image as a PIL Image instance."""
         self.scan_tags(ScannedImage(im), md)
 
-    def scan_file(self, pathname: Path, md: arkimet.Metadata) -> None:
+    def scan_file(self, pathname: Path) -> Iterable[arkimet.Metadata]:
         """Scan a JPEG file."""
+        md = arkimet.Metadata.for_path("jpeg", pathname)
         with Image.open(pathname) as im:
             self.scan_image(im, md)
+        yield md
 
-    def scan_data(self, data: bytes, md: arkimet.Metadata) -> None:
+    def scan_pipe(self, file: IO[bytes]) -> Iterable[arkimet.Metadata]:
+        """Scan JPEG data from a pipe."""
+        yield self.scan_data(file.read())
+
+    def scan_data(self, data: bytes) -> arkimet.Metadata:
         """Scan a data buffer as JPEG."""
+        md = arkimet.Metadata.for_bytes("jpeg", data)
         with io.BytesIO(data) as fd:
             with Image.open(fd) as im:
                 self.scan_image(im, md)
+        return md
 
     def scan_tags(self, sample: ScannedImage, md: arkimet.Metadata) -> None:
         """Scan EXIF tags."""

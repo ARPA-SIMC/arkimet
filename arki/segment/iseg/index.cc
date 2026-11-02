@@ -191,6 +191,48 @@ void Index<LockType>::query_segment(metadata_dest_func dest) const
 }
 
 template <typename LockType>
+std::unique_ptr<types::source::Blob>
+Index<LockType>::source_for_rowid(int64_t rowid) const
+{
+    std::string query = "SELECT offset, size FROM md WHERE rowid=?";
+    Query resolve("source_for_rowid", m_db);
+    resolve.compile(query);
+    resolve.bind(1, rowid);
+    while (resolve.step())
+        return types::source::Blob::create_unlocked(
+            session().format, session().root, segment->relpath(),
+            resolve.fetch<uint64_t>(0), resolve.fetch<uint64_t>(1));
+
+    return std::unique_ptr<types::source::Blob>();
+}
+
+template <typename LockType>
+std::shared_ptr<Metadata>
+Index<LockType>::metadata_for_rowid(int64_t rowid) const
+{
+    std::string query = "SELECT m.offset, m.size, m.notes, m.reftime";
+    if (m_uniques)
+        query += ", m.uniq";
+    if (m_others)
+        query += ", m.other";
+    if (session().smallfiles)
+        query += ", m.data";
+    query += " FROM md AS m WHERE rowid=?";
+
+    Query resolve("metadata_for_rowid", m_db);
+    resolve.compile(query);
+    resolve.bind(1, rowid);
+    while (resolve.step())
+    {
+        // Rebuild the Metadata
+        auto md = std::make_shared<Metadata>();
+        build_md(resolve, *md);
+        return md;
+    }
+    return std::shared_ptr<Metadata>();
+}
+
+template <typename LockType>
 core::Interval Index<LockType>::query_data_timespan() const
 {
     core::Interval interval;
@@ -549,7 +591,7 @@ template <typename LockType> void WIndex<LockType>::compile_insert()
     }
 
     // Precompile get_current
-    std::string cur_query = "SELECT offset, size FROM md WHERE reftime=?";
+    std::string cur_query = "SELECT rowid FROM md WHERE reftime=?";
     if (m_uniques)
         cur_query += " AND uniq=?";
     m_get_current.compile(cur_query);
@@ -661,10 +703,8 @@ void WIndex<LockType>::reindex(const arki::metadata::Collection& mds)
 }
 
 template <typename LockType>
-std::unique_ptr<types::source::Blob> WIndex<LockType>::index(const Metadata& md,
-                                                             uint64_t ofs)
+std::optional<int64_t> WIndex<LockType>::index(const Metadata& md, uint64_t ofs)
 {
-    std::unique_ptr<types::source::Blob> res;
     if (!m_insert.compiled())
         compile_insert();
     Inserter<LockType> inserter(*this, md);
@@ -673,18 +713,13 @@ std::unique_ptr<types::source::Blob> WIndex<LockType>::index(const Metadata& md,
     m_get_current.reset();
     inserter.bind_get_current(m_get_current);
     while (m_get_current.step())
-        res = types::source::Blob::create_unlocked(
-            session().format, session().root, segment->relpath(),
-            m_get_current.fetch<uint64_t>(0), m_get_current.fetch<uint64_t>(1));
-    if (res)
-        return res;
+        return m_get_current.fetch<int64_t>(0);
 
     m_insert.reset();
     inserter.bind_insert(m_insert, ofs);
     while (m_insert.step())
         ;
-
-    return res;
+    return std::optional<int64_t>();
 }
 
 template <typename LockType>

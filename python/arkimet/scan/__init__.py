@@ -5,7 +5,7 @@ import logging
 import pkgutil
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, IO
 
 import _arkimet
 
@@ -32,11 +32,15 @@ class DataFormatScanner(abc.ABC):
     """
 
     @abc.abstractmethod
-    def scan_file(self, path: Path, md: "arkimet.Metadata") -> None:
+    def scan_file(self, path: Path) -> "Iterable[arkimet.Metadata]":
         """Scan metadata for the given file."""
 
     @abc.abstractmethod
-    def scan_data(self, data: bytes, md: "arkimet.Metadata") -> None:
+    def scan_pipe(self, file: IO[bytes]) -> "Iterable[arkimet.Metadata]":
+        """Scan metadata for the given file."""
+
+    @abc.abstractmethod
+    def scan_data(self, data: bytes) -> "arkimet.Metadata":
         """Scan metadata for the given file."""
 
 

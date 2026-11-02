@@ -47,6 +47,7 @@ libarkimet_sources = [
     'types/bundle.cc',
     'types/utils.cc',
     'types/encoded.cc',
+    'types/field.cc',
     'types/values.cc',
     'types/source.cc',
     'types/source/blob.cc',
@@ -126,7 +127,7 @@ libarkimet_sources = [
     'segment/iseg/index.cc',
     'formatter.cc',
     'data.cc',
-    'data/mock.cc',
+    'data/bufr.cc',
     'data/odimh5.cc',
     'data/netcdf.cc',
     'data/jpeg.cc',
@@ -175,10 +176,6 @@ if eccodes_dep.found()
     libarkimet_sources += ['data/grib.cc']
 endif
 
-if dballe_dep.found()
-    libarkimet_sources += ['data/bufr.cc']
-endif
-
 if meteo_vm2_dep.found()
     libarkimet_sources += ['utils/vm2.cc', 'data/vm2.cc']
 endif
@@ -198,7 +195,6 @@ libarkimet = both_libraries('arkimet',
                 lua_dep,
                 lzo_dep,
                 eccodes_dep,
-                dballe_dep,
                 meteo_vm2_dep,
                 libarchive_dep,
                 libzip_dep,
@@ -210,9 +206,7 @@ libarkimet = both_libraries('arkimet',
         ],
 )
 
-if python3.found()
-    subdir('python')
-endif
+subdir('python')
 
 
 #
@@ -232,7 +226,9 @@ testlib = static_library('testlib', [
     'segment/tests.cc',
     'segment/data/tests.cc',
     'dataset/tests.cc',
-], include_directories: toplevel_inc)
+], include_directories: toplevel_inc,
+   dependencies: [python3.dependency()]
+)
 
 test_core_sources = [
     'tests/tests-test.cc',
@@ -268,6 +264,7 @@ test_core_sources = [
     'types/bundle-test.cc',
     'types/utils-test.cc',
     'types/encoded-test.cc',
+    'types/field-test.cc',
     'types/values-test.cc',
     'types/source-test.cc',
     'types/reftime-test.cc',
@@ -322,7 +319,7 @@ test_core_sources = [
     'matcher/task-test.cc',
     'matcher/quantity-test.cc',
     'data-test.cc',
-    'data/mock-test.cc',
+    'data/bufr-test.cc',
     'data/odimh5-test.cc',
     'data/netcdf-test.cc',
     'data/jpeg-test.cc',
@@ -336,10 +333,6 @@ test_core_sources = [
 
 if eccodes_dep.found()
     test_core_sources += ['data/grib-test.cc']
-endif
-
-if dballe_dep.found()
-    test_core_sources += ['data/bufr-test.cc']
 endif
 
 if meteo_vm2_dep.found()
@@ -451,9 +444,9 @@ foreach test_info: [
           thread_dep,
           sqlite3_dep,
           eccodes_dep,
-          dballe_dep,
           meteo_vm2_dep,
           libcurl_dep,
+          python3.dependency(embed: true),
       ]
   )
 

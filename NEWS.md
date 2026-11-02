@@ -2,6 +2,12 @@
 
 * Overwrite spurious files after the last committed sequence in directory
   segments (#315)
+* Refactored scanning code to make space for new styles of plugin (#372)
+* C++ unit tests now use Python scanning code instead of a mock C++ version
+* `arki-bufr-prepare` now only needs wreport's python library, and doesn't
+  depend on Arkimet on DB-All.e in any way
+* Removed dependency on C++ DB-All.e libraries: BUFR scanning code now relies
+  only on DB-All.e python libraries
 
 # New in version 1.68
 

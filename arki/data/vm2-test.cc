@@ -26,16 +26,15 @@ class Tests : public TestCase
 
 void Tests::register_tests()
 {
-    add_method("scan_file_multi", [] {
+    add_method("scan_file", [] {
         auto basedir = std::filesystem::current_path() / "inbound";
         auto src     = basedir / "test.vm2";
         data::vm2::Scanner scanner;
         std::vector<std::shared_ptr<Metadata>> mds;
-        wassert_true(
-            scanner.scan_file_multi(src, [&](std::shared_ptr<Metadata> md_) {
-                mds.emplace_back(md_);
-                return true;
-            }));
+        wassert_true(scanner.scan_file(src, [&](std::shared_ptr<Metadata> md_) {
+            mds.emplace_back(md_);
+            return true;
+        }));
         wassert(actual(mds.size()) == 4u);
 
         wassert(
@@ -94,20 +93,6 @@ void Tests::register_tests()
         wassert(actual_type(mds[3]->source())
                     .is_source_inline(DataFormat::VM2, 32));
         wassert_true(mds[3]->has_cached_data());
-    });
-
-    add_method("scan_file_single", [] {
-        auto basedir = std::filesystem::current_path() / "inbound";
-        auto src     = basedir / "single.vm2";
-        data::vm2::Scanner scanner;
-        std::shared_ptr<Metadata> md = scanner.scan_file_single(src);
-        wassert_true(md.get());
-        wassert(
-            actual_type(md->source())
-                .is_source_blob(DataFormat::VM2, basedir, "single.vm2", 0, 34));
-        wassert_true(md->has_cached_data());
-        // read_data fails as the blob is not associated with a reader
-        wassert_throws(std::runtime_error, md->sourceBlob().read_data());
     });
 
     add_method("scan_data", [] {

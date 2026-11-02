@@ -1,10 +1,13 @@
-#include "arki/utils/testrunner.h"
-#include "arki/utils/term.h"
 #include "arki/core/lock.h"
+#include "arki/python/utils/core.h"
 #include "arki/runtime.h"
-#include <signal.h>
-#include <cstdlib>
+#include "arki/utils/term.h"
+#include "arki/utils/testrunner.h"
 #include <arki/nag.h>
+#include <cstdlib>
+#include <signal.h>
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 
 using namespace std;
 
@@ -17,17 +20,16 @@ struct ArkiRunner
 {
     arki::utils::term::Terminal output;
     arki::utils::tests::FilteringTestController* controller = nullptr;
-    bool run_all = true;
-    bool verbose = false;
-    bool stats = false;
+    bool run_all                                            = true;
+    bool verbose                                            = false;
+    bool stats                                              = false;
 
-    ArkiRunner()
-        : output(stdout)
+    ArkiRunner() : output(stdout)
     {
         if (getenv("TEST_VERBOSE"))
         {
             verbose = true;
-            stats = true;
+            stats   = true;
         }
 
         if (getenv("TEST_STATS"))
@@ -38,32 +40,29 @@ struct ArkiRunner
         else
             controller = new arki::utils::tests::SimpleTestController(output);
     }
-    ~ArkiRunner()
-    {
-        delete controller;
-    }
+    ~ArkiRunner() { delete controller; }
 
     bool setup()
     {
         if (const char* allowlist = getenv("TEST_WHITELIST"))
         {
-            run_all = false;
+            run_all               = false;
             controller->allowlist = allowlist;
         }
         if (const char* allowlist = getenv("TEST_ONLY"))
         {
-            run_all = false;
+            run_all               = false;
             controller->allowlist = allowlist;
         }
 
         if (const char* blocklist = getenv("TEST_BLACKLIST"))
         {
-            run_all = false;
+            run_all               = false;
             controller->blocklist = blocklist;
         }
         if (const char* blocklist = getenv("TEST_EXCEPT"))
         {
-            run_all = false;
+            run_all               = false;
             controller->blocklist = blocklist;
         }
         return false;
@@ -72,7 +71,7 @@ struct ArkiRunner
     auto run()
     {
         using namespace arki::utils::tests;
-        auto& tests = arki::utils::tests::TestRegistry::get();
+        auto& tests      = arki::utils::tests::TestRegistry::get();
         auto all_results = tests.run_tests(*controller);
         TestResultStats rstats(all_results);
         rstats.print_results(output);
@@ -83,24 +82,68 @@ struct ArkiRunner
     }
 };
 
-int main(int argc, const char* argv[])
+class tests_noop : public std::exception
 {
-    arki::nag::init(false, false, true);
-    arki::init();
-    arki::core::lock::test_set_nowait_default(true);
+};
 
-    signal(SIGSEGV,signal_to_exception);
-    signal(SIGILL,signal_to_exception);
+static auto run_tests()
+{
+    arki::python::ReleaseGIL release_gil;
 
     // Run arki::tests based tests
     ArkiRunner arki_runner;
     if (arki_runner.setup())
-        return 0;
+        throw tests_noop();
 
-    auto result = arki_runner.run();
-    if (result.skipped)
-        // Signal skipped tests rather than failed
-        return 77;
-    else
-        return result.success ? 0 : 1;
+    return arki_runner.run();
+}
+
+struct WithPython
+{
+    WithPython()
+    {
+        Py_Initialize();
+        PyEval_InitThreads();
+    }
+
+    ~WithPython()
+    {
+        if (Py_FinalizeEx() != 0)
+        {
+            fprintf(stderr, "Py_FinalizeExr returned an error\n");
+        }
+    }
+};
+
+int main(int argc, const char* argv[])
+{
+    WithPython with_python;
+    arki::nag::init(false, false, true);
+    arki::init();
+    arki::core::lock::test_set_nowait_default(true);
+
+    if (PyImport_ImportModule("arkimet") == nullptr)
+    {
+        PyErr_Print();
+        fprintf(stderr, "Cannot load arkimet module\n");
+        return 1;
+    }
+
+    signal(SIGSEGV, signal_to_exception);
+    signal(SIGILL, signal_to_exception);
+
+    try
+    {
+        arki::utils::tests::TestResultStats result = run_tests();
+
+        if (result.skipped)
+            // Signal skipped tests rather than failed
+            return 77;
+        else
+            return result.success ? 0 : 1;
+    }
+    catch (tests_noop&)
+    {
+        return 0;
+    }
 }

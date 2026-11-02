@@ -1,6 +1,8 @@
 import os
 import unittest
+from pathlib import Path
 
+import arkimet
 from arkimet.test import SessionMixin
 
 
@@ -331,8 +333,8 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
         self.assertEqual(md["product"], "BUFR(255, 255, 000, t=temp)")
         self.assertEqual(md["area"], "GRIB(lat=4552620, lon=1224850)")
         self.assertEqual(md["proddef"], "GRIB(blo=0, sta=1)")
-        self.assertEqual(md["reftime"], "2013-04-03T00:00:00Z")
         self.assertEqual(md["timerange"], "Timedef(72h)")
+        self.assertEqual(md["reftime"], "2013-04-03T00:00:00Z")
         self.assertNotIn("run", md)
         self.assertNotIn("level", md)
 
@@ -340,7 +342,8 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
         """
         Test scanning a bufr with all sorts of wrong dates
         """
-        mds = self.read("inbound/wrongdate.bufr")
+        with self.assertLogs("arkimet.scan.bufr") as lg:
+            mds = self.read("inbound/wrongdate.bufr")
         self.assertEqual(len(mds), 6)
 
         self.assertBufrSource(mds[0], "inbound/wrongdate.bufr", 0, 242)
@@ -350,3 +353,29 @@ class TestScanBufr(SessionMixin, unittest.TestCase):
         self.assertNotIn("reftime", mds[3])
         self.assertNotIn("reftime", mds[4])
         self.assertNotIn("reftime", mds[5])
+
+        self.assertEqual(len(lg.output), 12)
+        for i in range(12):
+            self.assertRegex(
+                lg.output[i],
+                r"WARNING:arkimet\.scan\.bufr:.+/wrongdate\.bufr\+\d+:",
+                r" (interpretation of BUFR contents failed"
+                r"|BUFR has an invalid reference time):"
+                r" .+(is not between|is out of range for).+",
+            )
+
+    def test_usn(self):
+        scanner = arkimet.scan.bufr.bufr_scanner
+        inbound = Path("inbound")
+        for name, expected in (
+            ("acars.bufr", 0),
+            ("ship.bufr", 1),
+            ("synop-gts.bufr", 0),
+            ("synop-gts-usn2.bufr", 2),
+        ):
+            with self.subTest(name=name):
+                path = inbound / name
+                mds = list(scanner.scan_file(path))
+                self.assertEqual(len(mds), 1)
+                usn = scanner.update_sequence_number(mds[0])
+                self.assertEqual(usn, expected)

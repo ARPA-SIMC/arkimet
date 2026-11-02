@@ -32,6 +32,29 @@ using arki::metadata::Collection;
 namespace arki::segment::data::dir {
 
 namespace {
+std::shared_ptr<Metadata> scan_file_single(arki::data::Scanner& scanner,
+                                           const std::filesystem::path& path)
+{
+    std::shared_ptr<Metadata> md;
+
+    scanner.scan_file(path, [&](std::shared_ptr<Metadata> md_) {
+        if (md.get())
+        {
+            nag::warning("%s: data file contains more than one data instance, "
+                         "considering only the first one",
+                         path.c_str());
+
+            return false;
+        }
+        md = md_;
+        return true;
+    });
+
+    if (!md.get())
+        throw std::runtime_error(path.native() + " contains no data");
+
+    return md;
+}
 
 struct Creator : public AppendCreator
 {
@@ -220,7 +243,7 @@ struct CheckBackend : public AppendCheckBackend
                     SequenceFile::data_fname(idx, segment.format());
                 try
                 {
-                    scanner->scan_file_single(fname);
+                    scan_file_single(*scanner, fname);
                 }
                 catch (std::exception& e)
                 {
@@ -921,7 +944,7 @@ bool Scanner::scan(std::shared_ptr<segment::Reader> reader,
     for (const auto& fi : on_disk)
     {
         auto md =
-            scanner->scan_file_single(segment.abspath() / fi.second.fname);
+            scan_file_single(*scanner, segment.abspath() / fi.second.fname);
         md->set_source(Source::createBlob(reader, fi.first, fi.second.size));
         if (!dest(md))
             return false;
@@ -941,7 +964,8 @@ bool Scanner::scan(std::function<void(const std::string&)> reporter,
         std::shared_ptr<Metadata> md;
         try
         {
-            md = scanner->scan_file_single(segment.abspath() / fi.second.fname);
+            md =
+                scan_file_single(*scanner, segment.abspath() / fi.second.fname);
         }
         catch (std::exception& e)
         {

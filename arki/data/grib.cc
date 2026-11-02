@@ -7,7 +7,6 @@
 #include "arki/utils/files.h"
 #include "arki/utils/string.h"
 #include "arki/utils/sys.h"
-#include "mock.h"
 #include <cstring>
 #ifdef HAVE_GRIBAPI
 #include <grib_api.h>
@@ -36,40 +35,10 @@ namespace arki::data::grib {
 #ifdef HAVE_GRIBAPI
 
 /*
- * GribHandle
+ * Scan
  */
 
-GribHandle::GribHandle(grib_context* context, FILE* in)
-{
-    int griberror;
-    gh = grib_handle_new_from_file(context, in, &griberror);
-    if (!gh && griberror == GRIB_END_OF_FILE)
-        return;
-    check_grib_error(griberror, "reading GRIB from file");
-}
-GribHandle::~GribHandle()
-{
-    if (gh)
-    {
-        grib_handle_delete(gh);
-        gh = nullptr;
-    }
-}
-
-void GribHandle::close()
-{
-    if (!gh)
-        return;
-
-    check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
-    gh = nullptr;
-}
-
-/*
- * Scanner
- */
-
-Scanner::Scanner()
+Scan::Scan()
 {
     // Get a grib_api context
     context = grib_context_get_default();
@@ -81,204 +50,195 @@ Scanner::Scanner()
     grib_multi_support_off(context);
 }
 
-void Scanner::set_source_inline(grib_handle* gh, Metadata& md)
+Scan::~Scan()
 {
-    // Get the encoded GRIB buffer from the GRIB handle
+    if (gh)
+    {
+        grib_handle_delete(gh);
+        gh = nullptr;
+    }
+}
+
+void Scan::close_handle()
+{
+    if (!gh)
+        return;
+
+    check_grib_error(grib_handle_delete(gh), "cannot close GRIB message");
+    gh = nullptr;
+}
+
+grib_handle* Scan::handle() const { return gh; }
+
+std::vector<uint8_t> Scan::grib_data() const
+{
     const uint8_t* vbuf;
     size_t size;
     check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
                      "cannot access the encoded GRIB data");
-    md.set_source_inline(
-        DataFormat::GRIB,
-        metadata::DataManager::get().to_data(
-            DataFormat::GRIB, vector<uint8_t>(vbuf, vbuf + size)));
+    return std::vector<uint8_t>(vbuf, vbuf + size);
 }
 
-std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
+/*
+ * ScanFile
+ */
+
+ScanFile::ScanFile(const std::filesystem::path& path)
+    : Scan(), file(path, "rb"), path(path)
 {
-    grib::GribHandle gh(
-        grib_handle_new_from_message(context, data.data(), data.size()));
+}
+
+bool ScanFile::next()
+{
+    close_handle();
+    int griberror;
+    gh = grib_handle_new_from_file(context, file, &griberror);
     if (!gh)
-        throw std::runtime_error("GRIB memory buffer failed to scan");
-
-    auto md = std::make_shared<Metadata>();
-    set_source_inline(gh, *md);
-    scan(gh, md);
-    gh.close();
-
-    return md;
+    {
+        if (griberror != GRIB_END_OF_FILE)
+            check_grib_error(griberror, "cannot read GRIB from %s",
+                             path.c_str());
+        return false;
+    }
+    return true;
 }
 
-bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              metadata_dest_func dest)
+std::shared_ptr<Metadata> ScanFile::metadata() const
 {
-    files::RAIIFILE in(abspath, "rb");
-    while (true)
-    {
-        grib::GribHandle gh(context, in);
-        if (!gh)
-            break;
-
-        // Get the encoded GRIB buffer from the GRIB handle
-        const uint8_t* vbuf;
-        size_t size;
-        check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
-                         "cannot access the encoded GRIB data");
+    // Create and return a metadata with the right source information
+    auto md   = std::make_shared<Metadata>();
+    auto data = grib_data();
 
 #if 0
-        // We cannot use this as long is too small for 64bit file offsets
-        long offset;
-        check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
+    // We cannot use this as long is too small for 64bit file offsets
+    long offset;
+    check_grib_error(grib_get_long(gh, "offset", &offset), "reading offset");
 #endif
-        off_t offset = ftello(in);
-        offset -= size;
-        std::vector<uint8_t> data(vbuf, vbuf + size);
+    off_t offset = ftello(file.fd);
+    offset -= data.size();
 
-        auto md = std::make_shared<Metadata>();
-        md->set_source(arki::types::Source::createBlobUnlocked(
-            DataFormat::GRIB, abspath.parent_path(), abspath.filename(), offset,
-            data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::GRIB, std::move(data)));
-        scan(gh, md);
-        gh.close();
-
-        if (!dest(md))
-            return false;
-    }
-    return true;
-}
-
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
-{
-    std::shared_ptr<Metadata> md;
-    files::RAIIFILE in(abspath, "rb");
-    {
-        grib::GribHandle gh(context, in);
-        if (!gh)
-            throw std::runtime_error(abspath.native() +
-                                     " contains no GRIB data");
-
-        // Get the encoded GRIB buffer from the GRIB handle
-        const uint8_t* vbuf;
-        size_t size;
-        check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
-                         "cannot access the encoded GRIB data");
-        std::vector<uint8_t> data(vbuf, vbuf + size);
-
-        md = std::make_shared<Metadata>();
-        md->set_source(arki::types::Source::createBlobUnlocked(
-            DataFormat::GRIB, abspath.parent_path(), abspath.filename(), 0,
-            data.size()));
-        md->set_cached_data(metadata::DataManager::get().to_data(
-            DataFormat::GRIB, std::move(data)));
-        scan(gh, md);
-        gh.close();
-    }
-
-    {
-        grib::GribHandle gh(context, in);
-        if (gh)
-            throw std::runtime_error(abspath.native() +
-                                     " contains more than one GRIB data");
-        gh.close();
-    }
+    md->set_source(arki::types::Source::createBlobUnlocked(
+        DataFormat::GRIB, path.parent_path(), path.filename(), offset,
+        data.size()));
+    md->set_cached_data(metadata::DataManager::get().to_data(DataFormat::GRIB,
+                                                             std::move(data)));
 
     return md;
 }
 
-bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
-                        metadata_dest_func dest)
+/*
+ * ScanPipe
+ */
+
+ScanPipe::ScanPipe(sys::NamedFileDescriptor& ifd) : file(ifd, "rb") {}
+
+bool ScanPipe::next()
 {
-    files::RAIIFILE in(infd, "rb");
-    while (true)
+    close_handle();
+    int griberror;
+    gh = grib_handle_new_from_file(context, file, &griberror);
+    if (!gh)
     {
-        grib::GribHandle gh(context, in);
-        if (!gh)
-            break;
-        auto md = std::make_shared<Metadata>();
-        set_source_inline(gh, *md);
-        scan(gh, md);
-        if (!dest(md))
-            return false;
+        if (griberror != GRIB_END_OF_FILE)
+            check_grib_error(griberror, "cannot read GRIB from pipe");
+        return false;
     }
     return true;
 }
 
-void MockScanner::scan(grib_handle* gh, std::shared_ptr<Metadata> md)
+std::shared_ptr<Metadata> ScanPipe::metadata() const
 {
-    // Get the encoded GRIB buffer from the GRIB handle
-    const uint8_t* vbuf;
-    size_t size;
-    check_grib_error(grib_get_message(gh, (const void**)&vbuf, &size),
-                     "cannot access the encoded GRIB data");
-    auto new_md = MockEngine::get().lookup(vbuf, size);
-    md->merge(*new_md);
+    // Create and return a metadata with the right source information
+    auto md = std::make_shared<Metadata>();
+    md->set_source_inline(
+        DataFormat::GRIB,
+        metadata::DataManager::get().to_data(DataFormat::GRIB, grib_data()));
+    return md;
+}
+
+/*
+ * ScanData
+ */
+
+ScanData::ScanData(const std::vector<uint8_t>& data) : data(data) {}
+
+bool ScanData::next()
+{
+    // Only generate one GRIB
+    bool eof = gh != nullptr;
+    close_handle();
+    if (eof)
+        return false;
+
+    gh = grib_handle_new_from_message(context, data.data(), data.size());
+    if (!gh)
+        throw std::runtime_error("cannot read GRIB from memory");
+    return true;
+}
+
+std::shared_ptr<Metadata> ScanData::metadata() const
+{
+    // Create and return a metadata with the right source information
+    auto md = std::make_shared<Metadata>();
+    md->set_source_inline(
+        DataFormat::GRIB,
+        metadata::DataManager::get().to_data(DataFormat::GRIB, grib_data()));
+    return md;
 }
 
 #else
 
-/*
- * GribHandle (fallback)
- */
+Scan::Scan() { throw std::runtime_error("GRIB support is not available"); }
 
-GribHandle::GribHandle(grib_context* context, FILE* in)
-{
-    throw std::runtime_error("GRIB support is not available");
-}
-GribHandle::~GribHandle() {}
+Scan::~Scan() {}
 
-void GribHandle::close()
+void Scan::close_handle() {}
+
+grib_handle* Scan::handle() const
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-/*
- * Scanner (fallback)
- */
-
-Scanner::Scanner()
+std::vector<uint8_t> Scan::grib_data() const
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-void Scanner::set_source_blob(grib_handle* gh,
-                              std::shared_ptr<segment::Reader> reader, FILE* in,
-                              Metadata& md)
+ScanFile::ScanFile(const std::filesystem::path& path)
+    : Scan(), file(path, "rb"), path(path)
+{
+}
+
+bool ScanFile::next()
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-void Scanner::set_source_inline(grib_handle* gh, Metadata& md)
+std::shared_ptr<Metadata> ScanFile::metadata() const
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-std::shared_ptr<Metadata> Scanner::scan_data(const std::vector<uint8_t>& data)
+ScanPipe::ScanPipe(sys::NamedFileDescriptor& ifd) : file(ifd, "rb") {}
+
+bool ScanPipe::next()
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-bool Scanner::scan_file_multi(const std::filesystem::path& abspath,
-                              metadata_dest_func dest)
+std::shared_ptr<Metadata> ScanPipe::metadata() const
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-std::shared_ptr<Metadata>
-Scanner::scan_file_single(const std::filesystem::path& abspath)
+ScanData::ScanData(const std::vector<uint8_t>& data) : data(data) {}
+
+bool ScanData::next()
 {
     throw std::runtime_error("GRIB support is not available");
 }
 
-bool Scanner::scan_pipe(core::NamedFileDescriptor& infd,
-                        metadata_dest_func dest)
-{
-    throw std::runtime_error("GRIB support is not available");
-}
-
-std::shared_ptr<Metadata> MockScanner::scan(grib_handle* gh)
+std::shared_ptr<Metadata> ScanPipe::metadata() const
 {
     throw std::runtime_error("GRIB support is not available");
 }

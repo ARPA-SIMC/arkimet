@@ -193,14 +193,15 @@ Writer::acquire_batch_replace_never(arki::metadata::InboundBatch& batch,
         {
             e->destination.clear();
 
-            if (std::unique_ptr<types::source::Blob> old =
+            if (std::optional<int64_t> rowid =
                     index->index(*e->md, data_writer->next_offset()))
             {
+                auto source = index->source_for_rowid(rowid.value());
                 e->md->add_note("Failed to store in '" +
                                 config.destination_name +
                                 "' because the data already exists in " +
                                 segment().relpath().native() + ":" +
-                                std::to_string(old->offset));
+                                std::to_string(source->offset));
                 e->result = arki::metadata::Inbound::Result::DUPLICATE;
                 ++res.count_failed;
             }
@@ -278,34 +279,44 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
             e->destination.clear();
 
             // Try to acquire without replacing
-            if (std::unique_ptr<types::source::Blob> old =
+            if (std::optional<int64_t> rowid =
                     index->index(*e->md, data_writer->next_offset()))
             {
                 // Duplicate detected
 
+                // Read the update sequence number of the old entry
+                auto oldmd = index->metadata_for_rowid(rowid.value());
+                if (!oldmd)
+                {
+                    e->md->add_note(
+                        "Failed to store in '" + config.destination_name +
+                        "': a similar element exists, but it was not possible"
+                        " to load it to compare Update Sequence Numbers");
+                    e->result = arki::metadata::Inbound::Result::ERROR;
+                    ++res.count_failed;
+                    continue;
+                }
+
                 // Read the update sequence number of the new BUFR
-                auto new_scanner =
-                    arki::data::Scanner::get(e->md->source().format);
+                auto scanner = arki::data::Scanner::get(segment().format());
                 int new_usn;
-                if (!new_scanner->update_sequence_number(*e->md, new_usn))
+                if (!scanner->update_sequence_number(e->md, new_usn))
                 {
                     e->md->add_note(
                         "Failed to store in '" + config.destination_name +
                         "' because the dataset already has the data in " +
                         segment().relpath().native() + ":" +
-                        std::to_string(old->offset) +
+                        std::to_string(oldmd->sourceBlob().offset) +
                         " and there is no Update Sequence Number to compare");
                     e->result = arki::metadata::Inbound::Result::DUPLICATE;
                     ++res.count_failed;
                     continue;
                 }
 
-                // Read the update sequence number of the old BUFR
                 auto reader = segment().reader(lock);
-                old->lock(reader);
-                auto old_scanner = arki::data::Scanner::get(old->format);
+                oldmd->sourceBlob().lock(reader);
                 int old_usn;
-                if (!old_scanner->update_sequence_number(*old, old_usn))
+                if (!scanner->update_sequence_number(oldmd, old_usn))
                 {
                     e->md->add_note(
                         "Failed to store in '" + config.destination_name +
@@ -325,7 +336,7 @@ Writer::acquire_batch_replace_higher_usn(arki::metadata::InboundBatch& batch,
                         "Failed to store in '" + config.destination_name +
                         "' because the dataset already has the data in " +
                         segment().relpath().native() + ":" +
-                        std::to_string(old->offset) +
+                        std::to_string(oldmd->sourceBlob().offset) +
                         " with a higher Update Sequence Number");
                     e->result = arki::metadata::Inbound::Result::DUPLICATE;
                     ++res.count_failed;

@@ -62,6 +62,10 @@ void StderrHandler::debug(const char* fmt, va_list ap)
     putc('\n', stderr);
 }
 
+/*
+ * CollectHandler
+ */
+
 CollectHandler::CollectHandler(bool verbose, bool debug)
     : _verbose(verbose), _debug(debug)
 {
@@ -95,6 +99,34 @@ void CollectHandler::debug(const char* fmt, va_list ap)
     if (!_debug)
         return;
     collected.push_back("D:" + format(fmt, ap));
+}
+
+/*
+ * RaiseHandler
+ */
+
+RaiseHandler::RaiseHandler(bool verbose, bool debug)
+    : _verbose(verbose), _debug(debug)
+{
+}
+
+void RaiseHandler::warning(const char* fmt, va_list ap)
+{
+    throw std::runtime_error("warning nag: " + format(fmt, ap));
+}
+
+void RaiseHandler::verbose(const char* fmt, va_list ap)
+{
+    if (!_verbose)
+        return;
+    throw std::runtime_error("verbose nag: " + format(fmt, ap));
+}
+
+void RaiseHandler::debug(const char* fmt, va_list ap)
+{
+    if (!_debug)
+        return;
+    throw std::runtime_error("debug nag: " + format(fmt, ap));
 }
 
 void init(bool verbose, bool debug, bool testing)

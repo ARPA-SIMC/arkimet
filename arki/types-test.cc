@@ -1,10 +1,12 @@
 #include "arki/tests/tests.h"
 #include "arki/types.h"
 #include "arki/types/utils.h"
+#include "arki/utils/string.h"
 
 namespace {
 using namespace std;
 using namespace arki;
+using namespace arki::utils;
 using namespace arki::tests;
 
 class Tests : public TestCase
@@ -49,9 +51,45 @@ struct ImplASub : public ImplA
     ImplASub* clone() const override { return new ImplASub; }
 };
 
+/// Check that a type code serializes properly
+void test_type_code(types::Code code, const std::string& name)
+{
+    wassert(actual(code) < TypeCode::TYPE_MAXCODE);
+    wassert(actual(types::checkCodeName(name)) == code);
+    wassert(actual(types::checkCodeName("  " + name + " ")) == code);
+    wassert(actual(types::checkCodeName("  " + str::upper(name) + " ")) ==
+            code);
+    wassert(actual(types::checkCodeName("  invalid-" + str::upper(name) +
+                                        " ")) == TypeCode::TYPE_INVALID);
+    wassert(actual(types::parseCodeName(name)) == code);
+    wassert_throws(std::runtime_error, types::parseCodeName("invalid-" + name));
+    wassert(actual(types::formatCode(code)) == str::upper(name));
+}
+
 // Check downcast and ucpast
 void Tests::register_tests()
 {
+    add_method("codes", [] {
+        wassert(test_type_code(TYPE_TIME, "time"));
+        wassert(test_type_code(TYPE_ORIGIN, "origin"));
+        wassert(test_type_code(TYPE_PRODUCT, "product"));
+        wassert(test_type_code(TYPE_LEVEL, "level"));
+        wassert(test_type_code(TYPE_TIMERANGE, "timerange"));
+        wassert(test_type_code(TYPE_REFTIME, "reftime"));
+        wassert(test_type_code(TYPE_NOTE, "note"));
+        wassert(test_type_code(TYPE_SOURCE, "source"));
+        wassert(test_type_code(TYPE_ASSIGNEDDATASET, "assigneddataset"));
+        wassert(test_type_code(TYPE_AREA, "area"));
+        wassert(test_type_code(TYPE_PRODDEF, "proddef"));
+        wassert(test_type_code(TYPE_SUMMARYITEM, "summaryitem"));
+        wassert(test_type_code(TYPE_SUMMARYSTATS, "summarystats"));
+        wassert(test_type_code(TYPE_BBOX, "bbox"));
+        wassert(test_type_code(TYPE_RUN, "run"));
+        wassert(test_type_code(TYPE_TASK, "task"));
+        wassert(test_type_code(TYPE_QUANTITY, "quantity"));
+        wassert(test_type_code(TYPE_VALUE, "value"));
+        wassert(test_type_code(TYPE_FIELD, "field"));
+    });
 
     add_method("cast", [] {
         unique_ptr<ImplA> top(new ImplA);

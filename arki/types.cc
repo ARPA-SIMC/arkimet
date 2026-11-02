@@ -57,6 +57,8 @@ Code checkCodeName(const std::string& name)
         return TYPE_QUANTITY;
     if (nname == "value")
         return TYPE_VALUE;
+    if (nname == "field")
+        return TYPE_FIELD;
     return TYPE_INVALID;
 }
 
@@ -88,11 +90,13 @@ std::string formatCode(const Code& c)
         case TYPE_PRODDEF:         return "PRODDEF";
         case TYPE_SUMMARYITEM:     return "SUMMARYITEM";
         case TYPE_SUMMARYSTATS:    return "SUMMARYSTATS";
+        case TYPE_TIME:            return "TIME";
         case TYPE_BBOX:            return "BBOX";
         case TYPE_RUN:             return "RUN";
         case TYPE_TASK:            return "TASK";
         case TYPE_QUANTITY:        return "QUANTITY";
         case TYPE_VALUE:           return "VALUE";
+        case TYPE_FIELD:           return "FIELD";
         default:                   {
             stringstream res;
             res << "unknown(" << (int)c << ")";

@@ -1,15 +1,16 @@
 #include "grib.h"
 #include "arki/exceptions.h"
 #include "arki/metadata.h"
+#include "arki/metadata/data.h"
 #include "arki/nag.h"
 #include "arki/python/common.h"
+#include "arki/python/files.h"
 #include "arki/python/metadata.h"
 #include "arki/python/scan.h"
 #include "arki/python/utils/methods.h"
 #include "arki/python/utils/type.h"
+#include "arki/types/source.h"
 #include <grib_api.h>
-
-using GribHandle = arki::data::grib::GribHandle;
 
 extern "C" {
 PyTypeObject* arkipy_scan_Grib_Type       = nullptr;
@@ -64,37 +65,6 @@ static void load_gribscanner_object()
     // Hold a reference to arki.python.BBox forever once loaded the first time
     gribscanner_object = obj.release();
 }
-
-class PythonGribScanner : public arki::data::grib::Scanner
-{
-protected:
-    void scan(grib_handle* gh, std::shared_ptr<Metadata> md) override
-    {
-        long orig_use_count = md.use_count();
-        AcquireGIL gil;
-        if (!gribscanner_object)
-            load_gribscanner_object();
-
-        pyo_unique_ptr pygh((PyObject*)grib_create(gh));
-        pyo_unique_ptr pymd((PyObject*)metadata_create(md));
-        pyo_unique_ptr obj(throw_ifnull(PyObject_CallMethod(
-            gribscanner_object, "scan", "OO", pygh.get(), pymd.get())));
-
-        // If use_count is > 1, it means we are potentially and unexpectedly
-        // holding all the metadata (and potentially their data) in memory,
-        // while a supported and important use case is to stream out one
-        // metadata at a time
-        pymd.reset(nullptr);
-        if (md.use_count() != orig_use_count)
-            arki::nag::warning(
-                "metadata use count after scan is %ld instead of %ld",
-                md.use_count(), orig_use_count);
-    }
-
-public:
-    PythonGribScanner() {}
-    virtual ~PythonGribScanner() {}
-};
 
 /*
  * Grib python class
@@ -366,15 +336,143 @@ struct gribreader__exit__
 
         try
         {
-            if (self->file)
+            if (self->scan)
             {
-                fclose(self->file);
-                self->file = nullptr;
+                delete self->scan;
+                self->scan = nullptr;
             }
         }
         ARKI_CATCH_RETURN_PYO
 
         Py_RETURN_NONE;
+    }
+};
+
+struct gribreader_from_path : public ClassMethKwargs<gribreader_from_path>
+{
+    constexpr static const char* name      = "from_path";
+    constexpr static const char* signature = "path: str";
+    constexpr static const char* returns   = "arkimet.scan.grib.GribReader";
+    constexpr static const char* summary =
+        "Return a GribReader iterating the given file";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"path", nullptr};
+        PyObject* arg_path          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
+                                         &arg_path))
+            return nullptr;
+
+        try
+        {
+            auto path = path_from_python(arg_path);
+            py_unique_ptr<arkipy_scan_GribReader> result(
+                throw_ifnull(PyObject_New(arkipy_scan_GribReader,
+                                          arkipy_scan_GribReader_Type)));
+            result->scan = new arki::data::grib::ScanFile(path);
+            return (PyObject*)result.release();
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct gribreader_from_pipe : public ClassMethKwargs<gribreader_from_pipe>
+{
+    constexpr static const char* name      = "from_pipe";
+    constexpr static const char* signature = "file: IO[bytes]";
+    constexpr static const char* returns   = "arkimet.scan.grib.GribReader";
+    constexpr static const char* summary =
+        "Return a GribReader iterating the given file.";
+    constexpr static const char* doc =
+        "The file must have a working fileno() method.";
+
+    static std::unique_ptr<arki::data::grib::ScanPipe>
+    from_arkifile(arkipy_File* file)
+    {
+        return std::make_unique<arki::data::grib::ScanPipe>(file->fd);
+    }
+
+    static std::unique_ptr<arki::data::grib::ScanPipe>
+    from_pyfile(PyObject* file)
+    {
+        /* From python 3.9
+        pyo_unique_ptr py_fileno(
+            throw_ifnull(PyObject_CallMethodNoArgs(file, "fileno")));
+            */
+        pyo_unique_ptr py_fileno(
+            throw_ifnull(PyObject_CallMethod(file, "fileno", NULL)));
+        pyo_unique_ptr py_name(
+            throw_ifnull(PyObject_GetAttrString(file, "name")));
+
+        int fileno                 = int_from_python(py_fileno);
+        std::filesystem::path path = path_from_python(py_name);
+        core::NamedFileDescriptor fd(fileno, path);
+        return std::make_unique<arki::data::grib::ScanPipe>(fd);
+    }
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"file", nullptr};
+        PyObject* arg_file          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
+                                         &arg_file))
+            return nullptr;
+
+        try
+        {
+            std::unique_ptr<arki::data::grib::ScanPipe> scanner;
+            if (arkipy_File_Check(arg_file))
+            {
+                scanner = from_arkifile((arkipy_File*)arg_file);
+            }
+            else
+            {
+                scanner = from_pyfile(arg_file);
+            }
+            py_unique_ptr<arkipy_scan_GribReader> result(
+                throw_ifnull(PyObject_New(arkipy_scan_GribReader,
+                                          arkipy_scan_GribReader_Type)));
+            result->scan = scanner.release();
+            return (PyObject*)result.release();
+        }
+        ARKI_CATCH_RETURN_PYO
+    }
+};
+
+struct gribreader_from_bytes : public ClassMethKwargs<gribreader_from_bytes>
+{
+    constexpr static const char* name      = "from_bytes";
+    constexpr static const char* signature = "data: bytes";
+    constexpr static const char* returns   = "arkimet.scan.grib.GribReader";
+    constexpr static const char* summary =
+        "Return a GribReader reading one GRIB from the given bytes";
+
+    static PyObject* run(PyTypeObject* cls, PyObject* args, PyObject* kw)
+    {
+        static const char* kwlist[] = {"data", nullptr};
+        PyObject* arg_data          = nullptr;
+        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
+                                         &arg_data))
+            return nullptr;
+
+        try
+        {
+            char* pydata;
+            Py_ssize_t pydata_len;
+            if (PyBytes_AsStringAndSize(arg_data, &pydata, &pydata_len) == -1)
+                return nullptr;
+
+            const uint8_t* udata = reinterpret_cast<uint8_t*>(pydata);
+            std::vector<uint8_t> data(udata, udata + pydata_len);
+
+            py_unique_ptr<arkipy_scan_GribReader> result(
+                throw_ifnull(PyObject_New(arkipy_scan_GribReader,
+                                          arkipy_scan_GribReader_Type)));
+            result->scan = new arki::data::grib::ScanData(data);
+            return (PyObject*)result.release();
+        }
+        ARKI_CATCH_RETURN_PYO
     }
 };
 
@@ -387,47 +485,34 @@ Enumerate all GRIBs in a file.
 
 This is used to test the GRIB scanner: iterates arkimet.scan.grib.Grib objects
 for each GRIB message in a file.
+
+It implements the context manager protocol so it can be used in a ``with``
+statement.
+
+It generates a sequence of ``(arkimet.scan.Grib, arki.Metadata)`` tuples.
 )";
 
     GetSetters<> getsetters;
-    Methods<gribreader__enter__, gribreader__exit__> methods;
+    Methods<gribreader__enter__, gribreader__exit__, gribreader_from_path,
+            gribreader_from_pipe, gribreader_from_bytes>
+        methods;
 
     static void _dealloc(Impl* self)
     {
-        if (self->file)
+        if (self->scan)
         {
-            fclose(self->file);
-            self->file = nullptr;
+            delete self->scan;
+            self->scan = nullptr;
         }
         Py_TYPE(self)->tp_free(self);
     }
 
     static int _init(arkipy_scan_GribReader* self, PyObject* args, PyObject* kw)
     {
-        static const char* kwlist[] = {"path", NULL};
-        PyObject* arg_path          = nullptr;
-        if (!PyArg_ParseTupleAndKeywords(args, kw, "O", pass_kwlist(kwlist),
-                                         &arg_path))
-            return -1;
-
-        try
-        {
-            auto path  = path_from_python(arg_path);
-            self->file = fopen(path.c_str(), "rb");
-            if (!self->file)
-                throw_file_error(path, "cannot open file");
-
-            self->context = grib_context_get_default();
-            if (!self->context)
-                throw std::runtime_error(
-                    "cannot get grib_api default context: default "
-                    "context is not available");
-
-            // Multi support is off unless a child class specifies otherwise
-            grib_multi_support_off(self->context);
-        }
-        ARKI_CATCH_RETURN_INT
-        return 0;
+        PyErr_SetString(
+            PyExc_NotImplementedError,
+            "use from_* methods to instantiate GribReader instances");
+        return -1;
     }
 
     static PyObject* _iter(arkipy_scan_GribReader* self)
@@ -440,14 +525,18 @@ for each GRIB message in a file.
     {
         try
         {
-            GribHandle gh(self->context, self->file);
-            if (!gh)
+            if (!self->scan->next())
             {
                 PyErr_SetNone(PyExc_StopIteration);
                 return nullptr;
             }
 
-            return (PyObject*)grib_create(gh.release(), true);
+            auto md = self->scan->metadata();
+
+            pyo_unique_ptr py_grib(
+                (PyObject*)grib_create(self->scan->handle(), false));
+            pyo_unique_ptr py_metadata((PyObject*)metadata_create(md));
+            return PyTuple_Pack(2, py_grib.get(), py_metadata.get());
         }
         ARKI_CATCH_RETURN_PYO
     }
@@ -485,9 +574,11 @@ void register_scan_grib(PyObject* scan)
     if (PyModule_AddObject(scan, "grib", grib.release()) == -1)
         throw PythonException();
 }
+#if 0
 void init_scanner_grib()
 {
     arki::data::Scanner::register_scanner(
         DataFormat::GRIB, std::make_shared<PythonGribScanner>());
 }
+#endif
 } // namespace arki::python::scan

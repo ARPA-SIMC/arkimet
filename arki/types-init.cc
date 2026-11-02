@@ -33,6 +33,7 @@
 #include <arki/types/area.h>
 #include <arki/types/assigneddataset.h>
 #include <arki/types/bbox.h>
+#include <arki/types/field.h>
 #include <arki/types/level.h>
 #include <arki/types/note.h>
 #include <arki/types/origin.h>
@@ -76,6 +77,7 @@ void init_default_types()
     Note::init();
     Source::init();
     AssignedDataset::init();
+    Field::init();
 }
 
 } // namespace types

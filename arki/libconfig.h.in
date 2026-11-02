@@ -1,9 +1,6 @@
 #ifndef ARKI_LIBCONFIG_H
 #define ARKI_LIBCONFIG_H
 
-/* dballe functions are available */
-#undef HAVE_DBALLE
-
 /* GEOS is available */
 #undef HAVE_GEOS
 
