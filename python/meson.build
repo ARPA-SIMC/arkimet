@@ -68,7 +68,6 @@ python3.install_sources(
 
 python3.install_sources(
     'arkimet/cmdline/base.py',
-    'arkimet/cmdline/bufr_prepare.py',
     'arkimet/cmdline/check.py',
     'arkimet/cmdline/cmdline.py',
     'arkimet/cmdline/dump.py',

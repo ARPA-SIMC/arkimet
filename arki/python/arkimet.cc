@@ -7,7 +7,6 @@
 #include "arki/libconfig.h"
 #include "arki/matcher/aliases.h"
 #include "arki/nag.h"
-#include "arki/python/arki-bufr-prepare.h"
 #include "arki/python/arki-check.h"
 #include "arki/python/arki-dump.h"
 #include "arki/python/arki-query.h"
@@ -527,7 +526,6 @@ PyMODINIT_FUNC PyInit__arkimet(void)
         register_arki_check(cmdline);
         register_arki_dump(cmdline);
         register_arki_xargs(cmdline);
-        register_arki_bufr_prepare(cmdline);
         if (PyModule_AddObject(m, "cmdline", cmdline.release()) == -1)
             throw PythonException();
 

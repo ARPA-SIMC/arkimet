@@ -38,7 +38,6 @@ py_arkimet_sources = files(
     'arki-check.cc',
     'arki-dump.cc',
     'arki-xargs.cc',
-    'arki-bufr-prepare.cc',
     'arkimet.cc',
 )
 

@@ -1,6 +1,211 @@
 #!/usr/bin/env python3
-from arkimet.cmdline.bufr_prepare import BufrPrepare
+
+import argparse
+import datetime as dt
+import logging
+import os
+from contextlib import ExitStack
+from pathlib import Path
 import sys
+from typing import IO, Generator, Optional
+
+import wreport
+
+log = logging.getLogger("arki-bufr-prepare")
+
+
+class PosixArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_help(sys.stderr)
+        self.exit(os.EX_USAGE, "%s: error: %s\n" % (self.prog, message))
+
+
+class BufrPrepare:
+    """
+    Read BUFR messages, and encode each subsection in a separate message.
+    """
+
+    #: Default output file descriptor
+    outfd: IO[bytes]
+
+    def __init__(self) -> None:
+        #: ExitStack used to track lifetimes of temporary context managers
+        self.stack = ExitStack()
+        #: Cached file descriptor for outputting BUFRs that fail to decode
+        self._failfd: Optional[IO[bytes]] = None
+        parser = self.make_parser()
+        self.args = parser.parse_args()
+        self.setup_logging()
+
+    def make_parser(self) -> PosixArgumentParser:
+        """Create the argument parser."""
+        assert self.__doc__ is not None
+        parser = PosixArgumentParser(description=self.__doc__.strip())
+        parser.add_argument(
+            "--verbose", "-v", action="store_true", help="verbose output"
+        )
+        parser.add_argument("--debug", action="store_true", help="debug output")
+        parser.add_argument(
+            "-o",
+            "--output",
+            metavar="file",
+            help="write the output to the given file instead of standard output",
+        )
+        parser.add_argument(
+            "--fail",
+            metavar="file",
+            help="do not ignore BUFR data that could not be decoded,"
+            " but write it to the given file",
+        )
+        parser.add_argument(
+            "--usn",
+            metavar="number",
+            type=lambda x: int(x) if x is not None else None,
+            help="overwrite the update sequence number of every BUFR message with this value",
+        )
+        parser.add_argument(
+            "files",
+            nargs="*",
+            type=Path,
+            action="store",
+            help="BUFR files to process",
+        )
+        return parser
+
+    def setup_logging(self):
+        log_format = "%(levelname)s %(message)s"
+        level = logging.WARN
+        if self.args.debug:
+            level = logging.DEBUG
+        elif self.args.verbose:
+            level = logging.INFO
+        logging.basicConfig(level=level, stream=sys.stderr, format=log_format)
+
+    @property
+    def failfd(self) -> IO[bytes]:
+        """Output file to use to write messsages that failed to decode."""
+        if self._failfd is None:
+            if self.args.fail:
+                self._failfd = self.stack.enter_context(
+                    open(self.args.fail, "wb")
+                )
+            else:
+                self._failfd = self.outfd
+        return self._failfd
+
+    def get_datetime(self, subset: wreport.Subset) -> dt.datetime | None:
+        """Get the datetime (if present) from the variables in a subset."""
+
+        year: int | None = None
+        month: int | None = None
+        day: int | None = None
+        hour: int | None = None
+        minute: int | None = None
+        second: int = 0
+
+        for var in subset:
+            if var.code == "B04001":
+                year = var.enqi()
+            elif var.code == "B04002":
+                month = var.enqi()
+            elif var.code == "B04003":
+                day = var.enqi()
+            elif var.code == "B004004":
+                hour = var.enqi()
+            elif var.code == "B004005":
+                minute = var.enqi()
+            elif var.code == "B004006":
+                second = var.enqi()
+            # Stop scanning the subset after the datetime sequence has been
+            # seen
+            if year is not None and var.code[0] == "B" and var.code[1] != "0":
+                break
+
+        if (
+            year is None
+            or month is None
+            or day is None
+            or hour is None
+            or minute is None
+        ):
+            return None
+
+        return dt.datetime(year, month, day, hour, minute, second)
+
+    def split(
+        self, bulletin: wreport.Bulletin, idx: int
+    ) -> Generator[bytes, None, None]:
+        for subset in bulletin:
+            new_bulletin = bulletin.copy_without_subsets()
+            new_bulletin.append(subset)
+            # Try to set a more correct reftime from the subset contents
+            try:
+                vars_datetime = self.get_datetime(subset)
+                if vars_datetime is not None:
+                    new_bulletin.reftime = vars_datetime
+            except Exception as exc:
+                log.warning(
+                    "%s:%ld: BUFR #%d failed to find datetime in data: %s.",
+                    bulletin.fname,
+                    bulletin.offset,
+                    idx,
+                    exc,
+                )
+                pass
+            yield new_bulletin.encode()
+
+    def prepare(self, infd: IO[bytes]) -> None:
+        """Process BUFR from infd to outfd."""
+        for idx, (offset, bufr_raw) in enumerate(
+            wreport.read_bufr_raw(infd), start=1
+        ):
+            try:
+                bulletin = wreport.Bulletin.decode_bufr(
+                    bufr_raw, fname=infd.name, offset=offset
+                )
+            except Exception as exc:
+                log.warning(
+                    "%s:%ld: BUFR #%d failed to decode: %s.",
+                    infd.name,
+                    offset,
+                    idx,
+                    exc,
+                )
+                self.failfd.write(bufr_raw)
+                continue
+
+            if self.args.usn is not None:
+                bulletin.update_sequence_number = self.args.usn
+
+            # Compression only makes sense for multi-subset bulletins
+            bulletin.compression = False
+
+            for encoded in self.split(bulletin, idx):
+                self.outfd.write(encoded)
+
+    def prepare_all(self) -> None:
+        """Process all inputs to outfd."""
+        if not self.args.files:
+            self.prepare(sys.stdin.buffer)
+        else:
+            for file in self.args.files:
+                with file.open("rb") as infd:
+                    self.prepare(infd)
+
+    def run(self) -> None:
+        if self.args.output:
+            self.outfd = self.stack.enter_context(open(self.args.output, "wb"))
+        else:
+            self.outfd = sys.stdout.buffer
+
+        self.prepare_all()
+
+
+def main():
+    app = BufrPrepare()
+    with app.stack:
+        app.run()
+
 
 if __name__ == "__main__":
-    sys.exit(BufrPrepare.main())
+    sys.exit(main())

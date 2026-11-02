@@ -1,42 +1,54 @@
+import datetime as dt
+import io
 import tempfile
 import unittest
+import shutil
+import subprocess
+from typing import ClassVar, Any
 
-from arkimet.cmdline.bufr_prepare import BufrPrepare
-from arkimet.test import CmdlineTestMixin
-
-# Bufr support uses dballe, which uses libc's FILE* I/O, which doesn't
-# cooperate well with being called multiple times with multiple
-# redirect/freopen functions, which we currently cannot access from python.
-# Therefore, we skip stdin/stdout tests here.
+import wreport
 
 
-class TestArkiBufrPrepare(CmdlineTestMixin, unittest.TestCase):
-    command = BufrPrepare
+class TestArkiBufrPrepare(unittest.TestCase):
+    command: ClassVar[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        command = shutil.which("arki-bufr-prepare")
+        assert command is not None
+        cls.command = command
+
+    def invoke(self, *args: str, **kwargs: Any) -> subprocess.CompletedProcess:
+        kwargs.setdefault("stdout", subprocess.PIPE)
+        kwargs.setdefault("stderr", subprocess.PIPE)
+        return subprocess.run([self.command, *args], **kwargs)
 
     def test_empty(self):
-        out = self.call_output_success("/dev/null")
-        self.assertEqual(out, "")
+        res = self.invoke(input="")
+        self.assertEqual(res.stdout, b"")
+        print(res.stderr.decode())
+        self.assertEqual(res.stderr, b"")
 
-    #     def test_passthrough(self):
-    #         with open("inbound/test.bufr", "rb") as fd:
-    #             data = fd.read()
-    #
-    #         out = CatchOutput()
-    #         with out.redirect(input=data):
-    #             res = BufrPrepare.main(args=[])
-    #         self.assertEqual(out.stderr, b"")
-    #         self.assertEqual(out.stdout, data)
-    #         self.assertIsNone(res)
+    def test_split(self):
+        res = self.invoke("inbound/multisubset.bufr")
+        self.assertEqual(res.stderr, b"")
+        with io.BytesIO(res.stdout) as fd:
+            output = list(wreport.read_bufr_headers(fd))
 
-    def test_files(self):
+        self.assertEqual(len(output), 14)
+        self.assertEqual(output[0].reftime, dt.datetime(2022, 2, 14, 9, 0, 3))
+        self.assertEqual(output[1].reftime, dt.datetime(2022, 2, 14, 9, 0, 3))
+        self.assertEqual(output[13].reftime, dt.datetime(2022, 2, 14, 9, 0, 3))
+
+    def test_output_file(self):
         with tempfile.NamedTemporaryFile("w+b") as tf:
-            out = self.call_output_success("-o", tf.name, "inbound/test.bufr")
+            res = self.invoke("inbound/multisubset.bufr", "-o", tf.name)
+            self.assertEqual(res.stderr, b"")
             tf.seek(0)
-            dest = tf.read()
-        self.assertEqual(out, "")
+            output = list(wreport.read_bufr_headers(tf))
 
-        self.assertEqual(len(dest), 634)
-        with open("inbound/test.bufr", "rb") as fd:
-            src = fd.read()
-
-        self.assertEqual(src, dest)
+        self.assertEqual(len(output), 14)
+        self.assertEqual(output[0].reftime, dt.datetime(2022, 2, 14, 9, 0, 3))
+        self.assertEqual(output[1].reftime, dt.datetime(2022, 2, 14, 9, 0, 3))
+        self.assertEqual(output[13].reftime, dt.datetime(2022, 2, 14, 9, 0, 3))
