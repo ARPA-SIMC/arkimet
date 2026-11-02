@@ -198,4 +198,42 @@ void TestSubprocess::during(std::function<void()> f)
     wait();
 }
 
+ExpectNags::ExpectNags(const char* file, int line,
+                       const arki::utils::tests::LocationInfo& local_info,
+                       bool verbose, bool debug)
+    : file(file), line(line), local_info(local_info),
+      nag_messages(verbose, debug)
+{
+    nag_messages.install();
+}
+
+ExpectNags::~ExpectNags() noexcept(false)
+{
+    if (check_pos < nag_messages.collected.size())
+    {
+        std::stringstream str;
+        str << (nag_messages.collected.size() - check_pos)
+            << " nag messages still unchecked:" << endl;
+        for (unsigned i = check_pos; i < nag_messages.collected.size(); ++i)
+            str << nag_messages.collected[i] << endl;
+        fail(str.str());
+    }
+    nag_messages.clear();
+}
+
+[[noreturn]] void ExpectNags::fail(const std::string& message)
+{
+    throw TestFailed(message, file, line, "expect_nags", local_info);
+}
+
+void ExpectNags::nagged(const std::string& pattern)
+{
+    if (check_pos >= nag_messages.collected.size())
+        fail("missing nag message, expecting " + pattern);
+    if (nag_messages.collected[check_pos].find(pattern) == string::npos)
+        fail("missing nag message, expecting " + pattern + " found " +
+             nag_messages.collected[check_pos]);
+    ++check_pos;
+}
+
 } // namespace arki::tests

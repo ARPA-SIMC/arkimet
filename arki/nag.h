@@ -90,6 +90,27 @@ struct CollectHandler : public Handler
 };
 
 /**
+ * Convert nag messages to exceptions.
+ *
+ * This is useful in unit tests to ensure functions don't generate unexpected
+ * noise
+ */
+struct RaiseHandler : public Handler
+{
+    bool _verbose;
+    bool _debug;
+
+    explicit RaiseHandler(bool verbose = true, bool debug = false);
+
+    void warning(const char* fmt, va_list ap) override
+        __attribute__((format(printf, 2, 0)));
+    void verbose(const char* fmt, va_list ap) override
+        __attribute__((format(printf, 2, 0)));
+    void debug(const char* fmt, va_list ap) override
+        __attribute__((format(printf, 2, 0)));
+};
+
+/**
  * Initialize the verbose printing interface, taking the allowed verbose level
  * from the environment and printing a little informational banner if any
  * level of verbose messages are enabled.

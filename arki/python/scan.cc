@@ -263,12 +263,10 @@ public:
     {
         // If the Python plugin does not define the method, return False
         // without reading data
-        {
-            AcquireGIL gil;
+        AcquireGIL gil;
 
-            if (!PyObject_HasAttrString(scanner, "update_sequence_number"))
-                return false;
-        }
+        if (!PyObject_HasAttrString(scanner, "update_sequence_number"))
+            return false;
 
         pyo_unique_ptr py_md((PyObject*)metadata_create(md));
         pyo_unique_ptr py_usn(throw_ifnull(PyObject_CallMethod(

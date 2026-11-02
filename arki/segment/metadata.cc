@@ -315,9 +315,12 @@ Writer::Writer(std::shared_ptr<const Segment> segment,
                std::shared_ptr<core::AppendLock> lock)
     : segment::Writer(segment, lock), data(segment::Data::create(segment))
 {
-    // Read the metadata
-    auto reader = segment->reader(lock);
-    reader->read_all(mds.inserter_func());
+    if (has_valid_metadata(segment))
+    {
+        // Read the metadata
+        auto reader = segment->reader(lock);
+        reader->read_all(mds.inserter_func());
+    }
 
     // Read the summary
     if (!mds.empty())

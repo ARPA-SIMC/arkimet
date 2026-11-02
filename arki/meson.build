@@ -211,9 +211,7 @@ libarkimet = both_libraries('arkimet',
         ],
 )
 
-if python3.found()
-    subdir('python')
-endif
+subdir('python')
 
 
 #
@@ -233,7 +231,9 @@ testlib = static_library('testlib', [
     'segment/tests.cc',
     'segment/data/tests.cc',
     'dataset/tests.cc',
-], include_directories: toplevel_inc)
+], include_directories: toplevel_inc,
+   dependencies: [python3.dependency()]
+)
 
 test_core_sources = [
     'tests/tests-test.cc',
@@ -456,6 +456,7 @@ foreach test_info: [
           dballe_dep,
           meteo_vm2_dep,
           libcurl_dep,
+          python3.dependency(embed: true),
       ]
   )
 

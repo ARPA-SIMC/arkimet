@@ -2,6 +2,7 @@
 #define ARKI_CORE_TESTS_H
 
 #include <arki/core/time.h>
+#include <arki/nag.h>
 #include <arki/tests/tests.h>
 #include <arki/utils/subprocess.h>
 
@@ -65,6 +66,29 @@ public:
     char wait_until_ready();
     void during(std::function<void()> f);
 };
+
+class ExpectNags
+{
+    const char* file;
+    int line;
+    const arki::utils::tests::LocationInfo& local_info;
+    nag::CollectHandler nag_messages;
+    unsigned check_pos = 0;
+
+    [[noreturn]] void fail(const std::string& message);
+
+public:
+    ExpectNags(const char* file, int line,
+               const arki::utils::tests::LocationInfo& local_info,
+               bool verbose = true, bool debug = false);
+    ~ExpectNags() noexcept(false);
+
+    void nagged(const std::string& pattern);
+};
+
+#define expect_nags(...)                                                       \
+    ExpectNags nags(__FILE__, __LINE__, arki_utils_test_location_info,         \
+                    __VA_ARGS__);
 
 } // namespace arki::tests
 #endif

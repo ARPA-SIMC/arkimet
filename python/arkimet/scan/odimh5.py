@@ -61,7 +61,7 @@ class ODIMH5Scanner(arkimet.scan.DataFormatScanner):
 
     def scan_data(self, data: bytes) -> arkimet.Metadata:
         """Scan a bytes object as ODIM."""
-        md = arkimet.Metadata.for_bytes(data)
+        md = arkimet.Metadata.for_bytes("odimh5", data)
         with tempfile.NamedTemporaryFile("wb") as tf:
             tf.write(data)
             tf.flush()

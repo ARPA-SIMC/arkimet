@@ -201,10 +201,15 @@ class BUFRScanner(arkimet.scan.DataFormatScanner):
         # Convert validity times to emission times
         md.convert_validity_time_to_emission_time()
 
-    def scan_binmsg(self, binmsg: dballe.BinaryMessage) -> arkimet.Metadata:
-        md = arkimet.Metadata.for_blob(
-            "bufr", binmsg.pathname, binmsg.offset, bytes(binmsg)
-        )
+    def scan_binmsg(
+        self, binmsg: dballe.BinaryMessage, as_inline: bool = False
+    ) -> arkimet.Metadata:
+        if as_inline:
+            md = arkimet.Metadata.for_bytes("bufr", bytes(binmsg))
+        else:
+            md = arkimet.Metadata.for_blob(
+                "bufr", binmsg.pathname, binmsg.offset, bytes(binmsg)
+            )
         try:
             bufr = BUFR(binmsg)
         except Exception as exc:
@@ -240,12 +245,12 @@ class BUFRScanner(arkimet.scan.DataFormatScanner):
         """Scan BUFR data from a pipe."""
         with dballe.File(file, "BUFR") as binmsgs:
             for binmsg in binmsgs:
-                yield self.scan_binmsg(binmsg)
+                yield self.scan_binmsg(binmsg, as_inline=True)
 
     def scan_data(self, data: bytes) -> arkimet.Metadata:
         """Scan a data buffer as BUFR."""
         binmsg = dballe.BinaryMessage(data=data, encoding="BUFR")
-        return self.scan_binmsg(binmsg)
+        return self.scan_binmsg(binmsg, as_inline=True)
 
     def update_sequence_number(self, md: arkimet.Metadata) -> int:
         """Extract the update sequence number from BUFR data."""

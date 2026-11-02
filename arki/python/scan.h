@@ -12,8 +12,6 @@ struct Message;
 
 extern "C" {
 
-struct grib_handle;
-
 typedef struct
 {
     PyObject_HEAD std::shared_ptr<arki::data::Scanner> scanner;

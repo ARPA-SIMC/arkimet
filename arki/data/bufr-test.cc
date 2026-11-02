@@ -26,12 +26,13 @@ void Tests::register_tests()
     add_method("scan_file", [] {
         auto basedir = std::filesystem::current_path() / "inbound";
         auto src     = basedir / "fixture.bufr";
-        arki::data::bufr::MockScanner scanner;
+        auto scanner = data::Scanner::get(DataFormat::BUFR);
         std::vector<std::shared_ptr<Metadata>> mds;
-        wassert_true(scanner.scan_file(src, [&](std::shared_ptr<Metadata> md_) {
-            mds.emplace_back(md_);
-            return true;
-        }));
+        wassert_true(
+            scanner->scan_file(src, [&](std::shared_ptr<Metadata> md_) {
+                mds.emplace_back(md_);
+                return true;
+            }));
         wassert(actual(mds.size()) == 3u);
 
         wassert(actual_type(mds[0]->source())
@@ -59,10 +60,10 @@ void Tests::register_tests()
     add_method("scan_pipe", [] {
         auto basedir = std::filesystem::current_path() / "inbound";
         auto src     = basedir / "fixture.bufr";
-        arki::data::bufr::MockScanner scanner;
+        auto scanner = data::Scanner::get(DataFormat::BUFR);
         std::vector<std::shared_ptr<Metadata>> mds;
         core::File in(src, O_RDONLY);
-        wassert_true(scanner.scan_pipe(in, [&](std::shared_ptr<Metadata> md) {
+        wassert_true(scanner->scan_pipe(in, [&](std::shared_ptr<Metadata> md) {
             mds.emplace_back(md);
             return true;
         }));
@@ -84,11 +85,11 @@ void Tests::register_tests()
     add_method("scan_data", [] {
         auto basedir         = std::filesystem::current_path() / "inbound";
         auto src             = basedir / "acars.bufr";
+        auto scanner         = data::Scanner::get(DataFormat::BUFR);
         std::string data_str = sys::read_file(src);
         std::vector<uint8_t> data(data_str.begin(), data_str.end());
 
-        arki::data::bufr::MockScanner scanner;
-        std::shared_ptr<Metadata> md = scanner.scan_data(data);
+        std::shared_ptr<Metadata> md = scanner->scan_data(data);
         wassert_true(md.get());
         wassert(actual_type(md->source())
                     .is_source_inline(DataFormat::BUFR, data_str.size()));
