@@ -215,7 +215,7 @@ Access grib message contents
     {
         if (self->owns_handle and self->gh)
             grib_handle_delete(self->gh);
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString("Grib"); }
@@ -504,7 +504,7 @@ It generates a sequence of ``(arkimet.scan.Grib, arki.Metadata)`` tuples.
             delete self->scan;
             self->scan = nullptr;
         }
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static int _init(arkipy_scan_GribReader* self, PyObject* args, PyObject* kw)

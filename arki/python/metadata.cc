@@ -987,7 +987,7 @@ For example::
     static void _dealloc(Impl* self)
     {
         self->md.~shared_ptr();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)
@@ -1210,7 +1210,7 @@ callback for producing one metadata element
     static void _dealloc(Impl* self)
     {
         self->func.~metadata_dest_func();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

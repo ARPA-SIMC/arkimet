@@ -137,7 +137,7 @@ Precompiled matcher for arkimet metadata
     static void _dealloc(Impl* self)
     {
         self->matcher.~Matcher();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

@@ -300,7 +300,7 @@ arki-check implementation
     {
         self->checker_config.~CheckerConfig();
         self->pool.~shared_ptr<arki::dataset::Pool>();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString(name); }

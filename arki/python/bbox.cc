@@ -196,7 +196,7 @@ BBox for arkimet metadata.
     static void _dealloc(Impl* self)
     {
         delete self->bbox;
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString("BBox"); }

@@ -471,7 +471,7 @@ arki-scan implementation
         self->pool.~shared_ptr<arki::dataset::Pool>();
         delete self->processor;
         delete self->dispatcher;
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString(name); }

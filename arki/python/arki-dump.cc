@@ -326,7 +326,7 @@ arki-dump implementation
     GetSetters<> getsetters;
     Methods<bbox, reverse_data, reverse_summary, dump_yaml> methods;
 
-    static void _dealloc(Impl* self) { Py_TYPE(self)->tp_free(self); }
+    static void _dealloc(Impl* self) { PyObject_Free(self); }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString(name); }
 

@@ -198,7 +198,7 @@ File-like object to read data from files opened by the Arkimet library.
     static void _dealloc(Impl* self)
     {
         self->fd.~NamedFileDescriptor();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

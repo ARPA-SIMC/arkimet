@@ -262,7 +262,7 @@ Examples::
     static void _dealloc(Impl* self)
     {
         self->ptr.~shared_ptr<arki::dataset::Writer>();
-        Py_TYPE(self)->tp_free((PyObject*)self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

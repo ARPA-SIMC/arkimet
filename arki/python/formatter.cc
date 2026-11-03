@@ -140,7 +140,7 @@ Formatter for arkimet metadata.
     static void _dealloc(Impl* self)
     {
         delete self->formatter;
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

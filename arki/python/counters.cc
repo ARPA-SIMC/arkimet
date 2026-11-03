@@ -75,7 +75,7 @@ Counter used to debug arkimet I/O operations
     GetSetters<value, description> getsetters;
     Methods<reset> methods;
 
-    static void _dealloc(Impl* self) { Py_TYPE(self)->tp_free(self); }
+    static void _dealloc(Impl* self) { PyObject_Free(self); }
 
     static PyObject* _str(Impl* self)
     {

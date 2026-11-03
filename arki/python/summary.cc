@@ -558,7 +558,7 @@ Examples::
     {
         delete self->summary;
         self->summary = nullptr;
-        Py_TYPE(self)->tp_free((PyObject*)self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

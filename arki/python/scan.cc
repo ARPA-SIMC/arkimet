@@ -323,7 +323,7 @@ Scanner for binary data.
     static void _dealloc(Impl* self)
     {
         self->scanner.~shared_ptr();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self)

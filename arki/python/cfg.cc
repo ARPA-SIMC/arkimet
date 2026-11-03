@@ -481,7 +481,7 @@ Arkimet configuration, as multiple sections of key/value options
     static void _dealloc(Impl* self)
     {
         self->ptr.~shared_ptr<arki::core::cfg::Sections>();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString(name); }
@@ -606,7 +606,7 @@ Arkimet configuration, as a section of key/value options
     static void _dealloc(Impl* self)
     {
         self->ptr.~shared_ptr<arki::core::cfg::Section>();
-        Py_TYPE(self)->tp_free(self);
+        PyObject_Free(self);
     }
 
     static PyObject* _str(Impl* self) { return PyUnicode_FromString(name); }
