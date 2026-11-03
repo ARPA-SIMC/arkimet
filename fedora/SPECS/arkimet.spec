@@ -34,7 +34,7 @@ BuildRequires: help2man
 BuildRequires: pkgconfig
 BuildRequires: readline-devel
 BuildRequires: lzo-devel
-BuildRequires: libwreport-devel >= 3.0
+BuildRequires: libwreport-devel >= 3.44
 BuildRequires: flex
 BuildRequires: bison
 BuildRequires: meteo-vm2-devel >= 0.12
