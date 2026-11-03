@@ -24,6 +24,8 @@ BaseReader::BaseReader(const std::filesystem::path& basedir) : basedir(basedir)
 {
 }
 
+BaseReader::~BaseReader() {}
+
 namespace reader {
 
 std::filesystem::path infer_basedir(const std::filesystem::path& path)

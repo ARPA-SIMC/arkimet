@@ -65,6 +65,34 @@ struct file_read : public MethVarargs<file_read, arkipy_File>
 
     static PyObject* read_all(Impl* self)
     {
+#if Py_VERSION_HEX < 0x030700
+        const size_t chunk_size = 4096 * 16;
+        std::array<char, chunk_size> chunk;
+
+        std::string buffer;
+        while (true)
+        {
+            // Read new data into the bytes object
+            size_t bytes_read = 0;
+            try
+            {
+                bytes_read = self->fd.read(chunk.data(), chunk.size());
+            }
+            catch (std::exception& exc)
+            {
+                arki::python::set_std_exception(exc);
+                return nullptr;
+            }
+
+            // Stop on EOF
+            if (bytes_read == 0)
+                break;
+
+            buffer.append(chunk.data(), chunk.data() + bytes_read);
+        }
+
+        return PyBytes_FromStringAndSize(buffer.data(), buffer.size());
+#else
         const size_t buffer_size = 4096 * 16;
         size_t total_read        = 0;
 
@@ -77,7 +105,9 @@ struct file_read : public MethVarargs<file_read, arkipy_File>
         {
             // Resize the bytes object
             if (_PyBytes_Resize(&res, total_read + buffer_size) == -1)
+            {
                 return nullptr;
+            }
 
             // Read new data into the bytes object
             size_t bytes_read = 0;
@@ -104,6 +134,7 @@ struct file_read : public MethVarargs<file_read, arkipy_File>
         if (_PyBytes_Resize(&res, total_read) == -1)
             return nullptr;
         return res;
+#endif
     }
 
     static PyObject* read_some(Impl* self, size_t size)

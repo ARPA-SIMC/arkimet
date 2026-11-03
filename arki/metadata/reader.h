@@ -25,6 +25,7 @@ protected:
 
 public:
     explicit BaseReader(const std::filesystem::path& basedir);
+    virtual ~BaseReader();
 
     /// Return the path of the file being read
     virtual std::filesystem::path path() const = 0;

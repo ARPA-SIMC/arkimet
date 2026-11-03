@@ -7,7 +7,7 @@ import os
 from contextlib import ExitStack
 from pathlib import Path
 import sys
-from typing import IO, Generator, Optional
+from typing import IO, Generator, Optional, Optional
 
 import wreport
 
@@ -93,14 +93,14 @@ class BufrPrepare:
                 self._failfd = self.outfd
         return self._failfd
 
-    def get_datetime(self, subset: wreport.Subset) -> dt.datetime | None:
+    def get_datetime(self, subset: wreport.Subset) -> Optional[dt.datetime]:
         """Get the datetime (if present) from the variables in a subset."""
 
-        year: int | None = None
-        month: int | None = None
-        day: int | None = None
-        hour: int | None = None
-        minute: int | None = None
+        year: Optional[int] = None
+        month: Optional[int] = None
+        day: Optional[int] = None
+        hour: Optional[int] = None
+        minute: Optional[int] = None
         second: int = 0
 
         for var in subset:

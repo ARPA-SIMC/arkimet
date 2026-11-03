@@ -138,10 +138,9 @@ class BUFRScanner(arkimet.scan.DataFormatScanner):
 
     def get_scanners(
         self, type: str
-    ) -> (
+    ) -> Optional[
         List[Tuple[int, Callable[[dballe.Message, arkimet.Metadata], None]]]
-        | None
-    ):
+    ]:
         if not self.scanners_sorted:
             for scanners in self.by_type.values():
                 scanners.sort(key=lambda s: s[0])

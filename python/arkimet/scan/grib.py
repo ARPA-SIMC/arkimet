@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple, Iterable, IO
+from typing import Callable, Dict, List, Tuple, Iterable, IO, Optional
 
 import _arkimet
 
@@ -53,7 +53,7 @@ class GRIBScanner(arkimet.scan.DataFormatScanner):
 
     def get_scanners(
         self, edition: int
-    ) -> List[Tuple[int, Callable[[Grib, arkimet.Metadata], None]]] | None:
+    ) -> Optional[List[Tuple[int, Callable[[Grib, arkimet.Metadata], None]]]]:
         if not self.scanners_sorted:
             for scanners in self.by_edition.values():
                 scanners.sort(key=lambda s: s[0])
