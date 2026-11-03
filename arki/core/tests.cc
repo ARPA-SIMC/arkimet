@@ -108,9 +108,8 @@ void skip_unless_grib()
 }
 void skip_unless_bufr()
 {
-#ifndef HAVE_DBALLE
-    throw TestSkipped("BUFR support not available");
-#endif
+    // We do not require BUFR as a C++ library anymore: as long as Python can
+    // scan, we can deal with BUFR
 }
 void skip_unless_vm2()
 {
