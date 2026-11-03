@@ -1,9 +1,7 @@
 #ifndef ARKI_PYTHON_VALUES_H
 #define ARKI_PYTHON_VALUES_H
 
-#define PY_SSIZE_T_CLEAN
 #include "core.h"
-#include <Python.h>
 #include <filesystem>
 #include <stdexcept>
 #include <string>

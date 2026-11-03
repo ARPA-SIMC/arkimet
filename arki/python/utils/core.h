@@ -1,6 +1,11 @@
 #ifndef ARKI_PYTHON_CORE_H
 #define ARKI_PYTHON_CORE_H
 
+/*
+ * TODO: set this to the earliest supported python version to see how far we
+ * are from the stable API
+ */
+// #define Py_LIMITED_API 0x03060000
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <stdexcept>
@@ -9,6 +14,20 @@ namespace arki::python {
 
 #define pass_kwlist(kwlist)                                                    \
     (const_cast<char**>(static_cast<const char**>(kwlist)))
+
+template <typename Obj> class py_unique_ptr;
+
+/**
+ * Wrapper for PyObject_HasAttrStringWithError(), or a polyfill implementation
+ * for older pythons
+ */
+bool hasattr(PyObject* obj, const char* name);
+
+/**
+ * Wrapper for PyObject_GetOptionalAttr, or polyfill implementation for older
+ * pythons
+ */
+py_unique_ptr<PyObject> get_optional_attr(PyObject* obj, const char* name);
 
 /**
  * unique_ptr-like object that contains PyObject pointers, and that calls
@@ -91,6 +110,18 @@ public:
         return std::string(res, size);
     }
 
+    /// Call hasattr(self, name)
+    bool hasattr(const char* name) { return hasattr(ptr, name); }
+
+    /**
+     * Calls getattr, returning nullptr if the object does not have the
+     * attribute
+     */
+    py_unique_ptr<PyObject> get_optional_attr(const char* name)
+    {
+        return get_optional_attr(ptr, name);
+    }
+
     /// Use it as a Obj
     operator Obj*() { return ptr; }
 
@@ -157,12 +188,21 @@ public:
  * so the only thing to do is to return the appropriate error to the python
  * caller.
  *
- * This exception carries to information, because it is all set in the python
+ * This exception carries no information, because it is all set in the python
  * exception information.
  */
 struct PythonException : public std::exception
 {
 public:
+    /**
+     * Return a placeholder error message and print the Python exception
+     * information on stderr.
+     *
+     * It is assumed that this exception is never fully handled from C++, but
+     * is only used to forward the error condition back to Python. In case it
+     * is, such as in test code that uses Python but is not called from Python
+     * code, then this can give useful information about what is going on.
+     */
     const char* what() const noexcept override;
 };
 
@@ -178,6 +218,46 @@ template <typename T> inline T* throw_ifnull(T* o)
         throw PythonException();
     return o;
 }
+
+/**
+ * RAII version of a python try: … except Exception as exc: … block
+ */
+class Except
+{
+protected:
+    // This uses PyErr_Fetch to be compatible with older Python: use
+    // PyErr_GetRaisedException() from Python 3.12, which will only need to
+    // track the exception instance
+    PyObject* exc_type      = nullptr;
+    PyObject* exc_value     = nullptr;
+    PyObject* exc_traceback = nullptr;
+
+public:
+    Except();
+    Except(const Except&) = delete;
+    Except(Except&&)      = delete;
+    ~Except();
+
+    Except& operator=(const Except&) = delete;
+    Except& operator=(Except&)       = delete;
+
+    /**
+     * Access the exception that was caught.
+     *
+     * This can be nullptr if there was no active exception.
+     */
+    operator PyObject*() const { return exc_value; }
+
+    /// Explicitly get the PyObject
+    PyObject* get() const { return exc_value; }
+
+    /**
+     * Reraise the exception.
+     *
+     * Throws PythonException.
+     */
+    [[noreturn]] void raise();
+};
 
 } // namespace arki::python
 

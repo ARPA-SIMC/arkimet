@@ -1,10 +1,8 @@
 #ifndef ARKI_PYTHON_DICT_H
 #define ARKI_PYTHON_DICT_H
 
-#define PY_SSIZE_T_CLEAN
 #include "core.h"
 #include "values.h"
-#include <Python.h>
 
 namespace arki::python {
 
